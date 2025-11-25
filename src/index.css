@@ -1,0 +1,468 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 100% 50%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 220 13% 28%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 25 100% 50%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border selection:bg-primary/20 selection:text-white;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: linear-gradient(to bottom, rgba(10,10,10,0.97), rgba(10,10,10,0.97)), var(--tw-gradient-stops);
+    background-attachment: fixed;
+  }
+
+  .carbon-fiber-bg {
+    @apply bg-carbon-fiber;
+  }
+
+  .team-stripe {
+    position: relative;
+  }
+
+  .team-stripe::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 2px 0 0 2px;
+  }
+
+  .team-stripe.ferrari::before {
+    background-color: theme('colors.f1.ferrari');
+  }
+
+  .team-stripe.mercedes::before {
+    background-color: theme('colors.f1.mercedes');
+  }
+
+  .team-stripe.mclaren::before {
+    background-color: theme('colors.f1.mclaren');
+  }
+
+  .team-stripe.redbull::before {
+    background-color: theme('colors.f1.redbull');
+  }
+
+  .team-stripe.astonmartin::before {
+    background-color: theme('colors.f1.astonmartin');
+  }
+
+  .team-stripe.alpine::before {
+    background-color: theme('colors.f1.alpine');
+  }
+
+  .team-stripe.williams::before {
+    background-color: theme('colors.f1.williams');
+  }
+
+  /* Tire compound styles */
+  .tire-indicator {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .tire-indicator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+  }
+
+  .tire-indicator.soft::before {
+    background-color: theme('colors.tire.soft');
+  }
+
+  .tire-indicator.medium::before {
+    background-color: theme('colors.tire.medium');
+  }
+
+  .tire-indicator.hard::before {
+    background-color: theme('colors.tire.hard');
+  }
+
+  /* Racing button styles */
+  .racing-button {
+    @apply relative bg-secondary/80 text-white px-6 py-3 rounded-md 
+           transition-all overflow-hidden border border-secondary/50
+           hover:border-primary hover:bg-secondary hover:shadow-[0_0_12px_#ff2800];
+  }
+
+  .racing-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #ff2800, transparent);
+    transition: width 0.3s ease;
+    transform: translateY(-50%);
+  }
+
+  .racing-button:hover::after {
+    width: 100%;
+  }
+
+  /* Chart styling */
+  .chart-container {
+    @apply bg-card rounded-md p-4 border border-border/50 animate-telemetry-in opacity-0;
+    animation-delay: calc(var(--delay, 0) * 100ms);
+  }
+
+  /* Card styling with team accent */
+  .team-card {
+    @apply relative rounded-md p-5 bg-gradient-to-br from-card to-black/50 overflow-hidden
+           border border-border/50 hover:shadow-lg hover:border-white/20 transition-all
+           transform hover:scale-[1.02];
+  }
+
+  .team-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    transition: transform 0.3s ease;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .team-card:hover::after {
+    transform: scaleX(1);
+  }
+  
+  .team-card.ferrari::after {
+    background-color: theme('colors.f1.ferrari');
+  }
+  
+  .team-card.mercedes::after {
+    background-color: theme('colors.f1.mercedes');
+  }
+  
+  .team-card.mclaren::after {
+    background-color: theme('colors.f1.mclaren');
+  }
+  
+  .team-card.redbull::after {
+    background-color: theme('colors.f1.redbull');
+  }
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 40, 0, 0);
+  }
+  50% {
+    box-shadow: 0 0 15px 3px rgba(255, 40, 0, 0.6);
+  }
+}
+
+@keyframes telemetry-in {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+    transform-origin: left;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+    transform-origin: left;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes loading-track {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+/* Add new animations for modern landing page */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow-red {
+  0%, 100% {
+    box-shadow: 0 0 5px 0 rgba(255, 40, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px 5px rgba(255, 40, 0, 0.6);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow-red {
+  animation: pulse-glow-red 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+  background-size: 1000px 100%;
+}
+
+.animate-rotate {
+  animation: rotate 20s linear infinite;
+}
+
+.animate-dash {
+  animation: dash 2s linear forwards;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Site-wide styles */
+.site-container {
+  @apply min-h-screen flex flex-col mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* Auth page styles */
+.auth-container {
+  @apply w-full max-w-md mx-auto;
+}
+
+.auth-icon-container {
+  @apply p-3 bg-primary/10 rounded-full border border-primary/20;
+}
+
+.auth-title {
+  @apply text-3xl font-bold bg-gradient-to-r from-f1-ferrari via-f1-redbull to-f1-mclaren bg-clip-text text-transparent;
+}
+
+.auth-subtitle {
+  @apply text-muted-foreground mt-2;
+}
+
+.auth-card {
+  @apply bg-card/90 border-border/50 shadow-xl;
+}
+
+.premium-feature-badge {
+  @apply bg-primary/10 px-3 py-1 rounded-full text-xs border border-primary/20;
+}
+
+/* Footer styles */
+.footer {
+  @apply bg-card/80 border-t border-border/50 mt-auto;
+}
+
+.footer-container {
+  @apply container mx-auto py-8 px-4;
+}
+
+.footer-grid {
+  @apply grid grid-cols-1 md:grid-cols-4 gap-8;
+}
+
+.footer-heading {
+  @apply font-semibold mb-4;
+}
+
+.footer-link {
+  @apply hover:text-primary transition-colors;
+}
+
+.footer-bottom {
+  @apply mt-8 pt-4 border-t border-border/50 flex flex-col sm:flex-row justify-between items-center;
+}
+
+/* Chart Export Styling */
+.export-chart-container {
+  min-height: 300px !important;
+  min-width: 500px !important;
+  padding-top: 20px !important;
+}
+
+/* Ensure charts display properly during export */
+.recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+/* Make sure SVG elements are visible during export */
+.recharts-surface {
+  overflow: visible !important;
+}
+
+/* Fix title display in charts */
+.chart-container .recharts-wrapper {
+  margin-top: 15px;
+}
+
+/* Ensure chart tooltips appear above footer and other elements */
+.recharts-tooltip-wrapper {
+  z-index: 9999 !important;
+}
+
+.recharts-default-tooltip {
+  z-index: 9999 !important;
+}
+
+/* Force any recharts wrapper to have higher z-index */
+.recharts-wrapper .recharts-tooltip-wrapper {
+  z-index: 9999 !important;
+}
+
+/* Ensure the tooltip portal appears above everything */
+.recharts-tooltip-cursor + .recharts-tooltip-wrapper {
+  z-index: 9999 !important;
+}
+
+/* Allow chart containers to overflow for tooltips */
+.export-chart-container {
+  overflow: visible !important;
+}
+
+/* Ensure chart tooltip containers can overflow their parent cards */
+[data-radix-collection-item] {
+  overflow: visible !important;
+}
+
+/* Specific override for cards containing charts */
+.chart-card {
+  overflow: visible !important;
+}

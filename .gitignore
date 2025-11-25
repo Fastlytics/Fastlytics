@@ -1,0 +1,75 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+/coverage
+
+# Vite / Build Output
+/dist
+/dist-ssr
+/.vite
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment Variables
+.env*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional PNPM lockfile (if applicable, but usually committed)
+# pnpm-lock.yaml
+
+# Backend API Directory (Specific Rules)
+# Ignore the entire directory by default
+/backend-api/
+# But DO NOT ignore a .gitignore file within it, allowing specific un-ignores
+!/backend-api/.gitignore
+# Ignore environment files within the backend directory
+/backend-api/.env*
+# Ignore Python cache/compiled files
+/backend-api/cache/
+/backend-api/__pycache__/
+/backend-api/*.pyc
+/.kilocode/
+
+# Wiki documentation (not tracked in Git)
+WIKI.md
+SECURITY.md
+
+# Blog post about building Fastlytics
+building-fastlytics.md
