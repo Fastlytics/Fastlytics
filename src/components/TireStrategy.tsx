@@ -6,10 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, List, LineChart } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StintAnalysisTable from './StintAnalysisTable';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Define props for the dynamic component
 interface TireStrategyProps {
   className?: string;
   delay?: number;
@@ -18,11 +16,10 @@ interface TireStrategyProps {
   session: string;
 }
 
-// Define tire compound colors (using Tailwind classes)
 const tireCompoundColors: { [key: string]: string } = {
-  SOFT: 'bg-red-500',
+  SOFT: 'bg-red-600',
   MEDIUM: 'bg-yellow-400',
-  HARD: 'bg-gray-200',
+  HARD: 'bg-white',
   INTERMEDIATE: 'bg-green-500',
   WET: 'bg-blue-500',
   UNKNOWN: 'bg-gray-500',
@@ -39,8 +36,6 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   event,
   session
 }) => {
-
-  // Fetch race results to get finishing order (used by both tabs for context)
   const { data: raceResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['sessionResult', year, event, session],
     queryFn: () => fetchSpecificRaceResults(year, event, session),
@@ -50,7 +45,6 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     enabled: !!year && !!event && !!session,
   });
 
-  // Create a map of driver codes to their finishing positions
   const driverPositionMap = useMemo(() => {
     if (!raceResults) return new Map<string, number>();
     const positionMap = new Map<string, number>();
@@ -62,7 +56,6 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     return positionMap;
   }, [raceResults]);
 
-  // Fetch basic strategy data (for Overview tab)
   const { data: strategyData, isLoading: isLoadingStrategy, error: errorStrategy, isError: isErrorStrategy } = useQuery<DriverStrategy[]>({
     queryKey: ['tireStrategy', year, event, session],
     queryFn: () => fetchTireStrategy(year, event, session),
@@ -70,7 +63,6 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     gcTime: 1000 * 60 * 30,
     retry: 1,
     enabled: !!year && !!event && !!session,
-    // Sort data by race finishing order
     select: (data) => {
       if (!data) return [];
       return [...data].sort((a, b) => {
@@ -84,75 +76,70 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     },
   });
 
-  // Find max laps for scaling the bars (only if strategyData exists)
   const maxLaps = useMemo(() => {
-      if (!strategyData || strategyData.length === 0) return 1; // Default to 1 if no data
-      return Math.max(...strategyData.flatMap(d => d.stints.map(s => s.endLap)), 1);
+    if (!strategyData || strategyData.length === 0) return 1;
+    return Math.max(...strategyData.flatMap(d => d.stints.map(s => s.endLap)), 1);
   }, [strategyData]);
 
-  // Helper function to render the content of the Strategy Overview tab
   const renderStrategyOverview = () => {
     if (isLoadingStrategy) {
-        return (
-            <div className="space-y-2 pt-4">
-              {[...Array(8)].map((_, i) => ( // Show more skeletons
-                <Skeleton key={i} className="w-full h-[28px] bg-gray-800/50" />
-              ))}
-            </div>
-        );
+      return (
+        <div className="space-y-2 pt-4">
+          {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} className="w-full h-[28px] bg-gray-800" />
+          ))}
+        </div>
+      );
     }
     if (isErrorStrategy) {
-         return (
-            <div className="w-full min-h-[200px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400 p-4 mt-4">
-               <AlertCircle className="w-8 h-8 mb-2" />
-               <p className="font-semibold">Error loading strategy overview</p>
-               <p className="text-xs text-gray-500 mt-1">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
-            </div>
-         );
+      return (
+        <div className="w-full min-h-[200px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
+          <AlertCircle className="w-8 h-8 mb-2" />
+          <p className="font-bold uppercase">Error loading strategy</p>
+          <p className="text-xs text-gray-500 mt-1">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
+        </div>
+      );
     }
-     if (!strategyData || strategyData.length === 0) {
-         return (
-            <div className="w-full min-h-[200px] bg-gray-900/80 border border-gray-700/50 rounded-lg flex items-center justify-center text-gray-500 p-4 mt-4">
-               No tire strategy data found for this session.
-            </div>
-         );
+    if (!strategyData || strategyData.length === 0) {
+      return (
+        <div className="w-full min-h-[200px] bg-black border border-gray-800 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase">
+          No tire strategy data found.
+        </div>
+      );
     }
 
-    // --- Render Visualization ---
     return (
       <TooltipProvider delayDuration={100}>
-        <div className="pt-4">
-          {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-4 text-xs text-gray-400">
+        <div className="pt-6">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 text-xs font-bold uppercase tracking-wider text-gray-500">
             {Object.entries(tireCompoundColors).map(([compound, colorClass]) => (
-                compound !== 'UNKNOWN' && (
-                    <div key={compound} className="flex items-center gap-1.5">
-                        <span className={cn("w-2.5 h-2.5 rounded-full", colorClass)}></span>
-                        <span>{compound.charAt(0) + compound.slice(1).toLowerCase()}</span>
-                    </div>
-                )
+              compound !== 'UNKNOWN' && (
+                <div key={compound} className="flex items-center gap-2">
+                  <span className={cn("w-3 h-3", colorClass)}></span>
+                  <span>{compound}</span>
+                </div>
+              )
             ))}
           </div>
-          {/* Driver Stint List */}
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {strategyData.map((driverData) => {
               const isRaceSession = session === 'R' || session === 'Sprint';
               const position = isRaceSession ? driverPositionMap.get(driverData.driver) : undefined;
               const positionText = position !== undefined && isFinite(position) ? `P${position}` : '';
-              
+
               return (
-                <div key={driverData.driver} className="flex items-center gap-3">
-                  <span className="w-12 text-sm font-mono text-gray-400 text-right flex-shrink-0">
+                <div key={driverData.driver} className="flex items-center gap-4 group">
+                  <span className="w-16 text-sm font-bold font-mono text-gray-400 text-right flex-shrink-0 group-hover:text-white transition-colors">
                     {positionText ? (
-                      <span className="flex items-center justify-end">
-                        <span className="text-xs text-gray-500 mr-1">{positionText}</span>
+                      <span className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-gray-600">{positionText}</span>
                         {driverData.driver}
                       </span>
                     ) : (
                       driverData.driver
                     )}
                   </span>
-                  <div className="flex-grow h-6 bg-gray-800/50 rounded overflow-hidden flex relative">
+                  <div className="flex-grow h-8 bg-gray-900 border border-gray-800 relative flex">
                     {driverData.stints.map((stint, index) => {
                       const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
                       const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
@@ -163,15 +150,14 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                         <Tooltip key={index}>
                           <TooltipTrigger asChild>
                             <div
-                              className={cn("h-full absolute transition-opacity hover:opacity-80", bgColorClass)}
+                              className={cn("h-full absolute transition-all hover:brightness-110 border-r border-black/20", bgColorClass)}
                               style={{
-                                  left: `${leftOffsetPercentage}%`,
-                                  width: `${widthPercentage}%`,
-                               }}
-                              aria-label={tooltipContent}
+                                left: `${leftOffsetPercentage}%`,
+                                width: `${widthPercentage}%`,
+                              }}
                             />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-black/80 text-white border-gray-700">
+                          <TooltipContent className="bg-black border border-gray-700 text-white font-mono text-xs uppercase">
                             <p>{tooltipContent}</p>
                           </TooltipContent>
                         </Tooltip>
@@ -187,44 +173,38 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     );
   };
 
-  // --- Main Component Render ---
   return (
-     <Card 
-        className={cn("bg-gray-900/70 border border-gray-700/80 animate-fade-in", className)} 
-        style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
-     >
-        <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-semibold text-white">Strategy Analysis</CardTitle>
-            {/* Description can be added here if needed */}
-        </CardHeader>
-        <CardContent className="pt-0">
-             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-gray-800/80 border border-gray-700/60 p-1 h-auto mb-1">
-                    <TabsTrigger 
-                      value="overview" 
-                      className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 text-xs py-1.5 rounded-sm transition-colors duration-150 flex items-center justify-center gap-1.5"
-                    >
-                        <List className="w-3.5 h-3.5"/>
-                        Overview
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="analysis" 
-                      className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 text-xs py-1.5 rounded-sm transition-colors duration-150 flex items-center justify-center gap-1.5"
-                    >
-                         <LineChart className="w-3.5 h-3.5"/>
-                         Stint Detail
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value="overview" className="mt-4">
-                     {renderStrategyOverview()}
-                </TabsContent>
-                <TabsContent value="analysis" className="mt-4">
-                    {/* StintAnalysisTable handles its own loading/error states */}
-                    <StintAnalysisTable year={year} event={event} session={session} />
-                </TabsContent>
-            </Tabs>
-        </CardContent>
-     </Card>
+    <div
+      className={cn("bg-black border-2 border-gray-800 p-6", className)}
+      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
+    >
+      <Tabs defaultValue="overview" className="w-full">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Strategy Analysis</h3>
+          <TabsList className="bg-gray-900 border border-gray-800 p-1 h-auto rounded-none">
+            <TabsTrigger
+              value="overview"
+              className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="analysis"
+              className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
+            >
+              Stint Detail
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="overview" className="mt-0">
+          {renderStrategyOverview()}
+        </TabsContent>
+        <TabsContent value="analysis" className="mt-0">
+          <StintAnalysisTable year={year} event={event} session={session} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

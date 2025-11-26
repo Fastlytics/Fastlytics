@@ -27,14 +27,14 @@ const TrackDominance = () => {
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 bg-red-600 skew-x-[-10deg]"></div>
+                            <div className="w-4 h-4 bg-blue-600 skew-x-[-10deg]"></div>
                             <span className="font-mono text-sm text-white">VERSTAPPEN</span>
-                            <span className="font-bold text-red-600 ml-auto">1:32.455</span>
+                            <span className="font-bold text-blue-600 ml-auto">1:32.455</span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 bg-blue-600 skew-x-[-10deg]"></div>
+                            <div className="w-4 h-4 bg-red-600 skew-x-[-10deg]"></div>
                             <span className="font-mono text-sm text-white">LECLERC</span>
-                            <span className="font-bold text-blue-600 ml-auto">+0.124</span>
+                            <span className="font-bold text-red-600 ml-auto">+0.124</span>
                         </div>
                     </div>
                 </div>

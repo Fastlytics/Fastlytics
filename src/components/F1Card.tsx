@@ -1,31 +1,30 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { ArrowUp, ArrowDown, MinusCircle } from 'lucide-react'; // Import icons
+import { ArrowUp, ArrowDown, MinusCircle } from 'lucide-react';
 
 interface F1CardProps {
   title: string;
   value: string | number;
-  team: 'ferrari' | 'mercedes' | 'mclaren' | 'redbull' | 'astonmartin' | 'alpine' | 'williams' | 'haas' | 'alfaromeo' | 'alphatauri' | 'gray'; // Added missing teams + gray
+  team: 'ferrari' | 'mercedes' | 'mclaren' | 'redbull' | 'astonmartin' | 'alpine' | 'williams' | 'haas' | 'alfaromeo' | 'alphatauri' | 'gray';
   icon?: React.ReactNode;
-  points_change?: number; // Use points_change instead of change
-  subValue?: string | null; // Optional sub-value (e.g., lap time)
+  points_change?: number;
+  subValue?: string | null;
   className?: string;
   style?: React.CSSProperties;
-  isRookie?: boolean; // Add isRookie prop
+  isRookie?: boolean;
 }
 
 const F1Card = ({ title, value, team, icon, points_change, subValue, className, style, isRookie }: F1CardProps) => {
 
-  // Function to determine change indicator color and icon (copied from standings pages)
   const getChangeIndicator = (change: number | undefined) => {
     if (change === undefined) {
-       return null;
+      return null;
     }
     if (change > 0) {
       return { color: 'text-green-500', icon: <ArrowUp className="h-4 w-4" /> };
     } else if (change < 0) {
       return { color: 'text-red-500', icon: <ArrowDown className="h-4 w-4" /> };
-    } else { // change === 0
+    } else {
       return { color: 'text-gray-500', icon: <MinusCircle className="h-4 w-4" /> };
     }
   };
@@ -33,26 +32,35 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
   const indicator = getChangeIndicator(points_change);
 
   return (
-    <div className={cn(`team-card bg-f1-${team}-gradient border border-f1-${team}/30 rounded-lg p-4 shadow-md`, className)} style={style}> {/* Use team prop for styling */}
-      <div className="flex justify-between items-start">
+    <div
+      className={cn(
+        "bg-black border-2 p-6 relative overflow-hidden group transition-all duration-300 hover:border-red-600",
+        `border-f1-${team}`,
+        className
+      )}
+      style={style}
+    >
+      {/* Background accent */}
+      <div className={cn("absolute top-0 right-0 w-32 h-32 opacity-10 -mr-10 -mt-10 rounded-full blur-3xl", `bg-f1-${team}`)} />
+
+      <div className="flex justify-between items-start relative z-10">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm text-gray-300 font-medium">{title}</h3>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{title}</h3>
             {isRookie && (
-              <span className="text-xs px-1.5 py-0.5 bg-blue-600/40 text-blue-200 rounded font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-200 uppercase font-bold tracking-wider border border-blue-800">
                 Rookie
               </span>
             )}
           </div>
-          <div className="text-2xl font-bold text-white">{value}</div>
-          {/* Display subValue (lap time) if available */}
+          <div className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">{value}</div>
+
           {subValue && (
-            <div className="text-xs text-gray-400 font-mono mt-0.5">{subValue}</div>
+            <div className="text-sm text-red-500 font-mono font-bold">{subValue}</div>
           )}
 
-          {/* Display points change indicator if available */}
           {indicator && (
-            <div className={cn("text-sm mt-1 flex items-center gap-1", indicator.color)} title="Points Change Since Last Race">
+            <div className={cn("text-xs mt-2 flex items-center gap-1 font-bold uppercase tracking-wider", indicator.color)} title="Points Change">
               {indicator.icon}
               <span>{points_change !== 0 ? Math.abs(points_change ?? 0) : '-'}</span>
             </div>
@@ -60,8 +68,8 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
         </div>
 
         {icon && (
-          <div className="p-2 rounded-full bg-background/50">
-            {icon}
+          <div className={cn("p-3 border-2 bg-black", `border-f1-${team} text-f1-${team}`)}>
+            {React.cloneElement(icon as React.ReactElement, { className: "w-6 h-6" })}
           </div>
         )}
       </div>

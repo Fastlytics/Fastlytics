@@ -5,18 +5,14 @@ import {
   fetchTeamStandings,
   fetchDriverStandings,
   fetchSchedule,
-  fetchTeamPace,
   TeamStanding,
   DriverStanding,
-  ScheduleEvent,
-  TeamPaceData
+  ScheduleEvent
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import LandingFooter from '@/components/LandingFooter';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
-import PaceAnalysisWidget from '@/components/dashboard/PaceAnalysisWidget';
 import SeasonTimeline from '@/components/dashboard/SeasonTimeline';
 import { Flag, ArrowRight } from 'lucide-react';
 
@@ -58,11 +54,11 @@ const Dashboard = () => {
       daysUntil = Math.ceil(diff / (1000 * 60 * 60 * 24));
     }
 
-    // Get 3 most recent completed races
+    // Get 4 most recent completed races
     const recent = schedule
       .filter(e => new Date(e.EventDate) < now)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
-      .slice(0, 3);
+      .slice(0, 4);
 
     return {
       nextRace: upcoming ? {
@@ -77,13 +73,6 @@ const Dashboard = () => {
     };
   }, [schedule]);
 
-  // 4. Team Pace (for the last completed race)
-  const { data: paceData, isLoading: isLoadingPace } = useQuery<TeamPaceData[]>({
-    queryKey: ['teamPace', selectedYear, lastRace?.EventName],
-    queryFn: () => fetchTeamPace(selectedYear, lastRace!.EventName, 'R'),
-    enabled: !!lastRace, // Only fetch if we have a last race
-  });
-
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
       <DashboardNavbar />
@@ -94,9 +83,14 @@ const Dashboard = () => {
           nextRace={nextRace}
         />
 
+        <SeasonTimeline
+          schedule={schedule || []}
+          currentRound={currentRound}
+        />
+
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
-          {/* Main Content Area (2 cols) */}
-          <div className="lg:col-span-2 space-y-12">
+          {/* Main Content Area (3 cols) */}
+          <div className="lg:col-span-3 space-y-12">
             <section>
               <ChampionshipWidget
                 drivers={driverStandings || []}
@@ -113,7 +107,7 @@ const Dashboard = () => {
                   Recent <span className="text-gray-500">Races</span>
                 </h3>
                 <button
-                  onClick={() => navigate('/races')}
+                  onClick={() => navigate('/calendar')}
                   className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
                 >
                   View Calendar <ArrowRight className="w-4 h-4" />
@@ -148,23 +142,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Sidebar (1 col) */}
-          <div className="space-y-8">
-            <PaceAnalysisWidget
-              data={paceData || null}
-              isLoading={isLoadingPace}
-              eventName={lastRace?.EventName || 'Unknown GP'}
-            />
-          </div>
         </div>
 
-        <SeasonTimeline
-          schedule={schedule || []}
-          currentRound={currentRound}
-        />
       </main>
-
-      <LandingFooter />
     </div>
   );
 };

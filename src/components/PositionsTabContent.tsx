@@ -9,9 +9,7 @@ import {
     SessionIncident
 } from '@/lib/api';
 import PositionChart from './PositionChart';
-import LoadingSpinnerF1 from './ui/LoadingSpinnerF1';
 import { AlertCircle, List, LineChart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Skeleton } from './ui/skeleton';
 import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
@@ -23,49 +21,44 @@ interface PositionsTabContentProps {
     session: string;
 }
 
-// Define Query Keys type for clarity
 type PositionQueryKey = [string, number, string, string];
 
 const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, session }) => {
-    // Add state for the active tab
     const [activeTab, setActiveTab] = useState<string>("overview");
 
-    // Define queries - removed stint analysis
     const queries: Readonly<[
         UseQueryOptions<LapPositionDataPoint[], Error, LapPositionDataPoint[], PositionQueryKey>,
         UseQueryOptions<DetailedRaceResult[], Error, DetailedRaceResult[], PositionQueryKey>,
         UseQueryOptions<SessionIncident[], Error, SessionIncident[], PositionQueryKey>
     ]> = [
-        {
-            queryKey: ['lapPositions', year, event, session],
-            queryFn: () => fetchLapPositions(year, event, session),
-            staleTime: 1000 * 60 * 10,
-            gcTime: 1000 * 60 * 30,
-            retry: 1,
-            enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
-        },
-        {
-            queryKey: ['sessionResults', year, event, session],
-            queryFn: () => fetchSpecificRaceResults(year, event, session),
-            staleTime: 1000 * 60 * 10,
-            gcTime: 1000 * 60 * 30,
-            retry: 1,
-            enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
-        },
-        {
-            queryKey: ['sessionIncidents', year, event, session],
-            queryFn: () => fetchSessionIncidents(year, event, session),
-            staleTime: 1000 * 60 * 10,
-            gcTime: 1000 * 60 * 30,
-            retry: 1,
-            enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
-        }
-    ];
+            {
+                queryKey: ['lapPositions', year, event, session],
+                queryFn: () => fetchLapPositions(year, event, session),
+                staleTime: 1000 * 60 * 10,
+                gcTime: 1000 * 60 * 30,
+                retry: 1,
+                enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
+            },
+            {
+                queryKey: ['sessionResults', year, event, session],
+                queryFn: () => fetchSpecificRaceResults(year, event, session),
+                staleTime: 1000 * 60 * 10,
+                gcTime: 1000 * 60 * 30,
+                retry: 1,
+                enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
+            },
+            {
+                queryKey: ['sessionIncidents', year, event, session],
+                queryFn: () => fetchSessionIncidents(year, event, session),
+                staleTime: 1000 * 60 * 10,
+                gcTime: 1000 * 60 * 30,
+                retry: 1,
+                enabled: !!year && !!event && !!session && (session === 'R' || session === 'Sprint'),
+            }
+        ];
 
-    // Fetch data using useQueries
     const results = useQueries({ queries });
 
-    // Extract data, loading, and error states
     const lapPositionsData = results[0]?.data as LapPositionDataPoint[] | undefined;
     const sessionResultsData = results[1]?.data as DetailedRaceResult[] | undefined;
     const incidentsData = results[2]?.data as SessionIncident[] | undefined;
@@ -74,40 +67,28 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
     const isError = results.some(r => r.isError);
     const combinedError = results.find(r => r.isError)?.error as Error | undefined;
 
-    // --- Render States ---
     if (isLoading) {
         return (
-            <Card className="bg-gray-900/70 border border-gray-700/80 animate-fade-in">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-semibold text-white">Position Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-[500px] w-full bg-gray-700/50" />
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="bg-black border-2 border-gray-800 p-6 h-full">
+                <div className="space-y-4">
+                    <Skeleton className="h-[400px] w-full bg-gray-900" />
+                </div>
+            </div>
         );
     }
 
     if (isError || !lapPositionsData || !sessionResultsData) {
         return (
-            <Card className="bg-gray-900/70 border border-gray-700/80 animate-fade-in">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-xl font-semibold text-white">Position Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="w-full min-h-[200px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400 p-4 mt-4">
-                        <AlertCircle className="w-8 h-8 mb-2" />
-                        <p className="font-semibold">Error Loading Position Data</p>
-                        <p className="text-xs text-gray-500 mt-1">{combinedError?.message || 'Could not fetch all necessary data for the positions tab.'}</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="bg-black border-2 border-gray-800 p-6 h-full flex items-center justify-center">
+                <div className="text-center text-red-500">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                    <p className="font-bold uppercase">Error Loading Position Data</p>
+                    <p className="text-xs text-gray-500 mt-1">{combinedError?.message || 'Could not fetch data.'}</p>
+                </div>
+            </div>
         );
     }
 
-    // Render the position chart
     const renderPositionChart = () => {
         return (
             <PositionChart
@@ -119,52 +100,48 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
         );
     };
 
-    // Render the analysis components
     const renderAnalysis = () => {
         return (
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <KeyMomentsHighlight lapData={lapPositionsData} />
                 <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
             </div>
         );
     };
 
-    // --- Render Actual Content with Tabs ---
     return (
-        <Card className="bg-gray-900/70 border border-gray-700/80 animate-fade-in">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-semibold text-white">Position Analysis</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-                <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab} value={activeTab}>
-                    <TabsList className="grid w-full grid-cols-2 bg-gray-800/80 border border-gray-700/60 p-1 h-auto mb-1">
-                        <TabsTrigger 
-                            value="overview" 
-                            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 text-xs py-1.5 rounded-sm transition-colors duration-150 flex items-center justify-center gap-1.5"
+        <div className="h-full">
+            <Tabs defaultValue="overview" className="w-full h-full flex flex-col" onValueChange={setActiveTab} value={activeTab}>
+                <div className="flex justify-between items-center mb-4 shrink-0">
+                    <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Position Analysis</h3>
+                    <TabsList className="bg-gray-900 border border-gray-800 p-1 h-auto rounded-none">
+                        <TabsTrigger
+                            value="overview"
+                            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
                         >
-                            <LineChart className="w-3.5 h-3.5"/>
-                            Position Chart
+                            Chart
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="analysis" 
-                            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 text-xs py-1.5 rounded-sm transition-colors duration-150 flex items-center justify-center gap-1.5"
+                        <TabsTrigger
+                            value="analysis"
+                            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
                         >
-                            <List className="w-3.5 h-3.5"/>
                             Analysis
                         </TabsTrigger>
                     </TabsList>
-                    
-                    <TabsContent value="overview" className="mt-4">
+                </div>
+
+                <div className="flex-1 min-h-0">
+                    <TabsContent value="overview" className="h-full mt-0">
                         {renderPositionChart()}
                     </TabsContent>
-                    
-                    <TabsContent value="analysis" className="mt-4">
+
+                    <TabsContent value="analysis" className="h-full mt-0 overflow-y-auto pr-2">
                         {renderAnalysis()}
                     </TabsContent>
-                </Tabs>
-            </CardContent>
-        </Card>
+                </div>
+            </Tabs>
+        </div>
     );
 };
 
-export default PositionsTabContent; 
+export default PositionsTabContent;

@@ -8,12 +8,11 @@ import Landing from "./pages/Landing"; // Updated import
 import Race from "./pages/Race";
 import TeamStandings from "./pages/TeamStandings";
 import DriverStandings from "./pages/DriverStandings";
-import Races from "./pages/Races";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import FAQ from "./pages/FAQ";
-import Footer from "./components/Footer";
 import LandingFooter from "./components/LandingFooter";
 import { SeasonProvider } from "./contexts/SeasonContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -25,7 +24,7 @@ const queryClient = new QueryClient();
 const MainLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen flex flex-col">
     {children}
-    <Footer />
+    <LandingFooter />
   </div>
 );
 
@@ -58,7 +57,7 @@ const App = () => (
               {/* All routes are now public */}
               <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
               <Route path="/race/:raceId" element={<MainLayout><Race /></MainLayout>} />
-              <Route path="/races" element={<MainLayout><Races /></MainLayout>} />
+              <Route path="/calendar" element={<MainLayout><Calendar /></MainLayout>} />
               <Route path="/standings/teams" element={<MainLayout><TeamStandings /></MainLayout>} />
               <Route path="/standings/drivers" element={<MainLayout><DriverStandings /></MainLayout>} />
 

@@ -1,12 +1,11 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
-  ArrowLeft, Flag, Calendar, AlertCircle,
-  Clock, Trophy, ChevronDown, Medal, Users
+  ArrowLeft, Flag, Calendar as CalendarIcon, AlertCircle,
+  Clock, Trophy, ChevronDown, Medal, Users, MapPin, Zap, Timer
 } from 'lucide-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import LandingFooter from '@/components/LandingFooter';
 import { Button } from "@/components/ui/button";
 import { fetchRaceResults, RaceResult, fetchSchedule, ScheduleEvent } from '@/lib/api';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
@@ -26,7 +25,8 @@ const getCountryCode = (location: string | undefined): string => {
     'Mexico': 'mx', 'Miami': 'us', 'Monaco': 'mc', 'Netherlands': 'nl',
     'Portugal': 'pt', 'Qatar': 'qa', 'Russia': 'ru', 'Saudi Arabia': 'sa',
     'Singapore': 'sg', 'South Africa': 'za', 'Spain': 'es', 'Styria': 'at',
-    'Turkey': 'tr', 'Abu Dhabi': 'ae', 'United States': 'us', 'USA': 'us',
+    'Turkey': 'tr', 'Abu Dhabi': 'ae', 'United Arab Emirates': 'ae', 'UAE': 'ae', 'Yas Marina': 'ae',
+    'United States': 'us', 'USA': 'us',
     'Sakhir': 'bh', 'Miami Gardens': 'us', 'Jeddah': 'sa', 'Lusail': 'qa',
     'Imola': 'it', 'Monza': 'it', 'São Paulo': 'br', 'Spielberg': 'at',
     'Silverstone': 'gb', 'Spa': 'be', 'Zandvoort': 'nl', 'Austin': 'us',
@@ -39,7 +39,60 @@ const getCountryCode = (location: string | undefined): string => {
   return 'xx';
 };
 
-const Races = () => {
+// Countdown Component
+const Countdown = ({ targetDate }: { targetDate: Date }) => {
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  function calculateTimeLeft() {
+    const difference = +targetDate - +new Date();
+    let timeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
+    }
+    return timeLeft;
+  }
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  const formatTime = (value: number) => value.toString().padStart(2, '0');
+
+  return (
+    <div className="flex gap-4 md:gap-8">
+      <div className="text-center">
+        <div className="text-3xl md:text-5xl font-black text-white font-mono">{formatTime(timeLeft.days)}</div>
+        <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">Days</div>
+      </div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-center">
+        <div className="text-3xl md:text-5xl font-black text-white font-mono">{formatTime(timeLeft.hours)}</div>
+        <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">Hrs</div>
+      </div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-center">
+        <div className="text-3xl md:text-5xl font-black text-white font-mono">{formatTime(timeLeft.minutes)}</div>
+        <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">Mins</div>
+      </div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-center">
+        <div className="text-3xl md:text-5xl font-black text-red-600 font-mono">{formatTime(timeLeft.seconds)}</div>
+        <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">Secs</div>
+      </div>
+    </div>
+  );
+};
+
+const Calendar = () => {
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const racesRef = useRef(null);
@@ -58,28 +111,66 @@ const Races = () => {
   });
 
   // Combine schedule and results data
-  const combinedRaceData = useMemo(() => {
-    if (!scheduleData) return [];
+  const { combinedRaceData, nextRace, nextSession } = useMemo(() => {
+    if (!scheduleData) return { combinedRaceData: [], nextRace: null, nextSession: null };
     const resultsMap = new Map(resultsData?.map(res => [res.event, res]));
     const now = new Date();
-    const nearFuture = new Date();
-    nearFuture.setDate(now.getDate() + 3);
 
-    return scheduleData.map(event => {
+    // Find next race
+    let nextRaceEvent = null;
+    let minDiff = Infinity;
+    let nextSessionData = null;
+
+    const processedData = scheduleData.map(event => {
       const result = resultsMap.get(event.EventName);
       const eventDate = new Date(event.EventDate);
       const isUpcoming = eventDate > now;
-      const isOngoing = isUpcoming && eventDate <= nearFuture;
+
+      // Check for next race
+      if (isUpcoming) {
+        const diff = eventDate.getTime() - now.getTime();
+        if (diff < minDiff) {
+          minDiff = diff;
+          nextRaceEvent = { ...event, displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), countryCode: getCountryCode(event.Country || event.Location) };
+
+          // Find the specific next session for this race
+          const sessions = [
+            { name: 'FP1', date: event.Session1Date },
+            { name: 'FP2', date: event.Session2Date },
+            { name: 'FP3', date: event.Session3Date },
+            { name: 'Qualifying', date: event.Session4Date }, // Assuming Session4 is usually Quali
+            { name: 'Sprint', date: event.Session5Date }, // Assuming Session5 is Sprint if exists
+            { name: 'Race', date: event.EventDate }
+          ].filter(s => s.date);
+
+          // Sort sessions by date
+          sessions.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
+
+          // Find first session in future
+          const upcomingSession = sessions.find(s => new Date(s.date!) > now);
+          if (upcomingSession) {
+            nextSessionData = {
+              name: upcomingSession.name,
+              date: new Date(upcomingSession.date!)
+            };
+          } else {
+            // If all sessions passed but race date is technically "future" (e.g. race day morning), default to Race
+            nextSessionData = { name: 'Race', date: eventDate };
+          }
+        }
+      }
 
       return {
         ...event,
         result,
         isUpcoming,
-        isOngoing,
+        isSprint: event.EventFormat === 'sprint',
         displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         countryCode: getCountryCode(event.Country || event.Location)
       };
     });
+
+    return { combinedRaceData: processedData, nextRace: nextRaceEvent, nextSession: nextSessionData };
   }, [scheduleData, resultsData]);
 
   return (
@@ -138,6 +229,80 @@ const Races = () => {
           </div>
         </div>
 
+        {/* Next Race Highlight */}
+        {nextRace && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-16 relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 to-black z-0" />
+            <div className="border-2 border-red-600 bg-black/50 p-8 md:p-12 relative z-10">
+              <div className="absolute top-0 right-0 bg-red-600 text-white px-4 py-2 font-black uppercase tracking-widest text-sm flex items-center gap-2">
+                <Timer className="w-4 h-4" />
+                Next Grand Prix
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-12 items-center">
+                {/* Left: Race Info */}
+                <div className="flex-1 text-center lg:text-left">
+                  <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
+                    <div className="w-16 h-10 bg-gray-900 border border-gray-700 flex items-center justify-center overflow-hidden">
+                      {nextRace.countryCode && (
+                        <img
+                          src={`https://flagcdn.com/h40/${nextRace.countryCode}.png`}
+                          alt={nextRace.Country || nextRace.Location}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="text-red-500 font-mono text-sm uppercase tracking-widest">Round {nextRace.RoundNumber}</div>
+                  </div>
+
+                  <h2 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter text-white mb-6">
+                    {nextRace.EventName}
+                  </h2>
+
+                  <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-gray-400 mb-8">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-red-600" />
+                      <span className="font-mono text-lg text-white">{nextRace.displayDate}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-red-600" />
+                      <span className="font-mono text-lg text-white">{nextRace.Location}</span>
+                    </div>
+                    {nextRace.EventFormat === 'sprint' && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500 text-yellow-500 rounded-full">
+                        <Zap className="w-4 h-4" />
+                        <span className="font-bold text-xs uppercase tracking-wider">Sprint Weekend</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={() => navigate(`/race/${selectedYear}-${nextRace.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
+                    className="bg-white text-black hover:bg-red-600 hover:text-white font-bold uppercase tracking-widest rounded-none h-14 px-10 text-lg transition-all"
+                  >
+                    View Race Hub
+                  </Button>
+                </div>
+
+                {/* Right: Countdown */}
+                {nextSession && (
+                  <div className="flex-1 w-full lg:w-auto flex flex-col items-center justify-center bg-gray-900/30 border border-gray-800 p-8 backdrop-blur-sm">
+                    <div className="text-gray-500 font-mono text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-red-600" />
+                      Upcoming Session: <span className="text-white font-bold">{nextSession.name}</span>
+                    </div>
+                    <Countdown targetDate={nextSession.date} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Grid Layout */}
         <div className="w-full">
           {isLoadingSchedule || isLoadingResults ? (
@@ -163,18 +328,24 @@ const Races = () => {
                   animate={isRacesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
-                  className="group cursor-pointer"
+                  className={`group cursor-pointer ${!race.isUpcoming && !race.result ? 'opacity-50 hover:opacity-100' : ''}`}
                 >
                   <div className="bg-black border-2 border-gray-800 hover:border-red-600 transition-colors h-full flex flex-col relative overflow-hidden">
                     {/* Status Indicator */}
-                    <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider ${race.isOngoing ? 'bg-yellow-500 text-black' :
-                        race.isUpcoming ? 'bg-blue-600 text-white' :
-                          'bg-gray-800 text-gray-400'
+                    <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider z-10 ${race.isUpcoming ? 'bg-blue-600 text-white' :
+                        'bg-gray-800 text-gray-400'
                       }`}>
-                      {race.isOngoing ? 'Live' : race.isUpcoming ? 'Upcoming' : 'Finished'}
+                      {race.isUpcoming ? 'Upcoming' : 'Finished'}
                     </div>
 
-                    <div className="p-6 flex-grow">
+                    {/* Sprint Indicator */}
+                    {race.isSprint && (
+                      <div className="absolute top-0 left-0 px-3 py-1 bg-yellow-500 text-black text-xs font-bold uppercase tracking-wider z-10 flex items-center gap-1">
+                        <Zap className="w-3 h-3" /> Sprint
+                      </div>
+                    )}
+
+                    <div className="p-6 flex-grow relative">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-8 bg-gray-900 border border-gray-700 flex items-center justify-center overflow-hidden">
                           {race.countryCode && (
@@ -193,7 +364,7 @@ const Races = () => {
 
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Calendar className="w-4 h-4" />
+                          <CalendarIcon className="w-4 h-4" />
                           <span className="font-mono">{race.displayDate}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -229,9 +400,8 @@ const Races = () => {
           )}
         </div>
       </main>
-      <LandingFooter />
     </div>
   );
 };
 
-export default Races;
+export default Calendar;

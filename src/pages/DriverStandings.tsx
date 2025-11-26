@@ -4,12 +4,12 @@ import { motion, useInView } from 'framer-motion';
 import {
   ArrowLeft, Trophy, MinusCircle, Award,
   AlertCircle, ArrowUp, ArrowDown, ChevronDown,
-  User, Flag, Medal, Clock
+  User, Flag, Medal, Clock, Crown
 } from 'lucide-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import LandingFooter from '@/components/LandingFooter';
 import { Button } from "@/components/ui/button";
-import { fetchDriverStandings, DriverStanding } from '@/lib/api';
+import { fetchDriverStandings, DriverStanding, fetchSchedule, fetchRaceResults, ScheduleEvent, RaceResult } from '@/lib/api';
+import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
@@ -89,10 +89,26 @@ const DriverStandings = () => {
   const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.1 });
 
   // Fetch Driver Standings
-  const { data: driverStandings, isLoading, error, isError } = useQuery<DriverStanding[]>({
+  const { data: driverStandings, isLoading: isLoadingStandings, error: standingsError, isError: isStandingsError } = useQuery<DriverStanding[]>({
     queryKey: ['driverStandings', selectedYear],
     queryFn: () => fetchDriverStandings(selectedYear),
   });
+
+  // Fetch Schedule for championship calculation
+  const { data: schedule } = useQuery<ScheduleEvent[]>({
+    queryKey: ['schedule', selectedYear],
+    queryFn: () => fetchSchedule(selectedYear),
+  });
+
+  // Fetch Race Results for championship calculation
+  const { data: raceResults } = useQuery<RaceResult[]>({
+    queryKey: ['raceResults', selectedYear],
+    queryFn: () => fetchRaceResults(selectedYear),
+  });
+
+  const isLoading = isLoadingStandings;
+  const isError = isStandingsError;
+  const error = standingsError;
 
   // Function to determine change indicator color and icon
   const getChangeIndicator = (change: number | undefined) => {
@@ -117,6 +133,18 @@ const DriverStandings = () => {
     if (simpleName.includes('sauber')) return 'alfaromeo';
     if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
     return 'gray';
+  }
+
+  const top3 = driverStandings?.slice(0, 3) || [];
+  const rest = driverStandings?.slice(3) || [];
+
+  // Calculate Championship Status
+  let championshipStatus: 'leader' | 'champion' = 'leader';
+  if (driverStandings && driverStandings.length >= 2 && schedule && raceResults) {
+    const p1Points = driverStandings[0].points;
+    const p2Points = driverStandings[1].points;
+    const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'driver', selectedYear);
+    championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
   }
 
   return (
@@ -175,7 +203,7 @@ const DriverStandings = () => {
           </div>
         </div>
 
-        {/* Standings List */}
+        {/* Content */}
         <div className="w-full">
           {isLoading ? (
             <div className="space-y-4">
@@ -192,90 +220,148 @@ const DriverStandings = () => {
               </p>
             </div>
           ) : driverStandings && driverStandings.length > 0 ? (
-            <div className="space-y-4">
-              {driverStandings.map((driver, index) => {
-                const indicator = getChangeIndicator(driver.points_change);
-                const teamColor = getTeamColorClass(driver.team);
-                const driverIsRookie = isRookie(driver.code, selectedYear);
-                const driverNumber = getDriverNumber(driver.code, selectedYear);
-
-                return (
+            <>
+              {/* Podium Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end">
+                {/* P2 */}
+                {top3[1] && (
                   <motion.div
-                    key={driver.code}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={isStandingsInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="group"
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="order-2 md:order-1 relative group"
                   >
-                    <div className={cn(
-                      "flex items-center justify-between p-4 md:p-6 bg-black border-2 border-gray-800 hover:border-red-600 transition-all duration-300 relative overflow-hidden",
-                      index === 0 ? "border-yellow-500/50" : ""
-                    )}>
-                      {/* Team Color Bar */}
-                      <div className={cn("absolute left-0 top-0 bottom-0 w-2", `bg-f1-${teamColor}`)} />
-
-                      <div className="flex items-center gap-6 md:gap-12 pl-4">
-                        {/* Rank */}
-                        <div className="w-12 text-center">
-                          <span className={cn(
-                            "text-3xl md:text-4xl font-black italic tracking-tighter",
-                            index === 0 ? "text-yellow-500" :
-                              index === 1 ? "text-gray-300" :
-                                index === 2 ? "text-amber-700" : "text-white"
-                          )}>
-                            {driver.rank}
-                          </span>
-                        </div>
-
-                        {/* Driver Info */}
-                        <div className="flex items-center gap-4">
-                          {driverNumber && (
-                            <div className="hidden md:flex w-12 h-12 items-center justify-center font-black text-xl bg-gray-900 border border-gray-800 text-gray-500 group-hover:text-white transition-colors">
-                              {driverNumber}
-                            </div>
-                          )}
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h2 className="text-xl md:text-2xl font-bold uppercase tracking-tight">{driver.name}</h2>
-                              {driverIsRookie && (
-                                <span className="text-[10px] font-bold uppercase bg-blue-600 text-white px-1.5 py-0.5">Rookie</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm font-mono text-gray-500">
-                              <span className={cn("w-2 h-2 rounded-full", `bg-f1-${teamColor}`)}></span>
-                              <span>{driver.team}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="flex items-center gap-8 md:gap-16 pr-4">
-                        <div className="hidden md:block text-right">
-                          <div className="text-2xl font-bold">{driver.wins}</div>
-                          <div className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Wins</div>
-                        </div>
-                        <div className="hidden md:block text-right">
-                          <div className="text-2xl font-bold">{driver.podiums}</div>
-                          <div className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Podiums</div>
-                        </div>
-                        <div className="text-right min-w-[80px]">
-                          <div className="text-3xl font-black text-white">{driver.points}</div>
-                          <div className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
-                            <span>PTS</span>
-                            {indicator && (
-                              <span className={indicator.color}>
-                                {indicator.icon}
-                              </span>
-                            )}
-                          </div>
+                    <div className="bg-black border-2 border-gray-800 hover:border-gray-500 transition-colors p-6 relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[1].team)}`} />
+                      <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">2</div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[1].team}</div>
+                        <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[1].name}</h2>
+                        <div className="flex items-end gap-2">
+                          <span className="text-4xl font-black text-white">{top3[1].points}</span>
+                          <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
                         </div>
                       </div>
                     </div>
                   </motion.div>
-                );
-              })}
-            </div>
+                )}
+
+                {/* P1 */}
+                {top3[0] && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0 }}
+                    className="order-1 md:order-2 relative group transform md:-translate-y-8"
+                  >
+                    <div className="bg-black border-2 border-yellow-500 p-8 relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)]">
+                      <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[0].team)}`} />
+                      <div className="absolute -top-4 -right-4 text-yellow-500/10">
+                        <Crown className="w-32 h-32" />
+                      </div>
+                      <div className="relative z-10 text-center">
+                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4">
+                          {championshipStatus === 'champion' ? "World Champion" : "World Champion Leader"}
+                        </div>
+                        <div className="text-sm font-mono text-gray-400 uppercase mb-2">{top3[0].team}</div>
+                        <h2 className="text-4xl font-black uppercase leading-none mb-6">{top3[0].name}</h2>
+                        <div className="flex justify-center items-end gap-2">
+                          <span className="text-6xl font-black text-white">{top3[0].points}</span>
+                          <span className="text-lg font-mono text-gray-500 mb-2">PTS</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* P3 */}
+                {top3[2] && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="order-3 relative group"
+                  >
+                    <div className="bg-black border-2 border-gray-800 hover:border-amber-700 transition-colors p-6 relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[2].team)}`} />
+                      <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">3</div>
+                      <div className="relative z-10">
+                        <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[2].team}</div>
+                        <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[2].name}</h2>
+                        <div className="flex items-end gap-2">
+                          <span className="text-4xl font-black text-white">{top3[2].points}</span>
+                          <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Rest of the Grid */}
+              <div className="space-y-2">
+                {rest.map((driver, index) => {
+                  const realIndex = index + 3;
+                  const indicator = getChangeIndicator(driver.points_change);
+                  const teamColor = getTeamColorClass(driver.team);
+                  const driverIsRookie = isRookie(driver.code, selectedYear);
+                  const driverNumber = getDriverNumber(driver.code, selectedYear);
+
+                  return (
+                    <motion.div
+                      key={driver.code}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={isStandingsInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group"
+                    >
+                      <div className="flex items-center justify-between p-4 bg-black border border-gray-800 hover:border-red-600 transition-all duration-300 relative overflow-hidden">
+                        {/* Hover Effect */}
+                        <div className="absolute inset-0 bg-red-600/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
+
+                        <div className="flex items-center gap-6 relative z-10">
+                          <div className="w-8 text-center font-mono text-gray-500 font-bold">
+                            {driver.rank}
+                          </div>
+                          <div className={`w-1 h-8 bg-f1-${teamColor}`} />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold uppercase text-lg">{driver.name}</h3>
+                              {driverIsRookie && (
+                                <span className="text-[10px] font-bold uppercase bg-blue-600 text-white px-1.5 py-0.5">Rookie</span>
+                              )}
+                            </div>
+                            <div className="text-xs font-mono text-gray-500 uppercase">{driver.team}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-8 relative z-10">
+                          <div className="hidden md:block text-right">
+                            <div className="text-sm font-bold text-white">{driver.wins}</div>
+                            <div className="text-[10px] text-gray-600 uppercase">Wins</div>
+                          </div>
+                          <div className="hidden md:block text-right">
+                            <div className="text-sm font-bold text-white">{driver.podiums}</div>
+                            <div className="text-[10px] text-gray-600 uppercase">Podiums</div>
+                          </div>
+                          <div className="w-24 text-right">
+                            <div className="text-xl font-black text-white">{driver.points}</div>
+                            <div className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                              <span>PTS</span>
+                              {indicator && (
+                                <span className={indicator.color}>
+                                  {indicator.icon}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="text-center py-20 border-2 border-gray-800 border-dashed">
               <p className="text-gray-500 font-mono">No standings found for {selectedYear}.</p>
@@ -283,7 +369,6 @@ const DriverStandings = () => {
           )}
         </div>
       </main>
-      <LandingFooter />
     </div>
   );
 };

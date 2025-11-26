@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'; // Import useMemo and useRef
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
-// Import new API function and update existing one
 import { fetchSessionDrivers, fetchSectorComparison, fetchDriverLapNumbers, fetchTelemetrySpeed, fetchLapTimes, SessionDriver, SectorComparisonData, SpeedDataPoint, LapTimeDataPoint } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn, exportChartAsImage } from "@/lib/utils";
-import { User, Clock, Download, BarChart2 } from 'lucide-react'; // Import icons including Download and BarChart2
+import { User, Clock, Download, BarChart2, AlertCircle } from 'lucide-react';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle } from 'lucide-react';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-// Interface definitions
 interface CircuitComparisonChartProps {
   className?: string;
   delay?: number;
@@ -23,19 +19,15 @@ interface CircuitComparisonChartProps {
   session: string;
   initialDriver1?: string;
   initialDriver2?: string;
-  onDriversSelected?: (data: {driver1: string, driver2: string, lap1: string | number, lap2: string | number, shouldLoadChart: boolean}) => void;
+  onDriversSelected?: (data: { driver1: string, driver2: string, lap1: string | number, lap2: string | number, shouldLoadChart: boolean }) => void;
 }
 
-// Define a new interface for lap time information
 interface LapTimeInfo {
   lapNumber: number;
-  lapTime: string; // formatted as "1:23.456"
-  lapTimeRaw: number; // raw time in seconds
+  lapTime: string;
+  lapTimeRaw: number;
 }
 
-// Note: TrackSection and SectorComparisonData interfaces remain the same as before
-
-// Define circuit comparison chart component
 const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   className,
   delay = 0,
@@ -49,20 +41,14 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
-  // State for selected drivers and laps
   const [selectedDriver1, setSelectedDriver1] = useState<string>(initialDriver1);
   const [selectedDriver2, setSelectedDriver2] = useState<string>(initialDriver2);
   const [selectedLap1, setSelectedLap1] = useState<string | number>('fastest');
   const [selectedLap2, setSelectedLap2] = useState<string | number>('fastest');
-
-  // Add state for tracking fastest lap information
   const [fastestLapInfo1, setFastestLapInfo1] = useState<LapTimeInfo | null>(null);
   const [fastestLapInfo2, setFastestLapInfo2] = useState<LapTimeInfo | null>(null);
-
-  // Add shouldLoadChart state
   const [shouldLoadChart, setShouldLoadChart] = useState(false);
 
-  // Callback to parent component when drivers or shouldLoadChart changes
   useEffect(() => {
     if (onDriversSelected) {
       onDriversSelected({
@@ -75,93 +61,72 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     }
   }, [selectedDriver1, selectedDriver2, selectedLap1, selectedLap2, shouldLoadChart, onDriversSelected]);
 
-  // Fetch available drivers for this session
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session], // Keep this query
+    queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
     staleTime: Infinity, gcTime: 1000 * 60 * 60 * 24,
     enabled: !!year && !!event && !!session,
   });
 
-  // Initialize driver selections when data is available
   useEffect(() => {
     if (availableDrivers && availableDrivers.length >= 2) {
-      // Set defaults to the first two drivers if available
       setSelectedDriver1(availableDrivers[0]?.code || "");
       setSelectedDriver2(availableDrivers[1]?.code || "");
-      // Reset laps to fastest when drivers are initialized/changed by availableDrivers
       setSelectedLap1('fastest');
       setSelectedLap2('fastest');
     }
   }, [availableDrivers]);
 
-  // Fetch lap numbers for Driver 1
   const { data: lapTimes1, isLoading: isLoadingLaps1 } = useQuery<number[]>({
     queryKey: ['driverLapNumbers', year, event, session, selectedDriver1],
     queryFn: () => fetchDriverLapNumbers(year, event, session, selectedDriver1),
-    staleTime: 1000 * 60 * 15, // Cache for 15 mins
+    staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
     enabled: !!year && !!event && !!session && !!selectedDriver1,
   });
 
-  // Fetch lap numbers for Driver 2
   const { data: lapTimes2, isLoading: isLoadingLaps2 } = useQuery<number[]>({
     queryKey: ['driverLapNumbers', year, event, session, selectedDriver2],
     queryFn: () => fetchDriverLapNumbers(year, event, session, selectedDriver2),
-    staleTime: 1000 * 60 * 15, // Cache for 15 mins
+    staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
     enabled: !!year && !!event && !!session && !!selectedDriver2,
   });
 
-  // Update lap options when lap times change and handle reset
   const [lapOptions1, setLapOptions1] = useState<(number | 'fastest')[]>(['fastest']);
   const [lapOptions2, setLapOptions2] = useState<(number | 'fastest')[]>(['fastest']);
 
-  // Handle lap options for driver 1
   useEffect(() => {
-    // Don't update if there are no valid lap times
     if (lapTimes1 && lapTimes1.length > 0) {
       setLapOptions1(['fastest', ...lapTimes1]);
     } else {
-      // Reset to default if no lap times
       setLapOptions1(['fastest']);
     }
-
-    // Reset selected lap when driver changes (not on initial load)
     if (selectedDriver1 && lapTimes1 !== undefined && selectedLap1 !== 'fastest') {
       setSelectedLap1('fastest');
     }
   }, [lapTimes1, selectedDriver1]);
 
-  // Handle lap options for driver 2
   useEffect(() => {
-    // Don't update if there are no valid lap times
     if (lapTimes2 && lapTimes2.length > 0) {
       setLapOptions2(['fastest', ...lapTimes2]);
     } else {
-      // Reset to default if no lap times
       setLapOptions2(['fastest']);
     }
-
-    // Reset selected lap when driver changes (not on initial load)
     if (selectedDriver2 && lapTimes2 !== undefined && selectedLap2 !== 'fastest') {
       setSelectedLap2('fastest');
     }
   }, [lapTimes2, selectedDriver2]);
 
-  // Fetch sector comparison data - now includes selected laps
   const { data: comparisonData, isLoading: isLoadingComparison, error, isError } = useQuery<SectorComparisonData>({
-    // Include selected laps in the query key
     queryKey: ['sectorComparison', year, event, session, selectedDriver1, selectedDriver2, selectedLap1, selectedLap2],
-    // Pass selected laps to the API function
     queryFn: () => fetchSectorComparison(year, event, session, selectedDriver1, selectedDriver2, selectedLap1, selectedLap2),
-    staleTime: 1000 * 60 * 10, // Cache comparison for 10 mins
+    staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
     retry: 1,
-    enabled: !!year && !!event && !!session && !!selectedDriver1 && !!selectedDriver2 && selectedDriver1 !== selectedDriver2 && shouldLoadChart, // Include shouldLoadChart
+    enabled: !!year && !!event && !!session && !!selectedDriver1 && !!selectedDriver2 && selectedDriver1 !== selectedDriver2 && shouldLoadChart,
   });
 
-  // Fetch speed telemetry data for Driver 1
   const { data: speedData1, isLoading: isLoadingSpeed1 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver1, selectedLap1],
     queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver1, selectedLap1),
@@ -171,7 +136,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     enabled: !!year && !!event && !!session && !!selectedDriver1 && !!selectedLap1 && shouldLoadChart,
   });
 
-  // Fetch speed telemetry data for Driver 2
   const { data: speedData2, isLoading: isLoadingSpeed2 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver2, selectedLap2],
     queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver2, selectedLap2),
@@ -181,42 +145,34 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     enabled: !!year && !!event && !!session && !!selectedDriver2 && !!selectedLap2 && shouldLoadChart,
   });
 
-  // Fetch lap times data for driver 1
   const { data: lapTimesData1 } = useQuery<LapTimeDataPoint[]>({
     queryKey: ['lapTimes', year, event, session, [selectedDriver1]],
     queryFn: () => fetchLapTimes(year, event, session, [selectedDriver1]),
-    staleTime: 1000 * 60 * 15, // Cache for 15 mins
+    staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
     enabled: !!year && !!event && !!session && !!selectedDriver1 && shouldLoadChart,
   });
 
-  // Fetch lap times data for driver 2
   const { data: lapTimesData2 } = useQuery<LapTimeDataPoint[]>({
     queryKey: ['lapTimes', year, event, session, [selectedDriver2]],
     queryFn: () => fetchLapTimes(year, event, session, [selectedDriver2]),
-    staleTime: 1000 * 60 * 15, // Cache for 15 mins
+    staleTime: 1000 * 60 * 15,
     gcTime: 1000 * 60 * 30,
     enabled: !!year && !!event && !!session && !!selectedDriver2 && shouldLoadChart,
   });
 
-  // Format lap time from seconds to min:sec.ms format
   const formatLapTime = (timeInSeconds: number | null): string => {
     if (timeInSeconds === null || isNaN(timeInSeconds)) return "--:--.---";
-    
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     const milliseconds = Math.round((timeInSeconds % 1) * 1000);
-    
     return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
   };
 
-  // Process fastest lap information for driver 1
   useEffect(() => {
     if (lapTimesData1 && selectedLap1 === 'fastest' && selectedDriver1) {
-      // Find the fastest lap
       let fastestLapNumber = 0;
       let fastestTime = Infinity;
-      
       lapTimesData1.forEach(lap => {
         const lapTime = lap[selectedDriver1] as number;
         if (lapTime && lapTime > 0 && lapTime < fastestTime) {
@@ -224,7 +180,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
           fastestLapNumber = lap.LapNumber;
         }
       });
-      
       if (fastestLapNumber > 0) {
         setFastestLapInfo1({
           lapNumber: fastestLapNumber,
@@ -235,10 +190,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         setFastestLapInfo1(null);
       }
     } else if (selectedLap1 !== 'fastest' && lapTimesData1 && typeof selectedLap1 === 'number') {
-      // Get info for the specific selected lap
       const lapData = lapTimesData1.find(lap => lap.LapNumber === selectedLap1);
       const lapTime = lapData ? lapData[selectedDriver1] as number : null;
-      
       if (lapTime && lapTime > 0) {
         setFastestLapInfo1({
           lapNumber: selectedLap1,
@@ -251,13 +204,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     }
   }, [lapTimesData1, selectedDriver1, selectedLap1]);
 
-  // Process fastest lap information for driver 2
   useEffect(() => {
     if (lapTimesData2 && selectedLap2 === 'fastest' && selectedDriver2) {
-      // Find the fastest lap
       let fastestLapNumber = 0;
       let fastestTime = Infinity;
-      
       lapTimesData2.forEach(lap => {
         const lapTime = lap[selectedDriver2] as number;
         if (lapTime && lapTime > 0 && lapTime < fastestTime) {
@@ -265,7 +215,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
           fastestLapNumber = lap.LapNumber;
         }
       });
-      
       if (fastestLapNumber > 0) {
         setFastestLapInfo2({
           lapNumber: fastestLapNumber,
@@ -276,10 +225,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         setFastestLapInfo2(null);
       }
     } else if (selectedLap2 !== 'fastest' && lapTimesData2 && typeof selectedLap2 === 'number') {
-      // Get info for the specific selected lap
       const lapData = lapTimesData2.find(lap => lap.LapNumber === selectedLap2);
       const lapTime = lapData ? lapData[selectedDriver2] as number : null;
-      
       if (lapTime && lapTime > 0) {
         setFastestLapInfo2({
           lapNumber: selectedLap2,
@@ -292,16 +239,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     }
   }, [lapTimesData2, selectedDriver2, selectedLap2]);
 
-  // Combine speed data for both drivers
   const combinedSpeedData = useMemo(() => {
     if (!speedData1 || !speedData2) return [];
-    
-    // Helper function to find nearest data points for interpolation
+
     const findInterpolationPoints = (distance: number, data: SpeedDataPoint[]) => {
-      // Find the closest points before and after the target distance
       let beforePoint: SpeedDataPoint | null = null;
       let afterPoint: SpeedDataPoint | null = null;
-      
       for (let i = 0; i < data.length; i++) {
         if (data[i].Distance <= distance) {
           beforePoint = data[i];
@@ -310,79 +253,48 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
           break;
         }
       }
-      
       return { beforePoint, afterPoint };
     };
-    
-    // Linear interpolation function
+
     const interpolateSpeed = (distance: number, data: SpeedDataPoint[]) => {
-      // If no data, return null
       if (!data.length) return null;
-      
-      // If exact match found, return that value
       const exactMatch = data.find(point => point.Distance === distance);
       if (exactMatch) return exactMatch.Speed;
-      
-      // Find before and after points
       const { beforePoint, afterPoint } = findInterpolationPoints(distance, data);
-      
-      // If only one point found, return that point's speed
       if (!beforePoint) return afterPoint?.Speed || null;
       if (!afterPoint) return beforePoint?.Speed || null;
-      
-      // Calculate interpolated speed
       const distRatio = (distance - beforePoint.Distance) / (afterPoint.Distance - beforePoint.Distance);
       return beforePoint.Speed + distRatio * (afterPoint.Speed - beforePoint.Speed);
     };
-    
-    // Get all unique distances from both datasets
+
     const allDistances = new Set<number>();
     speedData1.forEach(point => allDistances.add(point.Distance));
     speedData2.forEach(point => allDistances.add(point.Distance));
-    
-    // Convert to array and sort
     const distances = Array.from(allDistances).sort((a, b) => a - b);
-    
-    // Sort speed data by distance
     const sortedSpeedData1 = [...speedData1].sort((a, b) => a.Distance - b.Distance);
     const sortedSpeedData2 = [...speedData2].sort((a, b) => a.Distance - b.Distance);
-    
-    // Create interpolated data points
+
     return distances.map(distance => ({
       Distance: distance,
       [`Speed_${selectedDriver1}`]: interpolateSpeed(distance, sortedSpeedData1),
       [`Speed_${selectedDriver2}`]: interpolateSpeed(distance, sortedSpeedData2)
     }));
-    
   }, [speedData1, speedData2, selectedDriver1, selectedDriver2]);
 
-  // Combined loading state including speed data
   const isLoading = isLoadingDrivers || isLoadingComparison || isLoadingLaps1 || isLoadingLaps2 || isLoadingSpeed1 || isLoadingSpeed2;
 
-  // Get driver colors
   let driver1Color = driverColor(selectedDriver1, year);
   let driver2Color = driverColor(selectedDriver2, year);
-
-  // Check if drivers are teammates
   const sameTeam = selectedDriver1 && selectedDriver2 ? areTeammates(selectedDriver1, selectedDriver2, year) : false;
-
-  // Override driver 2 color to white if they are teammates
   if (sameTeam) {
-    driver2Color = '#FFFFFF'; // Use white for driver 2 when teammates
+    driver2Color = '#FFFFFF';
   }
 
-  // Handle chart download
   const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !comparisonData) {
-      return;
-    }
-
+    if (!chartRef.current || isLoading || !comparisonData) return;
     setIsExporting(true);
     try {
-      // Brief delay to ensure chart is fully rendered
       await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Use event name and drivers for the filename
       const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver1}_vs_${selectedDriver2}_circuit_comparison`;
       await exportChartAsImage(chartRef, filename);
     } catch (error) {
@@ -392,20 +304,14 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     }
   };
 
-  // Update chartTitle
-  const chartTitle = title || "Track Dominance Comparison";
-
-  // Update renderContent
   const renderContent = () => {
-    // If chart shouldn't be loaded yet, show load button
     if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[450px] flex flex-col items-center justify-center bg-gray-900/50 rounded-lg gap-4">
-          <p className="text-gray-400">Select drivers and click load to view track dominance data</p>
-          <Button 
+        <div className="w-full h-[450px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
+          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+          <Button
             onClick={() => setShouldLoadChart(true)}
-            variant="secondary"
-            className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
+            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={!selectedDriver1 || !selectedDriver2}
           >
             <BarChart2 className="w-4 h-4 mr-2" />
@@ -417,7 +323,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[500px] flex items-center justify-center bg-gray-900/50 rounded-lg">
+        <div className="w-full h-[500px] flex items-center justify-center bg-gray-900/50 border border-gray-800">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -425,85 +331,74 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
     if (isError || !comparisonData) {
       return (
-        <div className="w-full h-[500px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
+        <div className="w-full h-[500px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
           <AlertCircle className="w-10 h-10 mb-2" />
-          <p className="font-semibold">Error loading circuit comparison data</p>
+          <p className="font-bold uppercase">Error loading comparison data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
           {selectedDriver1 === selectedDriver2 && (
-            <p className="text-sm text-amber-400 mt-4">Please select two different drivers to compare.</p>
+            <p className="text-sm text-amber-400 mt-4 font-mono">Select two different drivers.</p>
           )}
         </div>
       );
     }
 
-    // Map through track sections and render with appropriate colors
     return (
       <div className="w-full">
-        {/* Display selected laps */}
-        <div className="flex justify-between items-center mb-6 text-sm">
+        <div className="flex justify-between items-center mb-6 text-sm font-mono uppercase">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: driver1Color }}></div>
-            <span className="font-semibold">{selectedDriver1}</span>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver1Color }}></div>
+            <span className="font-bold text-white">{selectedDriver1}</span>
             {selectedLap1 === 'fastest' && fastestLapInfo1 ? (
-              <span className="text-xs text-gray-400">
-                (Lap {fastestLapInfo1.lapNumber} - {fastestLapInfo1.lapTime})
+              <span className="text-xs text-gray-500">
+                (L{fastestLapInfo1.lapNumber} - {fastestLapInfo1.lapTime})
               </span>
             ) : (
-              <span className="text-xs text-gray-400">
-                (Lap {selectedLap1 === 'fastest' ? 'Fastest' : selectedLap1}
+              <span className="text-xs text-gray-500">
+                (L{selectedLap1 === 'fastest' ? 'Fastest' : selectedLap1}
                 {selectedLap1 !== 'fastest' && fastestLapInfo1 ? ` - ${fastestLapInfo1.lapTime}` : ''})
               </span>
             )}
           </div>
-          <div className="text-gray-500">vs</div>
+          <div className="text-gray-600 font-bold">vs</div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold">{selectedDriver2}</span>
+            <span className="font-bold text-white">{selectedDriver2}</span>
             {selectedLap2 === 'fastest' && fastestLapInfo2 ? (
-              <span className="text-xs text-gray-400">
-                (Lap {fastestLapInfo2.lapNumber} - {fastestLapInfo2.lapTime})
+              <span className="text-xs text-gray-500">
+                (L{fastestLapInfo2.lapNumber} - {fastestLapInfo2.lapTime})
               </span>
             ) : (
-              <span className="text-xs text-gray-400">
-                (Lap {selectedLap2 === 'fastest' ? 'Fastest' : selectedLap2}
+              <span className="text-xs text-gray-500">
+                (L{selectedLap2 === 'fastest' ? 'Fastest' : selectedLap2}
                 {selectedLap2 !== 'fastest' && fastestLapInfo2 ? ` - ${fastestLapInfo2.lapTime}` : ''})
               </span>
             )}
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: driver2Color }}></div>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver2Color }}></div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Circuit map container */}
-          <div className="circuit-map-container relative w-full h-[400px] bg-gray-900/50 rounded-lg overflow-hidden" data-export="true">
+          <div className="circuit-map-container relative w-full h-[400px] bg-black border border-gray-800 overflow-hidden" data-export="true">
             <svg viewBox="0 0 1000 500" className="w-full h-full">
               <g transform="scale(1,-1) translate(0,-500)">
-                {/* Circuit base outline */}
                 <path
                   d={comparisonData.circuitLayout}
                   fill="none"
-                  stroke="rgba(255, 255, 0, 0.9)"
-                  strokeWidth="10" // Slightly thinner base outline
+                  stroke="#333"
+                  strokeWidth="10"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-
-                {/* Circuit sections highlighting advantages */}
                 {comparisonData.sections.map((section) => {
-                  // Determine which driver has advantage
-                  let strokeColor = "rgba(255, 255, 0, 0.9)"; // Bright yellow
-                  let advantageText = "Neutral or negligible difference";
+                  let strokeColor = "#333";
+                  let advantageText = "Neutral";
 
-                  // Check advantage without threshold
                   if (section.driver1Advantage && section.driver1Advantage > 0) {
-                    // Driver 1 advantage
                     strokeColor = driver1Color;
                     advantageText = `${selectedDriver1} faster by ${Math.abs(section.driver1Advantage).toFixed(3)}s`;
                   } else if (section.driver1Advantage && section.driver1Advantage < 0) {
-                    // Driver 2 advantage
-                    strokeColor = driver2Color; // Will be white if sameTeam is true due to override above
+                    strokeColor = driver2Color;
                     advantageText = `${selectedDriver2} faster by ${Math.abs(section.driver1Advantage).toFixed(3)}s`;
                   } else if (section.driver1Advantage === 0) {
-                    // Explicitly handle exact zero difference as neutral
                     advantageText = "Identical time";
                   }
 
@@ -511,9 +406,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                     <path
                       key={section.id}
                       d={section.path}
-                      fill="none" // No fill for section paths
+                      fill="none"
                       stroke={strokeColor}
-                      strokeWidth="12" // Make section highlight slightly thicker than base
+                      strokeWidth="12"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       data-section-name={section.name}
@@ -526,78 +421,63 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             </svg>
           </div>
 
-          {/* Speed Trace Chart */}
-          <div className="speed-trace-container relative w-full h-[400px] bg-gray-900/50 rounded-lg overflow-hidden">
+          <div className="speed-trace-container relative w-full h-[400px] bg-black border border-gray-800 overflow-hidden">
             {combinedSpeedData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                  data={combinedSpeedData} 
+                <LineChart
+                  data={combinedSpeedData}
                   margin={{ top: 10, right: 20, left: 10, bottom: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(100, 116, 139, 0.3)" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="Distance" 
-                    stroke="rgba(156, 163, 175, 0.7)" 
-                    tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }} 
-                    tickFormatter={(value: number) => `${value.toFixed(0)}m`} 
-                    domain={['dataMin', 'dataMax']} 
-                    label={{ value: 'Distance (m)', position: 'insideBottomRight', offset: -5, fill: 'rgba(156, 163, 175, 0.9)' }}
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                  <XAxis
+                    type="number"
+                    dataKey="Distance"
+                    stroke="#666"
+                    tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+                    tickFormatter={(value: number) => `${value.toFixed(0)}m`}
+                    domain={['dataMin', 'dataMax']}
                   />
-                  <YAxis 
-                    stroke="rgba(156, 163, 175, 0.7)" 
-                    tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }} 
-                    domain={['auto', 'auto']} 
-                    tickFormatter={(value) => `${value}`} 
-                    label={{ value: 'Speed (km/h)', angle: -90, position: 'insideLeft', fill: 'rgba(156, 163, 175, 0.9)' }}
+                  <YAxis
+                    stroke="#666"
+                    tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+                    domain={['auto', 'auto']}
+                    tickFormatter={(value) => `${value}`}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(31, 41, 55, 0.9)', 
-                      borderColor: 'rgba(100, 116, 139, 0.5)', 
-                      color: '#E5E7EB', 
-                      borderRadius: '6px', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.5)' 
-                    }} 
-                    labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }} 
-                    labelFormatter={(label: number) => `Distance: ${label.toFixed(2)}m`}
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#000',
+                      borderColor: '#333',
+                      color: '#fff',
+                      borderRadius: '0px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.8)',
+                      fontFamily: 'monospace'
+                    }}
+                    labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px', borderBottom: '1px solid #333' }}
+                    labelFormatter={(label: number) => `DIST: ${label.toFixed(0)}m`}
                     isAnimationActive={false}
-                    animationDuration={0}
-                    animationEasing="linear"
-                    allowEscapeViewBox={{ x: false, y: true }}
-                    position={{ y: 100 }}
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length > 0) {
-                        // Find the actual data point
                         const dataPoint = payload[0].payload;
-                        
-                        // Get both speeds regardless of which line is hovered
                         const speed1 = dataPoint[`Speed_${selectedDriver1}`];
                         const speed2 = dataPoint[`Speed_${selectedDriver2}`];
-                        
+
                         return (
-                          <div className="custom-tooltip p-2" style={{ 
-                            backgroundColor: 'rgba(31, 41, 55, 0.95)',
-                            border: '1px solid rgba(100, 116, 139, 0.5)',
-                            borderRadius: '6px',
-                            padding: '8px 12px',
-                            boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
-                          }}>
-                            <p className="font-bold text-white border-b border-gray-600 pb-1 mb-2">
-                              Distance: {label.toFixed(2)}m
+                          <div className="p-2 bg-black border border-gray-800 shadow-xl">
+                            <p className="font-bold text-white border-b border-gray-800 pb-1 mb-2 text-xs uppercase">
+                              Dist: {label.toFixed(0)}m
                             </p>
-                            <div className="grid grid-cols-2 gap-x-3 text-sm">
-                              <span>Driver</span>
-                              <span>Speed</span>
-                              
+                            <div className="grid grid-cols-2 gap-x-4 text-xs font-mono">
+                              <span className="text-gray-500">DRIVER</span>
+                              <span className="text-gray-500 text-right">SPEED</span>
+
                               <span style={{ color: driver1Color }}>{selectedDriver1}</span>
-                              <span style={{ color: driver1Color }}>
-                                {speed1 !== null && speed1 !== undefined ? `${speed1.toFixed(1)} km/h` : '-'}
+                              <span className="text-right" style={{ color: driver1Color }}>
+                                {speed1 !== null && speed1 !== undefined ? `${speed1.toFixed(0)}` : '-'}
                               </span>
-                              
+
                               <span style={{ color: driver2Color }}>{selectedDriver2}</span>
-                              <span style={{ color: driver2Color }}>
-                                {speed2 !== null && speed2 !== undefined ? `${speed2.toFixed(1)} km/h` : '-'}
+                              <span className="text-right" style={{ color: driver2Color }}>
+                                {speed2 !== null && speed2 !== undefined ? `${speed2.toFixed(0)}` : '-'}
                               </span>
                             </div>
                           </div>
@@ -606,64 +486,47 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                       return null;
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey={`Speed_${selectedDriver1}`} 
-                    stroke={driver1Color} 
-                    strokeWidth={2} 
-                    dot={false} 
-                    activeDot={{ r: 4, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: driver1Color }} 
-                    name={`Speed_${selectedDriver1}`} 
-                    connectNulls={true} 
+                  <Line
+                    type="monotone"
+                    dataKey={`Speed_${selectedDriver1}`}
+                    stroke={driver1Color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 0, fill: driver1Color }}
+                    name={`Speed_${selectedDriver1}`}
+                    connectNulls={true}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey={`Speed_${selectedDriver2}`} 
-                    stroke={driver2Color} 
-                    strokeWidth={2} 
-                    dot={false} 
-                    activeDot={{ r: 4, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: driver2Color }} 
+                  <Line
+                    type="monotone"
+                    dataKey={`Speed_${selectedDriver2}`}
+                    stroke={driver2Color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 0, fill: driver2Color }}
                     name={`Speed_${selectedDriver2}`}
-                    connectNulls={true} 
+                    connectNulls={true}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-500">
-                Select two drivers and their laps to view speed comparison
+              <div className="w-full h-full flex items-center justify-center text-gray-500 font-mono uppercase text-sm">
+                Select drivers to view speed trace
               </div>
             )}
           </div>
         </div>
 
-        {/* Legend - Updated for lap display */}
-        <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mt-4 text-sm">
+        <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-2 mt-6 text-xs font-mono uppercase tracking-wider text-gray-500">
           <div className="flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 16 16" className="inline-block">
-              <line x1="0" y1="8" x2="16" y2="8" stroke={driver1Color} strokeWidth="3" />
-            </svg>
-            <span>
-              {selectedDriver1} Advantage 
-              {selectedLap1 === 'fastest' && fastestLapInfo1 ? 
-                ` (Lap ${fastestLapInfo1.lapNumber} - ${fastestLapInfo1.lapTime})` : 
-                ` (Lap ${selectedLap1 === 'fastest' ? 'F' : selectedLap1}${selectedLap1 !== 'fastest' && fastestLapInfo1 ? ` - ${fastestLapInfo1.lapTime}` : ''})`}
-            </span>
+            <div className="w-8 h-1" style={{ backgroundColor: driver1Color }}></div>
+            <span>{selectedDriver1} Advantage</span>
           </div>
           <div className="flex items-center gap-2">
-             <svg width="16" height="16" viewBox="0 0 16 16" className="inline-block">
-              <line x1="0" y1="8" x2="16" y2="8" stroke={driver2Color} strokeWidth="3" />
-            </svg>
-            <span>
-              {selectedDriver2} Advantage
-              {selectedLap2 === 'fastest' && fastestLapInfo2 ? 
-                ` (Lap ${fastestLapInfo2.lapNumber} - ${fastestLapInfo2.lapTime})` : 
-                ` (Lap ${selectedLap2 === 'fastest' ? 'F' : selectedLap2}${selectedLap2 !== 'fastest' && fastestLapInfo2 ? ` - ${fastestLapInfo2.lapTime}` : ''})`}
-            </span>
+            <div className="w-8 h-1" style={{ backgroundColor: driver2Color }}></div>
+            <span>{selectedDriver2} Advantage</span>
           </div>
           <div className="flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 16 16" className="inline-block">
-               <line x1="0" y1="8" x2="16" y2="8" stroke="rgba(255, 255, 0, 0.9)" strokeWidth="3" />
-            </svg>
+            <div className="w-8 h-1 bg-gray-800"></div>
             <span>Neutral</span>
           </div>
         </div>
@@ -672,143 +535,129 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   };
 
   return (
-    <Card 
+    <div
       ref={chartRef}
-      className={cn("bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm overflow-hidden rounded-md p-4", className)}
+      className={cn("bg-black border-2 border-gray-800 p-6", className)}
     >
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 border-b border-gray-800 pb-4">
+        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">{title || "Track Dominance"}</h3>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-lg font-semibold text-white">Track Dominance by Lap with Speed Trace</CardTitle>
+            <Select
+              value={selectedDriver1}
+              onValueChange={(value) => {
+                setSelectedDriver1(value);
+                setSelectedLap1('fastest');
+                if (shouldLoadChart) setShouldLoadChart(false);
+              }}
+              disabled={isLoadingDrivers || !availableDrivers}
+            >
+              <SelectTrigger className="w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+                <User className="w-3 h-3 mr-2 opacity-50" />
+                <SelectValue placeholder="Driver 1" />
+              </SelectTrigger>
+              <SelectContent className="bg-black border-gray-700 text-white rounded-none">
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-gray-500 uppercase">Driver 1</SelectLabel>
+                  {availableDrivers?.map((drv) => (
+                    <SelectItem key={`d1-${drv.code}`} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                      {drv.code}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(selectedLap1)}
+              onValueChange={(value) => setSelectedLap1(value === 'fastest' ? 'fastest' : parseInt(value))}
+              disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
+            >
+              <SelectTrigger className="w-[90px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+                <Clock className="w-3 h-3 mr-1 opacity-50" />
+                <SelectValue placeholder="Lap" />
+              </SelectTrigger>
+              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
+                  {lapOptions1.map((lapOpt) => (
+                    <SelectItem key={`d1-lap-${lapOpt}`} value={String(lapOpt)} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                      {lapOpt === 'fastest' ? 'Fastest' : lapOpt}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Driver and Lap selectors */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {/* Driver 1 Controls */}
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedDriver1}
-                onValueChange={(value) => {
-                  setSelectedDriver1(value);
-                  setSelectedLap1('fastest');
-                  // Reset chart loading state when driver changes
-                  if (shouldLoadChart) {
-                    setShouldLoadChart(false);
-                  }
-                }}
-                disabled={isLoadingDrivers || !availableDrivers}
-              >
-                <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                   <User className="w-4 h-4 mr-2 opacity-70"/>
-                   <SelectValue placeholder="Select Driver 1" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
-                  <SelectGroup>
-                    <SelectLabel className="text-xs text-gray-500">Driver 1</SelectLabel>
-                    {availableDrivers?.map((drv) => (
-                      <SelectItem key={`d1-${drv.code}`} value={drv.code} className="text-sm">
-                        {drv.code}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Select
-                value={String(selectedLap1)}
-                onValueChange={(value) => setSelectedLap1(value === 'fastest' ? 'fastest' : parseInt(value))}
-                disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
-              >
-                <SelectTrigger className="w-full sm:w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-xs h-8 focus:border-red-500 focus:ring-red-500">
-                   <Clock className="w-3 h-3 mr-1 opacity-70"/>
-                   <SelectValue placeholder="Lap" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700 text-gray-200 max-h-[200px]">
-                  <SelectGroup>
-                    <SelectLabel className="text-xs text-gray-500">Lap</SelectLabel>
-                    {lapOptions1.map((lapOpt) => (
-                      <SelectItem key={`d1-lap-${lapOpt}`} value={String(lapOpt)} className="text-xs">
-                        {lapOpt === 'fastest' ? 'Fastest' : lapOpt}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+          <span className="text-gray-600 font-bold text-xs">VS</span>
 
-            <span className="text-gray-500 mx-2">vs</span>
-
-            {/* Driver 2 Controls */}
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedDriver2}
-                onValueChange={(value) => {
-                  setSelectedDriver2(value);
-                  setSelectedLap2('fastest');
-                  // Reset chart loading state when driver changes
-                  if (shouldLoadChart) {
-                    setShouldLoadChart(false);
-                  }
-                }}
-                disabled={isLoadingDrivers || !availableDrivers}
-              >
-                <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                   <User className="w-4 h-4 mr-2 opacity-70"/>
-                   <SelectValue placeholder="Select Driver 2" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
-                  <SelectGroup>
-                    <SelectLabel className="text-xs text-gray-500">Driver 2</SelectLabel>
-                    {availableDrivers?.map((drv) => (
-                      <SelectItem key={`d2-${drv.code}`} value={drv.code} className="text-sm">
-                        {drv.code}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Select
-                value={String(selectedLap2)}
-                onValueChange={(value) => setSelectedLap2(value === 'fastest' ? 'fastest' : parseInt(value))}
-                disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
-              >
-                <SelectTrigger className="w-full sm:w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-xs h-8 focus:border-red-500 focus:ring-red-500">
-                   <Clock className="w-3 h-3 mr-1 opacity-70"/>
-                   <SelectValue placeholder="Lap" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700 text-gray-200 max-h-[200px]">
-                  <SelectGroup>
-                    <SelectLabel className="text-xs text-gray-500">Lap</SelectLabel>
-                    {lapOptions2.map((lapOpt) => (
-                      <SelectItem key={`d2-lap-${lapOpt}`} value={String(lapOpt)} className="text-xs">
-                        {lapOpt === 'fastest' ? 'Fastest' : lapOpt}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedDriver2}
+              onValueChange={(value) => {
+                setSelectedDriver2(value);
+                setSelectedLap2('fastest');
+                if (shouldLoadChart) setShouldLoadChart(false);
+              }}
+              disabled={isLoadingDrivers || !availableDrivers}
+            >
+              <SelectTrigger className="w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+                <User className="w-3 h-3 mr-2 opacity-50" />
+                <SelectValue placeholder="Driver 2" />
+              </SelectTrigger>
+              <SelectContent className="bg-black border-gray-700 text-white rounded-none">
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-gray-500 uppercase">Driver 2</SelectLabel>
+                  {availableDrivers?.map((drv) => (
+                    <SelectItem key={`d2-${drv.code}`} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                      {drv.code}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(selectedLap2)}
+              onValueChange={(value) => setSelectedLap2(value === 'fastest' ? 'fastest' : parseInt(value))}
+              disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
+            >
+              <SelectTrigger className="w-[90px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+                <Clock className="w-3 h-3 mr-1 opacity-50" />
+                <SelectValue placeholder="Lap" />
+              </SelectTrigger>
+              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
+                  {lapOptions2.map((lapOpt) => (
+                    <SelectItem key={`d2-lap-${lapOpt}`} value={String(lapOpt)} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                      {lapOpt === 'fastest' ? 'Fastest' : lapOpt}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {renderContent()}
-        {!isLoading && comparisonData && (
-          <div className="mt-4 flex justify-end">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="h-7 px-2.5 text-xs bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-1.5 border border-gray-700" 
-              onClick={handleDownload}
-              disabled={isExporting}
-              title="Download chart"
-            >
-              <Download className="h-3.5 w-3.5" />
-              {isExporting ? "Exporting..." : "Download Chart"}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {renderContent()}
+
+      {!isLoading && comparisonData && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2.5 text-xs text-gray-500 hover:text-white flex items-center gap-1.5 uppercase font-bold tracking-wider"
+            onClick={handleDownload}
+            disabled={isExporting}
+          >
+            <Download className="h-3.5 w-3.5" />
+            {isExporting ? "Exporting..." : "Download Chart"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 
