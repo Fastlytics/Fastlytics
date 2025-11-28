@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing"; // Updated import
+import AboutUs from "./pages/AboutUs";
 import Race from "./pages/Race";
 import TeamStandings from "./pages/TeamStandings";
 import DriverStandings from "./pages/DriverStandings";
@@ -48,6 +49,7 @@ const App = () => (
             <Routes>
               {/* Landing Page Route (with LandingFooter) */}
               <Route path="/" element={<LandingLayout><Landing /></LandingLayout>} />
+              <Route path="/about" element={<MainLayout><AboutUs /></MainLayout>} />
 
               {/* Public Info Pages */}
               <Route path="/privacy-policy" element={<MainLayout><PrivacyPolicy /></MainLayout>} />

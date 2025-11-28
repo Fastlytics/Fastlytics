@@ -17,12 +17,11 @@ const LandingNavbar = () => {
   }, []);
 
   return (
-    <nav 
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${
-        scrolled 
-          ? 'bg-black/90 backdrop-blur-md border-red-600 py-4' 
-          : 'bg-transparent border-transparent py-6'
-      }`}
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${scrolled
+        ? 'bg-black/90 backdrop-blur-md border-red-600 py-4'
+        : 'bg-transparent border-transparent py-6'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
@@ -41,8 +40,9 @@ const LandingNavbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Features</a>
             <a href="#pricing" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Pricing</a>
+            <Link to="/about" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">About</Link>
             <Link to="/dashboard">
-              <Button 
+              <Button
                 className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 hover:border-red-500 rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all duration-300"
               >
                 <span className="skew-x-[10deg] group-hover:skew-x-0">Launch App</span>
@@ -51,7 +51,7 @@ const LandingNavbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="md:hidden flex flex-col gap-1.5 p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -72,20 +72,27 @@ const LandingNavbar = () => {
             className="md:hidden bg-black border-b-2 border-red-600 overflow-hidden"
           >
             <div className="px-4 py-8 flex flex-col gap-6">
-              <a 
-                href="#features" 
+              <a
+                href="#features"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Features
               </a>
-              <a 
-                href="#pricing" 
+              <a
+                href="#pricing"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Pricing
               </a>
+              <Link
+                to="/about"
+                className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </Link>
               <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 rounded-none py-6">
                   Launch App

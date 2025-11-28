@@ -49,7 +49,7 @@ const Landing: React.FC = () => {
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           <div className="max-w-5xl mx-auto px-4 text-center relative z-10">
             <h2 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter text-white mb-8">
-              Ready to <span className="text-black">Dominate?</span>
+              Ready to Dive <span className="text-black">Deep?</span>
             </h2>
             <p className="text-2xl text-white/90 font-mono mb-12 max-w-2xl mx-auto">
               Join the most advanced F1 analytics platform today.

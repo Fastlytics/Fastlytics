@@ -83,7 +83,7 @@ export const SEO = ({
                         "name": "Subhash Gottumulla"
                     },
                     "sameAs": [
-                        "https://twitter.com/fastlytics",
+                        "https://x.com/fastlytics",
                         "https://instagram.com/fastlytics"
                     ]
                 })}
