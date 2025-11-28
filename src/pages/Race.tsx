@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Trophy, Flag, BarChart2, Clock, Zap, Calendar, MapPin, Users, Timer, TrendingUp, Map } from 'lucide-react';
+import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import RacingChart from '@/components/RacingChart';
 import TireStrategy from '@/components/TireStrategy';
@@ -164,7 +164,7 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
                   ) : col.key === 'driver' ? (
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-white group-hover:text-red-500 transition-colors">{res.fullName}</span>
-                      {res.isFastestLap && <Clock className="w-3 h-3 text-purple-500" />}
+                      {res.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
                     </div>
                   ) : col.key === 'team' ? (
                     <span className="flex items-center gap-2 text-sm text-gray-400">
@@ -395,7 +395,7 @@ const Race = () => {
               className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
               onClick={() => navigate(-1)}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              <ArrowLeft01Icon className="mr-2 h-4 w-4" /> Back
             </Button>
             <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
               {eventName}
@@ -433,14 +433,14 @@ const Race = () => {
               {/* Hero Countdown Section */}
               <div className="bg-gray-900/30 border border-gray-800 p-8 md:p-12 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Flag className="w-64 h-64" />
+                  <Flag01Icon className="w-64 h-64" />
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-red-500 font-bold uppercase tracking-widest text-sm">Incoming Transmission</span>
+                      <span className="text-red-500 font-bold uppercase tracking-widest text-sm">Upcoming Session</span>
                     </div>
                     <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-white mb-2">
                       Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
@@ -558,14 +558,14 @@ const Race = () => {
             {/* Sticky Sidebar */}
             <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-32 space-y-1">
-                <NavItem id="overview" label="Overview" icon={Trophy} active={activeSection === 'overview'} onClick={() => scrollToSection('overview')} />
-                <NavItem id="results" label="Results" icon={Users} active={activeSection === 'results'} onClick={() => scrollToSection('results')} />
+                <NavItem id="overview" label="Overview" icon={ChampionIcon} active={activeSection === 'overview'} onClick={() => scrollToSection('overview')} />
+                <NavItem id="results" label="Results" icon={UserGroupIcon} active={activeSection === 'results'} onClick={() => scrollToSection('results')} />
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <NavItem id="strategy" label="Strategy" icon={Flag} active={activeSection === 'strategy'} onClick={() => scrollToSection('strategy')} />
+                  <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => scrollToSection('strategy')} />
                 )}
-                <NavItem id="laptimes" label="Lap Times" icon={Timer} active={activeSection === 'laptimes'} onClick={() => scrollToSection('laptimes')} />
-                <NavItem id="dominance" label="Dominance" icon={Map} active={activeSection === 'dominance'} onClick={() => scrollToSection('dominance')} />
-                <NavItem id="telemetry" label="Telemetry" icon={BarChart2} active={activeSection === 'telemetry'} onClick={() => scrollToSection('telemetry')} />
+                <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => scrollToSection('laptimes')} />
+                <NavItem id="dominance" label="Dominance" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => scrollToSection('dominance')} />
+                <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => scrollToSection('telemetry')} />
               </div>
             </aside>
 
@@ -574,17 +574,17 @@ const Race = () => {
 
               {/* 1. Overview Section */}
               <section id="overview" className="scroll-mt-32">
-                <SectionHeader title="Race Overview" icon={Trophy} />
+                <SectionHeader title="Race Overview" icon={ChampionIcon} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {(selectedSession === 'R' || selectedSession === 'Sprint') ? (
                     <>
-                      {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<Trophy />} />}
-                      {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<Zap />} />}
-                      {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock />} />}
+                      {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} />}
+                      {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} />}
+                      {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} />}
                     </>
                   ) : (
                     topPerformers.map((p, i) => (
-                      <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <Trophy /> : <TrendingUp />} />
+                      <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />} />
                     ))
                   )}
                 </div>
@@ -592,14 +592,14 @@ const Race = () => {
 
               {/* 2. Results Section */}
               <section id="results" className="scroll-mt-32">
-                <SectionHeader title="Session Results" icon={Users} />
+                <SectionHeader title="Session Results" icon={UserGroupIcon} />
                 {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} />}
               </section>
 
               {/* 3. Strategy Section (Race Only) */}
               {(selectedSession === 'R' || selectedSession === 'Sprint') && (
                 <section id="strategy" className="scroll-mt-32">
-                  <SectionHeader title="Tire Strategy" icon={Flag} />
+                  <SectionHeader title="Tire Strategy" icon={Flag01Icon} />
                   <div className="bg-black border-2 border-gray-800 p-6">
                     <TireStrategy year={year!} event={eventName} session={selectedSession} />
                   </div>
@@ -614,7 +614,7 @@ const Race = () => {
 
               {/* 4. Lap Times Section */}
               <section id="laptimes" className="scroll-mt-32">
-                <SectionHeader title="Lap Time Analysis" icon={Timer} />
+                <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
                 <div className="bg-black border-2 border-gray-800 p-6">
                   <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
                 </div>
@@ -622,7 +622,7 @@ const Race = () => {
 
               {/* 5. Dominance Section */}
               <section id="dominance" className="scroll-mt-32">
-                <SectionHeader title="Track Dominance" icon={Map} />
+                <SectionHeader title="Track Dominance" icon={MapsLocation01Icon} />
                 <div className="bg-black border-2 border-gray-800 p-6">
                   <CircuitComparisonChart year={year!} event={eventName} session={selectedSession} onDriversSelected={setCircuitDrivers} />
                 </div>
@@ -630,7 +630,7 @@ const Race = () => {
 
               {/* 6. Telemetry Section */}
               <section id="telemetry" className="scroll-mt-32">
-                <SectionHeader title="Telemetry Data" icon={BarChart2} />
+                <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
 
                 {/* Comparison Charts if selected */}
                 {circuitDrivers.shouldLoadChart && (

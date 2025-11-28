@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Tick01Icon } from 'hugeicons-react';
 import { Button } from "@/components/ui/button";
 
 const PricingSection = () => {
@@ -27,15 +27,15 @@ const PricingSection = () => {
                         </div>
                         <ul className="space-y-4 mb-8 flex-grow font-mono text-sm text-gray-400">
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-gray-600" />
+                                <Tick01Icon className="w-5 h-5 text-gray-600" />
                                 <span>Race Results</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-gray-600" />
+                                <Tick01Icon className="w-5 h-5 text-gray-600" />
                                 <span>Driver Standings</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-gray-600" />
+                                <Tick01Icon className="w-5 h-5 text-gray-600" />
                                 <span>Basic Lap Times</span>
                             </li>
                         </ul>
@@ -58,19 +58,19 @@ const PricingSection = () => {
                         </div>
                         <ul className="space-y-4 mb-8 flex-grow font-mono text-sm text-gray-300">
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-red-600" />
+                                <Tick01Icon className="w-5 h-5 text-red-600" />
                                 <span>Everything in Rookie</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-red-600" />
+                                <Tick01Icon className="w-5 h-5 text-red-600" />
                                 <span>Live Telemetry</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-red-600" />
+                                <Tick01Icon className="w-5 h-5 text-red-600" />
                                 <span>Speed Traces</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-red-600" />
+                                <Tick01Icon className="w-5 h-5 text-red-600" />
                                 <span>Tire Strategy Analysis</span>
                             </li>
                         </ul>
@@ -90,19 +90,19 @@ const PricingSection = () => {
                         </div>
                         <ul className="space-y-4 mb-8 flex-grow font-mono text-sm text-gray-400">
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-white" />
+                                <Tick01Icon className="w-5 h-5 text-white" />
                                 <span>All Pro Features</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-white" />
+                                <Tick01Icon className="w-5 h-5 text-white" />
                                 <span>2 Months Free</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-white" />
+                                <Tick01Icon className="w-5 h-5 text-white" />
                                 <span>Priority Support</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <Check className="w-5 h-5 text-white" />
+                                <Tick01Icon className="w-5 h-5 text-white" />
                                 <span>API Access</span>
                             </li>
                         </ul>

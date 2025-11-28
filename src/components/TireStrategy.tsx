@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTireStrategy, DriverStrategy, fetchSpecificRaceResults, DetailedRaceResult } from '@/lib/api';
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, List, LineChart } from 'lucide-react';
+import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StintAnalysisTable from './StintAnalysisTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,7 +94,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     if (isErrorStrategy) {
       return (
         <div className="w-full min-h-[200px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
-          <AlertCircle className="w-8 h-8 mb-2" />
+          <AlertCircleIcon className="w-8 h-8 mb-2" />
           <p className="font-bold uppercase">Error loading strategy</p>
           <p className="text-xs text-gray-500 mt-1">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
         </div>

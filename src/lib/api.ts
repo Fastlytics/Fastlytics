@@ -33,7 +33,7 @@ export interface DriverStrategy { driver: string; stints: TireStint[]; }
 export interface SessionDriver { code: string; name: string; team: string; }
 export interface DriverStanding { rank: number; code: string; name: string; team: string; points: number; wins: number; podiums: number; points_change?: number; teamColor?: string; } // Use points_change?
 export interface TeamStanding { rank: number; team: string; points: number; wins: number; podiums: number; points_change?: number; teamColor?: string; shortName?: string; } // Use points_change?
-export interface RaceResult { year: number; event: string; round: number; driver: string; team: string; teamColor: string; date?: string; location?: string; } // Added date and location
+export interface RaceResult { year: number; event: string; round: number; driver: string; team: string; teamColor: string; date?: string; location?: string; podium?: { position: number; driver: string; team: string; teamColor: string; }[]; } // Added date, location, and podium
 export interface DetailedRaceResult {
     position: number | null;
     driverCode: string;
@@ -123,81 +123,81 @@ export interface ScheduleEvent {
 
 // --- Driver/Team Detail Interfaces ---
 export interface DriverDetails {
-  driverId: string; // Usually the 3-letter code
-  name: string;
-  nationality: string;
-  dateOfBirth: string; // ISO string format ideally
-  bio?: string; // Optional
-  imageUrl?: string; // Optional URL for the large photo
-  careerStats?: { // Optional stats block
-    wins?: number;
-    podiums?: number;
-    poles?: number;
-    championships?: number;
-  };
-  // Add other relevant fields from backend if available
+    driverId: string; // Usually the 3-letter code
+    name: string;
+    nationality: string;
+    dateOfBirth: string; // ISO string format ideally
+    bio?: string; // Optional
+    imageUrl?: string; // Optional URL for the large photo
+    careerStats?: { // Optional stats block
+        wins?: number;
+        podiums?: number;
+        poles?: number;
+        championships?: number;
+    };
+    // Add other relevant fields from backend if available
 }
 
 export interface TeamDetails {
-  teamId: string; // Usually the full team name used as ID
-  name: string;
-  nationality: string;
-  base?: string; // Optional
-  firstEntry?: number; // Optional
-  bio?: string; // Optional
-  imageUrl?: string; // Optional URL for the large photo/logo
-  careerStats?: { // Optional stats block
-    wins?: number;
-    podiums?: number;
-    poles?: number;
-    constructorsChampionships?: number;
-    driversChampionships?: number;
-  };
-  // Add other relevant fields (e.g., current drivers) if available
+    teamId: string; // Usually the full team name used as ID
+    name: string;
+    nationality: string;
+    base?: string; // Optional
+    firstEntry?: number; // Optional
+    bio?: string; // Optional
+    imageUrl?: string; // Optional URL for the large photo/logo
+    careerStats?: { // Optional stats block
+        wins?: number;
+        podiums?: number;
+        poles?: number;
+        constructorsChampionships?: number;
+        driversChampionships?: number;
+    };
+    // Add other relevant fields (e.g., current drivers) if available
 }
 
 // --- Track Evolution Interfaces ---
 export interface RollingLapDataPoint {
-  lap: number;
-  time: number | null; // Rolling average time in seconds
+    lap: number;
+    time: number | null; // Rolling average time in seconds
 }
 
 export interface DriverEvolutionData {
-  code: string;
-  color: string;
-  rollingAverageLaps: RollingLapDataPoint[];
+    code: string;
+    color: string;
+    rollingAverageLaps: RollingLapDataPoint[];
 }
 
 export interface TrackTemperatureDataPoint {
-  lap: number;
-  temp: number | null; // Track temperature in Celsius
+    lap: number;
+    temp: number | null; // Track temperature in Celsius
 }
 
 export interface TrackEvolutionResponse {
-  drivers: DriverEvolutionData[];
-  trackTemperature: TrackTemperatureDataPoint[];
-  // TODO: Add interfaces for stint/compound analysis if implemented later
+    drivers: DriverEvolutionData[];
+    trackTemperature: TrackTemperatureDataPoint[];
+    // TODO: Add interfaces for stint/compound analysis if implemented later
 }
 
 export interface TrackSection {
-  id: string;
-  name: string;
-  type: 'straight' | 'corner' | 'sector';
-  path: string; // SVG path data
-  driver1Advantage?: number; // Positive means driver1 is faster, negative means driver2 is faster
+    id: string;
+    name: string;
+    type: 'straight' | 'corner' | 'sector';
+    path: string; // SVG path data
+    driver1Advantage?: number; // Positive means driver1 is faster, negative means driver2 is faster
 }
 
 export interface SectorComparisonData {
-  sections: TrackSection[];
-  driver1Code: string;
-  driver2Code: string;
-  circuitLayout: string; // SVG path data for the main track outline
+    sections: TrackSection[];
+    driver1Code: string;
+    driver2Code: string;
+    circuitLayout: string; // SVG path data for the main track outline
 }
 
 export interface SessionIncident {
-  type: 'SC/VSC' | 'RedFlag'; // Grouped SC/VSC for simplicity
-  startLap: number;
-  endLap: number;
+    type: 'SC/VSC' | 'RedFlag'; // Grouped SC/VSC for simplicity
+    startLap: number;
+    endLap: number;
 }
 
 // --- API Fetch Functions ---
@@ -579,158 +579,158 @@ export const getTeamDetails = async (teamId: string): Promise<TeamDetails> => {
     } catch (error) {
         console.error(`Error fetching team details for ${teamId}:`, error);
         // TODO: Potentially return mock data on error during development
-    throw error;
-  }
+        throw error;
+    }
 };
 
 /** Fetches session schedule for a specific event. */
 export const fetchEventSessionSchedule = async (year: number, event: string): Promise<EventSessionSchedule> => {
-  const url = `${API_BASE_URL}/api/schedule/${year}/${event}/sessions`;
-  console.log(`Fetching event session schedule from: ${url}`);
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-      console.error(`API Error: ${errorDetail}`);
-      throw new Error(errorDetail);
+    const url = `${API_BASE_URL}/api/schedule/${year}/${event}/sessions`;
+    console.log(`Fetching event session schedule from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: EventSessionSchedule = await response.json();
+        console.log(`Successfully fetched session schedule for ${year} ${event}.`);
+        return data;
+    } catch (error) {
+        console.error(`Error fetching session schedule for ${year} ${event}:`, error);
+        throw error;
     }
-    const data: EventSessionSchedule = await response.json();
-    console.log(`Successfully fetched session schedule for ${year} ${event}.`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching session schedule for ${year} ${event}:`, error);
-    throw error;
-  }
 };
 
 /** Fetches available lap numbers for a specific driver in a session. */
 export const fetchDriverLapNumbers = async (
-  year: number,
-  event: string,
-  session: string,
-  driver: string
+    year: number,
+    event: string,
+    session: string,
+    driver: string
 ): Promise<number[]> => {
-  if (!driver) {
-    // Return empty array or throw error if driver isn't selected yet
-    return [];
-  }
-  const params = new URLSearchParams({ year: year.toString(), event, session, driver });
-  const url = `${API_BASE_URL}/api/laps/driver?${params.toString()}`;
-  console.log(`Fetching lap numbers from: ${url}`);
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-      console.error(`API Error fetching lap numbers for ${driver}: ${errorDetail}`);
-      throw new Error(errorDetail);
+    if (!driver) {
+        // Return empty array or throw error if driver isn't selected yet
+        return [];
     }
-    const data: { laps: number[] } = await response.json();
-    console.log(`Successfully fetched ${data.laps.length} lap numbers for ${driver}.`);
-    return data.laps || []; // Ensure we return an array
-  } catch (error) {
-    console.error(`Error fetching lap numbers for ${driver}:`, error);
-    throw error;
-  }
+    const params = new URLSearchParams({ year: year.toString(), event, session, driver });
+    const url = `${API_BASE_URL}/api/laps/driver?${params.toString()}`;
+    console.log(`Fetching lap numbers from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error fetching lap numbers for ${driver}: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: { laps: number[] } = await response.json();
+        console.log(`Successfully fetched ${data.laps.length} lap numbers for ${driver}.`);
+        return data.laps || []; // Ensure we return an array
+    } catch (error) {
+        console.error(`Error fetching lap numbers for ${driver}:`, error);
+        throw error;
+    }
 };
 
 
 /** Fetches sector comparison data for two drivers for specific laps. */
 export const fetchSectorComparison = async (
-  year: number, 
-  event: string, 
-  session: string,
-  driver1: string,
-  driver2: string,
-  lap1: string | number = 'fastest', // Add lap1 parameter with default
-  lap2: string | number = 'fastest'  // Add lap2 parameter with default
+    year: number,
+    event: string,
+    session: string,
+    driver1: string,
+    driver2: string,
+    lap1: string | number = 'fastest', // Add lap1 parameter with default
+    lap2: string | number = 'fastest'  // Add lap2 parameter with default
 ): Promise<SectorComparisonData> => {
-  if (!driver1 || !driver2) {
-    throw new Error("Both drivers must be specified");
-  }
-
-  const params = new URLSearchParams({
-    year: year.toString(),
-    event,
-    session,
-    driver1,
-    driver2,
-    lap1: String(lap1), // Pass lap identifiers
-    lap2: String(lap2)  // Pass lap identifiers
-  });
-
-  // Correct endpoint and all parameters as query params
-  const url = `${API_BASE_URL}/api/comparison/sectors?${params.toString()}`;
-  console.log(`Fetching sector comparison from: ${url}`); // Log includes laps now
-  
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { 
-        const errorData = await response.json(); 
-        errorDetail = errorData.detail || errorDetail; 
-      } catch (e) { /* Ignore */ }
-      console.error(`API Error: ${errorDetail}`);
-      throw new Error(errorDetail);
+    if (!driver1 || !driver2) {
+        throw new Error("Both drivers must be specified");
     }
-    const data: SectorComparisonData = await response.json();
-    console.log(`Successfully fetched sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}) in ${year} ${event} ${session}`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}):`, error);
-    
-    // For development/demo, return mock data if real API isn't available
-    if (process.env.NODE_ENV === 'development') {
-      // Generate mock sector comparison data
-      const mockData: SectorComparisonData = {
-        driver1Code: driver1,
-        driver2Code: driver2,
-        circuitLayout: "M100,250 C150,100 250,50 400,50 C550,50 650,100 700,250 C750,400 650,450 400,450 C250,450 150,400 100,250 Z",
-        sections: [
-          {
-            id: "s1",
-            name: "Turn 1",
-            type: "corner",
-            path: "M380,50 C420,50 460,50 500,70 C540,90 560,130 560,170",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          },
-          {
-            id: "s2",
-            name: "Back Straight",
-            type: "straight",
-            path: "M560,170 C590,240 620,310 650,380",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          },
-          {
-            id: "s3",
-            name: "Chicane",
-            type: "corner",
-            path: "M650,380 C630,420 580,440 520,440",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          },
-          {
-            id: "s4",
-            name: "Final Corner",
-            type: "corner",
-            path: "M520,440 C400,450 280,430 200,370",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          },
-          {
-            id: "s5",
-            name: "Start/Finish",
-            type: "straight",
-            path: "M200,370 C150,320 120,260 110,200 C100,140 120,90 180,60 C240,30 310,50 380,50",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          }
-        ]
-      };
-      return mockData;
+
+    const params = new URLSearchParams({
+        year: year.toString(),
+        event,
+        session,
+        driver1,
+        driver2,
+        lap1: String(lap1), // Pass lap identifiers
+        lap2: String(lap2)  // Pass lap identifiers
+    });
+
+    // Correct endpoint and all parameters as query params
+    const url = `${API_BASE_URL}/api/comparison/sectors?${params.toString()}`;
+    console.log(`Fetching sector comparison from: ${url}`); // Log includes laps now
+
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorDetail = errorData.detail || errorDetail;
+            } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: SectorComparisonData = await response.json();
+        console.log(`Successfully fetched sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}) in ${year} ${event} ${session}`);
+        return data;
+    } catch (error) {
+        console.error(`Error fetching sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}):`, error);
+
+        // For development/demo, return mock data if real API isn't available
+        if (process.env.NODE_ENV === 'development') {
+            // Generate mock sector comparison data
+            const mockData: SectorComparisonData = {
+                driver1Code: driver1,
+                driver2Code: driver2,
+                circuitLayout: "M100,250 C150,100 250,50 400,50 C550,50 650,100 700,250 C750,400 650,450 400,450 C250,450 150,400 100,250 Z",
+                sections: [
+                    {
+                        id: "s1",
+                        name: "Turn 1",
+                        type: "corner",
+                        path: "M380,50 C420,50 460,50 500,70 C540,90 560,130 560,170",
+                        driver1Advantage: Math.random() * 0.2 - 0.1
+                    },
+                    {
+                        id: "s2",
+                        name: "Back Straight",
+                        type: "straight",
+                        path: "M560,170 C590,240 620,310 650,380",
+                        driver1Advantage: Math.random() * 0.2 - 0.1
+                    },
+                    {
+                        id: "s3",
+                        name: "Chicane",
+                        type: "corner",
+                        path: "M650,380 C630,420 580,440 520,440",
+                        driver1Advantage: Math.random() * 0.2 - 0.1
+                    },
+                    {
+                        id: "s4",
+                        name: "Final Corner",
+                        type: "corner",
+                        path: "M520,440 C400,450 280,430 200,370",
+                        driver1Advantage: Math.random() * 0.2 - 0.1
+                    },
+                    {
+                        id: "s5",
+                        name: "Start/Finish",
+                        type: "straight",
+                        path: "M200,370 C150,320 120,260 110,200 C100,140 120,90 180,60 C240,30 310,50 380,50",
+                        driver1Advantage: Math.random() * 0.2 - 0.1
+                    }
+                ]
+            };
+            return mockData;
+        }
+
+        throw error;
     }
-    
-    throw error;
-  }
 };
 
 /** Fetches detailed stint analysis data including lap times. */

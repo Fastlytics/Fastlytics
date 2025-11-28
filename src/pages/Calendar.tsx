@@ -2,9 +2,9 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
-  ArrowLeft, Flag, Calendar as CalendarIcon, AlertCircle,
-  Clock, Trophy, ChevronDown, Medal, Users, MapPin, Zap, Timer
-} from 'lucide-react';
+  ArrowLeft01Icon, Calendar01Icon, AlertCircleIcon,
+  Clock01Icon, ChampionIcon, Location01Icon, FlashIcon, Time01Icon
+} from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Button } from "@/components/ui/button";
 import { fetchRaceResults, RaceResult, fetchSchedule, ScheduleEvent } from '@/lib/api';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getCountryCode } from '@/utils/countryUtils';
+import RaceCard from '@/components/calendar/RaceCard';
 
 // Countdown Component
 const Countdown = ({ targetDate }: { targetDate: Date }) => {
@@ -162,7 +163,7 @@ const Calendar = () => {
                 className="text-gray-500 hover:text-white hover:bg-gray-800"
                 onClick={() => navigate('/dashboard')}
               >
-                <ArrowLeft className="h-6 w-6" />
+                <ArrowLeft01Icon className="h-6 w-6" />
               </Button>
               <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">
                 Race <span className="text-red-600">Calendar</span>
@@ -181,7 +182,7 @@ const Calendar = () => {
             >
               <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
                 <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-red-600" />
+                  <ChampionIcon className="w-4 h-4 text-red-600" />
                   <span>{selectedYear} Season</span>
                 </div>
               </SelectTrigger>
@@ -213,7 +214,7 @@ const Calendar = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-red-900/20 to-black z-0" />
             <div className="border-2 border-red-600 bg-black/50 p-8 md:p-12 relative z-10">
               <div className="absolute top-0 right-0 bg-red-600 text-white px-4 py-2 font-black uppercase tracking-widest text-sm flex items-center gap-2">
-                <Timer className="w-4 h-4" />
+                <Time01Icon className="w-4 h-4" />
                 Next Grand Prix
               </div>
 
@@ -239,16 +240,16 @@ const Calendar = () => {
 
                   <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-gray-400 mb-8">
                     <div className="flex items-center gap-2">
-                      <CalendarIcon className="w-5 h-5 text-red-600" />
+                      <Calendar01Icon className="w-5 h-5 text-red-600" />
                       <span className="font-mono text-lg text-white">{nextRace.displayDate}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-red-600" />
+                      <Location01Icon className="w-5 h-5 text-red-600" />
                       <span className="font-mono text-lg text-white">{nextRace.Location}</span>
                     </div>
                     {nextRace.EventFormat === 'sprint' && (
                       <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500 text-yellow-500 rounded-full">
-                        <Zap className="w-4 h-4" />
+                        <FlashIcon className="w-4 h-4" />
                         <span className="font-bold text-xs uppercase tracking-wider">Sprint Weekend</span>
                       </div>
                     )}
@@ -266,7 +267,7 @@ const Calendar = () => {
                 {nextSession && (
                   <div className="flex-1 w-full lg:w-auto flex flex-col items-center justify-center bg-gray-900/30 border border-gray-800 p-8 backdrop-blur-sm">
                     <div className="text-gray-500 font-mono text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-red-600" />
+                      <Clock01Icon className="w-4 h-4 text-red-600" />
                       Upcoming Session: <span className="text-white font-bold">{nextSession.name}</span>
                     </div>
                     <Countdown targetDate={nextSession.date} />
@@ -287,7 +288,7 @@ const Calendar = () => {
             </div>
           ) : scheduleError || resultsError ? (
             <div className="text-center py-20 border-2 border-red-600/50 border-dashed bg-red-900/10">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-600" />
+              <AlertCircleIcon className="w-12 h-12 mx-auto mb-4 text-red-600" />
               <h3 className="text-xl font-bold uppercase mb-2">Data Unavailable</h3>
               <p className="text-gray-500 font-mono text-sm">
                 Could not load race data for {selectedYear}.
@@ -295,99 +296,18 @@ const Calendar = () => {
             </div>
           ) : combinedRaceData.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {combinedRaceData.map((race, index) => (
-                <motion.div
+              {combinedRaceData.map((race) => (
+                <RaceCard
                   key={`${selectedYear}-${race.EventName}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isRacesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
-                  className={`group cursor-pointer ${!race.isUpcoming && !race.result ? 'opacity-50 hover:opacity-100' : ''}`}
-                >
-                  <div className="bg-black border-2 border-gray-800 hover:border-red-600 transition-colors h-full flex flex-col relative overflow-hidden">
-                    {/* Status Indicator */}
-                    <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider z-10 ${race.isUpcoming ? 'bg-blue-600 text-white' :
-                      'bg-gray-800 text-gray-400'
-                      }`}>
-                      {race.isUpcoming ? 'Upcoming' : 'Finished'}
-                    </div>
-
-                    {/* Sprint Indicator */}
-                    {race.isSprint && (
-                      <div className="absolute top-0 left-0 px-3 py-1 bg-yellow-500 text-black text-xs font-bold uppercase tracking-wider z-10 flex items-center gap-1">
-                        <Zap className="w-3 h-3" /> Sprint
-                      </div>
-                    )}
-
-                    <div className="p-6 flex-grow relative">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-8 bg-gray-900 border border-gray-700 flex items-center justify-center overflow-hidden">
-                          {race.countryCode && (
-                            <img
-                              src={`https://flagcdn.com/h40/${race.countryCode}.png`}
-                              alt={race.Country || race.Location}
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                            />
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-xs font-mono text-gray-500 uppercase">Round {race.RoundNumber}</div>
-                          <h3 className="font-bold text-lg leading-tight uppercase group-hover:text-red-500 transition-colors">{race.EventName}</h3>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span className="font-mono">{race.displayDate}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Flag className="w-4 h-4" />
-                          <span className="font-mono">{race.Location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Zap className="w-4 h-4" />
-                          <span className="font-mono">{race.isSprint ? 'Sprint Weekend' : 'Standard Weekend'}</span>
-                        </div>
-                      </div>
-
-                      {race.result && (
-                        <div className="mt-6 pt-4 border-t border-gray-800">
-                          {race.result.podium ? (
-                            <div className="space-y-2">
-                              {race.result.podium.map((p) => (
-                                <div key={p.position} className="flex items-center justify-between text-sm group/podium">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`font-mono font-bold w-4 text-center ${p.position === 1 ? 'text-yellow-500' :
-                                      p.position === 2 ? 'text-gray-300' :
-                                        'text-amber-700'
-                                      }`}>{p.position}</span>
-                                    <span className="font-bold text-gray-300 group-hover/podium:text-white transition-colors">{p.driver}</span>
-                                  </div>
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }} title={p.team} />
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Medal className="w-4 h-4 text-yellow-500" />
-                                <span className="font-bold text-white">{race.result.driver}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 font-mono pl-6">
-                                <Users className="w-3 h-3" />
-                                <span>{race.result.team}</span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hover Effect Bar */}
-                    <div className="h-1 w-0 bg-red-600 group-hover:w-full transition-all duration-300" />
-                  </div>
-                </motion.div>
+                  event={race}
+                  result={race.result}
+                  isUpcoming={race.isUpcoming}
+                  isSprint={race.isSprint}
+                  countryCode={race.countryCode}
+                  displayDate={race.displayDate}
+                  selectedYear={selectedYear}
+                  nextSession={nextSession}
+                />
               ))}
             </div>
           ) : (

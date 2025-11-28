@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { cn, exportChartAsImage } from "@/lib/utils";
 import { LapPositionDataPoint, SessionIncident, DetailedRaceResult } from '@/lib/api';
-import { ChevronsUpDown, Download } from 'lucide-react';
+import { ArrowUpDownIcon, Download01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -142,6 +142,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
             cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
             itemSorter={(item) => item.value === null ? Infinity : item.value}
           />
+          {/* @ts-ignore - Recharts typing issue with payload prop */}
           <Legend
             wrapperStyle={{ paddingTop: '20px', fontFamily: 'monospace', fontSize: '12px' }}
             payload={selectedDrivers.map(driverCode => {
@@ -251,7 +252,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                     ? "Select Drivers..."
                     : `${selectedDrivers.length} Selected`
                 }
-                <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                <ArrowUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0 bg-black border-2 border-gray-800 text-white rounded-none">
@@ -287,7 +288,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                   onClick={handleDownload}
                   disabled={isExporting || !positionData || positionData.length === 0}
                 >
-                  <Download className="h-4 w-4" />
+                  <Download01Icon className="h-4 w-4" />
                 </Button>
               </ShadTooltipTrigger>
               <ShadTooltipContent className="bg-black border border-gray-800 text-white rounded-none text-xs uppercase font-bold">

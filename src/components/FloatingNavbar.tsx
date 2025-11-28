@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Gauge, ChevronRight } from 'lucide-react';
+import { Gauge } from 'lucide-react';
+import { Menu01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { motion } from 'framer-motion';
 
 interface FloatingNavbarProps {
@@ -12,7 +13,7 @@ interface FloatingNavbarProps {
 const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const navItems = [
     { name: 'Features', href: '#features' },
     { name: 'How It Works', href: '#how-it-works' },
@@ -44,7 +45,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
   };
 
   // Calculate background opacity based on scroll position
-  const backgroundOpacity = transparent 
+  const backgroundOpacity = transparent
     ? Math.min(scrollPosition / 300, 0.95) // Gradually increase opacity as user scrolls
     : 0.95; // Default opacity
 
@@ -54,15 +55,15 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
     : 10; // Default blur
 
   return (
-    <motion.nav 
+    <motion.nav
       className="fixed top-0 left-0 right-0 z-50 w-full"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div 
+      <div
         className="w-full h-16 md:h-20"
-        style={{ 
+        style={{
           backgroundColor: `rgba(0, 0, 0, ${backgroundOpacity})`,
           backdropFilter: `blur(${blurAmount}px)`,
           borderBottom: scrollPosition > 50 ? '1px solid rgba(75, 75, 75, 0.2)' : 'none',
@@ -72,13 +73,13 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <motion.div 
+            <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
               <Gauge className="h-7 w-7 text-red-500" />
             </motion.div>
-            <motion.span 
+            <motion.span
               className="font-bold text-lg md:text-xl text-white"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
@@ -98,8 +99,8 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
                     className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors relative group"
                   >
                     {item.name}
-                    <motion.span 
-                      className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 group-hover:w-full" 
+                    <motion.span
+                      className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 group-hover:w-full"
                       transition={{ duration: 0.3 }}
                     />
                   </a>
@@ -110,7 +111,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
               <Link to="/dashboard">
                 <Button variant="default" size="sm" className="ml-4 bg-red-600 hover:bg-red-700 text-white">
                   Explore Dashboard
-                  <ChevronRight className="ml-1 h-4 w-4" />
+                  <ArrowRight01Icon className="ml-1 h-4 w-4" />
                 </Button>
               </Link>
             </motion.div>
@@ -121,7 +122,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-gray-300 hover:text-white">
-                  <Menu className="h-6 w-6" />
+                  <Menu01Icon className="h-6 w-6" />
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
@@ -131,7 +132,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
                     <Gauge className="h-6 w-6 text-red-500" />
                     <span className="font-bold text-lg">Fast<span className="text-red-500">lytics</span></span>
                   </div>
-                  
+
                   <div className="space-y-1 mt-6">
                     {navItems.map((item) => (
                       <a
@@ -144,12 +145,12 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
                       </a>
                     ))}
                   </div>
-                  
+
                   <div className="pt-6 mt-6 border-t border-gray-800">
                     <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                       <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
                         Explore Dashboard
-                        <ChevronRight className="ml-1 h-4 w-4" />
+                        <ArrowRight01Icon className="ml-1 h-4 w-4" />
                       </Button>
                     </Link>
                   </div>

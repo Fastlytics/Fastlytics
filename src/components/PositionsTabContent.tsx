@@ -9,7 +9,7 @@ import {
     SessionIncident
 } from '@/lib/api';
 import PositionChart from './PositionChart';
-import { AlertCircle, List, LineChart } from 'lucide-react';
+import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Skeleton } from './ui/skeleton';
 import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
@@ -81,7 +81,7 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
         return (
             <div className="bg-black border-2 border-gray-800 p-6 h-full flex items-center justify-center">
                 <div className="text-center text-red-500">
-                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                    <AlertCircleIcon className="w-8 h-8 mx-auto mb-2" />
                     <p className="font-bold uppercase">Error Loading Position Data</p>
                     <p className="text-xs text-gray-500 mt-1">{combinedError?.message || 'Could not fetch data.'}</p>
                 </div>

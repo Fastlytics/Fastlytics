@@ -1,29 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, Flag } from 'lucide-react';
 import { getCountryCode } from '@/utils/countryUtils';
+import { Time01Icon, Location01Icon, Activity01Icon, ArrowRight01Icon } from 'hugeicons-react';
 
 interface DashboardHeaderProps {
     selectedYear: number;
-    nextRace?: {
-        name: string;
+    nextSession?: {
+        eventName: string;
+        sessionName: string;
         date: string;
         location: string;
-        daysUntil: number;
+        country: string;
     };
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextRace }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSession }) => {
+    const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+    useEffect(() => {
+        if (!nextSession?.date) return;
+
+        const calculateTimeLeft = () => {
+            const difference = new Date(nextSession.date).getTime() - new Date().getTime();
+
+            if (difference > 0) {
+                return {
+                    d: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                    h: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                    m: Math.floor((difference / 1000 / 60) % 60),
+                    s: Math.floor((difference / 1000) % 60),
+                };
+            }
+            return null;
+        };
+
+        setTimeLeft(calculateTimeLeft());
+        const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
+        return () => clearInterval(timer);
+    }, [nextSession]);
+
     return (
-        <div className="mb-12">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b-4 border-white pb-6">
-                <div>
+        <div className="mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-6 lg:gap-12 border-b border-gray-800 pb-6">
+                {/* Left: Compact Title */}
+                <div className="shrink-0">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-4 mb-2"
+                        className="flex items-center gap-3 mb-2"
                     >
-                        <span className="bg-red-600 text-white px-3 py-1 font-mono font-bold text-sm uppercase tracking-wider">
+                        <div className="flex items-center gap-2 px-2 py-0.5 bg-red-600/10 border border-red-600/20 rounded text-red-500">
+                            <Activity01Icon className="w-3 h-3 animate-pulse" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Live Telemetry</span>
+                        </div>
+                        <span className="text-xs font-mono text-gray-500 uppercase tracking-wider">
                             Season {selectedYear}
                         </span>
                     </motion.div>
@@ -31,40 +61,76 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextRac
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter text-white"
+                        className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white leading-none"
                     >
                         Command <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-800">Center</span>
                     </motion.h1>
                 </div>
 
-                {nextRace && (
+                {/* Right: Wide Horizontal Widget */}
+                {nextSession && (
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="bg-gray-900 border-2 border-gray-800 p-4 min-w-[300px]"
+                        className="flex-grow w-full"
                     >
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-mono text-gray-500 uppercase">Next Grand Prix</span>
-                            <div className="w-6 h-4 bg-gray-800 rounded overflow-hidden flex-shrink-0">
-                                <img
-                                    src={`https://flagcdn.com/h40/${getCountryCode(nextRace.location)}.png`}
-                                    alt={nextRace.location}
-                                    className="w-full h-full object-cover"
-                                />
+                        <div className="relative overflow-hidden bg-gray-900/40 border border-gray-800 rounded-lg p-1">
+                            <div className="bg-black/40 backdrop-blur-sm rounded p-3 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
+
+                                {/* Event Details */}
+                                <div className="flex items-center gap-4 w-full md:w-auto">
+                                    <div className="w-12 h-8 rounded overflow-hidden border border-gray-700 shadow-sm shrink-0">
+                                        <img
+                                            src={`https://flagcdn.com/h40/${getCountryCode(nextSession.country || nextSession.location)}.png`}
+                                            alt={nextSession.country}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">
+                                            <span>Next Session</span>
+                                            <ArrowRight01Icon className="w-3 h-3 text-gray-700" />
+                                            <span className="text-gray-400">{nextSession.location}</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2 truncate">
+                                            <span className="text-lg font-black text-white uppercase truncate">{nextSession.eventName}</span>
+                                            <span className="text-sm font-bold text-red-500 uppercase whitespace-nowrap hidden sm:inline-block">
+                                                / {nextSession.sessionName}
+                                            </span>
+                                        </div>
+                                        {/* Mobile-only session name */}
+                                        <div className="text-xs font-bold text-red-500 uppercase sm:hidden">
+                                            {nextSession.sessionName}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Countdown Strip */}
+                                <div className="flex items-center gap-4 bg-gray-900/80 border border-gray-800 rounded px-4 py-2 w-full md:w-auto justify-center md:justify-end">
+                                    <Time01Icon className="w-4 h-4 text-gray-600" />
+                                    {timeLeft ? (
+                                        <div className="flex gap-4 font-mono">
+                                            {['d', 'h', 'm', 's'].map((unit) => (
+                                                <div key={unit} className="flex items-baseline gap-1">
+                                                    <span className={`text-xl font-bold leading-none ${unit === 's' ? 'text-red-500' : 'text-white'}`}>
+                                                        {timeLeft[unit as keyof typeof timeLeft].toString().padStart(2, '0')}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-600 uppercase">{unit}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="text-red-500 font-bold uppercase animate-pulse text-sm">
+                                            Session Live
+                                        </span>
+                                    )}
+                                </div>
+
                             </div>
-                        </div>
-                        <div className="text-xl font-bold uppercase text-white mb-1 truncate">
-                            {nextRace.name}
-                        </div>
-                        <div className="flex justify-between items-end">
-                            <div className="text-sm text-gray-400 font-mono">
-                                {nextRace.location}
-                            </div>
-                            <div className="text-right">
-                                <span className="text-3xl font-black text-white">{nextRace.daysUntil}</span>
-                                <span className="text-xs text-red-600 font-bold uppercase ml-1">Days</span>
-                            </div>
+
+                            {/* Subtle accent line */}
+                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-600/50 via-transparent to-transparent" />
                         </div>
                     </motion.div>
                 )}

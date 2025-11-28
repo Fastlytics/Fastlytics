@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from '@/components/Navbar'; // Assuming a standard Navbar
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft01Icon } from 'hugeicons-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
           className="absolute top-20 left-4 md:left-8 text-gray-300 hover:bg-gray-800 hover:text-white z-10"
           onClick={() => navigate(-1)} // Go back to previous page
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft01Icon className="h-5 w-5" />
         </Button>
 
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-white tracking-tight">Privacy Policy</h1>
@@ -37,7 +37,7 @@ const PrivacyPolicy = () => {
           <p>
             The personal information that we collect depends on the context of your interactions with us and the application, the choices you make and the products and features you use. The personal information we collect may include the following: email address, username, password (hashed).
           </p>
-           <p>
+          <p>
             We do not process sensitive information.
           </p>
 
@@ -57,7 +57,7 @@ const PrivacyPolicy = () => {
           <p>
             We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations. We do not sell your personal information.
           </p>
-           <p>
+          <p>
             We may need to share your information with third-party vendors, service providers, contractors or agents who perform services for us or on our behalf and require access to such information to do that work (e.g., Supabase for authentication and database hosting).
           </p>
 

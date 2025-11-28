@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from '@/components/Navbar'; // Assuming a standard Navbar
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft01Icon } from 'hugeicons-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,13 +11,13 @@ const TermsOfService = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
       <Navbar />
       <div className="container mx-auto px-4 md:px-8 py-12 max-w-4xl">
-         <Button
+        <Button
           variant="ghost"
           size="icon"
           className="absolute top-20 left-4 md:left-8 text-gray-300 hover:bg-gray-800 hover:text-white z-10"
           onClick={() => navigate(-1)} // Go back to previous page
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft01Icon className="h-5 w-5" />
         </Button>
 
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-white tracking-tight">Terms of Service</h1>
@@ -39,7 +39,7 @@ const TermsOfService = () => {
           <p>
             The Service and its original content (excluding Content provided by users), features and functionality are and will remain the exclusive property of Fastlytics and its licensors. The Service is protected by copyright, trademark, and other laws of both the [Your Country] and foreign countries. Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of Fastlytics.
           </p>
-           <p>
+          <p>
             Formula 1 related data is sourced from publicly available APIs (e.g., FastF1 library) and is subject to their respective terms and conditions. Fastlytics is not affiliated with Formula One group companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing B.V.
           </p>
 

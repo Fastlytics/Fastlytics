@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
-import { ArrowUp, ArrowDown, MinusCircle } from 'lucide-react';
+import { ArrowUp01Icon, ArrowDown01Icon, MinusSignCircleIcon } from 'hugeicons-react';
 
 interface F1CardProps {
   title: string;
@@ -21,11 +21,11 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
       return null;
     }
     if (change > 0) {
-      return { color: 'text-green-500', icon: <ArrowUp className="h-4 w-4" /> };
+      return { color: 'text-green-500', icon: <ArrowUp01Icon className="h-4 w-4" /> };
     } else if (change < 0) {
-      return { color: 'text-red-500', icon: <ArrowDown className="h-4 w-4" /> };
+      return { color: 'text-red-500', icon: <ArrowDown01Icon className="h-4 w-4" /> };
     } else {
-      return { color: 'text-gray-500', icon: <MinusCircle className="h-4 w-4" /> };
+      return { color: 'text-gray-500', icon: <MinusSignCircleIcon className="h-4 w-4" /> };
     }
   };
 
@@ -68,9 +68,7 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
         </div>
 
         {icon && (
-          <div className={cn("p-3 border-2 bg-black", `border-f1-${team} text-f1-${team}`)}>
-            {React.cloneElement(icon as React.ReactElement, { className: "w-6 h-6" })}
-          </div>
+          React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6" })
         )}
       </div>
     </div>

@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard,
-  Menu,
-  X,
-  Gauge, 
-  Flag,
-  Users,
-  UsersRound,
-  ChevronRight
+  Gauge,
 } from 'lucide-react';
+import {
+  DashboardSquare01Icon,
+  Menu01Icon,
+  Cancel01Icon,
+  Flag01Icon,
+  UserGroupIcon,
+  UserMultiple02Icon,
+  ArrowRight01Icon
+} from 'hugeicons-react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -43,16 +45,16 @@ const Navbar = () => {
 
   // Expanded Nav Items
   const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
-    { name: 'Races', href: '/races', icon: <Flag size={18} /> },
-    { name: 'Drivers', href: '/standings/drivers', icon: <Users size={18} /> },
-    { name: 'Teams', href: '/standings/teams', icon: <UsersRound size={18} /> },
+    { name: 'Dashboard', href: '/dashboard', icon: <DashboardSquare01Icon size={18} /> },
+    { name: 'Races', href: '/races', icon: <Flag01Icon size={18} /> },
+    { name: 'Drivers', href: '/standings/drivers', icon: <UserGroupIcon size={18} /> },
+    { name: 'Teams', href: '/standings/teams', icon: <UserMultiple02Icon size={18} /> },
   ];
 
   // Loading state while checking auth
   if (loading) {
     return (
-      <motion.nav 
+      <motion.nav
         className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur-md h-16 md:h-20 flex items-center justify-center"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -64,15 +66,15 @@ const Navbar = () => {
   }
 
   return (
-    <motion.nav 
+    <motion.nav
       className="sticky top-0 z-50 w-full"
       initial={{ y: 0, opacity: 0.8 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
     >
-      <div 
+      <div
         className="w-full h-16 md:h-20"
-        style={{ 
+        style={{
           backgroundColor: `rgba(0, 0, 0, ${backgroundOpacity})`,
           backdropFilter: `blur(${blurAmount}px)`,
           borderBottom: scrollPosition > 50 ? '1px solid rgba(75, 75, 75, 0.2)' : '1px solid rgba(31, 41, 55, 0.2)',
@@ -82,13 +84,13 @@ const Navbar = () => {
         <div className="w-full mx-auto h-full px-4 sm:px-8 lg:px-12 flex justify-between items-center">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center space-x-3">
-            <motion.div 
+            <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
               <Gauge className="h-7 w-7 text-red-500" />
             </motion.div>
-            <motion.span 
+            <motion.span
               className="font-bold text-lg md:text-xl text-white"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
@@ -108,8 +110,8 @@ const Navbar = () => {
                     className={({ isActive }) =>
                       cn(
                         "flex items-center space-x-2 px-4 py-2 rounded-md text-base font-medium transition-colors relative group",
-                        isActive 
-                          ? "text-white" 
+                        isActive
+                          ? "text-white"
                           : "text-gray-300 hover:text-white"
                       )
                     }
@@ -119,14 +121,14 @@ const Navbar = () => {
                         <span className="mr-1.5">{item.icon}</span>
                         <span>{item.name}</span>
                         {isActive && (
-                          <motion.span 
-                            className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500" 
+                          <motion.span
+                            className="absolute bottom-0 left-0 w-full h-0.5 bg-red-500"
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: "100%" }}
-                            transition={{ 
-                              type: 'tween', 
-                              ease: "easeInOut", 
-                              duration: 0.3 
+                            transition={{
+                              type: 'tween',
+                              ease: "easeInOut",
+                              duration: 0.3
                             }}
                           />
                         )}
@@ -149,7 +151,7 @@ const Navbar = () => {
                   whileTap={{ scale: 0.95 }}
                   className="text-gray-300 hover:text-white bg-transparent border-none p-2 rounded-md"
                 >
-                  <Menu className="h-6 w-6" />
+                  <Menu01Icon className="h-6 w-6" />
                   <span className="sr-only">Open menu</span>
                 </motion.button>
               </DrawerTrigger>
@@ -161,11 +163,11 @@ const Navbar = () => {
                       <span className="font-bold text-lg">Fast<span className="text-red-500">lytics</span></span>
                     </Link>
                     <DrawerClose asChild>
-                      <motion.button 
+                      <motion.button
                         whileTap={{ scale: 0.95 }}
                         className="text-gray-300 hover:text-white bg-transparent border-none p-2 rounded-md"
                       >
-                        <X className="h-5 w-5" />
+                        <Cancel01Icon className="h-5 w-5" />
                         <span className="sr-only">Close menu</span>
                       </motion.button>
                     </DrawerClose>
@@ -181,8 +183,8 @@ const Navbar = () => {
                         className={({ isActive }) =>
                           cn(
                             "flex items-center space-x-3 w-full px-5 py-4 rounded-md text-base font-medium transition-colors relative",
-                            isActive 
-                              ? "bg-gray-800/60 text-white" 
+                            isActive
+                              ? "bg-gray-800/60 text-white"
                               : "text-gray-300 hover:bg-gray-800/40 hover:text-white"
                           )
                         }
@@ -193,14 +195,14 @@ const Navbar = () => {
                             <span>{item.icon}</span>
                             <span>{item.name}</span>
                             {isActive && (
-                              <motion.span 
-                                className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-r" 
+                              <motion.span
+                                className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-r"
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "100%" }}
-                                transition={{ 
-                                  type: 'tween', 
-                                  ease: "easeInOut", 
-                                  duration: 0.3 
+                                transition={{
+                                  type: 'tween',
+                                  ease: "easeInOut",
+                                  duration: 0.3
                                 }}
                               />
                             )}

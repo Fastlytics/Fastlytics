@@ -15,7 +15,7 @@ import {
   DRSDataPoint
 } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle, Download, BarChart2 } from 'lucide-react';
+import { AlertCircleIcon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
@@ -259,7 +259,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={!driver1 || !driver2 || driver1 === driver2}
           >
-            <BarChart2 className="w-4 h-4 mr-2" />
+            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Data
           </Button>
         </div>
@@ -277,7 +277,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     if (error || !telemetryData1 || !telemetryData2) {
       return (
         <div className="w-full h-[280px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-bold uppercase">Error loading {telemetryType} data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
         </div>
@@ -412,7 +412,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             onClick={handleDownload}
             disabled={isExporting}
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download01Icon className="h-3.5 w-3.5" />
             {isExporting ? "Exporting..." : "Download Chart"}
           </Button>
         </div>

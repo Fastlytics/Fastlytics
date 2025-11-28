@@ -2,7 +2,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DetailedRaceResult } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import { ArrowDown01Icon, ArrowUp01Icon, MinusSignIcon } from 'hugeicons-react';
 
 const getTeamColorClass = (teamName: string | undefined): string => {
   if (!teamName) return 'gray';
@@ -111,11 +111,11 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
   const renderPlacesChanged = (change: number | null, gridPos: number | undefined) => {
     if (gridPos === 0) return <span className="text-gray-500 text-xs italic">PIT</span>;
     if (change === null || change === 0) {
-      return <span className="text-gray-600 flex items-center justify-center font-mono"><Minus className="w-3 h-3 mr-1 opacity-50" /> 0</span>;
+      return <span className="text-gray-600 flex items-center justify-center font-mono"><MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0</span>;
     } else if (change > 0) {
-      return <span className="text-green-500 flex items-center justify-center font-mono font-bold"><ArrowUp className="w-3 h-3 mr-1" /> +{change}</span>;
+      return <span className="text-green-500 flex items-center justify-center font-mono font-bold"><ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}</span>;
     } else {
-      return <span className="text-red-500 flex items-center justify-center font-mono font-bold"><ArrowDown className="w-3 h-3 mr-1" /> {change}</span>;
+      return <span className="text-red-500 flex items-center justify-center font-mono font-bold"><ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}</span>;
     }
   };
 

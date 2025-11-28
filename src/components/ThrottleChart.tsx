@@ -6,7 +6,7 @@ import { cn, exportChartAsImage } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetryThrottle, fetchSessionDrivers, fetchLapTimes, SessionDriver, ThrottleDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle, User, Clock, Download, BarChart2 } from 'lucide-react';
+import { AlertCircleIcon, UserIcon, Clock01Icon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,9 +67,9 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
     }
     // Reset selected lap when driver changes, unless it's the initial load
     if (selectedDriver !== initialDriver) {
-        setSelectedLap('fastest');
+      setSelectedLap('fastest');
     } else {
-        setSelectedLap(lap); // Ensure initial lap prop is respected on mount
+      setSelectedLap(lap); // Ensure initial lap prop is respected on mount
     }
   }, [lapTimes, selectedDriver, initialDriver, lap]);
 
@@ -85,7 +85,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
 
   const color = driverColor(selectedDriver, year);
   const isLoading = isLoadingThrottle;
-  const chartTitle = title || (selectedDriver 
+  const chartTitle = title || (selectedDriver
     ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Throttle Input`
     : "Throttle Input");
 
@@ -99,7 +99,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
     try {
       // Brief delay to ensure chart is fully rendered
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // Use event name, driver, and lap for the filename
       const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver}_${selectedLap === 'fastest' ? 'fastest' : `lap${selectedLap}`}_throttle`;
       await exportChartAsImage(chartRef, filename);
@@ -116,13 +116,13 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
       return (
         <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gray-900/50 rounded-lg gap-4">
           <p className="text-gray-400">Select a driver and click load to view throttle data</p>
-          <Button 
+          <Button
             onClick={() => setShouldLoadChart(true)}
             variant="secondary"
             className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
             disabled={!selectedDriver}
           >
-            <BarChart2 className="w-4 h-4 mr-2" />
+            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Chart
           </Button>
         </div>
@@ -139,7 +139,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
     if (error || !throttleData) {
       return (
         <div className="w-full h-[280px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-semibold">Error loading throttle data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
         </div>
@@ -157,47 +157,47 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
       <ResponsiveContainer width="100%" height={280} className="export-chart-container">
         <LineChart data={throttleData} margin={{ top: 0, right: 10, left: -15, bottom: 5 }} className="chart-main-container">
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(100, 116, 139, 0.3)" />
-          <XAxis 
-            type="number" 
-            dataKey="Distance" 
-            stroke="rgba(156, 163, 175, 0.7)" 
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }} 
+          <XAxis
+            type="number"
+            dataKey="Distance"
+            stroke="rgba(156, 163, 175, 0.7)"
+            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
             tickFormatter={(value: number) => {
               // Use shorter label on small screens
               return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(2)}m`;
-            }} 
-            domain={['dataMin', 'dataMax']} 
+            }}
+            domain={['dataMin', 'dataMax']}
           />
-          <YAxis 
-            dataKey="Throttle" 
-            stroke="rgba(156, 163, 175, 0.7)" 
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}  
-            tickFormatter={(value) => `${value}%`} 
+          <YAxis
+            dataKey="Throttle"
+            stroke="rgba(156, 163, 175, 0.7)"
+            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
+            tickFormatter={(value) => `${value}%`}
             domain={[0, 100]}
-            width={50} 
+            width={50}
           />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'rgba(31, 41, 55, 0.9)', 
-              borderColor: 'rgba(100, 116, 139, 0.5)', 
-              color: '#E5E7EB', 
-              borderRadius: '6px', 
-              boxShadow: '0 2px 10px rgba(0,0,0,0.5)' 
-            }} 
-            labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }} 
-            itemStyle={{ color: color }} 
-            formatter={(value: number) => [`${value}%`, 'Throttle']} 
-            labelFormatter={(label: number) => `Distance: ${label.toFixed(2)}m`} 
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'rgba(31, 41, 55, 0.9)',
+              borderColor: 'rgba(100, 116, 139, 0.5)',
+              color: '#E5E7EB',
+              borderRadius: '6px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
+            }}
+            labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }}
+            itemStyle={{ color: color }}
+            formatter={(value: number) => [`${value}%`, 'Throttle']}
+            labelFormatter={(label: number) => `Distance: ${label.toFixed(2)}m`}
           />
-          <Line 
-            type="monotone" 
-            dataKey="Throttle" 
-            stroke="#4ade80" 
-            strokeWidth={2} 
-            dot={false} 
-            activeDot={{ r: 4, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: "#4ade80" }} 
-            name={selectedDriver} 
-            connectNulls={true} 
+          <Line
+            type="monotone"
+            dataKey="Throttle"
+            stroke="#4ade80"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: "#4ade80" }}
+            name={selectedDriver}
+            connectNulls={true}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -205,9 +205,9 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
   };
 
   return (
-    <Card 
+    <Card
       ref={chartRef}
-      className={cn("chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm animate-fade-in overflow-hidden", className)} 
+      className={cn("chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm animate-fade-in overflow-hidden", className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <CardHeader className="pb-2">
@@ -226,11 +226,11 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
                   setShouldLoadChart(false);
                 }
               }}
-               disabled={isLoadingDrivers || !availableDrivers}
-             >
-               <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                 <User className="w-4 h-4 mr-2 opacity-70"/>
-                 <SelectValue placeholder="Select Driver" />
+              disabled={isLoadingDrivers || !availableDrivers}
+            >
+              <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
+                <UserIcon className="w-4 h-4 mr-2 opacity-70" />
+                <SelectValue placeholder="Select Driver" />
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
                 <SelectGroup>
@@ -249,7 +249,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
               disabled={lapOptions.length <= 1}
             >
               <SelectTrigger className="w-full sm:w-[120px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                <Clock className="w-4 h-4 mr-2 opacity-70"/>
+                <Clock01Icon className="w-4 h-4 mr-2 opacity-70" />
                 <SelectValue placeholder="Lap" />
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
@@ -270,15 +270,15 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
         {renderContent()}
         {shouldLoadChart && !isLoading && throttleData && throttleData.length > 0 && (
           <div className="mt-4 flex justify-end">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="h-7 px-2.5 text-xs bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-1.5 border border-gray-700" 
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 px-2.5 text-xs bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-1.5 border border-gray-700"
               onClick={handleDownload}
               disabled={isExporting}
               title="Download chart"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download01Icon className="h-3.5 w-3.5" />
               {isExporting ? "Exporting..." : "Download Chart"}
             </Button>
           </div>

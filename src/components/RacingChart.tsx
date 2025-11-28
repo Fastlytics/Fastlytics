@@ -6,7 +6,7 @@ import { cn, exportChartAsImage } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, fetchSessionDrivers, SessionDriver, LapTimeDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle, PlusCircle, XCircle, Download, BarChart2 } from 'lucide-react';
+import { AlertCircleIcon, PlusSignCircleIcon, CancelCircleIcon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -154,7 +154,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
-            <BarChart2 className="w-4 h-4 mr-2" />
+            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Data
           </Button>
         </div>
@@ -171,7 +171,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
     if (isError || !lapData) {
       return (
         <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-bold uppercase">Error loading lap times</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
           {!staticData && (
@@ -334,7 +334,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                     className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-transparent"
                     onClick={() => removeDriver(index)}
                   >
-                    <XCircle className="h-4 w-4" />
+                    <CancelCircleIcon className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -347,7 +347,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 onClick={addDriver}
                 disabled={isLoadingDrivers || !availableDrivers}
               >
-                <PlusCircle className="h-3 w-3 mr-1.5" />
+                <PlusSignCircleIcon className="h-3 w-3 mr-1.5" />
                 Add
               </Button>
             )}
@@ -366,7 +366,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
             onClick={handleDownload}
             disabled={isExporting}
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download01Icon className="h-3.5 w-3.5" />
             {isExporting ? "Exporting..." : "Download Chart"}
           </Button>
         </div>

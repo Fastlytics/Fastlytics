@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTrackEvolution, TrackEvolutionResponse } from '@/lib/api'; // Import API function and types
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle, Thermometer } from 'lucide-react';
+import { AlertCircleIcon, ThermometerIcon } from 'hugeicons-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Helper function to format seconds into MM:SS.mmm (can be shared if needed)
@@ -88,7 +88,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     if (isError || !data) {
       return (
         <div className="w-full h-[400px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-semibold">Error loading track evolution data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch analysis.'}</p>
         </div>
@@ -142,10 +142,10 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
             />
           )}
           <Tooltip
-            contentStyle={{ 
+            contentStyle={{
               backgroundColor: 'rgba(15, 23, 42, 0.95)', // Darker, more solid background 
-              borderColor: 'rgba(71, 85, 105, 0.6)', 
-              color: '#E5E7EB', 
+              borderColor: 'rgba(71, 85, 105, 0.6)',
+              color: '#E5E7EB',
               borderRadius: '6px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)', // Stronger shadow
               padding: '8px 12px' // More padding 
@@ -153,16 +153,16 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
             labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)', paddingBottom: '4px' }}
             itemStyle={{ padding: '3px 0' }} // More padding between items
             formatter={(value: number | null, name: string) => {
-                if (name === 'Track Temp') return [`${value?.toFixed(1) ?? 'N/A'} °C`, name];
-                return [formatLapTime(value), name]; // name is driver code
+              if (name === 'Track Temp') return [`${value?.toFixed(1) ?? 'N/A'} °C`, name];
+              return [formatLapTime(value), name]; // name is driver code
             }}
             labelFormatter={(label) => `Lap ${label}`}
             // Sort items by lap time (ascending, so fastest driver comes first)
             // But always keep Track Temp at the bottom
             itemSorter={(item) => {
-                if (item.name === 'Track Temp') return Infinity; // Always put track temp last
-                // Sort by lap time (null values at the end)
-                return item.value === null ? Infinity - 1 : item.value;
+              if (item.name === 'Track Temp') return Infinity; // Always put track temp last
+              // Sort by lap time (null values at the end)
+              return item.value === null ? Infinity - 1 : item.value;
             }}
           />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -185,19 +185,19 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
 
           {/* Track Temperature Line - Conditionally Rendered */}
           {hasTempData && (
-             <Line
-               key="trackTemp"
-               yAxisId="right"
-               type="monotone"
-               dataKey="temp"
-               stroke="rgba(251, 146, 60, 0.8)" // Orange color
-               strokeWidth={1.5}
-               strokeDasharray="5 5" // Dashed line
-               dot={false}
-               activeDot={false}
-               name="Track Temp" // Legend name
-               connectNulls={true}
-             />
+            <Line
+              key="trackTemp"
+              yAxisId="right"
+              type="monotone"
+              dataKey="temp"
+              stroke="rgba(251, 146, 60, 0.8)" // Orange color
+              strokeWidth={1.5}
+              strokeDasharray="5 5" // Dashed line
+              dot={false}
+              activeDot={false}
+              name="Track Temp" // Legend name
+              connectNulls={true}
+            />
           )}
         </LineChart>
       </ResponsiveContainer>
@@ -208,7 +208,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     <Card className={cn("chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm", className)}>
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
-           <Thermometer className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature
+          <ThermometerIcon className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature
         </CardTitle>
         {/* Optional: Add description or controls here */}
       </CardHeader>

@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from '@/components/Navbar'; // Assuming a standard Navbar
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft01Icon } from 'hugeicons-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -44,13 +44,13 @@ const FAQ = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
       <Navbar />
       <div className="container mx-auto px-4 md:px-8 py-12 max-w-4xl">
-         <Button
+        <Button
           variant="ghost"
           size="icon"
           className="absolute top-20 left-4 md:left-8 text-gray-300 hover:bg-gray-800 hover:text-white z-10"
           onClick={() => navigate(-1)} // Go back to previous page
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft01Icon className="h-5 w-5" />
         </Button>
 
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-10 text-white tracking-tight">Frequently Asked Questions</h1>

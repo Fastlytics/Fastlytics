@@ -5,16 +5,17 @@ import {
   fetchTeamStandings,
   fetchDriverStandings,
   fetchSchedule,
+  fetchRaceResults,
   TeamStanding,
   DriverStanding,
-  ScheduleEvent
+  ScheduleEvent,
+  RaceResult
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
-import SeasonTimeline from '@/components/dashboard/SeasonTimeline';
-import { Flag, ArrowRight } from 'lucide-react';
+import { Flag01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
 
 const Dashboard = () => {
@@ -40,19 +41,47 @@ const Dashboard = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
-  // 3. Derived Data (Next Race, Last Race)
-  const { nextRace, lastRace, currentRound, recentRaces } = useMemo(() => {
-    if (!schedule || schedule.length === 0) return { nextRace: undefined, lastRace: undefined, currentRound: 0, recentRaces: [] };
+  // 3. Race Results (for Championship calculation)
+  const { data: raceResults } = useQuery<RaceResult[]>({
+    queryKey: ['raceResults', selectedYear],
+    queryFn: () => fetchRaceResults(selectedYear),
+  });
+
+  // 3. Derived Data (Next Session, Last Race)
+  const { nextSession, recentRaces } = useMemo(() => {
+    if (!schedule || schedule.length === 0) return { nextSession: undefined, recentRaces: [] };
 
     const now = new Date();
-    const upcoming = schedule.find(e => new Date(e.EventDate) > now);
-    const completed = [...schedule].reverse().find(e => new Date(e.EventDate) < now);
 
-    // Calculate days until next race
-    let daysUntil = 0;
-    if (upcoming) {
-      const diff = new Date(upcoming.EventDate).getTime() - now.getTime();
-      daysUntil = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    // Find the next upcoming session
+    let upcomingSession = undefined;
+
+    // Sort schedule by date to ensure we check in order
+    const sortedSchedule = [...schedule].sort((a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime());
+
+    for (const event of sortedSchedule) {
+      // Check all 5 possible sessions
+      const sessions = [
+        { name: event.Session1, date: event.Session1Date },
+        { name: event.Session2, date: event.Session2Date },
+        { name: event.Session3, date: event.Session3Date },
+        { name: event.Session4, date: event.Session4Date },
+        { name: event.Session5, date: event.Session5Date },
+      ].filter(s => s.name && s.date); // Filter out null sessions
+
+      for (const session of sessions) {
+        if (session.date && new Date(session.date) > now) {
+          upcomingSession = {
+            eventName: event.EventName,
+            sessionName: session.name!,
+            date: session.date,
+            location: event.Location,
+            country: event.Country
+          };
+          break; // Found the very first upcoming session
+        }
+      }
+      if (upcomingSession) break; // Stop checking events if we found a session
     }
 
     // Get 4 most recent completed races
@@ -62,14 +91,7 @@ const Dashboard = () => {
       .slice(0, 4);
 
     return {
-      nextRace: upcoming ? {
-        name: upcoming.EventName,
-        date: upcoming.EventDate,
-        location: upcoming.Location,
-        daysUntil
-      } : undefined,
-      lastRace: completed,
-      currentRound: completed ? completed.RoundNumber : 0,
+      nextSession: upcomingSession,
       recentRaces: recent
     };
   }, [schedule]);
@@ -81,12 +103,7 @@ const Dashboard = () => {
       <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <DashboardHeader
           selectedYear={selectedYear}
-          nextRace={nextRace}
-        />
-
-        <SeasonTimeline
-          schedule={schedule || []}
-          currentRound={currentRound}
+          nextSession={nextSession}
         />
 
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
@@ -96,7 +113,9 @@ const Dashboard = () => {
               <ChampionshipWidget
                 drivers={driverStandings || []}
                 teams={teamStandings || []}
-                isLoading={isLoadingDrivers || isLoadingTeams}
+                schedule={schedule || []}
+                raceResults={raceResults || []}
+                isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
               />
             </section>
 
@@ -111,7 +130,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/calendar')}
                   className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
                 >
-                  View Calendar <ArrowRight className="w-4 h-4" />
+                  View Calendar <ArrowRight01Icon className="w-4 h-4" />
                 </button>
               </div>
 
@@ -135,7 +154,7 @@ const Dashboard = () => {
                         <div className="text-xs font-mono text-gray-500">{race.Location}</div>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
+                    <ArrowRight01Icon className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
                   </div>
                 ))}
                 {recentRaces.length === 0 && (

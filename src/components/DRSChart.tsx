@@ -6,7 +6,7 @@ import { cn, exportChartAsImage } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetryDRS, fetchSessionDrivers, fetchLapTimes, SessionDriver, DRSDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircle, User, Clock, Download, BarChart2 } from 'lucide-react';
+import { AlertCircleIcon, UserIcon, Clock01Icon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
@@ -107,7 +107,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={!selectedDriver}
           >
-            <BarChart2 className="w-4 h-4 mr-2" />
+            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Chart
           </Button>
         </div>
@@ -124,7 +124,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
     if (error || !drsData) {
       return (
         <div className="w-full h-[280px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-bold uppercase">Error loading DRS data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
         </div>
@@ -211,7 +211,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
             disabled={isLoadingDrivers || !availableDrivers}
           >
             <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <User className="w-3 h-3 mr-2 opacity-50" />
+              <UserIcon className="w-3 h-3 mr-2 opacity-50" />
               <SelectValue placeholder="Select Driver" />
             </SelectTrigger>
             <SelectContent className="bg-black border-gray-700 text-white rounded-none">
@@ -231,7 +231,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
             disabled={lapOptions.length <= 1}
           >
             <SelectTrigger className="w-full sm:w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <Clock className="w-3 h-3 mr-2 opacity-50" />
+              <Clock01Icon className="w-3 h-3 mr-2 opacity-50" />
               <SelectValue placeholder="Lap" />
             </SelectTrigger>
             <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
@@ -259,7 +259,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
             onClick={handleDownload}
             disabled={isExporting}
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download01Icon className="h-3.5 w-3.5" />
             {isExporting ? "Exporting..." : "Download Chart"}
           </Button>
         </div>

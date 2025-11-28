@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchSectorComparison, fetchDriverLapNumbers, fetchTelemetrySpeed, fetchLapTimes, SessionDriver, SectorComparisonData, SpeedDataPoint, LapTimeDataPoint } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn, exportChartAsImage } from "@/lib/utils";
-import { User, Clock, Download, BarChart2, AlertCircle } from 'lucide-react';
+import { UserIcon, Clock01Icon, Download01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
@@ -314,7 +314,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={!selectedDriver1 || !selectedDriver2}
           >
-            <BarChart2 className="w-4 h-4 mr-2" />
+            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Comparison
           </Button>
         </div>
@@ -332,7 +332,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     if (isError || !comparisonData) {
       return (
         <div className="w-full h-[500px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircle className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-bold uppercase">Error loading comparison data</p>
           <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
           {selectedDriver1 === selectedDriver2 && (
@@ -394,10 +394,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
                   if (section.driver1Advantage && section.driver1Advantage > 0) {
                     strokeColor = driver1Color;
-                    advantageText = `${selectedDriver1} faster by ${Math.abs(section.driver1Advantage).toFixed(3)}s`;
+                    advantageText = `${selectedDriver1} faster by ${Math.abs(Number(section.driver1Advantage)).toFixed(3)}s`;
                   } else if (section.driver1Advantage && section.driver1Advantage < 0) {
                     strokeColor = driver2Color;
-                    advantageText = `${selectedDriver2} faster by ${Math.abs(section.driver1Advantage).toFixed(3)}s`;
+                    advantageText = `${selectedDriver2} faster by ${Math.abs(Number(section.driver1Advantage)).toFixed(3)}s`;
                   } else if (section.driver1Advantage === 0) {
                     advantageText = "Identical time";
                   }
@@ -464,7 +464,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                         return (
                           <div className="p-2 bg-black border border-gray-800 shadow-xl">
                             <p className="font-bold text-white border-b border-gray-800 pb-1 mb-2 text-xs uppercase">
-                              Dist: {label.toFixed(0)}m
+                              Dist: {Number(label).toFixed(0)}m
                             </p>
                             <div className="grid grid-cols-2 gap-x-4 text-xs font-mono">
                               <span className="text-gray-500">DRIVER</span>
@@ -472,12 +472,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
                               <span style={{ color: driver1Color }}>{selectedDriver1}</span>
                               <span className="text-right" style={{ color: driver1Color }}>
-                                {speed1 !== null && speed1 !== undefined ? `${speed1.toFixed(0)}` : '-'}
+                                {speed1 !== null && speed1 !== undefined ? `${(speed1 as number).toFixed(0)}` : '-'}
                               </span>
 
                               <span style={{ color: driver2Color }}>{selectedDriver2}</span>
                               <span className="text-right" style={{ color: driver2Color }}>
-                                {speed2 !== null && speed2 !== undefined ? `${speed2.toFixed(0)}` : '-'}
+                                {speed2 !== null && speed2 !== undefined ? `${(speed2 as number).toFixed(0)}` : '-'}
                               </span>
                             </div>
                           </div>
@@ -554,7 +554,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               disabled={isLoadingDrivers || !availableDrivers}
             >
               <SelectTrigger className="w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-                <User className="w-3 h-3 mr-2 opacity-50" />
+                <UserIcon className="w-3 h-3 mr-2 opacity-50" />
                 <SelectValue placeholder="Driver 1" />
               </SelectTrigger>
               <SelectContent className="bg-black border-gray-700 text-white rounded-none">
@@ -574,7 +574,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
             >
               <SelectTrigger className="w-[90px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-                <Clock className="w-3 h-3 mr-1 opacity-50" />
+                <Clock01Icon className="w-3 h-3 mr-1 opacity-50" />
                 <SelectValue placeholder="Lap" />
               </SelectTrigger>
               <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
@@ -603,7 +603,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               disabled={isLoadingDrivers || !availableDrivers}
             >
               <SelectTrigger className="w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-                <User className="w-3 h-3 mr-2 opacity-50" />
+                <UserIcon className="w-3 h-3 mr-2 opacity-50" />
                 <SelectValue placeholder="Driver 2" />
               </SelectTrigger>
               <SelectContent className="bg-black border-gray-700 text-white rounded-none">
@@ -623,7 +623,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
             >
               <SelectTrigger className="w-[90px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-                <Clock className="w-3 h-3 mr-1 opacity-50" />
+                <Clock01Icon className="w-3 h-3 mr-1 opacity-50" />
                 <SelectValue placeholder="Lap" />
               </SelectTrigger>
               <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
@@ -652,7 +652,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             onClick={handleDownload}
             disabled={isExporting}
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download01Icon className="h-3.5 w-3.5" />
             {isExporting ? "Exporting..." : "Download Chart"}
           </Button>
         </div>

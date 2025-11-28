@@ -2,10 +2,10 @@ import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
-  ArrowLeft, Trophy, MinusCircle, Award,
-  AlertCircle, ArrowUp, ArrowDown, ChevronDown,
-  User, Flag, Medal, Clock, Crown
-} from 'lucide-react';
+  ArrowLeft01Icon, ChampionIcon, MinusSignCircleIcon, Award01Icon,
+  AlertCircleIcon, ArrowUp01Icon, ArrowDown01Icon,
+  UserIcon, Flag01Icon, Medal01Icon, Clock01Icon, CrownIcon
+} from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Button } from "@/components/ui/button";
 import { fetchDriverStandings, DriverStanding, fetchSchedule, fetchRaceResults, ScheduleEvent, RaceResult } from '@/lib/api';
@@ -113,9 +113,9 @@ const DriverStandings = () => {
   // Function to determine change indicator color and icon
   const getChangeIndicator = (change: number | undefined) => {
     if (change === undefined) return null;
-    if (change > 0) return { color: 'text-green-500', icon: <ArrowUp className="h-4 w-4" /> };
-    if (change < 0) return { color: 'text-red-500', icon: <ArrowDown className="h-4 w-4" /> };
-    return { color: 'text-gray-500', icon: <MinusCircle className="h-4 w-4" /> };
+    if (change > 0) return { color: 'text-green-500', icon: <ArrowUp01Icon className="h-4 w-4" /> };
+    if (change < 0) return { color: 'text-red-500', icon: <ArrowDown01Icon className="h-4 w-4" /> };
+    return { color: 'text-gray-500', icon: <MinusSignCircleIcon className="h-4 w-4" /> };
   };
 
   // Helper to get team color class
@@ -162,7 +162,7 @@ const DriverStandings = () => {
                 className="text-gray-500 hover:text-white hover:bg-gray-800"
                 onClick={() => navigate('/dashboard')}
               >
-                <ArrowLeft className="h-6 w-6" />
+                <ArrowLeft01Icon className="h-6 w-6" />
               </Button>
               <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">
                 Driver <span className="text-red-600">Standings</span>
@@ -181,7 +181,7 @@ const DriverStandings = () => {
             >
               <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
                 <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-red-600" />
+                  <ChampionIcon className="w-4 h-4 text-red-600" />
                   <span>{selectedYear} Season</span>
                 </div>
               </SelectTrigger>
@@ -213,7 +213,7 @@ const DriverStandings = () => {
             </div>
           ) : isError ? (
             <div className="text-center py-20 border-2 border-red-600/50 border-dashed bg-red-900/10">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-600" />
+              <AlertCircleIcon className="w-12 h-12 mx-auto mb-4 text-red-600" />
               <h3 className="text-xl font-bold uppercase mb-2">Data Unavailable</h3>
               <p className="text-gray-500 font-mono text-sm">
                 {(error as Error)?.message || 'Please try again later.'}
@@ -257,7 +257,7 @@ const DriverStandings = () => {
                     <div className="bg-black border-2 border-yellow-500 p-8 relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)]">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[0].team)}`} />
                       <div className="absolute -top-4 -right-4 text-yellow-500/10">
-                        <Crown className="w-32 h-32" />
+                        <CrownIcon className="w-32 h-32" />
                       </div>
                       <div className="relative z-10 text-center">
                         <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4">
