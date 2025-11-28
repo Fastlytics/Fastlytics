@@ -228,6 +228,15 @@ const Race = () => {
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState('overview');
 
+  // New State for Redesign
+  const [now, setNow] = useState(new Date());
+  const [is24Hour, setIs24Hour] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Circuit Comparison State
   const [circuitDrivers, setCircuitDrivers] = useState<{
     driver1: string; driver2: string; lap1: string | number; lap2: string | number; shouldLoadChart: boolean;
@@ -285,6 +294,47 @@ const Race = () => {
       .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))
       .slice(0, 3);
   }, [sessionResults, selectedSession]);
+
+  const nextSession = useMemo(() => {
+    if (!sessionSchedule) return null;
+    return sessionSchedule.sessions.find(s => new Date(s.date) > now);
+  }, [sessionSchedule, now]);
+
+  const countdown = useMemo(() => {
+    if (!nextSession) return null;
+    const diff = new Date(nextSession.date).getTime() - now.getTime();
+    if (diff <= 0) return null;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return { days, hours, minutes, seconds };
+  }, [nextSession, now]);
+
+  const formatTimeStr = (timeStr: string | null) => {
+    if (!timeStr) return '-';
+    if (is24Hour) return timeStr;
+    try {
+      const [h, m] = timeStr.split(':');
+      const hour = parseInt(h, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${m} ${ampm}`;
+    } catch (e) { return timeStr; }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !is24Hour
+      });
+    } catch (e) { return '-'; }
+  };
 
   // Scroll Handler
   const scrollToSection = (id: string) => {
@@ -376,48 +426,132 @@ const Race = () => {
           )}
         </header>
 
-        {isUpcoming && sessionSchedule ? (
-          // --- UPCOMING RACE DISPLAY ---
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div className="space-y-8">
-              <div className="bg-gray-900/30 border border-gray-800 p-8 relative overflow-hidden group">
+        {isUpcoming ? (
+          sessionSchedule ? (
+            // --- UPCOMING RACE DISPLAY ---
+            <div className="space-y-12">
+              {/* Hero Countdown Section */}
+              <div className="bg-gray-900/30 border border-gray-800 p-8 md:p-12 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Flag className="w-32 h-32" />
+                  <Flag className="w-64 h-64" />
                 </div>
-                <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-2">Next Session</h2>
-                <div className="text-5xl md:text-7xl font-mono font-bold text-white tracking-tighter mb-4">
-                  {/* Placeholder for countdown logic, using static for design */}
-                  02:14:33
-                </div>
-                <div className="flex items-center gap-2 text-red-500 font-bold uppercase tracking-widest text-sm">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  Incoming Transmission
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold uppercase tracking-wider text-gray-500">Weekend Schedule</h3>
-                <div className="grid gap-3">
-                  {sessionSchedule.sessions.map((session, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-black border border-gray-800 hover:border-red-600/50 transition-colors group">
-                      <div>
-                        <div className="font-bold text-white group-hover:text-red-500 transition-colors">{session.name.toUpperCase()}</div>
-                        <div className="text-xs text-gray-500 font-mono">{new Date(session.date).toLocaleDateString()}</div>
-                      </div>
-                      <div className="text-right font-mono text-gray-400">
-                        {session.localTime}
-                      </div>
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-red-500 font-bold uppercase tracking-widest text-sm">Incoming Transmission</span>
                     </div>
-                  ))}
+                    <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-white mb-2">
+                      Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
+                    </h2>
+                    <div className="text-gray-400 font-mono text-lg">
+                      {nextSession ? new Date(nextSession.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : 'Dates TBD'}
+                    </div>
+                  </div>
+
+                  {countdown ? (
+                    <div className="flex gap-4 md:gap-8 text-center">
+                      {[
+                        { label: 'DAYS', value: countdown.days },
+                        { label: 'HRS', value: countdown.hours },
+                        { label: 'MIN', value: countdown.minutes },
+                        { label: 'SEC', value: countdown.seconds }
+                      ].map((item, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                            {item.value.toString().padStart(2, '0')}
+                          </div>
+                          <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">{item.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                      SESSION IN PROGRESS
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Schedule Section */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+                  <h3 className="text-2xl font-bold uppercase italic tracking-wider text-white">Weekend Schedule</h3>
+                  <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
+                    <button
+                      onClick={() => setIs24Hour(true)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-bold rounded transition-colors",
+                        is24Hour ? "bg-gray-700 text-white" : "text-gray-500 hover:text-gray-300"
+                      )}
+                    >
+                      24H
+                    </button>
+                    <button
+                      onClick={() => setIs24Hour(false)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-bold rounded transition-colors",
+                        !is24Hour ? "bg-gray-700 text-white" : "text-gray-500 hover:text-gray-300"
+                      )}
+                    >
+                      12H
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-px bg-gray-800 border border-gray-800 overflow-hidden rounded-lg">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 bg-gray-900/50 text-gray-500 font-bold uppercase tracking-wider text-xs py-3 px-6">
+                    <div>Session</div>
+                    <div className="hidden md:block">Circuit Time</div>
+                    <div className="hidden md:block">Your Time</div>
+                  </div>
+
+                  {/* Table Body */}
+                  {sessionSchedule.sessions.map((session, idx) => {
+                    const isNext = nextSession && session.name === nextSession.name;
+                    return (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "grid grid-cols-1 md:grid-cols-3 p-6 gap-4 transition-colors group",
+                          isNext ? "bg-red-900/10 hover:bg-red-900/20" : "bg-black hover:bg-gray-900/50"
+                        )}
+                      >
+                        <div className="flex flex-col justify-center">
+                          <div className={cn("font-bold text-lg uppercase tracking-tight mb-1", isNext ? "text-red-500" : "text-white")}>
+                            {session.name}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono md:hidden">
+                            {formatDate(session.date)}
+                          </div>
+                        </div>
+
+                        <div className="hidden md:flex flex-col justify-center">
+                          <div className="font-mono text-gray-300 text-lg">
+                            {formatTimeStr(session.localTime)}
+                          </div>
+                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Local</div>
+                        </div>
+
+                        <div className="hidden md:flex flex-col justify-center">
+                          <div className={cn("font-mono text-lg", isNext ? "text-white" : "text-gray-300")}>
+                            {formatDate(session.date)}
+                          </div>
+                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Your Time</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-
-            <div className="relative h-[500px] bg-gray-900/20 border border-gray-800 flex items-center justify-center">
-              <MapPin className="w-16 h-16 text-gray-700" />
-              <p className="absolute bottom-4 right-4 text-gray-600 font-mono text-xs uppercase">Circuit Map Unavailable</p>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
             </div>
-          </div>
+          )
         ) : (
           // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
           <div className="flex flex-col lg:flex-row gap-12">
