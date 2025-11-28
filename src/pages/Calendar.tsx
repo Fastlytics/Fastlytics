@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { SEO } from '@/components/SEO';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -150,6 +151,11 @@ const Calendar = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+      <SEO
+        title={`F1 Calendar ${selectedYear} - Race Schedule & Results`}
+        description={`Full Formula 1 ${selectedYear} race calendar. Check race dates, times, and results for every Grand Prix.`}
+        keywords={['f1 calendar', 'f1 schedule', 'race dates', 'f1 2024 calendar', `${selectedYear} f1 schedule`]}
+      />
       <DashboardNavbar />
 
       <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" ref={racesRef}>

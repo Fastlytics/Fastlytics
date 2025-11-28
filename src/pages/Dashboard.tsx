@@ -17,6 +17,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import { Flag01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
+import { SEO } from '@/components/SEO';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
@@ -98,6 +99,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+      <SEO
+        title="F1 Dashboard - Live Telemetry & Standings"
+        description="Real-time F1 dashboard with live telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
+        keywords={['f1 dashboard', 'live telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+      />
       <DashboardNavbar />
 
       <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">

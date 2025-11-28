@@ -1,4 +1,5 @@
 import React from 'react';
+import { SEO } from '@/components/SEO';
 import LandingNavbar from '@/components/LandingNavbar';
 import LandingFooter from '@/components/LandingFooter';
 import HeroSection from '@/components/landing/HeroSection';
@@ -11,6 +12,11 @@ import PricingSection from '@/components/landing/PricingSection';
 const Landing: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white overflow-x-hidden">
+      <SEO
+        title="Fastlytics - F1 Telemetry & Data Analysis"
+        description="The ultimate F1 data analysis platform. Visualize track dominance, compare telemetry, analyze race strategies, and more with Fastlytics."
+        keywords={['f1 analytics', 'f1 telemetry', 'track dominance', 'race strategy', 'f1 data', 'motorsport data analysis']}
+      />
       <LandingNavbar />
 
       <main>

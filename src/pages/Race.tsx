@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { SEO } from '@/components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon } from 'hugeicons-react';
@@ -384,6 +385,11 @@ const Race = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+      <SEO
+        title={`${eventName} ${year} - F1 Race Analysis`}
+        description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+        keywords={['f1 race analysis', 'race results', 'tire strategy', 'f1 telemetry', eventName, `${year} f1 season`]}
+      />
       <DashboardNavbar />
 
       <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
