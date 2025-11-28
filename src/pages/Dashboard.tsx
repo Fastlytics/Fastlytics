@@ -15,6 +15,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import SeasonTimeline from '@/components/dashboard/SeasonTimeline';
 import { Flag, ArrowRight } from 'lucide-react';
+import { getCountryCode } from '@/utils/countryUtils';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
@@ -122,8 +123,12 @@ const Dashboard = () => {
                     className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:border-red-600/50 cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-2 bg-gray-800 rounded text-red-600 group-hover:text-white transition-colors">
-                        <Flag className="w-5 h-5" />
+                      <div className="w-10 h-7 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                        <img
+                          src={`https://flagcdn.com/h40/${getCountryCode(race.Country || race.Location)}.png`}
+                          alt={race.Country || race.Location}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
                         <div className="font-bold text-lg uppercase">{race.EventName}</div>

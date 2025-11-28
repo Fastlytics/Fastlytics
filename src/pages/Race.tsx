@@ -319,6 +319,17 @@ const Race = () => {
 
   if (!year || !eventSlug) return null;
 
+  if (isLoadingSessions) {
+    return (
+      <div className="min-h-screen bg-black text-white font-sans flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
+          <div className="text-gray-500 font-mono text-sm animate-pulse">LOADING SESSION DATA...</div>
+        </div>
+      </div>
+    );
+  }
+
   const isUpcoming = !fetchedAvailableSessions || fetchedAvailableSessions.length === 0;
 
   return (

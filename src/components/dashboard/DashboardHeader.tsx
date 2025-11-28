@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Calendar, Flag } from 'lucide-react';
+import { getCountryCode } from '@/utils/countryUtils';
 
 interface DashboardHeaderProps {
     selectedYear: number;
@@ -45,7 +46,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextRac
                     >
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-mono text-gray-500 uppercase">Next Grand Prix</span>
-                            <Flag className="w-4 h-4 text-red-600" />
+                            <div className="w-6 h-4 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                                <img
+                                    src={`https://flagcdn.com/h40/${getCountryCode(nextRace.location)}.png`}
+                                    alt={nextRace.location}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
                         </div>
                         <div className="text-xl font-bold uppercase text-white mb-1 truncate">
                             {nextRace.name}

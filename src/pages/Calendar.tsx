@@ -11,33 +11,7 @@ import { fetchRaceResults, RaceResult, fetchSchedule, ScheduleEvent } from '@/li
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
-
-// Country name to ISO country code mapping for flags
-const getCountryCode = (location: string | undefined): string => {
-  if (!location) return 'xx';
-  const cleanLocation = location.replace(/\s*\([^)]*\)\s*/g, '').trim();
-  const countryMap: Record<string, string> = {
-    'Australia': 'au', 'Austria': 'at', 'Azerbaijan': 'az', 'Bahrain': 'bh',
-    'Belgium': 'be', 'Brazil': 'br', 'Canada': 'ca', 'China': 'cn',
-    'Denmark': 'dk', 'Emilia Romagna': 'it', 'France': 'fr', 'Germany': 'de',
-    'Great Britain': 'gb', 'United Kingdom': 'gb', 'Hungary': 'hu', 'India': 'in',
-    'Italy': 'it', 'Japan': 'jp', 'Las Vegas': 'us', 'Malaysia': 'my',
-    'Mexico': 'mx', 'Miami': 'us', 'Monaco': 'mc', 'Netherlands': 'nl',
-    'Portugal': 'pt', 'Qatar': 'qa', 'Russia': 'ru', 'Saudi Arabia': 'sa',
-    'Singapore': 'sg', 'South Africa': 'za', 'Spain': 'es', 'Styria': 'at',
-    'Turkey': 'tr', 'Abu Dhabi': 'ae', 'United Arab Emirates': 'ae', 'UAE': 'ae', 'Yas Marina': 'ae',
-    'United States': 'us', 'USA': 'us',
-    'Sakhir': 'bh', 'Miami Gardens': 'us', 'Jeddah': 'sa', 'Lusail': 'qa',
-    'Imola': 'it', 'Monza': 'it', 'São Paulo': 'br', 'Spielberg': 'at',
-    'Silverstone': 'gb', 'Spa': 'be', 'Zandvoort': 'nl', 'Austin': 'us',
-    'Montréal': 'ca', 'Montreal': 'ca', 'Shanghai': 'cn', 'Baku': 'az',
-    'Barcelona': 'es', 'Budapest': 'hu', 'Suzuka': 'jp', 'Mexico City': 'mx'
-  };
-  for (const [country, code] of Object.entries(countryMap)) {
-    if (cleanLocation.includes(country)) return code.toLowerCase();
-  }
-  return 'xx';
-};
+import { getCountryCode } from '@/utils/countryUtils';
 
 // Countdown Component
 const Countdown = ({ targetDate }: { targetDate: Date }) => {
@@ -164,7 +138,7 @@ const Calendar = () => {
         ...event,
         result,
         isUpcoming,
-        isSprint: event.EventFormat === 'sprint',
+        isSprint: event.EventFormat && event.EventFormat.toLowerCase().includes('sprint'),
         displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         countryCode: getCountryCode(event.Country || event.Location)
       };
@@ -333,7 +307,7 @@ const Calendar = () => {
                   <div className="bg-black border-2 border-gray-800 hover:border-red-600 transition-colors h-full flex flex-col relative overflow-hidden">
                     {/* Status Indicator */}
                     <div className={`absolute top-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider z-10 ${race.isUpcoming ? 'bg-blue-600 text-white' :
-                        'bg-gray-800 text-gray-400'
+                      'bg-gray-800 text-gray-400'
                       }`}>
                       {race.isUpcoming ? 'Upcoming' : 'Finished'}
                     </div>
@@ -371,18 +345,41 @@ const Calendar = () => {
                           <Flag className="w-4 h-4" />
                           <span className="font-mono">{race.Location}</span>
                         </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Zap className="w-4 h-4" />
+                          <span className="font-mono">{race.isSprint ? 'Sprint Weekend' : 'Standard Weekend'}</span>
+                        </div>
                       </div>
 
                       {race.result && (
                         <div className="mt-6 pt-4 border-t border-gray-800">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Medal className="w-4 h-4 text-yellow-500" />
-                            <span className="font-bold text-white">{race.result.driver}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 font-mono pl-6">
-                            <Users className="w-3 h-3" />
-                            <span>{race.result.team}</span>
-                          </div>
+                          {race.result.podium ? (
+                            <div className="space-y-2">
+                              {race.result.podium.map((p) => (
+                                <div key={p.position} className="flex items-center justify-between text-sm group/podium">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`font-mono font-bold w-4 text-center ${p.position === 1 ? 'text-yellow-500' :
+                                      p.position === 2 ? 'text-gray-300' :
+                                        'text-amber-700'
+                                      }`}>{p.position}</span>
+                                    <span className="font-bold text-gray-300 group-hover/podium:text-white transition-colors">{p.driver}</span>
+                                  </div>
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }} title={p.team} />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Medal className="w-4 h-4 text-yellow-500" />
+                                <span className="font-bold text-white">{race.result.driver}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 font-mono pl-6">
+                                <Users className="w-3 h-3" />
+                                <span>{race.result.team}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
