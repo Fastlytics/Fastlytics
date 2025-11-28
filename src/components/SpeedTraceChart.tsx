@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { cn, exportChartAsImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetrySpeed, fetchSessionDrivers, fetchLapTimes, SessionDriver, SpeedDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver);
   const [selectedLap, setSelectedLap] = useState<string | number>(lap);
   const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
-  const [isExporting, setIsExporting] = useState(false);
+
   const [shouldLoadChart, setShouldLoadChart] = useState(false);
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
@@ -84,19 +84,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
     ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Speed Trace`
     : "Speed Trace");
 
-  const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !speedData || speedData.length === 0) return;
-    setIsExporting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver}_${selectedLap === 'fastest' ? 'fastest' : `lap${selectedLap}`}_speed`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+
 
   const renderContent = () => {
     if (!shouldLoadChart) {
@@ -253,20 +241,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
 
       {renderContent()}
 
-      {shouldLoadChart && !isLoading && speedData && speedData.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2.5 text-xs text-gray-500 hover:text-white flex items-center gap-1.5 uppercase font-bold tracking-wider"
-            onClick={handleDownload}
-            disabled={isExporting}
-          >
-            <Download01Icon className="h-3.5 w-3.5" />
-            {isExporting ? "Exporting..." : "Download Chart"}
-          </Button>
-        </div>
-      )}
+
     </div>
   );
 };

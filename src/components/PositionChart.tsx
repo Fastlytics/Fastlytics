@@ -3,9 +3,9 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea,
   Label as RechartsLabel
 } from 'recharts';
-import { cn, exportChartAsImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { LapPositionDataPoint, SessionIncident, DetailedRaceResult } from '@/lib/api';
-import { ArrowUpDownIcon, Download01Icon } from 'hugeicons-react';
+import { ArrowUpDownIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +35,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+
 
   const positionData = lapData;
 
@@ -71,19 +71,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
     setSelectedDrivers([]);
   };
 
-  const handleDownload = async () => {
-    if (!chartRef.current || !positionData || positionData.length === 0) return;
-    setIsExporting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const filename = `race_position_changes_${year}`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+
 
   const renderContent = () => {
     if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
@@ -142,34 +130,35 @@ const PositionChart: React.FC<PositionChartProps> = ({
             cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
             itemSorter={(item) => item.value === null ? Infinity : item.value}
           />
-          {/* @ts-ignore - Recharts typing issue with payload prop */}
           <Legend
-            wrapperStyle={{ paddingTop: '20px', fontFamily: 'monospace', fontSize: '12px' }}
-            payload={selectedDrivers.map(driverCode => {
-              const color = driverColor(driverCode, year);
-              let team = "";
-              Object.entries(teamGroups).forEach(([teamName, drivers]) => {
-                if (drivers.includes(driverCode)) team = teamName;
-              });
-              let teammates: string[] = [];
-              Object.values(teamGroups).forEach(drivers => {
-                if (drivers.includes(driverCode)) teammates = drivers;
-              });
-              const selectedTeammates = teammates.filter(t => selectedDrivers.includes(t));
-              let lineStyle = "";
-              if (selectedTeammates.length > 1) {
-                const driverIndex = teammates.indexOf(driverCode);
-                switch (driverIndex % 3) {
-                  case 1: lineStyle = "dashed line"; break;
-                  case 2: lineStyle = "dotted line"; break;
+            {...({
+              wrapperStyle: { paddingTop: '20px', fontFamily: 'monospace', fontSize: '12px' },
+              payload: selectedDrivers.map(driverCode => {
+                const color = driverColor(driverCode, year);
+                let team = "";
+                Object.entries(teamGroups).forEach(([teamName, drivers]) => {
+                  if (drivers.includes(driverCode)) team = teamName;
+                });
+                let teammates: string[] = [];
+                Object.values(teamGroups).forEach(drivers => {
+                  if (drivers.includes(driverCode)) teammates = drivers;
+                });
+                const selectedTeammates = teammates.filter(t => selectedDrivers.includes(t));
+                let lineStyle = "";
+                if (selectedTeammates.length > 1) {
+                  const driverIndex = teammates.indexOf(driverCode);
+                  switch (driverIndex % 3) {
+                    case 1: lineStyle = "dashed line"; break;
+                    case 2: lineStyle = "dotted line"; break;
+                  }
                 }
-              }
-              const isInMultiDriverTeam = selectedTeammates.length > 1;
-              return {
-                value: isInMultiDriverTeam && lineStyle !== "" ? `${driverCode} - ${lineStyle}` : driverCode,
-                type: 'line', id: driverCode, color: color
-              };
-            })}
+                const isInMultiDriverTeam = selectedTeammates.length > 1;
+                return {
+                  value: isInMultiDriverTeam && lineStyle !== "" ? `${driverCode} - ${lineStyle}` : driverCode,
+                  type: 'line', id: driverCode, color: color
+                };
+              })
+            } as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
           />
 
           {incidents.map((incident, index) => (
@@ -278,24 +267,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
             </PopoverContent>
           </Popover>
 
-          <TooltipProvider>
-            <ShadTooltip>
-              <ShadTooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-white hover:bg-transparent"
-                  onClick={handleDownload}
-                  disabled={isExporting || !positionData || positionData.length === 0}
-                >
-                  <Download01Icon className="h-4 w-4" />
-                </Button>
-              </ShadTooltipTrigger>
-              <ShadTooltipContent className="bg-black border border-gray-800 text-white rounded-none text-xs uppercase font-bold">
-                {isExporting ? "Exporting..." : "Download Chart"}
-              </ShadTooltipContent>
-            </ShadTooltip>
-          </TooltipProvider>
+
         </div>
       </div>
 

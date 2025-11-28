@@ -3,8 +3,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchSectorComparison, fetchDriverLapNumbers, fetchTelemetrySpeed, fetchLapTimes, SessionDriver, SectorComparisonData, SpeedDataPoint, LapTimeDataPoint } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import { cn, exportChartAsImage } from "@/lib/utils";
-import { UserIcon, Clock01Icon, Download01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
+import { cn } from "@/lib/utils";
+import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   onDriversSelected
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
+
   const [selectedDriver1, setSelectedDriver1] = useState<string>(initialDriver1);
   const [selectedDriver2, setSelectedDriver2] = useState<string>(initialDriver2);
   const [selectedLap1, setSelectedLap1] = useState<string | number>('fastest');
@@ -290,19 +290,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     driver2Color = '#FFFFFF';
   }
 
-  const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !comparisonData) return;
-    setIsExporting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver1}_vs_${selectedDriver2}_circuit_comparison`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+
 
   const renderContent = () => {
     if (!shouldLoadChart) {
@@ -643,20 +631,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
       {renderContent()}
 
-      {!isLoading && comparisonData && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2.5 text-xs text-gray-500 hover:text-white flex items-center gap-1.5 uppercase font-bold tracking-wider"
-            onClick={handleDownload}
-            disabled={isExporting}
-          >
-            <Download01Icon className="h-3.5 w-3.5" />
-            {isExporting ? "Exporting..." : "Download Chart"}
-          </Button>
-        </div>
-      )}
+
     </div>
   );
 };

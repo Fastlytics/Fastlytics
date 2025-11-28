@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ZAxis, Cell
 } from 'recharts';
-import { cn, exportChartAsImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetryGear, fetchSessionDrivers, fetchLapTimes, SessionDriver, GearMapDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 
@@ -52,7 +52,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
   const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver || '');
   const [selectedLap, setSelectedLap] = useState<string | number>(lap);
   const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
-  const [isExporting, setIsExporting] = useState(false);
+
   const [shouldLoadChart, setShouldLoadChart] = useState(false);
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
@@ -97,19 +97,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
     ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Gear Shifts`
     : "Gear Shifts");
 
-  const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !gearData || gearData.length === 0) return;
-    setIsExporting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver}_${selectedLap === 'fastest' ? 'fastest' : `lap${selectedLap}`}_gearmap`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+
 
   const renderContent = () => {
     if (!shouldLoadChart) {
@@ -175,14 +163,16 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
             labelStyle={{ display: 'none' }}
             formatter={(value: number, name: string, props: any) => [`Gear: ${props.payload.z}`, null]}
           />
-          {/* @ts-ignore - Recharts typing issue with payload prop */}
           <Legend
-            formatter={(value, entry, index) => <span className="text-gray-400 font-mono text-xs uppercase">Gear {index + 1}</span>}
-            iconSize={10}
-            wrapperStyle={{ paddingTop: '10px' }}
-            payload={gearColors.map((color, index) => ({
-              value: `Gear ${index + 1}`, type: 'circle', id: `ID${index}`, color: color
-            }))}
+            {...({
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              formatter: (value: any, entry: any, index: number) => <span className="text-gray-400 font-mono text-xs uppercase">Gear {index + 1}</span>,
+              iconSize: 10,
+              wrapperStyle: { paddingTop: '10px' },
+              payload: gearColors.map((color, index) => ({
+                value: `Gear ${index + 1}`, type: 'circle', id: `ID${index}`, color: color
+              }))
+            } as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
           />
           <Scatter name="Track Position" data={scatterData} fill="#8884d8" shape="circle">
             {scatterData.map((entry, index) => (
@@ -254,20 +244,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
 
       {renderContent()}
 
-      {shouldLoadChart && !isLoading && gearData && gearData.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2.5 text-xs text-gray-500 hover:text-white flex items-center gap-1.5 uppercase font-bold tracking-wider"
-            onClick={handleDownload}
-            disabled={isExporting}
-          >
-            <Download01Icon className="h-3.5 w-3.5" />
-            {isExporting ? "Exporting..." : "Download Chart"}
-          </Button>
-        </div>
-      )}
+
     </div>
   );
 };

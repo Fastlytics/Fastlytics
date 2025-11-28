@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine
 } from 'recharts';
-import { cn, exportChartAsImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetryThrottle, fetchSessionDrivers, fetchLapTimes, SessionDriver, ThrottleDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +37,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
   const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver || '');
   const [selectedLap, setSelectedLap] = useState<string | number>(lap);
   const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
-  const [isExporting, setIsExporting] = useState(false);
+
   const [shouldLoadChart, setShouldLoadChart] = useState(false);
 
   // Fetch available drivers
@@ -89,26 +89,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
     ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Throttle Input`
     : "Throttle Input");
 
-  // Handle chart download
-  const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !throttleData || throttleData.length === 0) {
-      return;
-    }
 
-    setIsExporting(true);
-    try {
-      // Brief delay to ensure chart is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Use event name, driver, and lap for the filename
-      const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${selectedDriver}_${selectedLap === 'fastest' ? 'fastest' : `lap${selectedLap}`}_throttle`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const renderContent = () => {
     // If chart shouldn't be loaded yet, show load button
@@ -268,21 +249,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
       </CardHeader>
       <CardContent className="pt-0">
         {renderContent()}
-        {shouldLoadChart && !isLoading && throttleData && throttleData.length > 0 && (
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 px-2.5 text-xs bg-gray-800 hover:bg-gray-700 text-white flex items-center gap-1.5 border border-gray-700"
-              onClick={handleDownload}
-              disabled={isExporting}
-              title="Download chart"
-            >
-              <Download01Icon className="h-3.5 w-3.5" />
-              {isExporting ? "Exporting..." : "Download Chart"}
-            </Button>
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );

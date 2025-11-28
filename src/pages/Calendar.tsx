@@ -111,13 +111,13 @@ const Calendar = () => {
 
           // Find the specific next session for this race
           const sessions = [
-            { name: 'FP1', date: event.Session1Date },
-            { name: 'FP2', date: event.Session2Date },
-            { name: 'FP3', date: event.Session3Date },
-            { name: 'Qualifying', date: event.Session4Date }, // Assuming Session4 is usually Quali
-            { name: 'Sprint', date: event.Session5Date }, // Assuming Session5 is Sprint if exists
+            { name: event.Session1, date: event.Session1Date },
+            { name: event.Session2, date: event.Session2Date },
+            { name: event.Session3, date: event.Session3Date },
+            { name: event.Session4, date: event.Session4Date },
+            { name: event.Session5, date: event.Session5Date },
             { name: 'Race', date: event.EventDate }
-          ].filter(s => s.date);
+          ].filter(s => s.date && s.name);
 
           // Sort sessions by date
           sessions.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { cn, exportChartAsImage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchTelemetryThrottle,
@@ -15,7 +15,7 @@ import {
   DRSDataPoint
 } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, Download01Icon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   telemetryType
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
+
   const [shouldLoadTelemetry, setShouldLoadTelemetry] = useState(false);
 
   useEffect(() => {
@@ -168,19 +168,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   const isLoading = isLoadingTelemetry1 || isLoadingTelemetry2;
   const error = error1 || error2;
 
-  const handleDownload = async () => {
-    if (!chartRef.current || isLoading || !combinedTelemetryData || combinedTelemetryData.length === 0) return;
-    setIsExporting(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const filename = `${event.toLowerCase().replace(/\s+/g, '-')}_${driver1}_vs_${driver2}_${telemetryType}`;
-      await exportChartAsImage(chartRef, filename);
-    } catch (error) {
-      console.error('Failed to export chart:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
+
 
   const getTelemetryProps = () => {
     switch (telemetryType) {
@@ -403,20 +391,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 
       {renderContent()}
 
-      {shouldLoadTelemetry && !isLoading && combinedTelemetryData && combinedTelemetryData.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2.5 text-xs text-gray-500 hover:text-white flex items-center gap-1.5 uppercase font-bold tracking-wider"
-            onClick={handleDownload}
-            disabled={isExporting}
-          >
-            <Download01Icon className="h-3.5 w-3.5" />
-            {isExporting ? "Exporting..." : "Download Chart"}
-          </Button>
-        </div>
-      )}
+
     </div>
   );
 };
