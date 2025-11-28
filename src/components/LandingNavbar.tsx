@@ -45,7 +45,7 @@ const LandingNavbar = () => {
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 hover:border-red-500 rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all duration-300"
               >
-                <span className="skew-x-[10deg] group-hover:skew-x-0">Launch App</span>
+                <span className="skew-x-[10deg] group-hover:skew-x-0">Sign Up</span>
               </Button>
             </Link>
           </div>
@@ -95,7 +95,7 @@ const LandingNavbar = () => {
               </Link>
               <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 rounded-none py-6">
-                  Launch App
+                  Sign Up
                 </Button>
               </Link>
             </div>

@@ -27,7 +27,7 @@ import { useAuth } from '@/contexts/AuthContext'; // Keep import for now
 const Navbar = () => {
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { loading } = useAuth(); // Keep for compatibility
+  const { loading, user } = useAuth(); // Keep for compatibility
   const [scrollPosition, setScrollPosition] = useState(0);
 
   // Track scroll position for background opacity changes
@@ -100,7 +100,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-6">
             <ul className="flex space-x-3">
               {navItems.map((item) => (
                 <motion.li key={item.name} whileHover={{ scale: 1.05 }}>
@@ -141,6 +141,23 @@ const Navbar = () => {
                 </motion.li>
               ))}
             </ul>
+
+            {/* Auth Button */}
+            <div className="ml-4">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white font-medium px-6">
+                    Launch App <ArrowRight01Icon className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button className="bg-white text-black hover:bg-gray-200 font-medium px-6">
+                    Sign Up
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}

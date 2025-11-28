@@ -1,34 +1,57 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
-// Define a simplified context type without auth features
 interface AuthContextType {
-  user: null;
+  session: Session | null;
+  user: User | null;
   loading: boolean;
-  signOut: () => void;
-  setUser: () => void;
+  signOut: () => Promise<void>;
 }
 
-// Create the context with default values
 const AuthContext = createContext<AuthContextType>({
+  session: null,
   user: null,
-  loading: false,
-  signOut: () => {},
-  setUser: () => {},
+  loading: true,
+  signOut: async () => { },
 });
 
-// Define the props for the provider component
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Create a simplified provider component with no auth functionality
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  // Simple mock values
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   const value = {
-    user: null,
-    loading: false,
-    signOut: () => {},
-    setUser: () => {},
+    session,
+    user,
+    loading,
+    signOut,
   };
 
   return (
@@ -38,7 +61,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the AuthContext
 export const useAuth = (): AuthContextType => {
   return useContext(AuthContext);
 };

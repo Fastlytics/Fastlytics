@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 import { Gauge } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,6 +10,7 @@ const DashboardNavbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
+    const { user } = useAuth();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -64,17 +67,37 @@ const DashboardNavbar = () => {
                                 )}
                             </Link>
                         ))}
+
+                        {/* Profile Picture */}
+                        <Link to="/account">
+                            <Avatar className="h-9 w-9 border-2 border-transparent hover:border-red-600 transition-all cursor-pointer">
+                                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                                <AvatarFallback className="bg-zinc-800 text-white text-xs font-bold">
+                                    {user?.email?.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Link>
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden flex flex-col gap-1.5 p-2"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        <span className={`block w-6 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                        <span className={`block w-6 h-0.5 bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-                        <span className={`block w-6 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
-                    </button>
+                    <div className="flex items-center gap-4 md:hidden">
+                        <Link to="/account">
+                            <Avatar className="h-8 w-8 border border-zinc-700">
+                                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                                <AvatarFallback className="bg-zinc-800 text-white text-xs">
+                                    {user?.email?.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Link>
+                        <button
+                            className="flex flex-col gap-1.5 p-2"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            <span className={`block w-6 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                            <span className={`block w-6 h-0.5 bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
+                            <span className={`block w-6 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                        </button>
+                    </div>
                 </div>
             </div>
 

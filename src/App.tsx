@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing"; // Updated import
+import Auth from "./pages/Auth";
+import Account from "./pages/Account";
 import AboutUs from "./pages/AboutUs";
 import Race from "./pages/Race";
 import TeamStandings from "./pages/TeamStandings";
@@ -18,6 +20,7 @@ import LandingFooter from "./components/LandingFooter";
 import { SeasonProvider } from "./contexts/SeasonContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +60,12 @@ const App = () => (
               <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
 
               {/* All routes are now public */}
-              <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
+              <Route path="/auth" element={<Auth />} />
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
+                <Route path="/account" element={<MainLayout><Account /></MainLayout>} />
+              </Route>
               <Route path="/race/:raceId" element={<MainLayout><Race /></MainLayout>} />
               <Route path="/calendar" element={<MainLayout><Calendar /></MainLayout>} />
               <Route path="/standings/teams" element={<MainLayout><TeamStandings /></MainLayout>} />
