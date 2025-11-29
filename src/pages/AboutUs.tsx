@@ -163,13 +163,11 @@ const AboutUs = () => {
                             className="relative"
                         >
                             <div className="aspect-[4/5] bg-zinc-800 border-2 border-zinc-700 relative overflow-hidden group">
-                                {/* Placeholder Content */}
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600">
-                                    <div className="w-24 h-24 border-2 border-zinc-600 rounded-full mb-4 flex items-center justify-center">
-                                        <span className="text-4xl">?</span>
-                                    </div>
-                                    <span className="uppercase font-bold tracking-widest">Your Photo Here</span>
-                                </div>
+                                <img
+                                    src="/subhash.jpg"
+                                    alt="Subhash"
+                                    className="w-full h-full object-cover group-hover:grayscale-0 transition-all duration-500"
+                                />
 
                                 {/* Decorative Elements */}
                                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50" />

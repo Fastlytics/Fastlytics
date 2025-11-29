@@ -26,18 +26,6 @@ const HeroSection = () => {
                     animate={{ x: ['-100%', '100%'] }}
                     transition={{ duration: 5, repeat: Infinity, ease: "linear", delay: 1 }}
                 />
-
-                {/* Floating Shapes */}
-                <motion.div
-                    className="absolute top-20 right-20 w-32 h-32 border border-red-600/30 rounded-full"
-                    animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                    className="absolute bottom-20 left-20 w-24 h-24 border border-white/20 rotate-45"
-                    animate={{ scale: [1, 1.5, 1], rotate: [45, 90, 45] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                />
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">

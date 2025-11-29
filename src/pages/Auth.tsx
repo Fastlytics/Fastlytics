@@ -10,11 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Gauge } from 'lucide-react'; // Only allowed lucide icon
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
 const Auth = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('signup');
     const navigate = useNavigate();
 
     const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
@@ -71,35 +73,66 @@ const Auth = () => {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="relative"
                     >
-                        {/* Rotating Rings */}
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                            className="w-96 h-96 border border-zinc-700/50 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        />
-                        <motion.div
-                            animate={{ rotate: -360 }}
-                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                            className="w-72 h-72 border border-red-900/30 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-dashed"
-                        />
+                        {/* Background Glow */}
+                        <div className="absolute inset-0 bg-red-600/20 blur-3xl rounded-full transform scale-150 opacity-20" />
 
-                        {/* Floating Cards Animation */}
-                        <div className="relative w-80 h-60 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-xl p-6 shadow-2xl transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-                            <div className="flex items-center space-x-3 mb-4">
-                                <div className="w-3 h-3 rounded-full bg-red-500" />
-                                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                        {/* Floating Chart Card */}
+                        <div className="relative w-[500px] h-[350px] bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-xl p-6 shadow-2xl transform -rotate-6 hover:rotate-0 transition-transform duration-500 group cursor-default">
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                    <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">Incoming Telemetry</span>
+                                </div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="h-2 w-3/4 bg-zinc-700 rounded animate-pulse" />
-                                <div className="h-2 w-1/2 bg-zinc-700 rounded animate-pulse delay-75" />
-                                <div className="h-24 w-full bg-zinc-800/50 rounded mt-4 border border-zinc-700/50 relative overflow-hidden">
-                                    <motion.div
-                                        className="absolute bottom-0 left-0 w-full bg-red-500/20"
-                                        initial={{ height: "0%" }}
-                                        animate={{ height: ["20%", "50%", "30%", "70%"] }}
-                                        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-                                    />
+
+                            {/* Chart Area */}
+                            <div className="h-[240px] w-full relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={[
+                                        { time: 0, speed: 120 }, { time: 1, speed: 180 }, { time: 2, speed: 240 },
+                                        { time: 3, speed: 290 }, { time: 4, speed: 310 }, { time: 5, speed: 280 },
+                                        { time: 6, speed: 150 }, { time: 7, speed: 110 }, { time: 8, speed: 160 },
+                                        { time: 9, speed: 220 }, { time: 10, speed: 280 }, { time: 11, speed: 305 },
+                                        { time: 12, speed: 315 }, { time: 13, speed: 320 }, { time: 14, speed: 290 },
+                                        { time: 15, speed: 200 }, { time: 16, speed: 140 }, { time: 17, speed: 180 },
+                                        { time: 18, speed: 240 }, { time: 19, speed: 280 }, { time: 20, speed: 300 }
+                                    ]}>
+                                        <defs>
+                                            <linearGradient id="speedGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#dc2626" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis dataKey="time" hide />
+                                        <YAxis hide domain={[0, 350]} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }}
+                                            itemStyle={{ color: '#fff' }}
+                                            cursor={{ stroke: '#dc2626', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="speed"
+                                            stroke="#dc2626"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#speedGradient)"
+                                            animationDuration={2000}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+
+                                {/* Overlay Grid Lines */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <div className="w-full h-full border-t border-zinc-800/50 mt-[25%]" />
+                                    <div className="w-full h-full border-t border-zinc-800/50 mt-[25%]" />
+                                    <div className="w-full h-full border-t border-zinc-800/50 mt-[25%]" />
                                 </div>
                             </div>
                         </div>
@@ -113,7 +146,7 @@ const Auth = () => {
                     >
                         <h2 className="text-3xl font-bold mb-2">Unlock Pro Analytics</h2>
                         <p className="text-zinc-400 max-w-md">
-                            Join thousands of sim racers improving their lap times with advanced telemetry analysis.
+                            Join thousands of racing fans improving their knowledge of the sport with advanced telemetry analysis.
                         </p>
                     </motion.div>
                 </div>
@@ -124,37 +157,39 @@ const Auth = () => {
                 {/* Mobile Background */}
                 <div className="absolute inset-0 lg:hidden bg-zinc-900/20 z-0" />
 
-                <div className="w-full max-w-md z-10">
-                    <div className="text-center mb-8">
+                <div className="w-full max-w-xl z-10">
+                    <div className="text-center mb-12">
                         <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-red-500/10 mb-4"
+                            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/10 mb-6"
                         >
-                            <Gauge className="w-6 h-6 text-red-500" />
+                            <Gauge className="w-8 h-8 text-red-500" />
                         </motion.div>
-                        <h1 className="text-2xl font-bold tracking-tight">Welcome to Fastlytics</h1>
-                        <p className="text-zinc-400 mt-2">Sign in to access your dashboard</p>
+                        <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-3">Welcome to <span className="text-red-600">Fastlytics</span></h1>
+                        <p className="text-zinc-400 text-lg">
+                            {activeTab === 'signup' ? 'Sign up to create your account' : 'Sign in to access your dashboard'}
+                        </p>
                     </div>
 
-                    <Tabs defaultValue="signup" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-8 bg-zinc-900/50 p-1">
-                            <TabsTrigger value="signup" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">Sign Up</TabsTrigger>
-                            <TabsTrigger value="signin" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <Tabs defaultValue="signup" className="w-full" onValueChange={setActiveTab}>
+                        <TabsList className="grid w-full grid-cols-2 mb-10 bg-zinc-900/50 p-1 h-14 rounded-lg">
+                            <TabsTrigger value="signup" className="h-12 text-lg font-bold uppercase tracking-wider data-[state=active]:bg-red-600 data-[state=active]:text-white rounded-md transition-all">Sign Up</TabsTrigger>
+                            <TabsTrigger value="signin" className="h-12 text-lg font-bold uppercase tracking-wider data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-md transition-all">Sign In</TabsTrigger>
                         </TabsList>
 
                         <AnimatePresence mode="wait">
-                            <TabsContent value="signup" className="space-y-4 focus-visible:outline-none">
+                            <TabsContent value="signup" className="space-y-6 focus-visible:outline-none">
                                 <motion.div
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
                                     transition={{ duration: 0.2 }}
                                 >
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('google')}
                                             disabled={isLoading}
                                         >
@@ -163,7 +198,7 @@ const Auth = () => {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('github')}
                                             disabled={isLoading}
                                         >
@@ -172,7 +207,7 @@ const Auth = () => {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('discord')}
                                             disabled={isLoading}
                                         >
@@ -181,7 +216,7 @@ const Auth = () => {
                                         </Button>
                                     </div>
 
-                                    <p className="text-center text-xs text-zinc-500 mt-6">
+                                    <p className="text-center text-sm text-zinc-500 mt-8">
                                         By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-300">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-300">Privacy Policy</span>.
                                     </p>
                                 </motion.div>
@@ -197,7 +232,7 @@ const Auth = () => {
                                     <div className="space-y-3">
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('google')}
                                             disabled={isLoading}
                                         >
@@ -206,7 +241,7 @@ const Auth = () => {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('github')}
                                             disabled={isLoading}
                                         >
@@ -215,7 +250,7 @@ const Auth = () => {
                                         </Button>
                                         <Button
                                             variant="outline"
-                                            className="w-full h-12 bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
                                             onClick={() => handleSocialLogin('discord')}
                                             disabled={isLoading}
                                         >
@@ -228,19 +263,19 @@ const Auth = () => {
                                         <div className="absolute inset-0 flex items-center">
                                             <span className="w-full border-t border-zinc-800" />
                                         </div>
-                                        <div className="relative flex justify-center text-xs uppercase">
-                                            <span className="bg-black px-2 text-zinc-500">Or continue with</span>
+                                        <div className="relative flex justify-center text-sm uppercase tracking-wider">
+                                            <span className="bg-black px-4 text-zinc-500 font-bold">Or continue with</span>
                                         </div>
                                     </div>
 
                                     <form onSubmit={handleEmailSignIn} className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="email">Email</Label>
+                                            <Label htmlFor="email" className="text-base font-medium text-zinc-300">Email</Label>
                                             <Input
                                                 id="email"
                                                 type="email"
                                                 placeholder="name@example.com"
-                                                className="bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20"
+                                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 required
@@ -248,12 +283,12 @@ const Auth = () => {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="password">Password</Label>
+                                            <Label htmlFor="password" className="text-base font-medium text-zinc-300">Password</Label>
                                             <Input
                                                 id="password"
                                                 type="password"
                                                 placeholder="••••••••"
-                                                className="bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20"
+                                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 required
@@ -262,7 +297,7 @@ const Auth = () => {
                                         </div>
                                         <Button
                                             type="submit"
-                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium h-11"
+                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
                                             disabled={isLoading}
                                         >
                                             {isLoading ? 'Signing in...' : 'Sign In'}
