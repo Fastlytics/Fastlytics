@@ -356,6 +356,18 @@ const Race = () => {
     }
   };
 
+  const handleCircuitDriversSelected = React.useCallback((drivers: { driver1: string; driver2: string; lap1: string | number; lap2: string | number; shouldLoadChart: boolean; }) => {
+    setCircuitDrivers(drivers);
+    if (drivers.shouldLoadChart) {
+      posthog.capture('chart_interaction', {
+        chart: 'circuit_comparison',
+        action: 'compare_drivers',
+        driver1: drivers.driver1,
+        driver2: drivers.driver2
+      });
+    }
+  }, []);
+
   // Intersection Observer for Scroll Spy
   useEffect(() => {
     const handleScroll = () => {
@@ -641,17 +653,7 @@ const Race = () => {
                     year={year!}
                     event={eventName}
                     session={selectedSession}
-                    onDriversSelected={(drivers) => {
-                      setCircuitDrivers(drivers);
-                      if (drivers.shouldLoadChart) {
-                        posthog.capture('chart_interaction', {
-                          chart: 'circuit_comparison',
-                          action: 'compare_drivers',
-                          driver1: drivers.driver1,
-                          driver2: drivers.driver2
-                        });
-                      }
-                    }}
+                    onDriversSelected={handleCircuitDriversSelected}
                   />
                 </div>
               </section>
