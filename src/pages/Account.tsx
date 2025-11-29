@@ -10,6 +10,7 @@ import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon } from 'hugeicons-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import posthog from 'posthog-js';
 
 // --- Components ---
 
@@ -72,6 +73,7 @@ const Account = () => {
 
             if (error) throw error;
             toast.success('Profile updated successfully');
+            posthog.capture('profile_updated');
             if (email !== user?.email) {
                 toast.info('Please check your new email for a confirmation link.');
             }
@@ -93,6 +95,7 @@ const Account = () => {
             const { error } = await supabase.auth.updateUser({ password: password });
             if (error) throw error;
             toast.success('Password updated successfully');
+            posthog.capture('password_updated');
             setPassword('');
             setConfirmPassword('');
         } catch (error: any) {

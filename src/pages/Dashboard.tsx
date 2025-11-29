@@ -18,10 +18,16 @@ import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import { Flag01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/SEO';
+import posthog from 'posthog-js';
+import { useEffect } from 'react';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    posthog.capture('dashboard_viewed');
+  }, []);
 
   // --- Data Fetching ---
 
@@ -133,7 +139,10 @@ const Dashboard = () => {
                   Recent <span className="text-gray-500">Races</span>
                 </h3>
                 <button
-                  onClick={() => navigate('/calendar')}
+                  onClick={() => {
+                    posthog.capture('widget_clicked', { widget: 'recent_races', action: 'view_calendar' });
+                    navigate('/calendar');
+                  }}
                   className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
                 >
                   View Calendar <ArrowRight01Icon className="w-4 h-4" />
@@ -144,7 +153,10 @@ const Dashboard = () => {
                 {recentRaces.map((race) => (
                   <div
                     key={race.EventName}
-                    onClick={() => navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
+                    onClick={() => {
+                      posthog.capture('widget_clicked', { widget: 'recent_races', action: 'click_race', race: race.EventName });
+                      navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`);
+                    }}
                     className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:border-red-600/50 cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center gap-4">

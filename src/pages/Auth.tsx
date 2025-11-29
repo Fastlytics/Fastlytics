@@ -11,6 +11,7 @@ import { Gauge } from 'lucide-react'; // Only allowed lucide icon
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import posthog from 'posthog-js';
 
 const Auth = () => {
     const [email, setEmail] = useState('');
@@ -21,6 +22,7 @@ const Auth = () => {
 
     const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
         setIsLoading(true);
+        posthog.capture('login_started', { method: 'social', provider });
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
@@ -38,6 +40,7 @@ const Auth = () => {
     const handleEmailSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        posthog.capture('login_started', { method: 'email' });
 
         try {
             const { error } = await supabase.auth.signInWithPassword({

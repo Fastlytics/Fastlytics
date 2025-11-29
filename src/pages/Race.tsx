@@ -28,6 +28,7 @@ import BrakeChart from '@/components/BrakeChart';
 import RPMChart from '@/components/RPMChart';
 import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
+import posthog from 'posthog-js';
 
 // --- Helper Functions ---
 
@@ -251,6 +252,11 @@ const Race = () => {
     if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
     const slug = parts.slice(1).join('-');
     const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+    if (parsedYear && name) {
+      posthog.capture('race_analysis_viewed', { year: parsedYear, race: name });
+    }
+
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
@@ -346,6 +352,7 @@ const Race = () => {
       const offsetPosition = elementPosition + window.pageYOffset - offset;
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
       setActiveSection(id);
+      posthog.capture('tab_switched', { tab: id, context: 'race_analysis' });
     }
   };
 
@@ -630,7 +637,22 @@ const Race = () => {
               <section id="dominance" className="scroll-mt-32">
                 <SectionHeader title="Track Dominance" icon={MapsLocation01Icon} />
                 <div className="bg-black border-2 border-gray-800 p-6">
-                  <CircuitComparisonChart year={year!} event={eventName} session={selectedSession} onDriversSelected={setCircuitDrivers} />
+                  <CircuitComparisonChart
+                    year={year!}
+                    event={eventName}
+                    session={selectedSession}
+                    onDriversSelected={(drivers) => {
+                      setCircuitDrivers(drivers);
+                      if (drivers.shouldLoadChart) {
+                        posthog.capture('chart_interaction', {
+                          chart: 'circuit_comparison',
+                          action: 'compare_drivers',
+                          driver1: drivers.driver1,
+                          driver2: drivers.driver2
+                        });
+                      }
+                    }}
+                  />
                 </div>
               </section>
 
