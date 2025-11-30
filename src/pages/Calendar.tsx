@@ -100,13 +100,34 @@ const Calendar = () => {
     const processedData = scheduleData.map(event => {
       const result = resultsMap.get(event.EventName);
       const eventDate = new Date(event.EventDate);
+
+      // Calculate the actual end time of the event based on the latest session
+      const sessionDates = [
+        event.Session1Date,
+        event.Session2Date,
+        event.Session3Date,
+        event.Session4Date,
+        event.Session5Date,
+        event.EventDate // Fallback
+      ].filter(d => d).map(d => new Date(d!));
+
+      const latestSessionDate = new Date(Math.max(...sessionDates.map(d => d.getTime())));
+
       // Add 4 hours buffer to keep race as "upcoming" while it's happening
-      const raceEndTime = new Date(eventDate.getTime() + (4 * 60 * 60 * 1000));
+      const raceEndTime = new Date(latestSessionDate.getTime() + (4 * 60 * 60 * 1000));
       const isUpcoming = raceEndTime > now;
 
       // Check for next race
       if (isUpcoming) {
+        // Use EventDate for diff to maintain event order
         const diff = eventDate.getTime() - now.getTime();
+
+        // If diff is negative (event started but not finished), it should be prioritized
+        // We want the event with the smallest diff (most negative if started, or smallest positive if not)
+        // Actually, we just want the first upcoming event in the schedule.
+        // Since we iterate through the schedule, and we assume schedule is sorted? 
+        // The original logic used minDiff.
+
         if (diff < minDiff) {
           minDiff = diff;
           nextRaceEvent = { ...event, displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), countryCode: getCountryCode(event.Country || event.Location) };
@@ -118,8 +139,11 @@ const Calendar = () => {
             { name: event.Session3, date: event.Session3Date },
             { name: event.Session4, date: event.Session4Date },
             { name: event.Session5, date: event.Session5Date },
-            { name: 'Race', date: event.EventDate }
           ].filter(s => s.date && s.name);
+
+          // If "Race" is not explicitly in sessions (sometimes it is Session5), ensure we have it.
+          // However, usually Session5 is Race. 
+          // Let's just use the sessions we have.
 
           // Sort sessions by date
           sessions.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
@@ -128,12 +152,17 @@ const Calendar = () => {
           const upcomingSession = sessions.find(s => new Date(s.date!) > now);
           if (upcomingSession) {
             nextSessionData = {
-              name: upcomingSession.name,
+              name: upcomingSession.name!,
               date: new Date(upcomingSession.date!)
             };
           } else {
-            // If all sessions passed but race date is technically "future" (e.g. race day morning), default to Race
-            nextSessionData = { name: 'Race', date: eventDate };
+            // If all sessions passed but race is technically "upcoming" (within buffer), show Race end or just Race
+            // Default to the latest session (usually Race)
+            const lastSession = sessions[sessions.length - 1];
+            nextSessionData = {
+              name: lastSession?.name || 'Race',
+              date: lastSession ? new Date(lastSession.date!) : eventDate
+            };
           }
         }
       }
