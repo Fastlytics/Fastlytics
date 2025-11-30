@@ -12,6 +12,7 @@ import Race from "./pages/Race";
 import TeamStandings from "./pages/TeamStandings";
 import DriverStandings from "./pages/DriverStandings";
 import Calendar from "./pages/Calendar";
+import DriverDetailsPage from "./pages/DriverDetailsPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/calendar" element={<DashboardLayout><Calendar /></DashboardLayout>} />
               <Route path="/standings/teams" element={<DashboardLayout><TeamStandings /></DashboardLayout>} />
               <Route path="/standings/drivers" element={<DashboardLayout><DriverStandings /></DashboardLayout>} />
+              <Route path="/driver/:driverId" element={<DashboardLayout><DriverDetailsPage /></DashboardLayout>} />
 
               {/* 404 page */}
               <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />

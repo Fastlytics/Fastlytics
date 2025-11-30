@@ -13,6 +13,7 @@ import DriverComparisonTelemetry from '@/components/DriverComparisonTelemetry';
 import F1Card from '@/components/F1Card';
 import { Button } from "@/components/ui/button";
 import { fetchSpecificRaceResults, fetchAvailableSessions, fetchEventSessionSchedule, DetailedRaceResult, AvailableSession, EventSessionSchedule } from '@/lib/api';
+import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { useQuery } from '@tanstack/react-query';
 import {
   Table,
@@ -229,6 +230,7 @@ const Race = () => {
   const [selectedSession, setSelectedSession] = useState<string>('R');
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState('overview');
+  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
   // New State for Redesign
   const [now, setNow] = useState(new Date());
@@ -238,6 +240,19 @@ const Race = () => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const loadOpenF1Data = async () => {
+        const drivers = await fetchAllOpenF1Drivers();
+        setOpenF1Drivers(drivers);
+    };
+    loadOpenF1Data();
+  }, []);
+
+  const getDriverImage = (driverName: string) => {
+    const driver = openF1Drivers.find(d => d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
+    return driver?.headshot_url;
+  };
 
   // Circuit Comparison State
   const [circuitDrivers, setCircuitDrivers] = useState<{
@@ -603,13 +618,13 @@ const Race = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {(selectedSession === 'R' || selectedSession === 'Sprint') ? (
                     <>
-                      {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} />}
-                      {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} />}
-                      {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} />}
+                      {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} imageUrl={getDriverImage(raceWinner.fullName)} />}
+                      {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} imageUrl={getDriverImage(poleSitter.fullName)} />}
+                      {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} imageUrl={getDriverImage(fastestLapHolder.fullName)} />}
                     </>
                   ) : (
                     topPerformers.map((p, i) => (
-                      <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />} />
+                      <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />} imageUrl={getDriverImage(p.fullName)} />
                     ))
                   )}
                 </div>

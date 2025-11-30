@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import { ArrowUp01Icon, ArrowDown01Icon, MinusSignCircleIcon } from 'hugeicons-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface F1CardProps {
   title: string;
@@ -12,9 +13,10 @@ interface F1CardProps {
   className?: string;
   style?: React.CSSProperties;
   isRookie?: boolean;
+  imageUrl?: string;
 }
 
-const F1Card = ({ title, value, team, icon, points_change, subValue, className, style, isRookie }: F1CardProps) => {
+const F1Card = ({ title, value, team, icon, points_change, subValue, className, style, isRookie, imageUrl }: F1CardProps) => {
 
   const getChangeIndicator = (change: number | undefined) => {
     if (change === undefined) {
@@ -67,8 +69,15 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
           )}
         </div>
 
-        {icon && (
-          React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6" })
+        {imageUrl ? (
+            <Avatar className="h-16 w-16 border-2 border-gray-700">
+                <AvatarImage src={imageUrl} className="object-cover bg-gray-800" />
+                <AvatarFallback>{String(value).substring(0, 2)}</AvatarFallback>
+            </Avatar>
+        ) : (
+            icon && (
+                React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6" })
+            )
         )}
       </div>
     </div>

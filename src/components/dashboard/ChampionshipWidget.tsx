@@ -5,6 +5,9 @@ import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/champions
 import { useSeason } from '@/contexts/SeasonContext';
 import { ChampionIcon, UserGroupIcon, ArrowRight01Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useEffect, useState } from 'react';
+import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 
 interface ChampionshipWidgetProps {
     drivers: DriverStanding[];
@@ -24,6 +27,20 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
     const topDrivers = drivers.slice(0, 3);
     const topTeams = teams.slice(0, 3);
     const { selectedYear } = useSeason();
+    const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
+
+    useEffect(() => {
+        const loadOpenF1Data = async () => {
+            const drivers = await fetchAllOpenF1Drivers();
+            setOpenF1Drivers(drivers);
+        };
+        loadOpenF1Data();
+    }, []);
+
+    const getDriverImage = (driverCode: string, driverName: string) => {
+        const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
+        return driver?.headshot_url;
+    };
 
     const getGap = (points: number, leaderPoints: number) => {
         const gap = leaderPoints - points;
@@ -78,15 +95,21 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                                 <span className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}>
                                     {index + 1}
                                 </span>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="font-bold text-lg leading-none">{driver.name.split(' ').pop()?.toUpperCase()}</div>
-                                        {index === 0 && driverChampionshipStatus === 'champion' && (
-                                            <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider">Champion</span>
-                                        )}
+                                <Link to={`/driver/${driver.code}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                                    <Avatar className="h-10 w-10 border-2 border-gray-700">
+                                        <AvatarImage src={getDriverImage(driver.code, driver.name)} className="object-cover bg-gray-800" />
+                                        <AvatarFallback>{driver.code}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="font-bold text-lg leading-none">{driver.name.split(' ').pop()?.toUpperCase()}</div>
+                                            {index === 0 && driverChampionshipStatus === 'champion' && (
+                                                <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider">Champion</span>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-gray-500 font-mono">{driver.team}</div>
                                     </div>
-                                    <div className="text-xs text-gray-500 font-mono">{driver.team}</div>
-                                </div>
+                                </Link>
                             </div>
                             <div className="text-right">
                                 <div className="font-black text-xl">{driver.points}</div>

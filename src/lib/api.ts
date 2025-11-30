@@ -129,6 +129,9 @@ export interface DriverDetails {
     dateOfBirth: string; // ISO string format ideally
     bio?: string; // Optional
     imageUrl?: string; // Optional URL for the large photo
+    headshot_url?: string; // From OpenF1
+    team_colour?: string; // From OpenF1
+    team_name?: string; // From OpenF1
     careerStats?: { // Optional stats block
         wins?: number;
         podiums?: number;
@@ -534,6 +537,8 @@ export const fetchLapPositions = async (year: number, event: string, session: st
 };
 
 /** Fetches detailed information for a specific driver. */
+import { fetchOpenF1Driver } from './openf1';
+
 export const getDriverDetails = async (driverId: string): Promise<DriverDetails> => {
     const url = `${API_BASE_URL}/api/driver/${driverId}`;
     console.log(`Fetching driver details from: ${url}`);
@@ -547,13 +552,31 @@ export const getDriverDetails = async (driverId: string): Promise<DriverDetails>
         }
         const data: DriverDetails = await response.json();
         console.log(`Successfully fetched details for driver ${driverId}.`);
-        // TODO: Potentially add mock data here if API returns 404 during development
-        // if (!data && MOCK_ENABLED) return MOCK_DRIVER_DETAILS[driverId];
+
+        // Fetch additional data from OpenF1
+        // We need to map driverId (e.g., 'VER') to driver number if possible, or fetch all and find match
+        // For now, let's try to fetch all drivers for the latest session and match by code/acronym
+        try {
+            const openF1Drivers = await import('./openf1').then(m => m.fetchAllOpenF1Drivers());
+            const openF1Driver = openF1Drivers.find(d => d.name_acronym === driverId || d.last_name.toUpperCase().includes(driverId));
+            
+            if (openF1Driver) {
+                console.log(`Found OpenF1 data for ${driverId}`);
+                data.headshot_url = openF1Driver.headshot_url;
+                data.team_colour = openF1Driver.team_colour;
+                data.team_name = openF1Driver.team_name;
+                // Prefer OpenF1 headshot if available
+                if (openF1Driver.headshot_url) {
+                    data.imageUrl = openF1Driver.headshot_url;
+                }
+            }
+        } catch (openF1Error) {
+            console.warn("Failed to enrich driver details with OpenF1 data:", openF1Error);
+        }
+
         return data;
     } catch (error) {
         console.error(`Error fetching driver details for ${driverId}:`, error);
-        // TODO: Potentially return mock data on error during development
-        // if (MOCK_ENABLED) return MOCK_DRIVER_DETAILS[driverId];
         throw error;
     }
 };
