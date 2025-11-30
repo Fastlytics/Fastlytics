@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getTeamLogo } from '@/lib/teamUtils';
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -83,6 +84,29 @@ const driverNumbers: { [year: string]: { [driverCode: string]: number } } = {
 const getDriverNumber = (driverCode: string, year: number): number | null => {
   const yearStr = year.toString();
   return driverNumbers[yearStr]?.[driverCode] || null;
+};
+
+const driverImageMap: Record<string, string> = {
+  "ALB": "/drivers/2025williamsalealb01right.avif",
+  "ALO": "/drivers/2025astonmartinferalo01right.avif",
+  "BEA": "/drivers/2025haasf1teamolibea01right.avif",
+  "BOR": "/drivers/2025kicksaubergabbor01right.avif",
+  "COL": "/drivers/2025alpinefracol01right.avif",
+  "GAS": "/drivers/2025alpinepiegas01right.avif",
+  "HAD": "/drivers/2025racingbullsisahad01right.avif",
+  "HAM": "/drivers/2025ferrarilewham01right.avif",
+  "HUL": "/drivers/2025kicksaubernichul01right.avif",
+  "LAW": "/drivers/2025racingbullslialaw01right.avif",
+  "LEC": "/drivers/2025ferrarichalec01right.avif",
+  "NOR": "/drivers/2025mclarenlannor01right.avif",
+  "OCO": "/drivers/2025haasf1teamestoco01right.avif",
+  "PIA": "/drivers/2025mclarenoscpia01right.avif",
+  "RUS": "/drivers/2025mercedesgeorus01right.avif",
+  "SAI": "/drivers/2025williamscarsai01right.avif",
+  "STR": "/drivers/2025astonmartinlanstr01right.avif",
+  "TSU": "/drivers/2025redbullracingyuktsu01right.avif",
+  "VER": "/drivers/2025redbullracingmaxver01right.avif",
+  "ANT": "/drivers/2025mercedesandant01right.avif",
 };
 
 const DriverStandings = () => {
@@ -248,15 +272,22 @@ const DriverStandings = () => {
                     transition={{ delay: 0.2 }}
                     className="order-2 md:order-1 relative group"
                   >
-                    <div className="bg-black border-2 border-gray-800 hover:border-gray-500 transition-colors p-6 relative overflow-hidden">
+                    <div className="bg-black border-2 border-gray-800 hover:border-gray-500 transition-colors p-6 relative overflow-hidden flex flex-col h-full justify-end">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[1].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">2</div>
-                      <div className="relative z-10 flex flex-col items-center text-center">
-                        <Avatar className="h-24 w-24 border-4 border-gray-700 mb-4 shadow-lg">
-                          <AvatarImage src={getDriverImage(top3[1].code, top3[1].name)} className="object-cover bg-gray-800" />
-                          <AvatarFallback>{top3[1].code}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[1].team}</div>
+
+                      {/* Driver Image - Waist Up */}
+                      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 h-48 z-0">
+                        <img
+                          src={driverImageMap[top3[1].code] || getDriverImage(top3[1].code, top3[1].name)}
+                          alt={top3[1].name}
+                          className="w-full h-full object-cover object-top"
+                          style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
+                        />
+                      </div>
+
+                      <div className="relative z-10 mt-32 flex flex-col items-center text-center">
+                        <div className="text-xs font-mono text-gray-400 uppercase mb-2">{top3[1].team}</div>
                         <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[1].name}</h2>
                         <div className="flex items-end gap-2 mb-6">
                           <span className="text-4xl font-black text-white">{top3[1].points}</span>
@@ -265,14 +296,12 @@ const DriverStandings = () => {
 
                         <div className="grid grid-cols-2 gap-3 w-full">
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Flag01Icon className="w-5 h-5 text-gray-400 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[1].wins}</span>
-                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-400 mt-1">Wins</span>
                           </div>
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Medal01Icon className="w-5 h-5 text-gray-400 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[1].podiums}</span>
-                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-400 mt-1">Podiums</span>
                           </div>
                         </div>
                       </div>
@@ -288,20 +317,30 @@ const DriverStandings = () => {
                     transition={{ delay: 0 }}
                     className="order-1 md:order-2 relative group transform md:-translate-y-8"
                   >
-                    <div className="bg-black border-2 border-yellow-500 p-8 relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)]">
+                    <div className="bg-black border-2 border-yellow-500 p-8 relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)] flex flex-col h-full justify-end">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[0].team)}`} />
                       <div className="absolute -top-4 -right-4 text-yellow-500/10">
                         <CrownIcon className="w-32 h-32" />
                       </div>
-                      <div className="relative z-10 text-center flex flex-col items-center">
-                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4 shadow-[0_0_10px_rgba(234,179,8,0.4)]">
+
+                      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full text-center">
+                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest shadow-[0_0_10px_rgba(234,179,8,0.4)]">
                           {championshipStatus === 'champion' ? "World Champion" : "World Champion Leader"}
                         </div>
-                        <Avatar className="h-32 w-32 border-4 border-yellow-500 mb-6 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
-                          <AvatarImage src={getDriverImage(top3[0].code, top3[0].name)} className="object-cover bg-gray-800" />
-                          <AvatarFallback>{top3[0].code}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-sm font-mono text-gray-400 uppercase mb-2">{top3[0].team}</div>
+                      </div>
+
+                      {/* Driver Image - Waist Up (Same style as P2/P3 but slightly larger) */}
+                      <div className="absolute top-16 left-1/2 -translate-x-1/2 w-56 h-56 z-0">
+                        <img
+                          src={driverImageMap[top3[0].code] || getDriverImage(top3[0].code, top3[0].name)}
+                          alt={top3[0].name}
+                          className="w-full h-full object-cover object-top"
+                          style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
+                        />
+                      </div>
+
+                      <div className="relative z-10 mt-48 text-center flex flex-col items-center w-full">
+                        <div className="text-sm font-mono text-gray-300 uppercase mb-2">{top3[0].team}</div>
                         <h2 className="text-4xl font-black uppercase leading-none mb-6">{top3[0].name}</h2>
                         <div className="flex justify-center items-end gap-2 mb-8">
                           <span className="text-6xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{top3[0].points}</span>
@@ -310,12 +349,10 @@ const DriverStandings = () => {
 
                         <div className="grid grid-cols-2 gap-4 w-full">
                           <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
-                            <Flag01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
                             <span className="text-3xl font-black text-white leading-none">{top3[0].wins}</span>
                             <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Wins</span>
                           </div>
                           <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
-                            <Medal01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
                             <span className="text-3xl font-black text-white leading-none">{top3[0].podiums}</span>
                             <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Podiums</span>
                           </div>
@@ -333,15 +370,22 @@ const DriverStandings = () => {
                     transition={{ delay: 0.4 }}
                     className="order-3 relative group"
                   >
-                    <div className="bg-black border-2 border-gray-800 hover:border-amber-700 transition-colors p-6 relative overflow-hidden">
+                    <div className="bg-black border-2 border-gray-800 hover:border-amber-700 transition-colors p-6 relative overflow-hidden flex flex-col h-full justify-end">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[2].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">3</div>
-                      <div className="relative z-10 flex flex-col items-center text-center">
-                        <Avatar className="h-24 w-24 border-4 border-gray-700 mb-4 shadow-lg">
-                          <AvatarImage src={getDriverImage(top3[2].code, top3[2].name)} className="object-cover bg-gray-800" />
-                          <AvatarFallback>{top3[2].code}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[2].team}</div>
+
+                      {/* Driver Image - Waist Up */}
+                      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 h-48 z-0">
+                        <img
+                          src={driverImageMap[top3[2].code] || getDriverImage(top3[2].code, top3[2].name)}
+                          alt={top3[2].name}
+                          className="w-full h-full object-cover object-top"
+                          style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
+                        />
+                      </div>
+
+                      <div className="relative z-10 mt-32 flex flex-col items-center text-center">
+                        <div className="text-xs font-mono text-gray-400 uppercase mb-2">{top3[2].team}</div>
                         <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[2].name}</h2>
                         <div className="flex items-end gap-2 mb-6">
                           <span className="text-4xl font-black text-white">{top3[2].points}</span>
@@ -350,14 +394,12 @@ const DriverStandings = () => {
 
                         <div className="grid grid-cols-2 gap-3 w-full">
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Flag01Icon className="w-5 h-5 text-amber-700 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[2].wins}</span>
-                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-400 mt-1">Wins</span>
                           </div>
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Medal01Icon className="w-5 h-5 text-amber-700 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[2].podiums}</span>
-                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-400 mt-1">Podiums</span>
                           </div>
                         </div>
                       </div>

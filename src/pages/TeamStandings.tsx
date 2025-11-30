@@ -182,12 +182,10 @@ const TeamStandings = () => {
 
                         <div className="grid grid-cols-2 gap-3 w-full">
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Flag01Icon className="w-5 h-5 text-gray-400 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[1].wins}</span>
                             <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
                           </div>
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Medal01Icon className="w-5 h-5 text-gray-400 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[1].podiums}</span>
                             <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
                           </div>
@@ -227,12 +225,10 @@ const TeamStandings = () => {
 
                         <div className="grid grid-cols-2 gap-4 w-full">
                           <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
-                            <Flag01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
                             <span className="text-3xl font-black text-white leading-none">{top3[0].wins}</span>
                             <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Wins</span>
                           </div>
                           <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
-                            <Medal01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
                             <span className="text-3xl font-black text-white leading-none">{top3[0].podiums}</span>
                             <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Podiums</span>
                           </div>
@@ -267,12 +263,10 @@ const TeamStandings = () => {
 
                         <div className="grid grid-cols-2 gap-3 w-full">
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Flag01Icon className="w-5 h-5 text-amber-700 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[2].wins}</span>
                             <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
                           </div>
                           <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
-                            <Medal01Icon className="w-5 h-5 text-amber-700 mb-1" />
                             <span className="text-xl font-bold text-white leading-none">{top3[2].podiums}</span>
                             <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
                           </div>
