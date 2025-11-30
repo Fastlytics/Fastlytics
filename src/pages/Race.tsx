@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SEO } from '@/components/SEO';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
@@ -227,7 +227,30 @@ const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const navigate = useNavigate();
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedSession = searchParams.get('session') || '';
+  const showAnalysis = searchParams.get('view') === 'analysis';
+
+  const setSelectedSession = (session: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('session', session);
+      return newParams;
+    }, { replace: true });
+  };
+
+  const setShowAnalysis = (show: boolean) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (show) {
+        newParams.set('view', 'analysis');
+      } else {
+        newParams.delete('view');
+      }
+      return newParams;
+    });
+  };
+
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState('overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
@@ -235,7 +258,6 @@ const Race = () => {
   // New State for Redesign
   const [now, setNow] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
-  const [showAnalysis, setShowAnalysis] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -298,8 +320,23 @@ const Race = () => {
   useEffect(() => {
     if (fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
       setAvailableSessions(fetchedAvailableSessions);
-      if (fetchedAvailableSessions.some(s => s.type === 'R')) setSelectedSession('R');
-      else setSelectedSession(fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type);
+
+      // Only set default session if not already in params
+      if (!searchParams.get('session')) {
+        let defaultSession = '';
+        if (fetchedAvailableSessions.some(s => s.type === 'R')) {
+          defaultSession = 'R';
+        } else {
+          defaultSession = fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type;
+        }
+
+        // Update params without pushing to history for initial load
+        setSearchParams(prev => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('session', defaultSession);
+          return newParams;
+        }, { replace: true });
+      }
     } else if (fetchedAvailableSessions) {
       setAvailableSessions([]);
     }
@@ -391,7 +428,7 @@ const Race = () => {
   }
 
   const isRaceFuture = !availableSessions.some(s => s.type === 'R');
-  const shouldShowSchedule = isRaceFuture;
+  const shouldShowSchedule = isRaceFuture && !showAnalysis;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
