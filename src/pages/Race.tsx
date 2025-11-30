@@ -391,7 +391,7 @@ const Race = () => {
   }
 
   const isRaceFuture = !availableSessions.some(s => s.type === 'R');
-  const shouldShowSchedule = isRaceFuture && !showAnalysis;
+  const shouldShowSchedule = isRaceFuture;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
