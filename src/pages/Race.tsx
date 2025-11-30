@@ -235,6 +235,7 @@ const Race = () => {
   // New State for Redesign
   const [now, setNow] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -285,7 +286,7 @@ const Race = () => {
   const { data: sessionSchedule } = useQuery<EventSessionSchedule>({
     queryKey: ['sessionSchedule', year, eventSlug],
     queryFn: () => fetchEventSessionSchedule(year!, eventSlug!),
-    enabled: !!year && !!eventSlug && !isLoadingSessions && (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0),
+    enabled: !!year && !!eventSlug && !isLoadingSessions && (!fetchedAvailableSessions || !fetchedAvailableSessions.some(s => s.type === 'R')),
   });
 
   const { data: sessionResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
@@ -389,7 +390,8 @@ const Race = () => {
     );
   }
 
-  const isUpcoming = !fetchedAvailableSessions || fetchedAvailableSessions.length === 0;
+  const isRaceFuture = !availableSessions.some(s => s.type === 'R');
+  const shouldShowSchedule = isRaceFuture && !showAnalysis;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
@@ -407,9 +409,15 @@ const Race = () => {
             <Button
               variant="ghost"
               className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                if (showAnalysis && isRaceFuture) {
+                  setShowAnalysis(false);
+                } else {
+                  navigate(-1);
+                }
+              }}
             >
-              <ArrowLeft01Icon className="mr-2 h-4 w-4" /> Back
+              <ArrowLeft01Icon className="mr-2 h-4 w-4" /> {showAnalysis && isRaceFuture ? 'Back to Schedule' : 'Back'}
             </Button>
             <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
               {eventName}
@@ -424,7 +432,7 @@ const Race = () => {
             </div>
           </div>
 
-          {!isUpcoming && availableSessions.length > 0 && (
+          {!shouldShowSchedule && availableSessions.length > 0 && (
             <Select value={selectedSession} onValueChange={setSelectedSession}>
               <SelectTrigger className="w-[200px] bg-black border-2 border-gray-800 text-white font-bold uppercase tracking-wider h-12">
                 <SelectValue placeholder="SESSION" />
@@ -440,7 +448,7 @@ const Race = () => {
           )}
         </header>
 
-        {isUpcoming ? (
+        {shouldShowSchedule ? (
           sessionSchedule ? (
             // --- UPCOMING RACE DISPLAY ---
             <div className="space-y-12">
@@ -516,44 +524,98 @@ const Race = () => {
 
                 <div className="grid gap-px bg-gray-800 border border-gray-800 overflow-hidden rounded-lg">
                   {/* Table Header */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 bg-gray-900/50 text-gray-500 font-bold uppercase tracking-wider text-xs py-3 px-6">
-                    <div>Session</div>
-                    <div className="hidden md:block">Circuit Time</div>
-                    <div className="hidden md:block">Your Time</div>
-                  </div>
+                  {/* Table Header Removed as per request */}
 
                   {/* Table Body */}
                   {sessionSchedule.sessions.map((session, idx) => {
                     const isNext = nextSession && session.name === nextSession.name;
+                    // Map session name to type for available check (simplified mapping)
+                    let sessionType = '';
+                    const lowerName = session.name.toLowerCase();
+                    if (lowerName.includes('practice 1')) sessionType = 'FP1';
+                    else if (lowerName.includes('practice 2')) sessionType = 'FP2';
+                    else if (lowerName.includes('practice 3')) sessionType = 'FP3';
+                    else if (lowerName.includes('sprint qualifying') || lowerName.includes('sprint shootout')) sessionType = 'SQ';
+                    else if (lowerName.includes('sprint') && !lowerName.includes('qualifying')) sessionType = 'Sprint';
+                    else if (lowerName.includes('qualifying') && !lowerName.includes('sprint')) sessionType = 'Q';
+                    else if (lowerName === 'race') sessionType = 'R';
+
+                    const isAvailable = availableSessions.some(s => {
+                      if (sessionType === 'Q') return s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3';
+                      if (sessionType === 'SQ') return s.type === 'SQ' || s.type === 'SQ1' || s.type === 'SQ2' || s.type === 'SQ3';
+                      return s.type === sessionType;
+                    });
+
                     return (
                       <div
                         key={idx}
                         className={cn(
-                          "grid grid-cols-1 md:grid-cols-3 p-6 gap-4 transition-colors group",
+                          "grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center",
                           isNext ? "bg-red-900/10 hover:bg-red-900/20" : "bg-black hover:bg-gray-900/50"
                         )}
                       >
-                        <div className="flex flex-col justify-center">
+                        {/* Date Column */}
+                        <div className="flex flex-col justify-center border-r border-gray-800 pr-4">
+                          <div className={cn("font-mono text-xl font-bold", isNext ? "text-white" : "text-gray-300")}>
+                            {new Date(session.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }).toUpperCase()}
+                          </div>
+                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                            {new Date(session.date).toLocaleDateString(undefined, { weekday: 'short' })}
+                          </div>
+                        </div>
+
+                        {/* Session Name */}
+                        <div className="flex flex-col justify-center pl-2">
                           <div className={cn("font-bold text-lg uppercase tracking-tight mb-1", isNext ? "text-red-500" : "text-white")}>
                             {session.name}
                           </div>
-                          <div className="text-xs text-gray-500 font-mono md:hidden">
-                            {formatDate(session.date)}
-                          </div>
                         </div>
 
+                        {/* Local Time (Hidden if Results available) */}
                         <div className="hidden md:flex flex-col justify-center">
-                          <div className="font-mono text-gray-300 text-lg">
-                            {formatTimeStr(session.localTime)}
-                          </div>
-                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Local</div>
+                          {!isAvailable && (
+                            <>
+                              <div className="font-mono text-gray-300 text-lg">
+                                {formatTimeStr(session.localTime)}
+                              </div>
+                              <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Local</div>
+                            </>
+                          )}
                         </div>
 
-                        <div className="hidden md:flex flex-col justify-center">
-                          <div className={cn("font-mono text-lg", isNext ? "text-white" : "text-gray-300")}>
-                            {formatDate(session.date)}
-                          </div>
-                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Your Time</div>
+                        {/* Your Time / Results Button */}
+                        <div className="hidden md:flex flex-col justify-center items-end md:items-start">
+                          {isAvailable ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-bold tracking-wider w-full md:w-auto"
+                              onClick={() => {
+                                let targetSession = sessionType;
+                                if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
+                                  if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
+                                  else if (availableSessions.some(s => s.type === 'Q2')) targetSession = 'Q2';
+                                  else if (availableSessions.some(s => s.type === 'Q1')) targetSession = 'Q1';
+                                }
+                                if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
+                                  if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
+                                  else if (availableSessions.some(s => s.type === 'SQ2')) targetSession = 'SQ2';
+                                  else if (availableSessions.some(s => s.type === 'SQ1')) targetSession = 'SQ1';
+                                }
+                                setSelectedSession(targetSession);
+                                setShowAnalysis(true);
+                              }}
+                            >
+                              Results
+                            </Button>
+                          ) : (
+                            <>
+                              <div className={cn("font-mono text-lg", isNext ? "text-white" : "text-gray-300")}>
+                                {formatDate(session.date)}
+                              </div>
+                              <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Your Time</div>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -687,7 +749,7 @@ const Race = () => {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

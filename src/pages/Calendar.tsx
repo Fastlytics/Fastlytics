@@ -100,7 +100,9 @@ const Calendar = () => {
     const processedData = scheduleData.map(event => {
       const result = resultsMap.get(event.EventName);
       const eventDate = new Date(event.EventDate);
-      const isUpcoming = eventDate > now;
+      // Add 4 hours buffer to keep race as "upcoming" while it's happening
+      const raceEndTime = new Date(eventDate.getTime() + (4 * 60 * 60 * 1000));
+      const isUpcoming = raceEndTime > now;
 
       // Check for next race
       if (isUpcoming) {
