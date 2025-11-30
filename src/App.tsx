@@ -40,6 +40,13 @@ const LandingLayout = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+// Dashboard layout without footer
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen flex flex-col">
+    {children}
+  </div>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -63,13 +70,13 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
-                <Route path="/account" element={<MainLayout><Account /></MainLayout>} />
+                <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+                <Route path="/account" element={<DashboardLayout><Account /></DashboardLayout>} />
               </Route>
-              <Route path="/race/:raceId" element={<MainLayout><Race /></MainLayout>} />
-              <Route path="/calendar" element={<MainLayout><Calendar /></MainLayout>} />
-              <Route path="/standings/teams" element={<MainLayout><TeamStandings /></MainLayout>} />
-              <Route path="/standings/drivers" element={<MainLayout><DriverStandings /></MainLayout>} />
+              <Route path="/race/:raceId" element={<DashboardLayout><Race /></DashboardLayout>} />
+              <Route path="/calendar" element={<DashboardLayout><Calendar /></DashboardLayout>} />
+              <Route path="/standings/teams" element={<DashboardLayout><TeamStandings /></DashboardLayout>} />
+              <Route path="/standings/drivers" element={<DashboardLayout><DriverStandings /></DashboardLayout>} />
 
               {/* 404 page */}
               <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
