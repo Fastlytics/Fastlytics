@@ -13,6 +13,7 @@ import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/champions
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
+import { getTeamLogo } from '@/lib/teamUtils';
 import { useSeason } from '@/contexts/SeasonContext';
 
 const TeamStandings = () => {
@@ -168,7 +169,12 @@ const TeamStandings = () => {
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[1].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">2</div>
                       <div className="relative z-10">
-                        <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[1].team}</h2>
+                        <div className="flex items-center gap-3 mb-4">
+                            {getTeamLogo(top3[1].team) && (
+                                <img src={getTeamLogo(top3[1].team)!} alt={top3[1].team} className="h-8 w-auto" />
+                            )}
+                            <h2 className="text-2xl font-bold uppercase leading-none">{top3[1].team}</h2>
+                        </div>
                         <div className="flex items-end gap-2">
                           <span className="text-4xl font-black text-white">{top3[1].points}</span>
                           <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
@@ -195,7 +201,12 @@ const TeamStandings = () => {
                         <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4">
                           {championshipStatus === 'champion' ? "Constructors' Champion" : "Constructors' Leader"}
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-black uppercase leading-none mb-6">{top3[0].team}</h2>
+                        <div className="flex flex-col items-center gap-4 mb-6">
+                            {getTeamLogo(top3[0].team) && (
+                                <img src={getTeamLogo(top3[0].team)!} alt={top3[0].team} className="h-16 w-auto" />
+                            )}
+                            <h2 className="text-3xl md:text-4xl font-black uppercase leading-none">{top3[0].team}</h2>
+                        </div>
                         <div className="flex justify-center items-end gap-2">
                           <span className="text-6xl font-black text-white">{top3[0].points}</span>
                           <span className="text-lg font-mono text-gray-500 mb-2">PTS</span>
@@ -217,7 +228,12 @@ const TeamStandings = () => {
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[2].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">3</div>
                       <div className="relative z-10">
-                        <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[2].team}</h2>
+                        <div className="flex items-center gap-3 mb-4">
+                            {getTeamLogo(top3[2].team) && (
+                                <img src={getTeamLogo(top3[2].team)!} alt={top3[2].team} className="h-8 w-auto" />
+                            )}
+                            <h2 className="text-2xl font-bold uppercase leading-none">{top3[2].team}</h2>
+                        </div>
                         <div className="flex items-end gap-2">
                           <span className="text-4xl font-black text-white">{top3[2].points}</span>
                           <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
@@ -255,7 +271,10 @@ const TeamStandings = () => {
                               {team.rank}
                             </span>
                           </div>
-                          <div>
+                          <div className="flex items-center gap-4">
+                            {getTeamLogo(team.team) && (
+                                <img src={getTeamLogo(team.team)!} alt={team.team} className={cn("h-8 w-auto object-contain", team.team.toLowerCase().includes('aston') ? "h-4" : "")} />
+                            )}
                             <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tight">{team.team}</h3>
                           </div>
                         </div>

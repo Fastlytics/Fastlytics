@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getTeamLogo } from '@/lib/teamUtils';
 
 interface ChampionshipWidgetProps {
     drivers: DriverStanding[];
@@ -153,13 +154,15 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                                     {index + 1}
                                 </span>
                                 <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-3">
+                                        {getTeamLogo(team.team) && (
+                                            <img src={getTeamLogo(team.team)!} alt={team.team} className={`h-6 w-auto object-contain ${team.team.toLowerCase().includes('aston') ? 'h-3' : ''}`} />
+                                        )}
                                         <div className="font-bold text-lg leading-none">{team.team.toUpperCase()}</div>
                                         {index === 0 && teamChampionshipStatus === 'champion' && (
                                             <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider">Champion</span>
                                         )}
                                     </div>
-                                    <div className="text-xs text-gray-500 font-mono">{team.wins} Wins</div>
                                 </div>
                             </div>
                             <div className="text-right">

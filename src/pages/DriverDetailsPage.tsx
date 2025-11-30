@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft01Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import { getTeamLogo } from '@/lib/teamUtils';
 
 // Local interface removed, using DriverDetailsType from api.ts
 
@@ -87,9 +88,14 @@ const DriverDetailsPage: React.FC = () => {
                     {driverDetails.team_name && (
                         <>
                             <span className="hidden md:inline text-gray-600">•</span>
-                            <span className="text-lg font-bold uppercase tracking-wider" style={{ color: driverDetails.team_colour ? `#${driverDetails.team_colour}` : 'inherit' }}>
-                                {driverDetails.team_name}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                {getTeamLogo(driverDetails.team_name) && (
+                                    <img src={getTeamLogo(driverDetails.team_name)!} alt={driverDetails.team_name} className="h-6 w-auto" />
+                                )}
+                                <span className="text-lg font-bold uppercase tracking-wider" style={{ color: driverDetails.team_colour ? `#${driverDetails.team_colour}` : 'inherit' }}>
+                                    {driverDetails.team_name}
+                                </span>
+                            </div>
                         </>
                     )}
                 </div>

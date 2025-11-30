@@ -159,4 +159,28 @@ export const groupDriversByTeam = (drivers: string[], year: number): { [team: st
   });
   
   return teamGroups;
-}; 
+};
+
+/**
+ * Helper function to get team logo path
+ * @param teamName Name of the team
+ * @returns Path to the team logo image
+ */
+export const getTeamLogo = (teamName: string | undefined): string | null => {
+  if (!teamName) return null;
+  
+  const normalizedName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  if (normalizedName.includes('redbull')) return '/logos/redbull.svg';
+  if (normalizedName.includes('ferrari')) return '/logos/ferrari.svg';
+  if (normalizedName.includes('mercedes')) return '/logos/mercedes.svg';
+  if (normalizedName.includes('mclaren')) return '/logos/mclaren.svg';
+  if (normalizedName.includes('astonmartin')) return '/logos/aston-martin.svg';
+  if (normalizedName.includes('alpine')) return '/logos/alpine.svg';
+  if (normalizedName.includes('williams')) return '/logos/williams.png';
+  if (normalizedName.includes('haas')) return '/logos/haas.png';
+  if (normalizedName.includes('sauber') || normalizedName.includes('kick')) return '/logos/kick-sauber.png';
+  if (normalizedName.includes('racingbulls') || normalizedName.includes('rb') || normalizedName.includes('alphatauri')) return '/logos/racing-bulls.svg';
+  
+  return null;
+};

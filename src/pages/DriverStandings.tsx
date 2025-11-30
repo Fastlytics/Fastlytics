@@ -14,6 +14,9 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
+import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Define rookies by season year
 const rookiesByYear: { [year: string]: string[] } = {
@@ -87,6 +90,20 @@ const DriverStandings = () => {
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const standingsRef = useRef(null);
   const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.1 });
+  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
+
+  useEffect(() => {
+    const loadOpenF1Data = async () => {
+        const drivers = await fetchAllOpenF1Drivers();
+        setOpenF1Drivers(drivers);
+    };
+    loadOpenF1Data();
+  }, []);
+
+  const getDriverImage = (driverCode: string, driverName: string) => {
+    const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
+    return driver?.headshot_url;
+  };
 
   // Fetch Driver Standings
   const { data: driverStandings, isLoading: isLoadingStandings, error: standingsError, isError: isStandingsError } = useQuery<DriverStanding[]>({
@@ -234,7 +251,11 @@ const DriverStandings = () => {
                     <div className="bg-black border-2 border-gray-800 hover:border-gray-500 transition-colors p-6 relative overflow-hidden">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[1].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">2</div>
-                      <div className="relative z-10">
+                      <div className="relative z-10 flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 border-4 border-gray-700 mb-4 shadow-lg">
+                            <AvatarImage src={getDriverImage(top3[1].code, top3[1].name)} className="object-cover bg-gray-800" />
+                            <AvatarFallback>{top3[1].code}</AvatarFallback>
+                        </Avatar>
                         <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[1].team}</div>
                         <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[1].name}</h2>
                         <div className="flex items-end gap-2">
@@ -259,10 +280,14 @@ const DriverStandings = () => {
                       <div className="absolute -top-4 -right-4 text-yellow-500/10">
                         <CrownIcon className="w-32 h-32" />
                       </div>
-                      <div className="relative z-10 text-center">
+                      <div className="relative z-10 text-center flex flex-col items-center">
                         <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4">
                           {championshipStatus === 'champion' ? "World Champion" : "World Champion Leader"}
                         </div>
+                        <Avatar className="h-32 w-32 border-4 border-yellow-500 mb-6 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                            <AvatarImage src={getDriverImage(top3[0].code, top3[0].name)} className="object-cover bg-gray-800" />
+                            <AvatarFallback>{top3[0].code}</AvatarFallback>
+                        </Avatar>
                         <div className="text-sm font-mono text-gray-400 uppercase mb-2">{top3[0].team}</div>
                         <h2 className="text-4xl font-black uppercase leading-none mb-6">{top3[0].name}</h2>
                         <div className="flex justify-center items-end gap-2">
@@ -285,7 +310,11 @@ const DriverStandings = () => {
                     <div className="bg-black border-2 border-gray-800 hover:border-amber-700 transition-colors p-6 relative overflow-hidden">
                       <div className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[2].team)}`} />
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">3</div>
-                      <div className="relative z-10">
+                      <div className="relative z-10 flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 border-4 border-gray-700 mb-4 shadow-lg">
+                            <AvatarImage src={getDriverImage(top3[2].code, top3[2].name)} className="object-cover bg-gray-800" />
+                            <AvatarFallback>{top3[2].code}</AvatarFallback>
+                        </Avatar>
                         <div className="text-xs font-mono text-gray-500 uppercase mb-2">{top3[2].team}</div>
                         <h2 className="text-2xl font-bold uppercase leading-none mb-4">{top3[2].name}</h2>
                         <div className="flex items-end gap-2">
@@ -324,14 +353,20 @@ const DriverStandings = () => {
                             {driver.rank}
                           </div>
                           <div className={`w-1 h-8 bg-f1-${teamColor}`} />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-bold uppercase text-lg">{driver.name}</h3>
-                              {driverIsRookie && (
-                                <span className="text-[10px] font-bold uppercase bg-blue-600 text-white px-1.5 py-0.5">Rookie</span>
-                              )}
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12 border-2 border-gray-800">
+                                <AvatarImage src={getDriverImage(driver.code, driver.name)} className="object-cover bg-gray-800" />
+                                <AvatarFallback>{driver.code}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                <h3 className="font-bold uppercase text-lg">{driver.name}</h3>
+                                {driverIsRookie && (
+                                    <span className="text-[10px] font-bold uppercase bg-blue-600 text-white px-1.5 py-0.5">Rookie</span>
+                                )}
+                                </div>
+                                <div className="text-xs font-mono text-gray-500 uppercase">{driver.team}</div>
                             </div>
-                            <div className="text-xs font-mono text-gray-500 uppercase">{driver.team}</div>
                           </div>
                         </div>
 
