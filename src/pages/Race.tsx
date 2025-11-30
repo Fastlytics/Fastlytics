@@ -12,6 +12,8 @@ import CircuitComparisonChart from '@/components/CircuitComparisonChart';
 import DriverComparisonTelemetry from '@/components/DriverComparisonTelemetry';
 import F1Card from '@/components/F1Card';
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert02Icon } from "hugeicons-react";
 import { fetchSpecificRaceResults, fetchAvailableSessions, fetchEventSessionSchedule, DetailedRaceResult, AvailableSession, EventSessionSchedule } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { useQuery } from '@tanstack/react-query';
@@ -135,7 +137,7 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
   ];
 
   if (isRaceOrSprint) {
-    columns.push({ key: 'time', label: 'TIME', className: 'text-right font-mono' });
+    columns.push({ key: 'time', label: 'TIME/GAP', className: 'text-right font-mono' });
     columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
     columns.push({ key: 'points', label: 'PTS', className: 'text-right font-bold text-red-500' });
   } else if (isQualifying) {
@@ -175,7 +177,10 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
                       {res.team}
                     </span>
                   ) : col.key === 'points' ? (
-                    res.points ?? 0
+                    <span className={cn("flex items-center justify-end gap-2 font-bold", res.isProvisional ? "text-yellow-500" : "text-red-500")}>
+                      {res.points !== null ? res.points : '-'}
+                      {res.isProvisional && <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">Prov</span>}
+                    </span>
                   ) : col.key === 'time' ? (
                     <span className="text-gray-300">{formatRaceTime(res.time, res.position === 1)}</span>
                   ) : col.key === 'laps' ? (
@@ -719,7 +724,7 @@ const Race = () => {
               {activeSection === 'overview' && (
                 <div className="space-y-12 animate-in fade-in duration-500">
                   <section id="overview">
-                    <SectionHeader title="Race Overview" icon={ChampionIcon} />
+                    <SectionHeader title={`${availableSessions.find(s => s.type === selectedSession)?.name || 'Race'} Overview`} icon={ChampionIcon} />
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {(selectedSession === 'R' || selectedSession === 'Sprint') ? (
                         <>
@@ -737,6 +742,18 @@ const Race = () => {
 
                   <section id="results">
                     <SectionHeader title="Session Results" icon={UserGroupIcon} />
+
+                    {/* Provisional Results Banner */}
+                    {sessionResults && sessionResults.some(r => r.isProvisional) && (
+                      <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
+                        <Alert02Icon className="h-4 w-4" />
+                        <AlertTitle className="font-bold uppercase tracking-wider">Provisional Results</AlertTitle>
+                        <AlertDescription>
+                          Official race results are still being processed. Points and positions shown are provisional and subject to confirmation.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} />}
                   </section>
                 </div>

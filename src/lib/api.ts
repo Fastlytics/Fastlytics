@@ -39,7 +39,8 @@ export interface DetailedRaceResult {
     driverCode: string;
     fullName: string;
     team: string;
-    points: number;
+    points: number | null; // Allow null for incomplete data
+    isProvisional?: boolean; // Flag for provisional results
     status: string;
     gridPosition?: number | null; // Optional for non-race/sprint
     teamColor: string;
@@ -559,7 +560,7 @@ export const getDriverDetails = async (driverId: string): Promise<DriverDetails>
         try {
             const openF1Drivers = await import('./openf1').then(m => m.fetchAllOpenF1Drivers());
             const openF1Driver = openF1Drivers.find(d => d.name_acronym === driverId || d.last_name.toUpperCase().includes(driverId));
-            
+
             if (openF1Driver) {
                 console.log(`Found OpenF1 data for ${driverId}`);
                 data.headshot_url = openF1Driver.headshot_url;

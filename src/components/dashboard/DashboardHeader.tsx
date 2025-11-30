@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getCountryCode } from '@/utils/countryUtils';
 import { Time01Icon, Location01Icon, Activity01Icon, ArrowRight01Icon } from 'hugeicons-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
     selectedYear: number;
@@ -16,6 +17,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSession }) => {
     const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!nextSession?.date) return;
@@ -73,9 +75,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSes
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="flex-grow w-full"
+                        className="flex-grow w-full cursor-pointer group"
+                        onClick={() => navigate(`/race/${selectedYear}-${nextSession.eventName.toLowerCase().replace(/\s+/g, '-')}`)}
                     >
-                        <div className="relative overflow-hidden bg-gray-900/40 border border-gray-800 rounded-lg p-1">
+                        <div className="relative overflow-hidden bg-gray-900/40 border border-gray-800 group-hover:border-red-600/50 transition-colors rounded-lg p-1">
                             <div className="bg-black/40 backdrop-blur-sm rounded p-3 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
 
                                 {/* Event Details */}
@@ -90,11 +93,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSes
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">
                                             <span>Next Session</span>
-                                            <ArrowRight01Icon className="w-3 h-3 text-gray-700" />
+                                            <ArrowRight01Icon className="w-3 h-3 text-gray-700 group-hover:text-red-500 transition-colors" />
                                             <span className="text-gray-400">{nextSession.location}</span>
                                         </div>
                                         <div className="flex items-baseline gap-2 truncate">
-                                            <span className="text-lg font-black text-white uppercase truncate">{nextSession.eventName}</span>
+                                            <span className="text-lg font-black text-white uppercase truncate group-hover:text-red-500 transition-colors">{nextSession.eventName}</span>
                                             <span className="text-sm font-bold text-red-500 uppercase whitespace-nowrap hidden sm:inline-block">
                                                 / {nextSession.sessionName}
                                             </span>

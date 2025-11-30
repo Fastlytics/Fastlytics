@@ -37,7 +37,8 @@ export const fetchOpenF1Driver = async (driverNumber: number, sessionKey: string
 };
 
 export const fetchAllOpenF1Drivers = async (sessionKey: string | number = 'latest'): Promise<OpenF1Driver[]> => {
-    const url = `${OPENF1_API_BASE_URL}/drivers?session_key=${sessionKey}`;
+    // Use local backend to leverage caching
+    const url = `http://localhost:8000/api/openf1/drivers?session_key=${sessionKey}`;
     console.log(`Fetching all OpenF1 drivers from: ${url}`);
     try {
         const response = await fetch(url);
@@ -46,13 +47,13 @@ export const fetchAllOpenF1Drivers = async (sessionKey: string | number = 'lates
             return [];
         }
         const data: OpenF1Driver[] = await response.json();
-        
+
         // Deduplicate drivers based on driver_number, keeping the latest entry
         const driverMap = new Map<number, OpenF1Driver>();
         data.forEach(driver => {
             driverMap.set(driver.driver_number, driver);
         });
-        
+
         return Array.from(driverMap.values());
     } catch (error) {
         console.error("Error fetching all OpenF1 drivers:", error);

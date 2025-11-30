@@ -170,14 +170,27 @@ const TeamStandings = () => {
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">2</div>
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
-                            {getTeamLogo(top3[1].team) && (
-                                <img src={getTeamLogo(top3[1].team)!} alt={top3[1].team} className="h-8 w-auto" />
-                            )}
-                            <h2 className="text-2xl font-bold uppercase leading-none">{top3[1].team}</h2>
+                          {getTeamLogo(top3[1].team) && (
+                            <img src={getTeamLogo(top3[1].team)!} alt={top3[1].team} className="h-8 w-auto" />
+                          )}
+                          <h2 className="text-2xl font-bold uppercase leading-none">{top3[1].team}</h2>
                         </div>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-2 mb-6">
                           <span className="text-4xl font-black text-white">{top3[1].points}</span>
                           <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <Flag01Icon className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-xl font-bold text-white leading-none">{top3[1].wins}</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
+                          </div>
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <Medal01Icon className="w-5 h-5 text-gray-400 mb-1" />
+                            <span className="text-xl font-bold text-white leading-none">{top3[1].podiums}</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -198,18 +211,31 @@ const TeamStandings = () => {
                         <CrownIcon className="w-32 h-32" />
                       </div>
                       <div className="relative z-10 text-center">
-                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4">
+                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4 shadow-[0_0_10px_rgba(234,179,8,0.4)]">
                           {championshipStatus === 'champion' ? "Constructors' Champion" : "Constructors' Leader"}
                         </div>
                         <div className="flex flex-col items-center gap-4 mb-6">
-                            {getTeamLogo(top3[0].team) && (
-                                <img src={getTeamLogo(top3[0].team)!} alt={top3[0].team} className="h-16 w-auto" />
-                            )}
-                            <h2 className="text-3xl md:text-4xl font-black uppercase leading-none">{top3[0].team}</h2>
+                          {getTeamLogo(top3[0].team) && (
+                            <img src={getTeamLogo(top3[0].team)!} alt={top3[0].team} className="h-16 w-auto" />
+                          )}
+                          <h2 className="text-3xl md:text-4xl font-black uppercase leading-none">{top3[0].team}</h2>
                         </div>
-                        <div className="flex justify-center items-end gap-2">
-                          <span className="text-6xl font-black text-white">{top3[0].points}</span>
+                        <div className="flex justify-center items-end gap-2 mb-8">
+                          <span className="text-6xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{top3[0].points}</span>
                           <span className="text-lg font-mono text-gray-500 mb-2">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 w-full">
+                          <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
+                            <Flag01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+                            <span className="text-3xl font-black text-white leading-none">{top3[0].wins}</span>
+                            <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Wins</span>
+                          </div>
+                          <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
+                            <Medal01Icon className="w-6 h-6 text-yellow-500 mb-2 drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]" />
+                            <span className="text-3xl font-black text-white leading-none">{top3[0].podiums}</span>
+                            <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">Podiums</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -229,14 +255,27 @@ const TeamStandings = () => {
                       <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">3</div>
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
-                            {getTeamLogo(top3[2].team) && (
-                                <img src={getTeamLogo(top3[2].team)!} alt={top3[2].team} className="h-8 w-auto" />
-                            )}
-                            <h2 className="text-2xl font-bold uppercase leading-none">{top3[2].team}</h2>
+                          {getTeamLogo(top3[2].team) && (
+                            <img src={getTeamLogo(top3[2].team)!} alt={top3[2].team} className="h-8 w-auto" />
+                          )}
+                          <h2 className="text-2xl font-bold uppercase leading-none">{top3[2].team}</h2>
                         </div>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-2 mb-6">
                           <span className="text-4xl font-black text-white">{top3[2].points}</span>
                           <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <Flag01Icon className="w-5 h-5 text-amber-700 mb-1" />
+                            <span className="text-xl font-bold text-white leading-none">{top3[2].wins}</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Wins</span>
+                          </div>
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <Medal01Icon className="w-5 h-5 text-amber-700 mb-1" />
+                            <span className="text-xl font-bold text-white leading-none">{top3[2].podiums}</span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Podiums</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -273,7 +312,7 @@ const TeamStandings = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             {getTeamLogo(team.team) && (
-                                <img src={getTeamLogo(team.team)!} alt={team.team} className={cn("h-8 w-auto object-contain", team.team.toLowerCase().includes('aston') ? "h-4" : "")} />
+                              <img src={getTeamLogo(team.team)!} alt={team.team} className={cn("h-8 w-auto object-contain", team.team.toLowerCase().includes('aston') ? "h-4" : "")} />
                             )}
                             <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tight">{team.team}</h3>
                           </div>
@@ -293,8 +332,11 @@ const TeamStandings = () => {
                             <div className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
                               <span>PTS</span>
                               {indicator && (
-                                <span className={indicator.color}>
+                                <span className={cn("flex items-center gap-0.5", indicator.color)}>
                                   {indicator.icon}
+                                  {team.points_change !== undefined && team.points_change !== 0 && (
+                                    <span>{Math.abs(team.points_change)}</span>
+                                  )}
                                 </span>
                               )}
                             </div>
