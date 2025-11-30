@@ -1,0 +1,1448 @@
+### Start OpenF1 Real-time Data Ingestion Service
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/real_time/README.md
+
+Initiates the OpenF1 real-time data ingestion service for live timing. Ensure the `openf1` package is installed and the service is started well in advance of the session start time.
+
+```bash
+python -m openf1.services.ingestor_livetiming.real_time.app
+```
+
+--------------------------------
+
+### Install OpenF1 Python Package
+
+Source: https://github.com/br-g/openf1/blob/main/README.md
+
+Instructions for cloning the OpenF1 repository and installing the Python package locally. This is a prerequisite for running the project.
+
+```bash
+git clone git@github.com:br-g/openf1.git
+pip install -e openf1
+```
+
+--------------------------------
+
+### Fetch Stints Data using R
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Provides an example of fetching stint data from the OpenF1 API using R's `httr` and `jsonlite` packages. It includes instructions for installing necessary libraries and converting the data into a DataFrame.
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/stints?session_key=9165&tyre_age_at_start>=3')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+--------------------------------
+
+### Make Authenticated GET Request (JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Provides a JavaScript example using the Fetch API to make an authenticated GET request. It includes the 'Authorization: Bearer' header with the provided access token for API access.
+
+```javascript
+async function fetchDataWithToken(accessToken) {
+    const apiUrl = "https://api.openf1.org/v1/sessions?year=2024"; // Example
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "accept": "application/json",
+                "Authorization": `Bearer ${accessToken}`,
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log(data);
+            return data;
+        } else {
+            console.error("Error fetching data:", response.status, await response.text());
+            return null;
+        }
+    } catch (error) {
+        console.error("Network error or other issue:", error);
+        return null;
+    }
+}
+
+// Example usage:
+// getAccessToken().then(token => {
+//     if (token) {
+//         fetchDataWithToken(token);
+//     }
+// });
+```
+
+--------------------------------
+
+### Fetch Weather Data from OpenF1 API
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Examples demonstrating how to fetch weather data for a specific meeting, filtering by wind direction and track temperature. Includes examples for shell, Python, R, and JavaScript.
+
+```shell
+curl "https://api.openf1.org/v1/weather?meeting_key=1208&wind_direction>=130&track_temperature>=52"
+```
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/weather?meeting_key=1208&wind_direction>=130&track_temperature>=52')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/weather?meeting_key=1208&wind_direction>=130&track_temperature>=52')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/weather?meeting_key=1208&wind_direction>=130&track_temperature>=52"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### OpenF1 Weather API Endpoint Response Example
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example JSON output for the OpenF1 weather API, showing typical data fields returned for a track weather observation.
+
+```json
+[
+  {
+    "air_temperature": 27.8,
+    "date": "2023-05-07T18:42:25.233000+00:00",
+    "humidity": 58,
+    "meeting_key": 1208,
+    "pressure": 1018.7,
+    "rainfall": 0,
+    "session_key": 9078,
+    "track_temperature": 52.5,
+    "wind_direction": 136,
+    "wind_speed": 2.4
+  }
+]
+```
+
+--------------------------------
+
+### Fetch Race Control Data using OpenF1 API
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Examples demonstrating how to fetch race control data, like flags and racing incidents, from the OpenF1 API. These snippets show common methods for making HTTP requests and parsing JSON responses.
+
+```shell
+curl "https://api.openf1.org/v1/race_control?flag=BLACK AND WHITE&driver_number=1&date>=2023-01-01&date<2023-09-01"
+```
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/race_control?flag=BLACK AND WHITE&driver_number=1&date>=2023-01-01&date<2023-09-01')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/race_control?flag=BLACK AND WHITE&driver_number=1&date>=2023-01-01&date<2023-09-01')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/race_control?flag=BLACK AND WHITE&driver_number=1&date>=2023-01-01&date<2023-09-01"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Make Authenticated GET Request (Python)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Illustrates how to make an authenticated GET request to the OpenF1 API using Python's 'requests' library. It demonstrates setting the 'Authorization' header with the obtained Bearer token.
+
+```python
+import requests
+
+# Assume 'access_token' is a variable holding your obtained token
+access_token = "YOUR_ACCESS_TOKEN"
+api_url = "https://api.openf1.org/v1/sessions?year=2024" # Example
+
+headers = {
+    "accept": "application/json",
+    "Authorization": f"Bearer {access_token}"
+}
+
+response = requests.get(api_url, headers=headers)
+
+if response.status_code == 200:
+    data = response.json()
+    print(data)
+else:
+    print(f"Error fetching data: {response.status_code} - {response.text}")
+```
+
+--------------------------------
+
+### Fetch Lap Data via OpenF1 API
+
+Source: https://github.com/br-g/openf1/blob/main/README.md
+
+Example using curl to fetch lap data for a specific driver and lap from the OpenF1 API. This demonstrates how to query real-time session data.
+
+```bash
+curl "https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8"
+```
+
+--------------------------------
+
+### Fetch F1 Sessions (JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using JavaScript's fetch API to retrieve and log session data from the OpenF1 API.
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/sessions?country_name=Belgium&session_name=Sprint&year=2023"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Obtain OpenF1 API Access Token (JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Provides a JavaScript example using the Fetch API to obtain an access token. It constructs URL parameters for credentials and sends a POST request, handling success and error responses.
+
+```javascript
+async function getAccessToken() {
+    const tokenUrl = "https://api.openf1.org/token";
+    const params = new URLSearchParams();
+    params.append("username", "YOUR_USERNAME");
+    params.append("password", "YOUR_PASSWORD");
+
+    try {
+        const response = await fetch(tokenUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: params,
+        });
+
+        if (response.ok) {
+            const tokenData = await response.json();
+            console.log("Access token:", tokenData.access_token);
+            console.log("Expires in:", tokenData.expires_in, "seconds");
+            return tokenData.access_token;
+        } else {
+            console.error("Error obtaining token:", response.status, await response.text());
+            return null;
+        }
+    } catch (error) {
+        console.error("Network error or other issue:", error);
+        return null;
+    }
+}
+
+// Example usage:
+// getAccessToken().then(token => {
+//     if (token) {
+//         // Use the token
+//     }
+// });
+```
+
+--------------------------------
+
+### Fetch Driver Data
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches driver information for a specific session and driver number using the OpenF1 API. This example uses the Fetch API to make an asynchronous HTTP GET request and logs the JSON response.
+
+```javascript
+fetch("https://api.openf1.org/v1/drivers?driver_number=1&session_key=9158")
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Run OpenF1 Query API Locally (Bash)
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/query_api/README.md
+
+Starts the OpenF1 Query API server in development mode using uvicorn. This command is used for local testing and development, enabling rapid iteration on API features. The server typically runs on http://127.0.0.1:8000.
+
+```bash
+uvicorn openf1.services.query_api.app:app --reload
+```
+
+--------------------------------
+
+### Make Authenticated GET Request (cURL)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Shows how to make an authenticated GET request to the OpenF1 API using cURL. It includes the necessary 'Authorization: Bearer YOUR_ACCESS_TOKEN' header to access protected resources.
+
+```bash
+# Replace YOUR_ACCESS_TOKEN with the token you obtained
+curl -X 'GET' \
+    'https://api.openf1.org/v1/sessions?year=2024' \
+    -H 'accept: application/json' \
+    -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'
+```
+
+--------------------------------
+
+### Fetch Car Location Data
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Examples demonstrating how to retrieve car location data from the OpenF1 API using different programming languages and tools. These examples query location points for a specific driver and session within a given time range.
+
+```shell
+curl "https://api.openf1.org/v1/location?session_key=9161&driver_number=81&date>2023-09-16T13:03:35.200&date<2023-09-16T13:03:35.800"
+```
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/location?session_key=9161&driver_number=81&date>2023-09-16T13:03:35.200&date<2023-09-16T13:03:35.800')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/location?session_key=9161&driver_number=81&date>2023-09-16T13:03:35.200&date<2023-09-16T13:03:35.800')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/location?session_key=9161&driver_number=81&date>2023-09-16T13:03:35.200&date<2023-09-16T13:03:35.800"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Fetch Stints Data using JavaScript
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Demonstrates how to retrieve stint data from the OpenF1 API using the JavaScript `fetch` API. This example shows how to make the request and log the JSON content to the console.
+
+```javascript
+fetch("https://api.openf1.org/v1/stints?session_key=9165&tyre_age_at_start>=3")
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Fetch Team Radio Data (JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using JavaScript's `fetch` API to retrieve team radio data and log it to the console.
+
+```javascript
+fetch("https://api.openf1.org/v1/team_radio?session_key=9158&driver_number=11")
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### OpenF1 Race Control API Endpoint Reference
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Detailed documentation for the OpenF1 race control API endpoint, including available parameters, their types, and usage examples.
+
+```APIDOC
+GET https://api.openf1.org/v1/race_control
+
+Description:
+  Retrieves information about race control events, such as racing incidents, flags, and safety car periods.
+
+Parameters:
+  - date (string, optional): Filters results by date. Supports comparison operators like '>=', '<'. Example: `date>=2023-01-01`.
+  - driver_number (integer, optional): Filters results by the driver's unique number. Example: `driver_number=1`.
+  - flag (string, optional): Filters results by specific flag types. Example: `flag=BLACK AND WHITE`.
+  - meeting_key (integer, optional): Filters results by the unique identifier for the meeting.
+  - session_key (integer, optional): Filters results by the unique identifier for the session.
+
+Example URL:
+  https://api.openf1.org/v1/race_control?flag=BLACK AND WHITE&driver_number=1&date>=2023-01-01&date<2023-09-01
+
+Response Structure (Example):
+  [
+    {
+      "category": "Flag",
+      "date": "2023-06-04T14:21:01+00:00",
+      "driver_number": 1,
+      "flag": "BLACK AND WHITE",
+      "lap_number": 59,
+      "meeting_key": 1211,
+      "message": "BLACK AND WHITE FLAG FOR CAR 1 (VER) - TRACK LIMITS",
+      "scope": "Driver",
+      "sector": null,
+      "session_key": 9102
+    }
+  ]
+
+Response Fields:
+  - category (string): The category of the race control event (e.g., "Flag").
+  - date (string): The UTC date and time of the event in ISO 8601 format.
+  - driver_number (integer): The unique number assigned to the driver involved.
+  - flag (string): The specific flag displayed (e.g., "BLACK AND WHITE").
+  - lap_number (integer, optional): The lap number during which the event occurred.
+  - meeting_key (integer): The unique identifier for the F1 meeting.
+  - message (string): A descriptive message about the race control event.
+  - scope (string): The scope of the event (e.g., "Driver", "All").
+  - sector (string, optional): The sector in which the event occurred.
+  - session_key (integer): The unique identifier for the session.
+
+Related Attributes:
+  - date: The UTC date and time, in ISO 8601 format.
+  - driver_number: The unique number assigned to an F1 driver.
+  - meeting_key: The unique identifier for the meeting. Use `latest` to identify the latest or current meeting.
+  - position: Position of the driver (starts at 1).
+  - session_key: The unique identifier for the session. Use `latest` to identify the latest or current session.
+```
+
+--------------------------------
+
+### Fetch F1 Sessions (Python)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using Python's urllib.request to fetch and parse session data from the OpenF1 API. Includes optional pandas DataFrame conversion.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/sessions?country_name=Belgium&session_name=Sprint&year=2023')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+--------------------------------
+
+### Fetch F1 Sessions (R)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using R's httr and jsonlite libraries to fetch and parse session data from the OpenF1 API. Includes optional DataFrame conversion.
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/sessions?country_name=Belgium&session_name=Sprint&year=2023')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+--------------------------------
+
+### Get 2024 Season Schedule
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/historical/README.md
+
+Fetches the raw sessions schedule for a given year. This command only returns past events.
+
+```bash
+python -m openf1.services.ingestor_livetiming.historical.main get-schedule 2024
+```
+
+--------------------------------
+
+### Fetch Team Radio Data (cURL)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using cURL to fetch team radio data for a specific session and driver. Requires session_key and driver_number.
+
+```shell
+curl "https://api.openf1.org/v1/team_radio?session_key=9158&driver_number=11"
+```
+
+--------------------------------
+
+### Get Session Topic Raw Content
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/historical/README.md
+
+Fetches the raw content for a specified topic within a session. Requires year, meeting ID, session ID, and topic name.
+
+```bash
+python -m openf1.services.ingestor_livetiming.historical.main get-topic-content 2024 1242 9574 DriverList
+```
+
+--------------------------------
+
+### Fetch Car Data using cURL
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Demonstrates how to retrieve car data from the OpenF1 API using a cURL command. This example shows how to filter results by driver number, session key, and speed.
+
+```shell
+curl "https://api.openf1.org/v1/car_data?driver_number=55&session_key=9159&speed>=315"
+```
+
+--------------------------------
+
+### Fetch Team Radio Data (R)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using R's `httr` and `jsonlite` libraries to fetch and parse team radio data. The data is returned as a list.
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/team_radio?session_key=9158&driver_number=11')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+--------------------------------
+
+### Request CSV Format via API Query Parameter
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_csv_format.md
+
+To receive query results in CSV format instead of the default JSON, append the query parameter 'csv=true' to your API URL. This is useful for importing data into spreadsheet software. The example shows how to get all sessions for 2023 in CSV format.
+
+```APIDOC
+API Endpoint: /v1/sessions
+
+Query Parameters:
+  year: (integer) The year for which to retrieve sessions.
+  csv: (boolean) Set to 'true' to receive results in CSV format instead of JSON.
+
+Example Request URL:
+https://api.openf1.org/v1/sessions?year=2023&csv=true
+
+Description:
+Appends the 'csv=true' parameter to the standard API request URL. This instructs the API to return the data in Comma Separated Values format, which is easily parsable by spreadsheet applications like Microsoft Excel. The default format is JSON.
+```
+
+--------------------------------
+
+### OpenF1 API Stints Endpoint
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Documentation for the OpenF1 API endpoint to retrieve stint data. This includes the HTTP method, sample URL, query parameters derived from the 'Attributes' section, and an example of the returned JSON structure.
+
+```APIDOC
+GET https://api.openf1.org/v1/stints
+
+Description:
+  Retrieves information about individual driving stints during a Formula 1 session.
+
+Parameters:
+  - session_key (required): The unique identifier for the session. Use `latest` to identify the latest or current session.
+  - circuit_key: The unique identifier for the circuit.
+  - country_code: A code that uniquely identifies the country.
+  - country_key: The unique identifier for the country.
+  - country_name: The full name of the country.
+  - date_end: The UTC ending date and time, in ISO 8601 format.
+  - date_start: The UTC starting date and time, in ISO 8601 format.
+  - gmt_offset: The difference in hours and minutes between local time and GMT.
+  - location: The city or geographical location.
+  - meeting_key: The unique identifier for the meeting.
+  - session_key: The unique identifier for the session.
+  - session_name: The name of the session (e.g., 'Practice 1', 'Qualifying', 'Race').
+  - session_type: The type of the session (e.g., 'Practice', 'Qualifying', 'Race').
+  - year: The year the event takes place.
+  - tyre_age_at_start (optional): Filter stints by the age of the tyres at the start of the stint. Supports comparison operators like `>=`.
+
+Example URL:
+  https://api.openf1.org/v1/stints?session_key=9165&tyre_age_at_start>=3
+
+Output Example (JSON):
+[
+  {
+    "compound": "SOFT",
+    "driver_number": 16,
+    "lap_end": 20,
+    "lap_start": 1,
+    "meeting_key": 1219,
+    "session_key": 9165,
+    "stint_number": 1,
+    "tyre_age_at_start": 3
+  },
+  {
+    "compound": "SOFT",
+    "driver_number": 20,
+    "lap_end": 62,
+    "lap_start": 44,
+    "meeting_key": 1219,
+    "session_key": 9165,
+    "stint_number": 3,
+    "tyre_age_at_start": 3
+  }
+]
+
+Related Endpoints:
+  - /v1/drivers: Information about drivers.
+  - /v1/circuits: Information about circuits.
+  - /v1/sessions: Information about sessions.
+```
+
+--------------------------------
+
+### Fetch F1 Sessions (curl)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using curl to retrieve session data from the OpenF1 API. It specifies country, session name, and year as query parameters.
+
+```curl
+curl "https://api.openf1.org/v1/sessions?country_name=Belgium&session_name=Sprint&year=2023"
+```
+
+--------------------------------
+
+### Fetch Real-time Intervals Data (R)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches real-time interval data between drivers and their gap to the race leader using R. This example demonstrates using the httr and jsonlite packages to make the API call and parse the response.
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/intervals?session_key=9165&interval<0.005')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+
+```
+
+--------------------------------
+
+### Get Session Topic Messages
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/historical/README.md
+
+Retrieves messages for a specific topic within a session. Requires year, meeting ID, session ID, and topic name.
+
+```bash
+python -m openf1.services.ingestor_livetiming.historical.main get-messages 2024 1242 9574 DriverList
+```
+
+--------------------------------
+
+### Get Processed Session Documents
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/historical/README.md
+
+Fetches processed documents for a specified collection within a session. Requires year, meeting ID, session ID, and collection name.
+
+```bash
+python -m openf1.services.ingestor_livetiming.historical.main get-processed-documents 2024 1242 9574 drivers
+```
+
+--------------------------------
+
+### Fetch Laps Data (Shell, Python, R, JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Provides multiple ways to fetch lap data from the OpenF1 API. Examples include using curl for shell, urlopen for Python, httr/jsonlite for R, and fetch for JavaScript, all targeting specific session, driver, and lap numbers.
+
+```shell
+curl "https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8"
+```
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Fetch Team Radio Data (Python)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Example using Python's `urllib.request` to fetch and parse team radio data. The response is a JSON array of radio exchange objects.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/team_radio?session_key=9158&driver_number=11')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+--------------------------------
+
+### Fetch Driver Position Data (JavaScript)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches driver position data from the OpenF1 API using the fetch API. It makes a GET request and logs the parsed JSON response.
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/position?meeting_key=1217&driver_number=40&position<=3"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### Obtain OAuth2 Access Token with cURL
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+This example demonstrates how to obtain an OAuth2 access token from the OpenF1 API. It uses a POST request with `curl` to the `/token` endpoint, requiring username and password credentials. The token is essential for accessing authenticated API features.
+
+```bash
+curl -X POST "https://api.openf1.org/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "username=YOUR_USERNAME&password=YOUR_PASSWORD"
+```
+
+--------------------------------
+
+### Fetch Car Data using R
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+An R script to retrieve car data from the OpenF1 API. It utilizes the `httr` and `jsonlite` packages for making HTTP requests and parsing JSON responses, respectively. Instructions for installing the necessary packages are included.
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/car_data?driver_number=55&session_key=9159&speed>=315')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+# df <- do.call(rbind, lapply(parsed_data, data.frame, stringsAsFactors = FALSE))
+# df <- as.data.frame(t(as.matrix(df)))
+```
+
+--------------------------------
+
+### Fetch Driver Position Data (R)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches driver position data from the OpenF1 API using R's httr and jsonlite libraries. It makes a GET request and parses the JSON content.
+
+```r
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/position?meeting_key=1217&driver_number=40&position<=3')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+```
+
+--------------------------------
+
+### Fetch Driver Position Data (Python)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches driver position data from the OpenF1 API using Python's urllib.request. It makes a GET request and parses the JSON response.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/position?meeting_key=1217&driver_number=40&position<=3')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+```
+
+--------------------------------
+
+### OpenF1 API Endpoints
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/query_api/README.md
+
+Provides access to OpenF1 data through various API endpoints. The API supports querying and filtering data, with examples showing how to retrieve meetings based on criteria like the year. The service parses input and queries a MongoDB database.
+
+```APIDOC
+API Base URL: http://127.0.0.1:8000
+
+Endpoint: /v1/meetings
+  Description: Retrieves a list of racing meetings.
+  Method: GET
+  Parameters:
+    - year: (Optional) Filters meetings by year. Supports comparison operators like '>='.
+      Example: ?year>=2024
+  Example Usage:
+    http://127.0.0.1:8000/v1/meetings?year>=2024
+  Returns:
+    A JSON array of meeting objects matching the query criteria. Specific schema not detailed in provided text.
+  Related Endpoints:
+    Further endpoints for other data types (e.g., sessions, results) are likely available but not detailed here.
+```
+
+--------------------------------
+
+### OpenF1 Intervals API Reference
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Details the GET request for the OpenF1 intervals endpoint. It outlines the available query parameters and the structure of the returned JSON data, including attributes like driver number, gap, and meeting/session keys.
+
+```APIDOC
+GET https://api.openf1.org/v1/intervals
+
+Parameters:
+  session_key: The unique identifier for the session. Use 'latest' for the current session.
+  interval: Filter intervals by time gap (e.g., interval<0.005).
+
+Attributes:
+  date: The UTC date and time, in ISO 8601 format.
+  driver_number: The unique number assigned to an F1 driver.
+  gap_to_leader: The time gap to the race leader in seconds, '+1 LAP' if lapped, or null for the race leader.
+  interval: The time gap to the car ahead in seconds, '+1 LAP' if lapped, or null for the race leader.
+  meeting_key: The unique identifier for the meeting. Use 'latest' to identify the latest or current meeting.
+  session_key: The unique identifier for the session. Use 'latest' to identify the latest or current session.
+
+Example URL:
+https://api.openf1.org/v1/intervals?session_key=9165&interval<0.005
+```
+
+--------------------------------
+
+### Fetch Real-time Intervals Data
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Fetches real-time interval data between drivers and their gap to the race leader. This data is available during races only and updates approximately every 4 seconds. The example shows fetching intervals with a gap less than 0.005 seconds.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/intervals?session_key=9165&interval<0.005')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+--------------------------------
+
+### OpenF1 Laps API Reference
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Details the GET request for the OpenF1 laps endpoint. It allows filtering by session key, driver number, and lap number to retrieve specific lap performance data.
+
+```APIDOC
+GET https://api.openf1.org/v1/laps
+
+Parameters:
+  session_key: The unique identifier for the session.
+  driver_number: The unique number assigned to an F1 driver.
+  lap_number: The specific lap number to retrieve.
+
+Attributes:
+  date_start: The start time of the lap in UTC.
+  driver_number: The unique number assigned to an F1 driver.
+  duration_sector_1: Duration of the first sector in seconds.
+  duration_sector_2: Duration of the second sector in seconds.
+  duration_sector_3: Duration of the third sector in seconds.
+  i1_speed: Speed at sector 1 intermediate point.
+  i2_speed: Speed at sector 2 intermediate point.
+  is_pit_out_lap: Boolean indicating if this is a pit out lap.
+  lap_duration: Total duration of the lap in seconds.
+  lap_number: The lap number.
+  meeting_key: The unique identifier for the meeting.
+  segments_sector_1: Array of segment speeds for sector 1.
+  segments_sector_2: Array of segment speeds for sector 2.
+  segments_sector_3: Array of segment speeds for sector 3.
+  session_key: The unique identifier for the session.
+  st_speed: Speed at the start/finish line.
+
+Example URL:
+https://api.openf1.org/v1/laps?session_key=9161&driver_number=63&lap_number=8
+```
+
+--------------------------------
+
+### Fetch Laps by Driver and Lap Duration
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_data_filtering.md
+
+Retrieves laps filtered by driver number and a minimum lap duration. This example demonstrates how to use query parameters to specify conditions like driver number and lap duration.
+
+```APIDOC
+https://api.openf1.org/v1/laps?session_key=9222&driver_number=55&is_pit_out_lap=true&lap_duration>=120
+```
+
+--------------------------------
+
+### Get Driver Information
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Retrieves driver data for a specific session. Requires the session key and the driver's unique number. The API returns data in JSON format, which can be parsed into data structures for analysis.
+
+```shell
+curl "https://api.openf1.org/v1/drivers?driver_number=1&session_key=9158"
+```
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/drivers?driver_number=1&session_key=9158')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+```r
+# If needed, install libraries
+# install.packages('httr')
+# install.packages('jsonlite')
+
+library(httr)
+library(jsonlite)
+
+response <- GET('https://api.openf1.org/v1/drivers?driver_number=1&session_key=9158')
+parsed_data <- fromJSON(content(response, 'text'))
+print(parsed_data)
+
+# If you want, you can import the results in a DataFrame
+```
+
+--------------------------------
+
+### Fetch Sessions by Date Range
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_data_filtering.md
+
+Retrieves sessions within a specified date range using start and end date parameters. The API supports a wide variety of date formats compatible with Python's dateutil.parser.parse.
+
+```APIDOC
+https://api.openf1.org/v1/sessions?date_start>=2023-09-01&date_end<=2023-09-30
+
+Supported Date Formats:
+- "2021-09-10"
+- "2021-09-10T14:30:20"
+- "2021-09-10T14:30:20+00:00"
+- "09/10/2021"
+- "09-10-2021"
+- "Fri Sep 10 14:30:20 2021"
+- "10 September 2021"
+- "Sep 10, 2021"
+- "2021-09-10 14:30:20 UTC"
+- "2021-09-10 14:30:20+00:00"
+- "2021-09-10 14:30:20 EST"
+```
+
+--------------------------------
+
+### JavaScript MQTT Websocket Connection
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Demonstrates connecting to OpenF1's MQTT broker using WebSockets in JavaScript with the mqtt.js library. It shows how to authenticate with an access token, subscribe to topics like 'v1/location' and 'v1/laps', and handle incoming messages and connection events.
+
+```javascript
+// In Node.js: npm install mqtt
+// In Browser: <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+// Assume 'accessToken' is a variable holding your obtained token
+const accessToken = "YOUR_ACCESS_TOKEN";
+const websocketUrl = "wss://mqtt.openf1.org:8084/mqtt";
+
+const options = {
+    username: "your_username_or_email@example.com", // Optional, can be any string
+    password: accessToken // Access token is used as the password
+};
+
+const client = mqtt.connect(websocketUrl, options);
+
+client.on('connect', function () {
+    console.log('Connected to OpenF1 via Websockets');
+    client.subscribe('v1/location', function (err) {
+        if (!err) {
+            console.log('Subscribed to v1/location');
+        } else {
+            console.error('Subscription error for v1/location:', err);
+        }
+    });
+    client.subscribe('v1/laps', function (err) {
+        if (!err) {
+            console.log('Subscribed to v1/laps');
+        } else {
+            console.error('Subscription error for v1/laps:', err);
+        }
+    });
+    // client.subscribe('#'); // Subscribe to all topics
+});
+
+client.on('message', function (topic, message) {
+    console.log(`Received on ${topic}: ${message.toString()}`);
+    // const data = JSON.parse(message.toString());
+    // Process data
+});
+
+client.on('error', function (error) {
+    console.error('MQTT Connection Error:', error);
+});
+
+client.on('close', function () {
+    console.log('MQTT Connection closed');
+});
+
+client.on('offline', function() {
+    console.log('MQTT Client is offline');
+});
+
+client.on('reconnect', function() {
+    console.log('MQTT Client is attempting to reconnect');
+});
+
+```
+
+--------------------------------
+
+### Python MQTT Connection to OpenF1
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Demonstrates how to establish a connection to the OpenF1 MQTT broker using the paho-mqtt library. It includes authentication with an OAuth2 access token, setting up TLS, subscribing to topics like 'v1/location' and 'v1/laps', and handling incoming messages. Requires the 'paho-mqtt' library and a valid access token.
+
+```Python
+import paho.mqtt.client as mqtt
+import ssl
+import json
+
+# Assume 'access_token' is a variable holding your obtained token
+access_token = "YOUR_ACCESS_TOKEN"
+mqtt_broker = "mqtt.openf1.org"
+mqtt_port = 8883
+
+# Optional: Provide a username. Can be an email or any non-empty string.
+mqtt_username = "your_username_or_email@example.com"
+
+def on_connect(client, userdata, flags, rc, properties=None):
+    if rc == 0:
+        print("Connected to OpenF1 MQTT broker")
+        client.subscribe("v1/location")
+        client.subscribe("v1/laps")
+        # client.subscribe("#") # Subscribe to all topics
+    else:
+        print(f"Failed to connect, return code {rc}")
+
+def on_message(client, userdata, msg):
+    print(f"Received message on topic '{msg.topic}': {msg.payload.decode()}")
+    # Example: data = json.loads(msg.payload.decode())
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.username_pw_set(username=mqtt_username, password=access_token)
+client.tls_set(cert_reqs=ssl.CERT_REQUIRED, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+
+client.on_connect = on_connect
+client.on_message = on_message
+
+try:
+    client.connect(mqtt_broker, mqtt_port, 60)
+    client.loop_forever() # Starts a blocking network loop
+except Exception as e:
+    print(f"Connection error: {e}")
+
+```
+
+--------------------------------
+
+### OpenF1 API Authentication and Real-time Data
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Details on obtaining API access tokens and connecting to real-time data streams via MQTT and WebSockets. Includes token expiry information and connection endpoints.
+
+```APIDOC
+API Authentication:
+
+1.  **Token Acquisition**:
+    *   POST to `https://api.openf1.org/token`
+    *   Requires `username` and `password` in `x-www-form-urlencoded` format.
+    *   **Response**: JSON object containing `access_token`, `expires_in` (seconds), and `token_type`.
+    *   Example Response:
+        ```json
+        {
+            "expires_in": "3600",
+            "access_token": "YOUR_ACCESS_TOKEN",
+            "token_type": "bearer"
+        }
+        ```
+    *   Tokens expire after 1 hour. Implement logic to refresh tokens.
+
+2.  **Authenticated Requests**:
+    *   Include the obtained `access_token` in the `Authorization` header as a Bearer token.
+    *   Header format: `Authorization: Bearer YOUR_ACCESS_TOKEN`
+    *   Example Request (GET sessions):
+        ```bash
+        curl -X 'GET' \
+            'https://api.openf1.org/v1/sessions?year=2024' \
+            -H 'accept: application/json' \
+            -H 'Authorization: Bearer YOUR_ACCESS_TOKEN'
+        ```
+
+Real-time Data:
+
+*   **Recommended Method**: Use MQTT or Websockets for efficient real-time data push.
+
+*   **Connection Details**:
+    *   **MQTT server**: `mqtt.openf1.org`
+    *   **MQTT port (TLS/MQTTS)**: `8883`
+    *   **Websockets URL (WSS for MQTT over Websockets)**: `wss://mqtt.openf1.org:8084/mqtt`
+```
+
+--------------------------------
+
+### Check Code Style with Ruff and Black
+
+Source: https://github.com/br-g/openf1/blob/main/CONTRIBUTING.md
+
+Run these commands in the repository's root directory to ensure your code adheres to OpenF1's formatting and linting standards using Black and Ruff.
+
+```Shell
+ruff --format=github --ignore=E501 --target-version=py310 .
+black --check --diff --color .
+```
+
+--------------------------------
+
+### List Session Topics
+
+Source: https://github.com/br-g/openf1/blob/main/src/openf1/services/ingestor_livetiming/historical/README.md
+
+Lists the available topics for a specific session, identified by year, meeting ID, and session ID.
+
+```bash
+python -m openf1.services.ingestor_livetiming.historical.main list-topics 2024 1242 9574
+```
+
+--------------------------------
+
+### Fetch Stints Data using Python
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Shows how to fetch stint data from the OpenF1 API using Python's `urllib.request` and `json` libraries. It includes parsing the JSON response and an optional step to load the data into a pandas DataFrame.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/stints?session_key=9165&tyre_age_at_start>=3')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```
+
+--------------------------------
+
+### Configure MongoDB Connection
+
+Source: https://github.com/br-g/openf1/blob/main/README.md
+
+Sets the MONGO_CONNECTION_STRING environment variable to connect to a local MongoDB instance. This is required for the OpenF1 project to function.
+
+```bash
+export MONGO_CONNECTION_STRING="mongodb://localhost:27017"
+```
+
+--------------------------------
+
+### Fetch Car Data using JavaScript
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+A JavaScript snippet demonstrating how to fetch car data from the OpenF1 API using the `fetch` API. It handles the asynchronous response, parses it as JSON, and logs the content to the console.
+
+```javascript
+fetch(
+  "https://api.openf1.org/v1/car_data?driver_number=55&session_key=9159&speed>=315"
+)
+  .then((response) => response.json())
+  .then((jsonContent) => console.log(jsonContent));
+```
+
+--------------------------------
+
+### OpenF1 Pit Stop API Reference
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+API reference for retrieving pit stop data. Includes endpoint, sample URL, and detailed attribute descriptions.
+
+```APIDOC
+HTTP Request:
+GET https://api.openf1.org/v1/pit
+
+Sample URL:
+https://api.openf1.org/v1/pit?session_key=9158&pit_duration<31
+
+Attributes:
+- date: The UTC date and time, in ISO 8601 format.
+- driver_number: The unique number assigned to an F1 driver.
+- lap_number: The sequential number of the lap within the session (starts at 1).
+- meeting_key: The unique identifier for the meeting. Use `latest` to identify the latest or current meeting.
+- pit_duration: The time spent in the pit, from entering to leaving the pit lane, in seconds.
+- session_key: The unique identifier for the session. Use `latest` to identify the latest or current session.
+```
+
+--------------------------------
+
+### Obtain OpenF1 API Access Token (Python)
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/pages/auth.html
+
+Demonstrates how to request an API access token from the OpenF1 token endpoint using the Python 'requests' library. It sends username and password in the request body and handles the JSON response.
+
+```python
+import requests
+
+token_url = "https://api.openf1.org/token"
+payload = {
+    "username": "YOUR_USERNAME",
+    "password": "YOUR_PASSWORD"
+}
+headers = {
+    "Content-Type": "application/x-www-form-urlencoded"
+}
+
+response = requests.post(token_url, data=payload, headers=headers)
+
+if response.status_code == 200:
+    token_data = response.json()
+    print(f"Access token: {token_data.get('access_token')}")
+    print(f"Expires in: {token_data.get('expires_in')} seconds")
+else:
+    print(f"Error obtaining token: {response.status_code} - {response.text}")
+```
+
+--------------------------------
+
+### OpenF1 Driver Position API Reference
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+API reference for retrieving driver position data. Includes endpoint, sample URL, and detailed attribute descriptions.
+
+```APIDOC
+HTTP Request:
+GET https://api.openf1.org/v1/position
+
+Sample URL:
+https://api.openf1.org/v1/position?meeting_key=1217&driver_number=40&position<=3
+
+Attributes:
+- date: The UTC date and time, in ISO 8601 format.
+- driver_number: The unique number assigned to an F1 driver.
+- meeting_key: The unique identifier for the meeting. Use `latest` to identify the latest or current meeting.
+- position: The position of the driver during the session.
+- session_key: The unique identifier for the session. Use `latest` to identify the latest or current session.
+
+Description:
+Provides driver positions throughout a session, including initial placement and subsequent changes.
+```
+
+--------------------------------
+
+### Fetch Car Data using Python
+
+Source: https://github.com/br-g/openf1/blob/main/documentation/includes/_api_endpoints.md
+
+Provides a Python script to fetch car data from the OpenF1 API. It uses the `urllib.request` module to make the HTTP request and `json` to parse the response. An optional section shows how to load the data into a pandas DataFrame.
+
+```python
+from urllib.request import urlopen
+import json
+
+response = urlopen('https://api.openf1.org/v1/car_data?driver_number=55&session_key=9159&speed>=315')
+data = json.loads(response.read().decode('utf-8'))
+print(data)
+
+# If you want, you can import the results in a DataFrame (you need to install the `pandas` package first)
+# import pandas as pd
+# df = pd.DataFrame(data)
+```

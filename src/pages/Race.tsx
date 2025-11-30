@@ -227,7 +227,7 @@ const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const navigate = useNavigate();
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string>('R');
+  const [selectedSession, setSelectedSession] = useState<string>('');
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState('overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
@@ -358,19 +358,6 @@ const Race = () => {
     } catch (e) { return '-'; }
   };
 
-  // Scroll Handler
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 100; // Navbar height + padding
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-      setActiveSection(id);
-      posthog.capture('tab_switched', { tab: id, context: 'race_analysis' });
-    }
-  };
-
   const handleCircuitDriversSelected = React.useCallback((drivers: { driver1: string; driver2: string; lap1: string | number; lap2: string | number; shouldLoadChart: boolean; }) => {
     setCircuitDrivers(drivers);
     if (drivers.shouldLoadChart) {
@@ -383,24 +370,11 @@ const Race = () => {
     }
   }, []);
 
-  // Intersection Observer for Scroll Spy
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = ['overview', 'results', 'strategy', 'laptimes', 'dominance', 'telemetry'];
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top >= 0 && rect.top <= 300) {
-            setActiveSection(section);
-            break;
-          }
-        }
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    posthog.capture('tab_switched', { tab: section, context: 'race_analysis' });
+  };
 
   if (!year || !eventSlug) return null;
 
@@ -598,47 +572,49 @@ const Race = () => {
             {/* Sticky Sidebar */}
             <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-32 space-y-1">
-                <NavItem id="overview" label="Overview" icon={ChampionIcon} active={activeSection === 'overview'} onClick={() => scrollToSection('overview')} />
-                <NavItem id="results" label="Results" icon={UserGroupIcon} active={activeSection === 'results'} onClick={() => scrollToSection('results')} />
+                <NavItem id="overview" label="Overview" icon={ChampionIcon} active={activeSection === 'overview'} onClick={() => handleSectionChange('overview')} />
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => scrollToSection('strategy')} />
+                  <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
                 )}
-                <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => scrollToSection('laptimes')} />
-                <NavItem id="dominance" label="Dominance" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => scrollToSection('dominance')} />
-                <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => scrollToSection('telemetry')} />
+                <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
+                <NavItem id="dominance" label="Dominance" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
+                <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
               </div>
             </aside>
 
             {/* Main Content Stream */}
-            <div className="flex-1 space-y-24">
+            <div className="flex-1 space-y-8">
 
-              {/* 1. Overview Section */}
-              <section id="overview" className="scroll-mt-32">
-                <SectionHeader title="Race Overview" icon={ChampionIcon} />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {(selectedSession === 'R' || selectedSession === 'Sprint') ? (
-                    <>
-                      {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} imageUrl={getDriverImage(raceWinner.fullName)} />}
-                      {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} imageUrl={getDriverImage(poleSitter.fullName)} />}
-                      {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} imageUrl={getDriverImage(fastestLapHolder.fullName)} />}
-                    </>
-                  ) : (
-                    topPerformers.map((p, i) => (
-                      <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />} imageUrl={getDriverImage(p.fullName)} />
-                    ))
-                  )}
+              {/* 1. Overview Section (Includes Results) */}
+              {activeSection === 'overview' && (
+                <div className="space-y-12 animate-in fade-in duration-500">
+                  <section id="overview">
+                    <SectionHeader title="Race Overview" icon={ChampionIcon} />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {(selectedSession === 'R' || selectedSession === 'Sprint') ? (
+                        <>
+                          {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} imageUrl={getDriverImage(raceWinner.fullName)} />}
+                          {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} imageUrl={getDriverImage(poleSitter.fullName)} />}
+                          {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} imageUrl={getDriverImage(fastestLapHolder.fullName)} />}
+                        </>
+                      ) : (
+                        topPerformers.map((p, i) => (
+                          <F1Card key={i} title={`P${i + 1}`} value={p.fullName} subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''} team={getTeamColorClass(p.team) as any} icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />} imageUrl={getDriverImage(p.fullName)} />
+                        ))
+                      )}
+                    </div>
+                  </section>
+
+                  <section id="results">
+                    <SectionHeader title="Session Results" icon={UserGroupIcon} />
+                    {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} />}
+                  </section>
                 </div>
-              </section>
-
-              {/* 2. Results Section */}
-              <section id="results" className="scroll-mt-32">
-                <SectionHeader title="Session Results" icon={UserGroupIcon} />
-                {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} />}
-              </section>
+              )}
 
               {/* 3. Strategy Section (Race Only) */}
-              {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                <section id="strategy" className="scroll-mt-32">
+              {activeSection === 'strategy' && (selectedSession === 'R' || selectedSession === 'Sprint') && (
+                <section id="strategy" className="animate-in fade-in duration-500">
                   <SectionHeader title="Tire Strategy" icon={Flag01Icon} />
                   <div className="bg-black border-2 border-gray-800 p-6">
                     <TireStrategy year={year!} event={eventName} session={selectedSession} />
@@ -653,53 +629,59 @@ const Race = () => {
               )}
 
               {/* 4. Lap Times Section */}
-              <section id="laptimes" className="scroll-mt-32">
-                <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
-                <div className="bg-black border-2 border-gray-800 p-6">
-                  <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
-                </div>
-              </section>
+              {activeSection === 'laptimes' && (
+                <section id="laptimes" className="animate-in fade-in duration-500">
+                  <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
+                  <div className="bg-black border-2 border-gray-800 p-6">
+                    <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
+                  </div>
+                </section>
+              )}
 
               {/* 5. Dominance Section */}
-              <section id="dominance" className="scroll-mt-32">
-                <SectionHeader title="Track Dominance" icon={MapsLocation01Icon} />
-                <div className="bg-black border-2 border-gray-800 p-6">
-                  <CircuitComparisonChart
-                    year={year!}
-                    event={eventName}
-                    session={selectedSession}
-                    onDriversSelected={handleCircuitDriversSelected}
-                  />
-                </div>
-              </section>
+              {activeSection === 'dominance' && (
+                <section id="dominance" className="animate-in fade-in duration-500">
+                  <SectionHeader title="Track Dominance" icon={MapsLocation01Icon} />
+                  <div className="bg-black border-2 border-gray-800 p-6">
+                    <CircuitComparisonChart
+                      year={year!}
+                      event={eventName}
+                      session={selectedSession}
+                      onDriversSelected={handleCircuitDriversSelected}
+                    />
+                  </div>
+                </section>
+              )}
 
               {/* 6. Telemetry Section */}
-              <section id="telemetry" className="scroll-mt-32">
-                <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
+              {activeSection === 'telemetry' && (
+                <section id="telemetry" className="animate-in fade-in duration-500">
+                  <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
 
-                {/* Comparison Charts if selected */}
-                {circuitDrivers.shouldLoadChart && (
-                  <div className="mb-12 space-y-8">
-                    <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-red-600 pl-4">Head-to-Head Comparison</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
-                      <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
-                      <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" />
-                      <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" />
+                  {/* Comparison Charts if selected */}
+                  {circuitDrivers.shouldLoadChart && (
+                    <div className="mb-12 space-y-8">
+                      <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-red-600 pl-4">Head-to-Head Comparison</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
+                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
+                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" />
+                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-gray-700 pl-4 mb-6">Full Field Telemetry</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-black border border-gray-800 p-4"><SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} title="" /></div>
-                  <div className="bg-black border border-gray-800 p-4"><GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                  <div className="bg-black border border-gray-800 p-4"><ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                  <div className="bg-black border border-gray-800 p-4"><BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                  <div className="bg-black border border-gray-800 p-4"><RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                  <div className="bg-black border border-gray-800 p-4"><DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                </div>
-              </section>
+                  <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-gray-700 pl-4 mb-6">Full Field Telemetry</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-black border border-gray-800 p-4"><SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} title="" /></div>
+                    <div className="bg-black border border-gray-800 p-4"><GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                    <div className="bg-black border border-gray-800 p-4"><ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                    <div className="bg-black border border-gray-800 p-4"><BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                    <div className="bg-black border border-gray-800 p-4"><RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                    <div className="bg-black border border-gray-800 p-4"><DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                  </div>
+                </section>
+              )}
 
             </div>
           </div>

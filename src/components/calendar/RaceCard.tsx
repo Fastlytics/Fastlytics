@@ -112,12 +112,12 @@ const RaceCard: React.FC<RaceCardProps> = ({
                         </div>
                     ) : result ? (
                         // Finished with only Winner Data (Fallback)
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
                                 <ChampionIcon className="w-4 h-4 text-yellow-500" />
                                 <span className="font-bold text-white uppercase tracking-tight">{result.driver}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 font-mono pl-6">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
                                 <UserGroupIcon className="w-3 h-3" />
                                 <span className="uppercase">{result.team}</span>
                             </div>
