@@ -243,8 +243,8 @@ const Race = () => {
 
   useEffect(() => {
     const loadOpenF1Data = async () => {
-        const drivers = await fetchAllOpenF1Drivers();
-        setOpenF1Drivers(drivers);
+      const drivers = await fetchAllOpenF1Drivers();
+      setOpenF1Drivers(drivers);
     };
     loadOpenF1Data();
   }, []);
@@ -305,9 +305,9 @@ const Race = () => {
   }, [fetchedAvailableSessions]);
 
   // Derived Data
-  const raceWinner = useMemo(() => selectedSession === 'R' ? sessionResults?.find(r => r.position === 1) : null, [sessionResults, selectedSession]);
-  const poleSitter = useMemo(() => selectedSession === 'R' ? sessionResults?.find(r => r.gridPosition === 1) : null, [sessionResults, selectedSession]);
-  const fastestLapHolder = useMemo(() => selectedSession === 'R' ? sessionResults?.find(r => r.isFastestLap) : null, [sessionResults, selectedSession]);
+  const raceWinner = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.position === 1) : null, [sessionResults, selectedSession]);
+  const poleSitter = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.gridPosition === 1) : null, [sessionResults, selectedSession]);
+  const fastestLapHolder = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.isFastestLap) : null, [sessionResults, selectedSession]);
 
   const topPerformers = useMemo(() => {
     if (!sessionResults || !selectedSession || (selectedSession === 'R' || selectedSession === 'Sprint')) return [];
