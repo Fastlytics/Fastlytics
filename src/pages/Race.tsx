@@ -583,39 +583,70 @@ const Race = () => {
                           )}
                         </div>
 
-                        {/* Your Time / Results Button */}
+                        {/* Your Time / Results Button / LIVE Indicator */}
                         <div className="hidden md:flex flex-col justify-center items-end md:items-start">
-                          {isAvailable ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-bold tracking-wider w-full md:w-auto"
-                              onClick={() => {
-                                let targetSession = sessionType;
-                                if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
-                                  if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
-                                  else if (availableSessions.some(s => s.type === 'Q2')) targetSession = 'Q2';
-                                  else if (availableSessions.some(s => s.type === 'Q1')) targetSession = 'Q1';
-                                }
-                                if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
-                                  if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
-                                  else if (availableSessions.some(s => s.type === 'SQ2')) targetSession = 'SQ2';
-                                  else if (availableSessions.some(s => s.type === 'SQ1')) targetSession = 'SQ1';
-                                }
-                                setSelectedSession(targetSession);
-                                setShowAnalysis(true);
-                              }}
-                            >
-                              Results
-                            </Button>
-                          ) : (
-                            <>
-                              <div className={cn("font-mono text-lg", isNext ? "text-white" : "text-gray-300")}>
-                                {formatDate(session.date)}
-                              </div>
-                              <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Your Time</div>
-                            </>
-                          )}
+                          {(() => {
+                            // Check if session is LIVE
+                            const sessionDate = new Date(session.date);
+                            const now = new Date();
+                            const diffMs = now.getTime() - sessionDate.getTime();
+                            const diffMins = diffMs / (1000 * 60);
+
+                            // Define durations (in minutes)
+                            let duration = 60; // Default 1 hour
+                            if (sessionType === 'R') duration = 180; // Race: 3 hours
+                            else if (sessionType === 'Sprint') duration = 60; // Sprint: 1 hour
+
+                            const isLive = diffMins >= 0 && diffMins < duration;
+
+                            if (isLive) {
+                              return (
+                                <div className="flex items-center gap-2 text-red-500 animate-pulse">
+                                  <div className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                  </div>
+                                  <span className="font-bold uppercase tracking-wider text-sm">LIVE</span>
+                                </div>
+                              );
+                            }
+
+                            if (isAvailable) {
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-bold tracking-wider w-full md:w-auto"
+                                  onClick={() => {
+                                    let targetSession = sessionType;
+                                    if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
+                                      if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
+                                      else if (availableSessions.some(s => s.type === 'Q2')) targetSession = 'Q2';
+                                      else if (availableSessions.some(s => s.type === 'Q1')) targetSession = 'Q1';
+                                    }
+                                    if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
+                                      if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
+                                      else if (availableSessions.some(s => s.type === 'SQ2')) targetSession = 'SQ2';
+                                      else if (availableSessions.some(s => s.type === 'SQ1')) targetSession = 'SQ1';
+                                    }
+                                    setSelectedSession(targetSession);
+                                    setShowAnalysis(true);
+                                  }}
+                                >
+                                  Results
+                                </Button>
+                              );
+                            }
+
+                            return (
+                              <>
+                                <div className={cn("font-mono text-lg", isNext ? "text-white" : "text-gray-300")}>
+                                  {formatDate(session.date)}
+                                </div>
+                                <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">Your Time</div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
