@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
+import { Profile } from '@/contexts/AuthContext';
 import { ChampionIcon, UserGroupIcon, ArrowRight01Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -22,9 +23,10 @@ interface ChampionshipWidgetProps {
     schedule: ScheduleEvent[];
     raceResults: RaceResult[];
     isLoading: boolean;
+    profile?: Profile | null;
 }
 
-const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams, schedule, raceResults, isLoading }) => {
+const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams, schedule, raceResults, isLoading, profile }) => {
     const topDrivers = drivers.slice(0, 3);
     const topTeams = teams.slice(0, 3);
     const { selectedYear } = useSeason();
@@ -90,7 +92,12 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className={`flex items-center justify-between p-3 border-l-4 ${index === 0 ? (driverChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500') : 'bg-gray-900/50 border-gray-700'}`}
+                            className={`flex items-center justify-between p-3 border-l-4 ${index === 0
+                                    ? (driverChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
+                                    : (profile?.favorite_driver && (driver.code === profile.favorite_driver || driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())))
+                                        ? 'bg-red-600/10 border-red-600'
+                                        : 'bg-gray-900/50 border-gray-700'
+                                }`}
                         >
                             <div className="flex items-center gap-4">
                                 <span className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}>
@@ -147,7 +154,12 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 + 0.3 }}
-                            className={`flex items-center justify-between p-3 border-l-4 ${index === 0 ? (teamChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500') : 'bg-gray-900/50 border-gray-700'}`}
+                            className={`flex items-center justify-between p-3 border-l-4 ${index === 0
+                                    ? (teamChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
+                                    : (profile?.favorite_team && (team.team === profile.favorite_team || team.team.toLowerCase().includes(profile.favorite_team.toLowerCase())))
+                                        ? 'bg-red-600/10 border-red-600'
+                                        : 'bg-gray-900/50 border-gray-700'
+                                }`}
                         >
                             <div className="flex items-center gap-4">
                                 <span className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}>

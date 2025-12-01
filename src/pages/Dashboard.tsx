@@ -12,9 +12,11 @@ import {
   RaceResult
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
+import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
 import { Flag01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/SEO';
@@ -23,6 +25,7 @@ import { useEffect } from 'react';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,6 +106,15 @@ const Dashboard = () => {
     };
   }, [schedule]);
 
+  const favoriteDriverName = useMemo(() => {
+    if (!profile?.favorite_driver || !driverStandings) return undefined;
+    const driver = driverStandings.find(d =>
+      d.code === profile.favorite_driver ||
+      d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
+    );
+    return driver?.name.split(' ').pop()?.toUpperCase(); // Last name only
+  }, [profile, driverStandings]);
+
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
       <SEO
@@ -116,6 +128,14 @@ const Dashboard = () => {
         <DashboardHeader
           selectedYear={selectedYear}
           nextSession={nextSession}
+          favoriteDriverName={favoriteDriverName}
+        />
+
+        <FavoritesWidget
+          profile={profile}
+          drivers={driverStandings || []}
+          teams={teamStandings || []}
+          isLoading={isLoadingDrivers || isLoadingTeams}
         />
 
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
@@ -128,6 +148,7 @@ const Dashboard = () => {
                 schedule={schedule || []}
                 raceResults={raceResults || []}
                 isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+                profile={profile}
               />
             </section>
 

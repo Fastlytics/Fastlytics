@@ -32,6 +32,7 @@ import RPMChart from '@/components/RPMChart';
 import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
 import posthog from 'posthog-js';
+import { useAuth } from '@/contexts/AuthContext';
 
 // --- Helper Functions ---
 
@@ -118,7 +119,7 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
 
 // --- Components ---
 
-const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType: string, year: number }> = ({ results, sessionType, year }) => {
+const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType: string, year: number, favoriteDriver?: string | null }> = ({ results, sessionType, year, favoriteDriver }) => {
   const isPractice = sessionType.startsWith('FP');
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
@@ -160,44 +161,53 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedResults?.map((res, index) => (
-            <TableRow key={res.driverCode} className="border-gray-800/50 hover:bg-gray-900/50 transition-colors group">
-              {columns.map(col => (
-                <TableCell key={`${res.driverCode}-${String(col.key)}`} className={cn("py-3", col.className)}>
-                  {col.key === 'displayPosition' ? (
-                    (isPractice || isQualifying) ? index + 1 : (res.position ?? '-')
-                  ) : col.key === 'driver' ? (
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-white group-hover:text-red-500 transition-colors">{res.fullName}</span>
-                      {res.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
-                    </div>
-                  ) : col.key === 'team' ? (
-                    <span className="flex items-center gap-2 text-sm text-gray-400">
-                      <span className={cn("w-1.5 h-1.5 rounded-full", `bg-f1-${getTeamColorClass(res.team)}`)}></span>
-                      {res.team}
-                    </span>
-                  ) : col.key === 'points' ? (
-                    <span className={cn("flex items-center justify-end gap-2 font-bold", res.isProvisional ? "text-yellow-500" : "text-red-500")}>
-                      {res.points !== null ? res.points : '-'}
-                      {res.isProvisional && <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">Prov</span>}
-                    </span>
-                  ) : col.key === 'time' ? (
-                    <span className="text-gray-300">{formatRaceTime(res.time, res.position === 1)}</span>
-                  ) : col.key === 'laps' ? (
-                    <span className="text-gray-500">{res.laps ?? '-'}</span>
-                  ) : col.key === 'driverFastestLapTime' ? (
-                    res.driverFastestLapTime ? (
-                      <span className={cn(res.isFastestLap ? 'text-purple-400 font-bold' : 'text-gray-400')}>
-                        {res.driverFastestLapTime}
+          {sortedResults?.map((res, index) => {
+            const isFavorite = favoriteDriver && (res.driverCode === favoriteDriver || res.fullName.toLowerCase().includes(favoriteDriver.toLowerCase()));
+            return (
+              <TableRow
+                key={res.driverCode}
+                className={cn(
+                  "border-gray-800/50 transition-colors group",
+                  isFavorite ? "bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600" : "hover:bg-gray-900/50"
+                )}
+              >
+                {columns.map(col => (
+                  <TableCell key={`${res.driverCode}-${String(col.key)}`} className={cn("py-3", col.className)}>
+                    {col.key === 'displayPosition' ? (
+                      (isPractice || isQualifying) ? index + 1 : (res.position ?? '-')
+                    ) : col.key === 'driver' ? (
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-white group-hover:text-red-500 transition-colors">{res.fullName}</span>
+                        {res.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
+                      </div>
+                    ) : col.key === 'team' ? (
+                      <span className="flex items-center gap-2 text-sm text-gray-400">
+                        <span className={cn("w-1.5 h-1.5 rounded-full", `bg-f1-${getTeamColorClass(res.team)}`)}></span>
+                        {res.team}
                       </span>
-                    ) : '-'
-                  ) : (
-                    res[col.key as keyof DetailedRaceResult] ?? '-'
-                  )}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+                    ) : col.key === 'points' ? (
+                      <span className={cn("flex items-center justify-end gap-2 font-bold", res.isProvisional ? "text-yellow-500" : "text-red-500")}>
+                        {res.points !== null ? res.points : '-'}
+                        {res.isProvisional && <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">Prov</span>}
+                      </span>
+                    ) : col.key === 'time' ? (
+                      <span className="text-gray-300">{formatRaceTime(res.time, res.position === 1)}</span>
+                    ) : col.key === 'laps' ? (
+                      <span className="text-gray-500">{res.laps ?? '-'}</span>
+                    ) : col.key === 'driverFastestLapTime' ? (
+                      res.driverFastestLapTime ? (
+                        <span className={cn(res.isFastestLap ? 'text-purple-400 font-bold' : 'text-gray-400')}>
+                          {res.driverFastestLapTime}
+                        </span>
+                      ) : '-'
+                    ) : (
+                      res[col.key as keyof DetailedRaceResult] ?? '-'
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -230,6 +240,7 @@ const NavItem = ({ id, label, icon: Icon, active, onClick }: { id: string, label
 
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -754,7 +765,7 @@ const Race = () => {
                       </Alert>
                     )}
 
-                    {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} />}
+                    {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} favoriteDriver={profile?.favorite_driver} />}
                   </section>
                 </div>
               )}

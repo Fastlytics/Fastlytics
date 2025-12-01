@@ -13,9 +13,10 @@ interface DashboardHeaderProps {
         location: string;
         country: string;
     };
+    favoriteDriverName?: string;
 }
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSession }) => {
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSession, favoriteDriverName }) => {
     const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
     const navigate = useNavigate();
 
@@ -106,6 +107,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSes
                                         <div className="text-xs font-bold text-red-500 uppercase sm:hidden">
                                             {nextSession.sessionName}
                                         </div>
+                                        {favoriteDriverName && (
+                                            <div className="text-[10px] text-gray-400 font-mono mt-1 hidden md:block">
+                                                Time to cheer for <span className="text-white font-bold">{favoriteDriverName}</span>!
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
