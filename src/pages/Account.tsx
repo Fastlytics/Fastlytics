@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon } from 'hugeicons-react';
+import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon, LinkSquare01Icon } from 'hugeicons-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
@@ -15,6 +15,8 @@ import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding 
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
 
 // ... existing imports
 
@@ -52,9 +54,14 @@ const Account = () => {
 
     // Form States
     const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState(user?.email || '');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [oldPassword, setOldPassword] = useState('');
+
+    // UI States
+    const [editingField, setEditingField] = useState<string | null>(null);
 
     // Favorites State
     const [drivers, setDrivers] = useState<DriverStanding[]>([]);
@@ -69,6 +76,7 @@ const Account = () => {
             setEmail(user.email || '');
         }
         if (profile) {
+            setUsername(profile.username || '');
             setFavoriteDriver(profile.favorite_driver);
             setFavoriteTeam(profile.favorite_team);
         }
@@ -125,30 +133,64 @@ const Account = () => {
         }
     };
 
-    const handleUpdateProfile = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSaveField = async (field: string) => {
         setIsLoading(true);
         try {
-            const updates: any = {
-                data: { full_name: fullName }
-            };
+            let error;
 
-            if (email !== user?.email) {
-                updates.email = email;
+            if (field === 'fullName') {
+                const { error: updateError } = await supabase.auth.updateUser({
+                    data: { full_name: fullName }
+                });
+                error = updateError;
+                if (!error) {
+                    // Also update profile table for consistency if needed, but auth metadata is primary for name here
+                    await supabase.from('profiles').update({ full_name: fullName }).eq('id', user.id);
+                }
+            } else if (field === 'username') {
+                // Check uniqueness first if needed, but RLS/Constraint handles it usually. 
+                // Better to catch error.
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ username: username })
+                    .eq('id', user.id);
+                error = updateError;
+            } else if (field === 'email') {
+                if (email !== user?.email) {
+                    const { error: updateError } = await supabase.auth.updateUser({ email: email });
+                    error = updateError;
+                    if (!error) {
+                        toast.info('Please check your new email for a confirmation link.');
+                    }
+                } else {
+                    setEditingField(null);
+                    setIsLoading(false);
+                    return;
+                }
             }
-
-            const { error } = await supabase.auth.updateUser(updates);
 
             if (error) throw error;
-            toast.success('Profile updated successfully');
-            posthog.capture('profile_updated');
-            if (email !== user?.email) {
-                toast.info('Please check your new email for a confirmation link.');
-            }
+
+            toast.success(`${field === 'fullName' ? 'Name' : field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`);
+            posthog.capture('profile_updated', { field });
+            await refreshProfile();
+            setEditingField(null);
         } catch (error: any) {
             toast.error(error.message);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingField(null);
+        // Reset values to current
+        if (user) {
+            setFullName(user.user_metadata?.full_name || '');
+            setEmail(user.email || '');
+        }
+        if (profile) {
+            setUsername(profile.username || '');
         }
     };
 
@@ -158,19 +200,64 @@ const Account = () => {
             toast.error("Passwords don't match");
             return;
         }
+        if (!oldPassword) {
+            toast.error("Please enter your old password");
+            return;
+        }
+
         setIsLoading(true);
         try {
+            // Verify old password first
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: user?.email || '',
+                password: oldPassword
+            });
+
+            if (signInError) {
+                throw new Error("Incorrect old password");
+            }
+
             const { error } = await supabase.auth.updateUser({ password: password });
             if (error) throw error;
+
             toast.success('Password updated successfully');
             posthog.capture('password_updated');
             setPassword('');
             setConfirmPassword('');
+            setOldPassword('');
         } catch (error: any) {
             toast.error(error.message);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleConnectSocial = async (provider: 'google' | 'spotify' | 'discord') => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.auth.linkIdentity({
+                provider: provider,
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`,
+                    scopes: provider === 'spotify' ? 'user-read-email user-read-private' : undefined
+                }
+            });
+            if (error) throw error;
+            if (data?.url) {
+                window.location.href = data.url;
+            }
+        } catch (error: any) {
+            if (error.message?.includes('manual linking is disabled')) {
+                toast.error('Manual linking is disabled. Please enable "Allow manual linking" in your Supabase dashboard under Authentication > Advanced > Security.');
+            } else {
+                toast.error(error.message);
+            }
+            setIsLoading(false);
+        }
+    };
+
+    const isProviderConnected = (provider: string) => {
+        return user?.identities?.some(identity => identity.provider === provider);
     };
 
     const handleSignOut = async () => {
@@ -242,36 +329,97 @@ const Account = () => {
                                         </div>
                                     </div>
 
-                                    <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-xl">
+                                    <div className="space-y-6 max-w-xl">
+                                        {/* Full Name */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="fullName" className="text-zinc-400">Full Name</Label>
-                                            <Input
-                                                id="fullName"
-                                                value={fullName}
-                                                onChange={(e) => setFullName(e.target.value)}
-                                                className="bg-black border-zinc-800 focus:border-red-600 h-12"
-                                                placeholder="Enter your full name"
-                                            />
+                                            <Label className="text-zinc-400">Full Name</Label>
+                                            <div className="flex items-center gap-3">
+                                                {editingField === 'fullName' ? (
+                                                    <>
+                                                        <Input
+                                                            value={fullName}
+                                                            onChange={(e) => setFullName(e.target.value)}
+                                                            className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                                                            autoFocus
+                                                        />
+                                                        <Button size="icon" variant="ghost" onClick={() => handleSaveField('fullName')} disabled={isLoading} className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10">
+                                                            <Tick02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                        <Button size="icon" variant="ghost" onClick={cancelEdit} disabled={isLoading} className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800">
+                                                            <Cancel01Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex-1 p-2 text-white font-medium">{fullName}</div>
+                                                        <Button size="icon" variant="ghost" onClick={() => setEditingField('fullName')} className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                                                            <PencilEdit02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* Username */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="email" className="text-zinc-400">Email Address</Label>
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                className="bg-black border-zinc-800 focus:border-red-600 h-12"
-                                                placeholder="Enter your email"
-                                            />
+                                            <Label className="text-zinc-400">Username</Label>
+                                            <div className="flex items-center gap-3">
+                                                {editingField === 'username' ? (
+                                                    <>
+                                                        <Input
+                                                            value={username}
+                                                            onChange={(e) => setUsername(e.target.value)}
+                                                            className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                                                            autoFocus
+                                                        />
+                                                        <Button size="icon" variant="ghost" onClick={() => handleSaveField('username')} disabled={isLoading} className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10">
+                                                            <Tick02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                        <Button size="icon" variant="ghost" onClick={cancelEdit} disabled={isLoading} className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800">
+                                                            <Cancel01Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex-1 p-2 text-white font-medium">{username || <span className="text-zinc-600 italic">Not set</span>}</div>
+                                                        <Button size="icon" variant="ghost" onClick={() => setEditingField('username')} className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                                                            <PencilEdit02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <Button
-                                            type="submit"
-                                            disabled={isLoading}
-                                            className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
-                                        >
-                                            {isLoading ? 'Saving...' : 'Save Changes'}
-                                        </Button>
-                                    </form>
+
+                                        {/* Email */}
+                                        <div className="space-y-2">
+                                            <Label className="text-zinc-400">Email Address</Label>
+                                            <div className="flex items-center gap-3">
+                                                {editingField === 'email' ? (
+                                                    <>
+                                                        <Input
+                                                            value={email}
+                                                            onChange={(e) => setEmail(e.target.value)}
+                                                            className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                                                            autoFocus
+                                                        />
+                                                        <Button size="icon" variant="ghost" onClick={() => handleSaveField('email')} disabled={isLoading} className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10">
+                                                            <Tick02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                        <Button size="icon" variant="ghost" onClick={cancelEdit} disabled={isLoading} className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800">
+                                                            <Cancel01Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex-1 p-2 text-white font-medium">{email}</div>
+                                                        <Button size="icon" variant="ghost" onClick={() => setEditingField('email')} className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                                                            <PencilEdit02Icon className="w-5 h-5" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -360,6 +508,17 @@ const Account = () => {
                                     <h3 className="text-lg font-bold text-white mb-6">Change Password</h3>
                                     <form onSubmit={handleUpdatePassword} className="space-y-6 max-w-xl">
                                         <div className="space-y-2">
+                                            <Label htmlFor="oldPassword" className="text-zinc-400">Old Password</Label>
+                                            <Input
+                                                id="oldPassword"
+                                                type="password"
+                                                value={oldPassword}
+                                                onChange={(e) => setOldPassword(e.target.value)}
+                                                className="bg-black border-zinc-800 focus:border-red-600 h-12"
+                                                placeholder="Enter current password"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
                                             <Label htmlFor="password" className="text-zinc-400">New Password</Label>
                                             <Input
                                                 id="password"
@@ -383,12 +542,54 @@ const Account = () => {
                                         </div>
                                         <Button
                                             type="submit"
-                                            disabled={isLoading || !password}
+                                            disabled={isLoading || !password || !oldPassword}
                                             className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
                                         >
                                             {isLoading ? 'Updating...' : 'Update Password'}
                                         </Button>
                                     </form>
+
+                                    <div className="mt-12 pt-8 border-t border-zinc-800">
+                                        <h3 className="text-lg font-bold text-white mb-6">Connected Accounts</h3>
+                                        <div className="space-y-4 max-w-xl">
+                                            {[
+                                                { provider: 'google', icon: faGoogle, label: 'Google' },
+                                                { provider: 'spotify', icon: faSpotify, label: 'Spotify' },
+                                                { provider: 'discord', icon: faDiscord, label: 'Discord' }
+                                            ].map((social) => {
+                                                const isConnected = isProviderConnected(social.provider);
+                                                return (
+                                                    <div key={social.provider} className="flex items-center justify-between p-4 bg-black/50 border border-zinc-800 rounded-lg">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center">
+                                                                <FontAwesomeIcon icon={social.icon} className="text-zinc-400 text-lg" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-white">{social.label}</div>
+                                                                <div className="text-xs text-zinc-500">
+                                                                    {isConnected ? 'Connected' : 'Not connected'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {isConnected ? (
+                                                            <div className="flex items-center text-green-500 text-sm font-bold uppercase tracking-wider">
+                                                                <Tick02Icon className="w-5 h-5 mr-2" /> Connected
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                onClick={() => handleConnectSocial(social.provider as any)}
+                                                                variant="outline"
+                                                                className="border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                                                                disabled={isLoading}
+                                                            >
+                                                                <LinkSquare01Icon className="w-4 h-4 mr-2" /> Connect
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}

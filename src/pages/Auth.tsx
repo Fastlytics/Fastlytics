@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,14 +20,14 @@ const Auth = () => {
     const [activeTab, setActiveTab] = useState('signup');
     const navigate = useNavigate();
 
-    const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
+    const handleSocialLogin = async (provider: 'google' | 'spotify' | 'discord') => {
         setIsLoading(true);
         posthog.capture('login_started', { method: 'social', provider });
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`,
+                    redirectTo: `${window.location.origin}`,
                 },
             });
             if (error) throw error;
@@ -181,134 +181,138 @@ const Auth = () => {
                             <TabsTrigger value="signin" className="h-12 text-lg font-bold uppercase tracking-wider data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-md transition-all">Sign In</TabsTrigger>
                         </TabsList>
 
-                        <AnimatePresence mode="wait">
-                            <TabsContent value="signup" className="space-y-6 focus-visible:outline-none">
-                                <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <div className="space-y-4">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('google')}
-                                            disabled={isLoading}
+                        <div className="mt-10">
+                            <AnimatePresence mode="wait">
+                                {activeTab === 'signup' ? (
+                                    <TabsContent value="signup" className="space-y-6 focus-visible:outline-none mt-0" key="signup">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: 20 }}
+                                            transition={{ duration: 0.2 }}
                                         >
-                                            <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign up with Google
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('github')}
-                                            disabled={isLoading}
-                                        >
-                                            <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign up with GitHub
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('discord')}
-                                            disabled={isLoading}
-                                        >
-                                            <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign up with Discord
-                                        </Button>
-                                    </div>
+                                            <div className="space-y-4">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('google')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign up with Google
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('spotify')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faSpotify} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign up with Spotify
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('discord')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign up with Discord
+                                                </Button>
+                                            </div>
 
-                                    <p className="text-center text-sm text-zinc-500 mt-8">
-                                        By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-300">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-300">Privacy Policy</span>.
-                                    </p>
-                                </motion.div>
-                            </TabsContent>
+                                            <p className="text-center text-sm text-zinc-500 mt-8">
+                                                By clicking continue, you agree to our <span className="underline cursor-pointer hover:text-zinc-300">Terms of Service</span> and <span className="underline cursor-pointer hover:text-zinc-300">Privacy Policy</span>.
+                                            </p>
+                                        </motion.div>
+                                    </TabsContent>
+                                ) : (
+                                    <TabsContent value="signin" className="space-y-4 focus-visible:outline-none mt-0" key="signin">
+                                        <motion.div
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <div className="space-y-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('google')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign in with Google
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('spotify')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faSpotify} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign in with Spotify
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                    onClick={() => handleSocialLogin('discord')}
+                                                    disabled={isLoading}
+                                                >
+                                                    <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign in with Discord
+                                                </Button>
+                                            </div>
 
-                            <TabsContent value="signin" className="space-y-4 focus-visible:outline-none">
-                                <motion.div
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <div className="space-y-3">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('google')}
-                                            disabled={isLoading}
-                                        >
-                                            <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign in with Google
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('github')}
-                                            disabled={isLoading}
-                                        >
-                                            <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign in with GitHub
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                            onClick={() => handleSocialLogin('discord')}
-                                            disabled={isLoading}
-                                        >
-                                            <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                            Sign in with Discord
-                                        </Button>
-                                    </div>
+                                            <div className="relative my-6">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <span className="w-full border-t border-zinc-800" />
+                                                </div>
+                                                <div className="relative flex justify-center text-sm uppercase tracking-wider">
+                                                    <span className="bg-black px-4 text-zinc-500 font-bold">Or continue with</span>
+                                                </div>
+                                            </div>
 
-                                    <div className="relative my-6">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <span className="w-full border-t border-zinc-800" />
-                                        </div>
-                                        <div className="relative flex justify-center text-sm uppercase tracking-wider">
-                                            <span className="bg-black px-4 text-zinc-500 font-bold">Or continue with</span>
-                                        </div>
-                                    </div>
-
-                                    <form onSubmit={handleEmailSignIn} className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="email" className="text-base font-medium text-zinc-300">Email</Label>
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                placeholder="name@example.com"
-                                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                required
-                                                disabled={isLoading}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password" className="text-base font-medium text-zinc-300">Password</Label>
-                                            <Input
-                                                id="password"
-                                                type="password"
-                                                placeholder="••••••••"
-                                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                required
-                                                disabled={isLoading}
-                                            />
-                                        </div>
-                                        <Button
-                                            type="submit"
-                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
-                                            disabled={isLoading}
-                                        >
-                                            {isLoading ? 'Signing in...' : 'Sign In'}
-                                        </Button>
-                                    </form>
-                                </motion.div>
-                            </TabsContent>
-                        </AnimatePresence>
+                                            <form onSubmit={handleEmailSignIn} className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="email" className="text-base font-medium text-zinc-300">Email</Label>
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        placeholder="name@example.com"
+                                                        className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
+                                                        value={email}
+                                                        onChange={(e) => setEmail(e.target.value)}
+                                                        required
+                                                        disabled={isLoading}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="password" className="text-base font-medium text-zinc-300">Password</Label>
+                                                    <Input
+                                                        id="password"
+                                                        type="password"
+                                                        placeholder="••••••••"
+                                                        className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
+                                                        value={password}
+                                                        onChange={(e) => setPassword(e.target.value)}
+                                                        required
+                                                        disabled={isLoading}
+                                                    />
+                                                </div>
+                                                <Button
+                                                    type="submit"
+                                                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading ? 'Signing in...' : 'Sign In'}
+                                                </Button>
+                                            </form>
+                                        </motion.div>
+                                    </TabsContent>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </Tabs>
                 </div>
             </div>

@@ -7,7 +7,6 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::", // Allows access on any network interface
     port: 8080,  // Change to the port you want
   },
   preview: {
@@ -17,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     tailwindcss(),
   ].
-  filter(Boolean),
+    filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
