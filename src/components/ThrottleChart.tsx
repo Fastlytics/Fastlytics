@@ -186,72 +186,65 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
   };
 
   return (
-    <Card
+    <div
       ref={chartRef}
-      className={cn("chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm animate-fade-in overflow-hidden", className)}
+      className={cn("bg-black border-2 border-gray-800 p-6", className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-lg font-semibold text-white">{chartTitle}</CardTitle>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Select
-              value={selectedDriver}
-              onValueChange={(value) => {
-                setSelectedDriver(value);
-                setSelectedLap('fastest');
-                // Reset chart loading state when driver changes
-                if (shouldLoadChart) {
-                  setShouldLoadChart(false);
-                }
-              }}
-              disabled={isLoadingDrivers || !availableDrivers}
-            >
-              <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                <UserIcon className="w-4 h-4 mr-2 opacity-70" />
-                <SelectValue placeholder="Select Driver" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500">Driver</SelectLabel>
-                  {availableDrivers?.map((drv) => (
-                    <SelectItem key={drv.code} value={drv.code} className="text-sm">
-                      {drv.code}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedLap.toString()}
-              onValueChange={(value) => setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))}
-              disabled={lapOptions.length <= 1}
-            >
-              <SelectTrigger className="w-full sm:w-[120px] bg-gray-800/80 border-gray-700 text-gray-200 text-sm h-9">
-                <Clock01Icon className="w-4 h-4 mr-2 opacity-70" />
-                <SelectValue placeholder="Lap" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700 text-gray-200">
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500">Lap</SelectLabel>
-                  {lapOptions.map((lap) => (
-                    <SelectItem key={lap.toString()} value={lap.toString()} className="text-sm">
-                      {lap === 'fastest' ? 'Fastest' : lap}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
+        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">{chartTitle}</h3>
+        <div className="flex flex-wrap gap-2">
+          <Select
+            value={selectedDriver}
+            onValueChange={(value) => {
+              setSelectedDriver(value);
+              setSelectedLap('fastest');
+              if (shouldLoadChart) {
+                setShouldLoadChart(false);
+              }
+            }}
+            disabled={isLoadingDrivers || !availableDrivers}
+          >
+            <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+              <UserIcon className="w-3 h-3 mr-2 opacity-50" />
+              <SelectValue placeholder="Select Driver" />
+            </SelectTrigger>
+            <SelectContent className="bg-black border-gray-700 text-white rounded-none">
+              <SelectGroup>
+                <SelectLabel className="text-xs text-gray-500 uppercase">Driver</SelectLabel>
+                {availableDrivers?.map((drv) => (
+                  <SelectItem key={drv.code} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                    {drv.code}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedLap.toString()}
+            onValueChange={(value) => setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))}
+            disabled={lapOptions.length <= 1}
+          >
+            <SelectTrigger className="w-full sm:w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
+              <Clock01Icon className="w-3 h-3 mr-2 opacity-50" />
+              <SelectValue placeholder="Lap" />
+            </SelectTrigger>
+            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+              <SelectGroup>
+                <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
+                {lapOptions.map((lap) => (
+                  <SelectItem key={lap.toString()} value={lap.toString()} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
+                    {lap === 'fastest' ? 'Fastest' : lap}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {renderContent()}
+      </div>
 
-      </CardContent>
-    </Card>
+      {renderContent()}
+    </div>
   );
 };
 

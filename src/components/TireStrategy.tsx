@@ -84,81 +84,116 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   const renderStrategyOverview = () => {
     if (isLoadingStrategy) {
       return (
-        <div className="space-y-2 pt-4">
+        <div className="space-y-4 pt-4 animate-pulse">
           {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="w-full h-[28px] bg-gray-800" />
+            <div key={i} className="flex gap-4">
+              <div className="w-16 h-8 bg-gray-800 rounded-sm" />
+              <div className="flex-1 h-8 bg-gray-800 rounded-sm" />
+            </div>
           ))}
         </div>
       );
     }
     if (isErrorStrategy) {
       return (
-        <div className="w-full min-h-[200px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
+        <div className="w-full min-h-[200px] bg-red-900/10 border border-red-600/50 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
           <AlertCircleIcon className="w-8 h-8 mb-2" />
-          <p className="font-bold uppercase">Error loading strategy</p>
-          <p className="text-xs text-gray-500 mt-1">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
+          <p className="font-bold uppercase tracking-wider">Error loading strategy</p>
+          <p className="text-xs text-red-400 mt-1 font-mono">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
         </div>
       );
     }
     if (!strategyData || strategyData.length === 0) {
       return (
-        <div className="w-full min-h-[200px] bg-black border border-gray-800 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase">
-          No tire strategy data found.
+        <div className="w-full min-h-[200px] bg-gray-900/20 border border-gray-800 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
+          No tire strategy data found
         </div>
       );
     }
 
     return (
-      <TooltipProvider delayDuration={100}>
+      <TooltipProvider delayDuration={0}>
         <div className="pt-6">
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6 text-xs font-bold uppercase tracking-wider text-gray-500">
+          {/* Legend */}
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-800 pb-6">
             {Object.entries(tireCompoundColors).map(([compound, colorClass]) => (
               compound !== 'UNKNOWN' && (
-                <div key={compound} className="flex items-center gap-2">
-                  <span className={cn("w-3 h-3", colorClass)}></span>
-                  <span>{compound}</span>
+                <div key={compound} className="flex items-center gap-3">
+                  <span className={cn("w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]", colorClass)}></span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{compound}</span>
                 </div>
               )
             ))}
           </div>
-          <div className="space-y-3">
+
+          {/* Chart */}
+          <div className="space-y-4 relative">
+            {/* Grid Lines */}
+            <div className="absolute inset-0 flex pointer-events-none ml-20">
+              {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
+                <div key={tick} className="h-full border-l border-gray-800/30 absolute" style={{ left: `${tick * 100}%` }}>
+                  <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-mono text-gray-600">
+                    L{Math.round(tick * maxLaps)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
             {strategyData.map((driverData) => {
               const isRaceSession = session === 'R' || session === 'Sprint';
               const position = isRaceSession ? driverPositionMap.get(driverData.driver) : undefined;
               const positionText = position !== undefined && isFinite(position) ? `P${position}` : '';
 
               return (
-                <div key={driverData.driver} className="flex items-center gap-4 group">
-                  <span className="w-16 text-sm font-bold font-mono text-gray-400 text-right flex-shrink-0 group-hover:text-white transition-colors">
-                    {positionText ? (
-                      <span className="flex items-center justify-end gap-2">
-                        <span className="text-xs text-gray-600">{positionText}</span>
-                        {driverData.driver}
+                <div key={driverData.driver} className="flex items-center gap-4 group relative z-10">
+                  <div className="w-16 flex flex-col items-end shrink-0">
+                    <span className="text-sm font-black font-mono text-white group-hover:text-red-500 transition-colors">
+                      {driverData.driver}
+                    </span>
+                    {positionText && (
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        {positionText}
                       </span>
-                    ) : (
-                      driverData.driver
                     )}
-                  </span>
-                  <div className="flex-grow h-8 bg-gray-900 border border-gray-800 relative flex">
+                  </div>
+
+                  <div className="flex-grow h-8 bg-gray-900/50 relative flex rounded-sm overflow-hidden ring-1 ring-gray-800 group-hover:ring-gray-600 transition-all">
                     {driverData.stints.map((stint, index) => {
                       const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
                       const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
                       const bgColorClass = getTireColorClass(stint.compound);
-                      const tooltipContent = `${stint.compound} (L${stint.startLap}-L${stint.endLap}, ${stint.lapCount} laps)`;
+                      const isNew = stint.compound === 'SOFT' || stint.compound === 'MEDIUM' || stint.compound === 'HARD'; // Simplified logic, ideally backend provides 'isNew'
 
                       return (
                         <Tooltip key={index}>
                           <TooltipTrigger asChild>
                             <div
-                              className={cn("h-full absolute transition-all hover:brightness-110 border-r border-black/20", bgColorClass)}
+                              className={cn(
+                                "h-full absolute transition-all hover:brightness-110 hover:z-20 border-r border-black/40 cursor-help",
+                                bgColorClass
+                              )}
                               style={{
                                 left: `${leftOffsetPercentage}%`,
                                 width: `${widthPercentage}%`,
                               }}
                             />
                           </TooltipTrigger>
-                          <TooltipContent className="bg-black border border-gray-700 text-white font-mono text-xs uppercase">
-                            <p>{tooltipContent}</p>
+                          <TooltipContent
+                            side="top"
+                            className="bg-black/90 backdrop-blur-xl border border-gray-700 text-white p-3 rounded-none shadow-2xl"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-2">
+                                <span className={cn("w-2 h-2 rounded-full", bgColorClass)}></span>
+                                <span className="font-bold uppercase tracking-wider text-sm">{stint.compound}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-gray-300">
+                                <span>Laps:</span>
+                                <span className="text-white text-right">{stint.startLap} - {stint.endLap}</span>
+                                <span>Duration:</span>
+                                <span className="text-white text-right">{stint.lapCount} laps</span>
+                              </div>
+                            </div>
                           </TooltipContent>
                         </Tooltip>
                       );
@@ -179,28 +214,31 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <Tabs defaultValue="overview" className="w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Strategy Analysis</h3>
-          <TabsList className="bg-gray-900 border border-gray-800 p-1 h-auto rounded-none">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-3">
+            <span className="w-1 h-6 bg-red-600 block"></span>
+            Strategy Analysis
+          </h3>
+          <TabsList className="bg-gray-900 border border-gray-800 p-1 h-auto rounded-none w-full sm:w-auto">
             <TabsTrigger
               value="overview"
-              className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
+              className="flex-1 sm:flex-none data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-none transition-all"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-3 rounded-none transition-colors"
+              className="flex-1 sm:flex-none data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-none transition-all"
             >
               Stint Detail
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="mt-0">
+        <TabsContent value="overview" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
           {renderStrategyOverview()}
         </TabsContent>
-        <TabsContent value="analysis" className="mt-0">
+        <TabsContent value="analysis" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <StintAnalysisTable year={year} event={event} session={session} />
         </TabsContent>
       </Tabs>
