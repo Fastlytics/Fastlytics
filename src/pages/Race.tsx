@@ -723,7 +723,7 @@ const Race = () => {
                   <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
                 )}
                 <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
-                <NavItem id="dominance" label="Dominance" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
+                <NavItem id="dominance" label="Head to Head" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
                 <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
               </div>
             </aside>
@@ -772,16 +772,13 @@ const Race = () => {
 
               {/* 3. Strategy Section (Race Only) */}
               {activeSection === 'strategy' && (selectedSession === 'R' || selectedSession === 'Sprint') && (
-                <section id="strategy" className="animate-in fade-in duration-500">
+                <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
                   <SectionHeader title="Tire Strategy" icon={Flag01Icon} />
-                  <div className="bg-black border-2 border-gray-800 p-6">
-                    <TireStrategy year={year!} event={eventName} session={selectedSession} />
-                  </div>
-                  <div className="mt-8">
+                  <TireStrategy year={year!} event={eventName} session={selectedSession} />
+
+                  <div>
                     <h3 className="text-xl font-bold uppercase italic mb-4 text-gray-400">Position Changes</h3>
-                    <div className="bg-black border-2 border-gray-800 p-6 h-[500px]">
-                      <PositionsTabContent year={year!} event={eventName} session={selectedSession} />
-                    </div>
+                    <PositionsTabContent year={year!} event={eventName} session={selectedSession} />
                   </div>
                 </section>
               )}
@@ -790,36 +787,25 @@ const Race = () => {
               {activeSection === 'laptimes' && (
                 <section id="laptimes" className="animate-in fade-in duration-500">
                   <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
-                  <div className="bg-black border-2 border-gray-800 p-6">
-                    <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
-                  </div>
+                  <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
                 </section>
               )}
 
               {/* 5. Dominance Section */}
               {activeSection === 'dominance' && (
                 <section id="dominance" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Track Dominance" icon={MapsLocation01Icon} />
-                  <div className="bg-black border-2 border-gray-800 p-6">
-                    <CircuitComparisonChart
-                      year={year!}
-                      event={eventName}
-                      session={selectedSession}
-                      onDriversSelected={handleCircuitDriversSelected}
-                    />
-                  </div>
-                </section>
-              )}
-
-              {/* 6. Telemetry Section */}
-              {activeSection === 'telemetry' && (
-                <section id="telemetry" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
+                  <SectionHeader title="Head to Head" icon={MapsLocation01Icon} />
+                  <CircuitComparisonChart
+                    year={year!}
+                    event={eventName}
+                    session={selectedSession}
+                    onDriversSelected={handleCircuitDriversSelected}
+                  />
 
                   {/* Comparison Charts if selected */}
                   {circuitDrivers.shouldLoadChart && (
-                    <div className="mb-12 space-y-8">
-                      <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-red-600 pl-4">Head-to-Head Comparison</h3>
+                    <div className="mt-12 space-y-8">
+                      <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-red-600 pl-4">Telemetry Comparison</h3>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
                         <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
@@ -828,15 +814,22 @@ const Race = () => {
                       </div>
                     </div>
                   )}
+                </section>
+              )}
+
+              {/* 6. Telemetry Section */}
+              {activeSection === 'telemetry' && (
+                <section id="telemetry" className="animate-in fade-in duration-500">
+                  <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
 
                   <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-gray-700 pl-4 mb-6">Full Field Telemetry</h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="bg-black border border-gray-800 p-4"><SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} title="" /></div>
-                    <div className="bg-black border border-gray-800 p-4"><GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                    <div className="bg-black border border-gray-800 p-4"><ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                    <div className="bg-black border border-gray-800 p-4"><BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                    <div className="bg-black border border-gray-800 p-4"><RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
-                    <div className="bg-black border border-gray-800 p-4"><DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} /></div>
+                    <SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} title="" />
+                    <GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
+                    <ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
+                    <BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
+                    <RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
+                    <DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
                   </div>
                 </section>
               )}

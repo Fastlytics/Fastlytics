@@ -190,7 +190,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
 
                         {/* YOU */}
                         <div className="flex items-center gap-4 p-4 border-l-4 border-red-600 bg-red-600/10 my-1">
-                            <div className="text-xs font-bold text-red-500 w-12 text-right">YOU</div>
+                            <div className="text-xs font-bold text-red-500 w-12">YOUR FAV DRIVER</div>
                             <Avatar className="h-10 w-10 border-2 border-red-600">
                                 <AvatarImage src={getDriverImage(favoriteDriver.name)} className="object-cover" />
                                 <AvatarFallback>{favoriteDriver.code}</AvatarFallback>
