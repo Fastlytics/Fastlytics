@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import posthog from 'posthog-js';
@@ -43,9 +43,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const isFetchingProfile = useRef(false);
-  const isInitialized = useRef(false);
 
-  const fetchProfile = async (userId: string, userEmail?: string, userMeta?: any) => {
+  const fetchProfile = useCallback(async (userId: string, userEmail?: string, userMeta?: any) => {
     if (isFetchingProfile.current) {
       return;
     }
@@ -53,18 +52,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isFetchingProfile.current = true;
 
     try {
-      // Create a promise that rejects after 10 seconds (increased from 5s)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timed out')), 10000);
-      });
-
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       if (error) {
         if (error.code === 'PGRST116') { // Row not found
@@ -94,74 +86,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setProfile(data);
       }
     } catch (error) {
-      // On timeout, don't block the user - they can still use the app
-      console.warn('Profile fetch timeout - continuing without profile:', error);
-      // Set a minimal profile to allow the app to function
+      console.error('Unexpected error fetching profile:', error);
       setProfile(null);
     } finally {
       isFetchingProfile.current = false;
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Prevent double initialization in React StrictMode
-    if (isInitialized.current) {
-      return;
-    }
-    isInitialized.current = true;
-
-    // Get initial session
-    const initSession = async () => {
-      try {
-        // Check if there's an auth code in the URL (OAuth callback)
-        const hasAuthParams = window.location.hash.includes('access_token') || 
-                             window.location.search.includes('code=');
-        
-        // Use longer timeout for OAuth callbacks, shorter for regular session checks
-        const timeoutMs = hasAuthParams ? 15000 : 8000;
-        
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('getSession timed out')), timeoutMs);
-        });
-
-        const sessionPromise = supabase.auth.getSession();
-
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Don't await profile fetch - let it happen in background
-          fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
-        }
-      } catch (e) {
-        // On timeout, assume no session and let user continue
-        console.warn('initSession timeout - continuing without session:', e);
-        setSession(null);
-        setUser(null);
-        
-        // Clean up any stale auth params from URL to prevent repeated failures
-        if (window.location.search.includes('code=') || window.location.hash.includes('access_token')) {
-          window.history.replaceState({}, '', window.location.pathname);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    initSession();
-
-    // Listen for auth changes
+    // Set up auth state listener FIRST - this is the recommended approach by Supabase
+    // The listener will fire with the initial session when Supabase finishes initializing
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
 
       if (session?.user) {
-        await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+        // Use setTimeout to avoid potential deadlock with Supabase's internal state
+        setTimeout(() => {
+          fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+        }, 0);
       } else {
         setProfile(null);
       }
-
-      setLoading(false);
 
       if (event === 'SIGNED_IN' && session?.user) {
         posthog.identify(session.user.id, {
@@ -172,6 +121,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         posthog.capture('logout');
         posthog.reset();
       }
+    });
+
+    // Also call getSession for the initial state (but don't block on it)
+    // This handles cases where onAuthStateChange might not fire immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      // Only update if we haven't received an auth state change yet
+      if (loading) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        if (session?.user) {
+          fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+        }
+      }
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
