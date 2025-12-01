@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing"; // Updated import
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Account from "./pages/Account";
 import AboutUs from "./pages/AboutUs";
 import Race from "./pages/Race";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
                 <Route path="/account" element={<DashboardLayout><Account /></DashboardLayout>} />
               </Route>

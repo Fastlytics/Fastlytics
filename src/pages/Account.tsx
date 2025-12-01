@@ -11,6 +11,12 @@ import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCir
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
+import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
+import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getTeamLogo } from '@/lib/teamUtils';
+import { StarIcon } from 'lucide-react';
+
+// ... existing imports
 
 // --- Components ---
 
@@ -39,7 +45,7 @@ const NavItem = ({ id, label, icon: Icon, active, onClick }: { id: string, label
 );
 
 const Account = () => {
-    const { user, signOut } = useAuth();
+    const { user, profile, refreshProfile, signOut } = useAuth();
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('profile');
     const [isLoading, setIsLoading] = useState(false);
@@ -50,12 +56,74 @@ const Account = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
+    // Favorites State
+    const [drivers, setDrivers] = useState<DriverStanding[]>([]);
+    const [teams, setTeams] = useState<TeamStanding[]>([]);
+    const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
+    const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
+    const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
+
     useEffect(() => {
         if (user) {
             setFullName(user.user_metadata?.full_name || '');
             setEmail(user.email || '');
         }
-    }, [user]);
+        if (profile) {
+            setFavoriteDriver(profile.favorite_driver);
+            setFavoriteTeam(profile.favorite_team);
+        }
+    }, [user, profile]);
+
+    useEffect(() => {
+        const loadF1Data = async () => {
+            const currentYear = new Date().getFullYear();
+            try {
+                const [driversData, teamsData, openF1Data] = await Promise.all([
+                    fetchDriverStandings(currentYear),
+                    fetchTeamStandings(currentYear),
+                    fetchAllOpenF1Drivers()
+                ]);
+                setDrivers(driversData);
+                setTeams(teamsData);
+                setOpenF1Drivers(openF1Data);
+            } catch (error) {
+                console.error('Error loading F1 data:', error);
+            }
+        };
+        loadF1Data();
+    }, []);
+
+    const getDriverImage = (driverCode: string, driverName: string) => {
+        const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
+        return driver?.headshot_url;
+    };
+
+    const handleUpdateFavorites = async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    favorite_driver: favoriteDriver,
+                    favorite_team: favoriteTeam,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+            await refreshProfile();
+            toast.success('Favorites updated successfully');
+            posthog.capture('favorites_updated', {
+                favorite_driver: favoriteDriver,
+                favorite_team: favoriteTeam
+            });
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to update favorites');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -146,6 +214,7 @@ const Account = () => {
                     <aside className="w-full lg:w-64 shrink-0">
                         <div className="sticky top-32 space-y-1">
                             <NavItem id="profile" label="Profile" icon={UserIcon} active={activeSection === 'profile'} onClick={() => setActiveSection('profile')} />
+                            <NavItem id="favorites" label="My Favorites" icon={StarIcon} active={activeSection === 'favorites'} onClick={() => setActiveSection('favorites')} />
                             <NavItem id="security" label="Security" icon={SecurityCheckIcon} active={activeSection === 'security'} onClick={() => setActiveSection('security')} />
                             <NavItem id="subscription" label="Subscription" icon={CreditCardIcon} active={activeSection === 'subscription'} onClick={() => setActiveSection('subscription')} />
                         </div>
@@ -207,7 +276,83 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* 2. Security Section */}
+                        {/* 2. My Favorites Section */}
+                        {activeSection === 'favorites' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <SectionHeader title="My Favorites" icon={StarIcon} />
+                                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
+                                    <p className="text-zinc-400 mb-8">Update your favorite driver and team to personalize your dashboard.</p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Favorite Driver */}
+                                        <div className="space-y-4">
+                                            <Label className="text-zinc-400">Favorite Driver</Label>
+                                            <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 border border-zinc-800 rounded-md p-2 bg-black/50">
+                                                {drivers.map((driver) => (
+                                                    <button
+                                                        key={driver.code}
+                                                        onClick={() => setFavoriteDriver(driver.code)}
+                                                        className={cn(
+                                                            "flex items-center gap-3 p-3 rounded-md transition-colors text-left",
+                                                            favoriteDriver === driver.code
+                                                                ? "bg-red-600 text-white"
+                                                                : "hover:bg-zinc-800 text-zinc-300"
+                                                        )}
+                                                    >
+                                                        <Avatar className="h-10 w-10 border border-zinc-700">
+                                                            <AvatarImage src={getDriverImage(driver.code, driver.name)} className="object-cover object-top" />
+                                                            <AvatarFallback className="text-black">{driver.code}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <div className="font-bold text-sm">{driver.name}</div>
+                                                            <div className={cn("text-xs", favoriteDriver === driver.code ? "text-red-200" : "text-zinc-500")}>{driver.team}</div>
+                                                        </div>
+                                                        {favoriteDriver === driver.code && <CheckmarkCircle01Icon className="ml-auto w-5 h-5" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Favorite Team */}
+                                        <div className="space-y-4">
+                                            <Label className="text-zinc-400">Favorite Team</Label>
+                                            <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 border border-zinc-800 rounded-md p-2 bg-black/50">
+                                                {teams.map((team) => (
+                                                    <button
+                                                        key={team.team}
+                                                        onClick={() => setFavoriteTeam(team.team)}
+                                                        className={cn(
+                                                            "flex items-center gap-3 p-3 rounded-md transition-colors text-left",
+                                                            favoriteTeam === team.team
+                                                                ? "bg-red-600 text-white"
+                                                                : "hover:bg-zinc-800 text-zinc-300"
+                                                        )}
+                                                    >
+                                                        <div className="w-10 h-10 bg-white/10 rounded p-1 flex items-center justify-center">
+                                                            <img src={getTeamLogo(team.team) || ''} alt={team.team} className="w-full h-full object-contain" />
+                                                        </div>
+                                                        <div className="font-bold text-sm">{team.team}</div>
+                                                        {favoriteTeam === team.team && <CheckmarkCircle01Icon className="ml-auto w-5 h-5" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 flex justify-end">
+                                        <Button
+                                            onClick={handleUpdateFavorites}
+                                            disabled={isLoading}
+                                            className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
+                                        >
+                                            {isLoading ? 'Saving...' : 'Save Preferences'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. Security Section */}
                         {activeSection === 'security' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <SectionHeader title="Security" icon={SecurityCheckIcon} />
@@ -248,7 +393,7 @@ const Account = () => {
                             </div>
                         )}
 
-                        {/* 3. Subscription Section */}
+                        {/* 4. Subscription Section */}
                         {activeSection === 'subscription' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <SectionHeader title="Subscription" icon={CreditCardIcon} />
