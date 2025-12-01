@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import posthog from 'posthog-js';
@@ -42,7 +42,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isFetchingProfile = React.useRef(false);
+  const isFetchingProfile = useRef(false);
+  const isInitialized = useRef(false);
 
   const fetchProfile = async (userId: string, userEmail?: string, userMeta?: any) => {
     if (isFetchingProfile.current) {
@@ -52,9 +53,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isFetchingProfile.current = true;
 
     try {
-      // Create a promise that rejects after 5 seconds
+      // Create a promise that rejects after 10 seconds (increased from 5s)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timed out')), 5000);
+        setTimeout(() => reject(new Error('Profile fetch timed out')), 10000);
       });
 
       const fetchPromise = supabase
@@ -93,19 +94,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Unexpected error fetching profile:', error);
+      // On timeout, don't block the user - they can still use the app
+      console.warn('Profile fetch timeout - continuing without profile:', error);
+      // Set a minimal profile to allow the app to function
+      setProfile(null);
     } finally {
       isFetchingProfile.current = false;
     }
   };
 
   useEffect(() => {
+    // Prevent double initialization in React StrictMode
+    if (isInitialized.current) {
+      return;
+    }
+    isInitialized.current = true;
+
     // Get initial session
     const initSession = async () => {
       try {
-        // Timeout for getSession
+        // Check if there's an auth code in the URL (OAuth callback)
+        const hasAuthParams = window.location.hash.includes('access_token') || 
+                             window.location.search.includes('code=');
+        
+        // Use longer timeout for OAuth callbacks, shorter for regular session checks
+        const timeoutMs = hasAuthParams ? 15000 : 8000;
+        
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('getSession timed out')), 2000);
+          setTimeout(() => reject(new Error('getSession timed out')), timeoutMs);
         });
 
         const sessionPromise = supabase.auth.getSession();
@@ -115,10 +131,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+          // Don't await profile fetch - let it happen in background
+          fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
         }
       } catch (e) {
-        console.error('initSession error:', e);
+        // On timeout, assume no session and let user continue
+        console.warn('initSession timeout - continuing without session:', e);
+        setSession(null);
+        setUser(null);
+        
+        // Clean up any stale auth params from URL to prevent repeated failures
+        if (window.location.search.includes('code=') || window.location.hash.includes('access_token')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       } finally {
         setLoading(false);
       }
