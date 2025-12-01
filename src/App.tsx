@@ -17,6 +17,8 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import FAQ from "./pages/FAQ";
+import RefundPolicy from "./pages/RefundPolicy";
+import Contact from "./pages/Contact";
 import LandingFooter from "./components/LandingFooter";
 import { SeasonProvider } from "./contexts/SeasonContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -66,6 +68,8 @@ const App = () => (
               <Route path="/privacy-policy" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
               <Route path="/terms-of-service" element={<MainLayout><TermsOfService /></MainLayout>} />
               <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
+              <Route path="/refund-policy" element={<MainLayout><RefundPolicy /></MainLayout>} />
+              <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
 
               {/* All routes are now public */}
               <Route path="/auth" element={<Auth />} />

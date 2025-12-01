@@ -34,6 +34,8 @@ const LandingFooter = () => {
             <ul className="space-y-4">
               <li><Link to="/privacy-policy" className="text-gray-400 hover:text-white font-bold uppercase tracking-wide transition-colors">Privacy</Link></li>
               <li><Link to="/terms-of-service" className="text-gray-400 hover:text-white font-bold uppercase tracking-wide transition-colors">Terms</Link></li>
+              <li><Link to="/refund-policy" className="text-gray-400 hover:text-white font-bold uppercase tracking-wide transition-colors">Refunds</Link></li>
+              <li><Link to="/contact" className="text-gray-400 hover:text-white font-bold uppercase tracking-wide transition-colors">Contact</Link></li>
             </ul>
           </div>
         </div>
