@@ -322,18 +322,18 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
   }
 
   return (
-    <div className="mt-6 bg-black border border-gray-800 overflow-hidden">
-      <div className="p-4 border-b border-gray-800 flex items-center gap-2">
-        <Analytics01Icon className="w-5 h-5 text-red-600" />
+    <div className="mt-6 bg-black overflow-hidden">
+      <div className="p-4 border-b border-gray-800 flex items-center gap-2 mb-4">
+        <Analytics01Icon className="w-5 h-5 text-white" />
         <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">Stint Performance Metrics</h3>
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-gray-900/50 border-b border-gray-800">
+          <TableHeader className="bg-transparent border-b-2 border-white">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-gray-800 hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="border-none hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <TableHead key={header.id} className="px-4 py-3 text-xs font-black text-white uppercase tracking-wider whitespace-nowrap">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -351,10 +351,10 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-b border-gray-800/50 hover:bg-gray-900/30 transition-colors"
+                  className="border-b border-gray-800/50 hover:bg-white/5 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-4 py-3 text-sm">
+                    <TableCell key={cell.id} className="px-4 py-3 text-sm font-mono">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -370,7 +370,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           </TableBody>
         </Table>
       </div>
-      <div className="px-4 py-3 bg-gray-900/30 border-t border-gray-800">
+      <div className="px-4 py-3 mt-4 border-t border-gray-800">
         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Metric Definitions:</h4>
         <ul className="space-y-1 text-[10px] text-gray-500 font-mono">
           <li className={cn((session !== 'R' && session !== 'Sprint') && 'opacity-50')}>

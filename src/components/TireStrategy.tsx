@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTireStrategy, DriverStrategy, fetchSpecificRaceResults, DetailedRaceResult } from '@/lib/api';
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, Menu01Icon, Analytics01Icon, Flag01Icon } from 'hugeicons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StintAnalysisTable from './StintAnalysisTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ interface TireStrategyProps {
   year: number;
   event: string;
   session: string;
+  favoriteDriver?: string | null;
 }
 
 const tireCompoundColors: { [key: string]: string } = {
@@ -34,8 +35,15 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   delay = 0,
   year,
   event,
-  session
+  session,
+  favoriteDriver
 }) => {
+  const [focusedDriver, setFocusedDriver] = React.useState<string | null>(null);
+
+  const toggleDriverFocus = (driver: string) => {
+    setFocusedDriver(prev => prev === driver ? null : driver);
+  };
+
   const { data: raceResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['sessionResult', year, event, session],
     queryFn: () => fetchSpecificRaceResults(year, event, session),
@@ -145,9 +153,20 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
               const positionText = position !== undefined && isFinite(position) ? `P${position}` : '';
 
               return (
-                <div key={driverData.driver} className="flex items-center gap-4 group relative z-10">
+                <div
+                  key={driverData.driver}
+                  className={cn(
+                    "flex items-center gap-4 group relative z-10 transition-all duration-300 cursor-pointer p-2 rounded-lg",
+                    focusedDriver && focusedDriver !== driverData.driver ? "opacity-20" : "opacity-100",
+                    favoriteDriver && (driverData.driver === favoriteDriver || driverData.driver.includes(favoriteDriver)) && !focusedDriver ? "bg-red-900/20 border border-red-600/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]" : "hover:bg-gray-900/50"
+                  )}
+                  onClick={() => toggleDriverFocus(driverData.driver)}
+                >
                   <div className="w-16 flex flex-col items-end shrink-0">
-                    <span className="text-sm font-black font-mono text-white group-hover:text-red-500 transition-colors">
+                    <span className={cn(
+                      "text-sm font-black font-mono transition-colors",
+                      focusedDriver === driverData.driver ? "text-red-500" : "text-white group-hover:text-red-500"
+                    )}>
                       {driverData.driver}
                     </span>
                     {positionText && (
@@ -210,25 +229,30 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
 
   return (
     <div
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
+      className={cn("bg-black p-0", className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <Tabs defaultValue="overview" className="w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-3">
-            <span className="w-1 h-6 bg-red-600 block"></span>
-            Strategy Analysis
-          </h3>
-          <TabsList className="bg-gray-900 border border-gray-800 p-1 h-auto rounded-none w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-gray-800 pb-4">
+          <div className="flex items-center gap-3">
+            <Flag01Icon className="w-8 h-8 text-red-600" />
+            <div>
+              <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white leading-none">
+                Strategy
+              </h3>
+              <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1">Tire Compound History</p>
+            </div>
+          </div>
+          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto">
             <TabsTrigger
               value="overview"
-              className="flex-1 sm:flex-none data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-none transition-all"
+              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="flex-1 sm:flex-none data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-2 px-4 rounded-none transition-all"
+              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
             >
               Stint Detail
             </TabsTrigger>

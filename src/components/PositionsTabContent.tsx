@@ -8,6 +8,7 @@ import {
     DetailedRaceResult,
     SessionIncident
 } from '@/lib/api';
+import { OpenF1Driver } from '@/lib/openf1';
 import PositionChart from './PositionChart';
 import { AlertCircleIcon, Menu01Icon, Analytics01Icon, ChartLineData01Icon } from 'hugeicons-react';
 import { Skeleton } from './ui/skeleton';
@@ -20,11 +21,13 @@ interface PositionsTabContentProps {
     year: number;
     event: string;
     session: string;
+    openF1Drivers?: OpenF1Driver[];
+    favoriteDriver?: string | null;
 }
 
 type PositionQueryKey = [string, number, string, string];
 
-const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, session }) => {
+const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, session, openF1Drivers, favoriteDriver }) => {
     const [activeTab, setActiveTab] = useState<string>("overview");
 
     const queries: Readonly<[
@@ -92,24 +95,27 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
     }
 
     return (
-        <div className="bg-black border-2 border-gray-800 p-6 h-[600px] flex flex-col">
+        <div className="bg-black p-0 h-[600px] flex flex-col mt-12">
             <Tabs defaultValue="overview" className="w-full h-full flex flex-col" onValueChange={setActiveTab} value={activeTab}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0 border-b border-gray-800 pb-4">
                     <div className="flex items-center gap-3">
-                        <ChartLineData01Icon className="w-5 h-5 text-red-600" />
-                        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Position Tracker</h3>
+                        <ChartLineData01Icon className="w-8 h-8 text-red-600" />
+                        <div>
+                            <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white leading-none">Position Tracker</h3>
+                            <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1">Track Position Changes</p>
+                        </div>
                     </div>
-                    <TabsList className="bg-gray-900/50 border border-gray-800 p-1 h-auto rounded-none gap-1">
+                    <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
                         <TabsTrigger
                             value="overview"
-                            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-none transition-all hover:text-white"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
                         >
                             <ChartLineData01Icon className="w-3 h-3 mr-2" />
                             Chart
                         </TabsTrigger>
                         <TabsTrigger
                             value="analysis"
-                            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-none transition-all hover:text-white"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
                         >
                             <Menu01Icon className="w-3 h-3 mr-2" />
                             Analysis
@@ -124,6 +130,8 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
                             incidents={incidentsData}
                             sessionResults={sessionResultsData}
                             year={year}
+                            openF1Drivers={openF1Drivers}
+                            favoriteDriver={favoriteDriver}
                         />
                     </TabsContent>
 

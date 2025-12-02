@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush, ReferenceLine
 } from 'recharts';
 import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 import { AlertCircleIcon, PlusSignCircleIcon, CancelCircleIcon, Analytics01Icon, Time01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -19,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { OpenF1Driver } from '@/lib/openf1';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -40,6 +40,9 @@ interface RacingChartProps {
   staticData?: LapTimeDataPoint[];
   title?: string;
   autoLoad?: boolean;
+  openF1Drivers?: OpenF1Driver[];
+  favoriteDriver?: string | null;
+  rivalDriver?: string | null;
 }
 
 const MIN_DRIVERS = 2;
@@ -54,23 +57,30 @@ const RacingChart: React.FC<RacingChartProps> = ({
   session,
   initialDrivers,
   staticData,
-  autoLoad = false
+  autoLoad = false,
+  openF1Drivers = [],
+  favoriteDriver,
+  rivalDriver
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
+  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
 
-  let validatedInitialDrivers = initialDrivers || [];
-  if (!staticData) {
-    if (validatedInitialDrivers.length < MIN_DRIVERS) {
-      validatedInitialDrivers = [];
-    } else if (validatedInitialDrivers.length > MAX_DRIVERS) {
-      validatedInitialDrivers = validatedInitialDrivers.slice(0, MAX_DRIVERS);
-    }
-  }
+  // Determine initial drivers based on props
+  const getInitialDrivers = () => {
+    if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
 
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(validatedInitialDrivers);
-  const driversToDisplay = staticData ? validatedInitialDrivers : selectedDrivers;
+    const defaults: string[] = [];
+    if (favoriteDriver) defaults.push(favoriteDriver);
+    if (rivalDriver) defaults.push(rivalDriver);
+
+    // If we still need drivers, we'll fill them in after fetching available drivers
+    return defaults;
+  };
+
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
+  const driversToDisplay = staticData ? (initialDrivers || []) : selectedDrivers;
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
@@ -79,6 +89,22 @@ const RacingChart: React.FC<RacingChartProps> = ({
     gcTime: 1000 * 60 * 60 * 24,
     enabled: !staticData && !!year && !!event && !!session,
   });
+
+  // Fill in remaining drivers if needed once availableDrivers are loaded
+  useEffect(() => {
+    if (availableDrivers && selectedDrivers.length < MIN_DRIVERS && !staticData) {
+      const needed = MIN_DRIVERS - selectedDrivers.length;
+      const candidates = availableDrivers
+        .filter(d => !selectedDrivers.includes(d.code))
+        .slice(0, needed)
+        .map(d => d.code);
+
+      if (candidates.length > 0) {
+        setSelectedDrivers(prev => [...prev, ...candidates]);
+      }
+    }
+  }, [availableDrivers, selectedDrivers.length, staticData]);
+
 
   const { data: fetchedLapData, isLoading: isLoadingLapTimes, error, isError } = useQuery<LapTimeDataPoint[]>({
     queryKey: ['lapTimes', year, event, session, ...selectedDrivers.sort()],
@@ -91,48 +117,19 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const lapData = staticData || fetchedLapData;
 
-  const handleDriverChange = (index: number, value: string) => {
-    if (selectedDrivers.includes(value) && selectedDrivers[index] !== value) return;
-    if (!staticData) {
-      const newSelection = [...selectedDrivers];
-      newSelection[index] = value;
-      setSelectedDrivers(newSelection);
-      if (shouldLoadChart) setShouldLoadChart(false);
-    }
-  };
-
-  const addDriver = () => {
-    if (selectedDrivers.length < MAX_DRIVERS && availableDrivers) {
-      const nextDriver = availableDrivers.find(d => !selectedDrivers.includes(d.code));
-      if (nextDriver) {
-        setSelectedDrivers([...selectedDrivers, nextDriver.code]);
-        if (shouldLoadChart) setShouldLoadChart(false);
+  const toggleDriver = (driverCode: string) => {
+    if (selectedDrivers.includes(driverCode)) {
+      if (selectedDrivers.length > MIN_DRIVERS) {
+        setSelectedDrivers(prev => prev.filter(d => d !== driverCode));
+        // Auto-load: do not disable chart loading
+      }
+    } else {
+      if (selectedDrivers.length < MAX_DRIVERS) {
+        setSelectedDrivers(prev => [...prev, driverCode]);
+        // Auto-load: do not disable chart loading
       }
     }
   };
-
-  const removeDriver = (indexToRemove: number) => {
-    if (selectedDrivers.length > MIN_DRIVERS) {
-      setSelectedDrivers(selectedDrivers.filter((_, index) => index !== indexToRemove));
-      if (shouldLoadChart) setShouldLoadChart(false);
-    }
-  };
-
-  useEffect(() => {
-    if (autoLoad && !staticData && availableDrivers && availableDrivers.length >= MIN_DRIVERS && selectedDrivers.length < MIN_DRIVERS) {
-      const firstDrivers = availableDrivers.slice(0, MIN_DRIVERS).map(d => d.code);
-      setSelectedDrivers(firstDrivers);
-      setShouldLoadChart(true);
-    } else if (autoLoad && selectedDrivers.length >= MIN_DRIVERS && !shouldLoadChart) {
-      setShouldLoadChart(true);
-    }
-  }, [autoLoad, availableDrivers, selectedDrivers.length, staticData, shouldLoadChart]);
-
-  useEffect(() => {
-    if (availableDrivers && availableDrivers.length >= MIN_DRIVERS && selectedDrivers.length === 0 && !staticData) {
-      setSelectedDrivers(availableDrivers.slice(0, MIN_DRIVERS).map(d => d.code));
-    }
-  }, [availableDrivers, selectedDrivers.length, staticData]);
 
   const isLoading = !staticData && (isLoadingLapTimes);
 
@@ -232,63 +229,60 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
     return (
       <>
-        <ResponsiveContainer width="100%" height={400} className="export-chart-container mb-8">
+        <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
           <LineChart data={lapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
             <XAxis dataKey="LapNumber" stroke="#666" tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }} padding={{ left: 10, right: 10 }} />
             <YAxis stroke="#666" tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }} domain={['dataMin - 0.5', 'dataMax + 0.5']} tickFormatter={formatLapTime} allowDecimals={true} width={60} />
             <Tooltip
-              isAnimationActive={false}
-              contentStyle={{
-                backgroundColor: '#000',
-                borderColor: '#333',
-                color: '#fff',
-                borderRadius: '0px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.8)',
-                padding: '8px 12px',
-                fontFamily: 'monospace'
+              content={({ active, payload, label }) => {
+                if (!active || !payload || !payload.length) return null;
+                // Sort by time (value)
+                const sortedPayload = [...payload].sort((a: any, b: any) => (a.value || Infinity) - (b.value || Infinity));
+
+                return (
+                  <div className="bg-black border border-gray-800 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.9)] max-w-[500px] z-50">
+                    <div className="text-white font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 mb-2 font-mono text-sm">
+                      Lap {label}
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      {sortedPayload.map((entry: any) => {
+                        const driverCode = entry.name;
+                        const time = entry.value;
+                        if (time === null) return null;
+
+                        const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().slice(0, 3) === driverCode);
+                        const color = entry.color;
+
+                        return (
+                          <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
+                            <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
+                              {driver?.headshot_url ? (
+                                <img src={driver.headshot_url} alt={driverCode} className="w-full h-full object-cover scale-125 translate-y-1" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">{driverCode[0]}</div>
+                              )}
+                            </div>
+                            <span className="text-xs font-black font-mono" style={{ color }}>{formatLapTime(time)}</span>
+                            <span className="text-xs font-mono text-gray-400 font-bold">{driverCode}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
               }}
-              labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #333', paddingBottom: '4px' }}
-              itemStyle={{ padding: '3px 0' }}
-              formatter={(value: number | null, name: string) => [`${formatLapTime(value)}`, name]}
-              labelFormatter={(label) => `LAP ${label}`}
-              itemSorter={(item) => item.value === null ? Infinity : item.value}
+              cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
             />
             <Legend
               wrapperStyle={{ paddingTop: '20px', paddingBottom: '10px', fontFamily: 'monospace', fontSize: '12px' }}
+              onClick={(e: any) => e && e.value && (focusedDriver === e.value ? setFocusedDriver(null) : setFocusedDriver(e.value))}
+              onMouseEnter={(e: any) => e && e.value && setFocusedDriver(e.value)}
+              onMouseLeave={() => setFocusedDriver(null)}
               formatter={(value, entry) => {
-                let team = "";
-                Object.entries(teamGroups).forEach(([teamName, drivers]) => {
-                  if (drivers.includes(value)) team = teamName;
-                });
-
-                let teammates: string[] = [];
-                Object.values(teamGroups).forEach(drivers => {
-                  if (drivers.includes(value)) teammates = drivers;
-                });
-
-                const driverIndex = teammates.indexOf(value);
-                let lineStyle = "";
-
-                if (teammates.length > 1) {
-                  switch (driverIndex % 3) {
-                    case 0: lineStyle = "solid"; break;
-                    case 1: lineStyle = "dashed"; break;
-                    case 2: lineStyle = "dotted"; break;
-                  }
-                }
-
-                const isInMultiDriverTeam = teammates.length > 1;
-
-                if (isInMultiDriverTeam) {
-                  return (
-                    <span style={{ color: entry.color }}>
-                      {value} ({team})
-                      <span style={{ fontSize: '0.85em', opacity: 0.8 }}> - {lineStyle}</span>
-                    </span>
-                  );
-                }
-                return <span style={{ color: entry.color }}>{value}</span>;
+                const isFocused = focusedDriver === value;
+                const isDimmed = focusedDriver && focusedDriver !== value;
+                return <span style={{ color: entry.color, opacity: isDimmed ? 0.3 : 1, fontWeight: isFocused ? 'bold' : 'normal' }}>{value}</span>;
               }}
             />
             {driversToDisplay.map((driverCode, index) => {
@@ -298,6 +292,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 if (drivers.includes(driverCode)) teammates = drivers;
               });
               const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
+              const isFocused = focusedDriver === driverCode;
+              const isDimmed = focusedDriver && !isFocused;
 
               return (
                 <Line
@@ -305,7 +301,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   type="monotone"
                   dataKey={driverCode}
                   stroke={color}
-                  strokeWidth={lineStyle.strokeWidth}
+                  strokeWidth={isFocused ? 4 : lineStyle.strokeWidth}
+                  strokeOpacity={isDimmed ? 0.1 : 1}
                   strokeDasharray={lineStyle.strokeDasharray}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0, fill: color }}
@@ -314,6 +311,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 />
               );
             })}
+            <Brush
+              dataKey="LapNumber"
+              height={30}
+              stroke="#333"
+              fill="#111"
+              tickFormatter={() => ''}
+              travellerWidth={10}
+            />
           </LineChart>
         </ResponsiveContainer>
 
@@ -372,62 +377,44 @@ const RacingChart: React.FC<RacingChartProps> = ({
   return (
     <div
       ref={chartRef}
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
+      className={cn("space-y-6", className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-gray-800 pb-4">
-        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-3">
-          <span className="w-1 h-6 bg-red-600 block"></span>
-          {title || 'Lap Time Comparison'}
-        </h3>
+      <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
 
-        {!staticData && (
-          <div className="flex flex-wrap items-center gap-2">
-            {selectedDrivers.map((driverCode, index) => (
-              <div key={index} className="flex items-center gap-1">
-                <Select
-                  value={driverCode}
-                  onValueChange={(value) => handleDriverChange(index, value)}
-                  disabled={isLoadingDrivers || !availableDrivers}
+
+        {!staticData && availableDrivers && (
+          <div className="flex flex-wrap gap-2">
+            {availableDrivers.map((driver) => {
+              const isSelected = selectedDrivers.includes(driver.code);
+              const openF1Driver = openF1Drivers.find(d => d.name_acronym === driver.code || d.last_name.toUpperCase().slice(0, 3) === driver.code);
+              const color = driverColor(driver.code, year);
+
+              return (
+                <button
+                  key={driver.code}
+                  onClick={() => toggleDriver(driver.code)}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1 border transition-all duration-200 group",
+                    isSelected
+                      ? "bg-gray-900 border-gray-700 hover:border-gray-500"
+                      : "bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-900"
+                  )}
+                  style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
                 >
-                  <SelectTrigger className="w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600 font-mono font-bold">
-                    <SelectValue placeholder="Driver" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-gray-700 text-white rounded-none">
-                    <SelectGroup>
-                      <SelectLabel className="text-xs text-gray-500 uppercase">Driver {index + 1}</SelectLabel>
-                      {availableDrivers?.map((drv) => (
-                        <SelectItem key={drv.code} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                          {drv.code}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                {selectedDrivers.length > MIN_DRIVERS && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-transparent"
-                    onClick={() => removeDriver(index)}
-                  >
-                    <CancelCircleIcon className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {selectedDrivers.length < MAX_DRIVERS && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs border-gray-700 text-gray-400 hover:bg-gray-900 hover:text-white rounded-none uppercase"
-                onClick={addDriver}
-                disabled={isLoadingDrivers || !availableDrivers}
-              >
-                <PlusSignCircleIcon className="h-3 w-3 mr-1.5" />
-                Add
-              </Button>
-            )}
+                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                    {openF1Driver?.headshot_url ? (
+                      <img src={openF1Driver.headshot_url} alt={driver.code} className="w-full h-full object-cover scale-125 translate-y-1" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">{driver.code[0]}</div>
+                    )}
+                  </div>
+                  <span className={cn("text-xs font-mono font-bold", isSelected ? "text-white" : "text-gray-500")}>
+                    {driver.code}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

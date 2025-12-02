@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea,
-  Label as RechartsLabel
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceArea, ReferenceLine,
+  Label as RechartsLabel, Brush
 } from 'recharts';
 import { cn } from "@/lib/utils";
 import { LapPositionDataPoint, SessionIncident, DetailedRaceResult } from '@/lib/api';
+import { Slider } from "@/components/ui/slider";
+import { OpenF1Driver } from '@/lib/openf1';
 import { ArrowUpDownIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
@@ -22,6 +24,8 @@ interface PositionChartProps {
   lapData: LapPositionDataPoint[];
   incidents?: SessionIncident[];
   sessionResults?: DetailedRaceResult[];
+  openF1Drivers?: OpenF1Driver[];
+  favoriteDriver?: string | null;
 }
 
 const PositionChart: React.FC<PositionChartProps> = ({
@@ -30,11 +34,19 @@ const PositionChart: React.FC<PositionChartProps> = ({
   year,
   lapData,
   incidents = [],
-  sessionResults
+  sessionResults,
+  openF1Drivers = [],
+  favoriteDriver
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
+  const [currentLap, setCurrentLap] = useState<number>(0);
+
+  const toggleDriverFocus = (driver: string) => {
+    setFocusedDriver(prev => prev === driver ? null : driver);
+  };
 
 
   const positionData = lapData;
@@ -49,11 +61,17 @@ const PositionChart: React.FC<PositionChartProps> = ({
 
   useEffect(() => {
     if (driverCodes.length > 0) {
-      setSelectedDrivers(driverCodes);
+      if (favoriteDriver) {
+        // If favorite driver exists, select them and top 5 others or just them?
+        // Let's select all by default but maybe ensure favorite is there if we were to filter
+        setSelectedDrivers(driverCodes);
+      } else {
+        setSelectedDrivers(driverCodes);
+      }
     } else {
       setSelectedDrivers([]);
     }
-  }, [driverCodes]);
+  }, [driverCodes, favoriteDriver]);
 
   const handleDriverSelectionChange = (driverCode: string) => {
     setSelectedDrivers(prevSelected =>
@@ -106,29 +124,58 @@ const PositionChart: React.FC<PositionChartProps> = ({
             allowDecimals={false}
             width={45}
           />
+          <Brush
+            dataKey="LapNumber"
+            height={30}
+            stroke="#333"
+            fill="#111"
+            tickFormatter={() => ''}
+            travellerWidth={10}
+          />
+          <ReferenceLine x={currentLap} stroke="red" strokeDasharray="3 3" />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#000',
-              borderColor: '#333',
-              color: '#fff',
-              borderRadius: '0px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.8)',
-              padding: '8px 12px',
-              fontFamily: 'monospace'
+            content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null;
+              // Sort by position
+              const sortedPayload = [...payload].sort((a: any, b: any) => {
+                if (a.value === null) return 1;
+                if (b.value === null) return -1;
+                return a.value - b.value;
+              });
+
+              return (
+                <div className="bg-black border border-gray-800 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.9)] max-w-[500px] z-50">
+                  <div className="text-white font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 mb-2 font-mono text-sm">
+                    Lap {label}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
+                    {sortedPayload.map((entry: any) => {
+                      const driverCode = entry.name;
+                      const position = entry.value;
+                      if (position === null) return null;
+
+                      const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().slice(0, 3) === driverCode);
+                      const color = entry.color;
+
+                      return (
+                        <div key={driverCode} className="flex items-center gap-2 min-w-[100px]">
+                          <span className="text-xs font-black font-mono w-5 text-right" style={{ color }}>P{position}</span>
+                          <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
+                            {driver?.headshot_url ? (
+                              <img src={driver.headshot_url} alt={driverCode} className="w-full h-full object-cover scale-125 translate-y-1" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">{driverCode[0]}</div>
+                            )}
+                          </div>
+                          <span className="text-xs font-mono text-gray-300 font-bold">{driverCode}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
             }}
-            labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #333', paddingBottom: '4px' }}
-            itemStyle={{ padding: '3px 0' }}
-            formatter={(value: number | null, name: string) => {
-              if (value === null) return ['DNF/N/A', name];
-              const color = driverColor(name, year);
-              return [
-                <span style={{ color: color }}>P{value}</span>,
-                name
-              ];
-            }}
-            labelFormatter={(label) => `Lap ${label}`}
             cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
-            itemSorter={(item) => item.value === null ? Infinity : item.value}
           />
           <Legend
             {...({
@@ -159,6 +206,9 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 };
               })
             } as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
+            onClick={(e: any) => e && e.id && toggleDriverFocus(String(e.id))}
+            onMouseEnter={(e: any) => e && e.id && setFocusedDriver(String(e.id))}
+            onMouseLeave={() => setFocusedDriver(null)}
           />
 
           {incidents.map((incident, index) => (
@@ -189,6 +239,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
           {selectedDrivers.map((driverCode) => {
             const color = driverColor(driverCode, year);
             if (!driverCodes.includes(driverCode)) return null;
+            const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().slice(0, 3) === driverCode);
             let teammates: string[] = [];
             Object.values(teamGroups).forEach(drivers => {
               if (drivers.includes(driverCode)) teammates = drivers;
@@ -206,6 +257,16 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 activeDot={{ r: 5, strokeWidth: 0, fill: color }}
                 name={driverCode}
                 connectNulls={false}
+                strokeOpacity={
+                  focusedDriver
+                    ? (focusedDriver === driverCode ? 1 : 0.1)
+                    : (favoriteDriver && driverCode !== favoriteDriver && !selectedDrivers.includes(favoriteDriver) ? 0.3 : 1)
+                }
+                style={
+                  favoriteDriver && (driverCode === favoriteDriver || driver?.last_name.toLowerCase() === favoriteDriver.toLowerCase())
+                    ? { filter: "drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))" }
+                    : undefined
+                }
               />
             );
           })}
@@ -217,7 +278,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   return (
     <div
       ref={chartRef}
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
+      className={cn("bg-black p-0", className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
@@ -251,17 +312,44 @@ const PositionChart: React.FC<PositionChartProps> = ({
               </div>
               <ScrollArea className="h-[250px] p-2">
                 <div className="grid gap-2">
-                  {driverCodes.map((driverCode) => (
-                    <Label key={driverCode} className="flex items-center space-x-2 p-1.5 hover:bg-gray-900 cursor-pointer">
-                      <Checkbox
-                        id={`driver-${driverCode}`}
-                        checked={selectedDrivers.includes(driverCode)}
-                        onCheckedChange={() => handleDriverSelectionChange(driverCode)}
-                        className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-gray-600 rounded-none"
-                      />
-                      <span className="text-xs font-mono font-bold" style={{ color: driverColor(driverCode, year) }}>{driverCode}</span>
-                    </Label>
-                  ))}
+                  {driverCodes.map((driverCode) => {
+                    const driver = openF1Drivers.find(d => d.last_name.toUpperCase().includes(driverCode.toUpperCase()) || d.name_acronym === driverCode);
+                    const formattedName = driver ? `${driver.first_name.charAt(0)}. ${driver.last_name}` : driverCode;
+                    const headshot = driver?.headshot_url;
+                    const isFavorite = favoriteDriver && (driverCode === favoriteDriver || driver?.last_name.toLowerCase() === favoriteDriver.toLowerCase());
+
+                    return (
+                      <Label
+                        key={driverCode}
+                        className={cn(
+                          "flex items-center space-x-2 p-2 hover:bg-gray-900 cursor-pointer transition-colors",
+                          isFavorite && "bg-red-900/20 border-l-2 border-red-600",
+                          focusedDriver && focusedDriver !== driverCode && "opacity-30"
+                        )}
+                        onMouseEnter={() => setFocusedDriver(driverCode)}
+                        onMouseLeave={() => setFocusedDriver(null)}
+                      >
+                        <Checkbox
+                          id={`driver-${driverCode}`}
+                          checked={selectedDrivers.includes(driverCode)}
+                          onCheckedChange={() => handleDriverSelectionChange(driverCode)}
+                          className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-gray-600 rounded-none"
+                        />
+                        <div className="flex items-center gap-3">
+                          {headshot ? (
+                            <img src={headshot} alt={driverCode} className="w-6 h-6 object-cover rounded-full bg-gray-800" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                              {driverCode.substring(0, 1)}
+                            </div>
+                          )}
+                          <span className={cn("text-xs font-mono font-bold", isFavorite ? "text-red-500" : "text-white")} style={{ color: !isFavorite ? driverColor(driverCode, year) : undefined }}>
+                            {formattedName}
+                          </span>
+                        </div>
+                      </Label>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </PopoverContent>
