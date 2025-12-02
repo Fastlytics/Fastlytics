@@ -20,6 +20,7 @@ import TermsOfService from "./pages/TermsOfService";
 import FAQ from "./pages/FAQ";
 import RefundPolicy from "./pages/RefundPolicy";
 import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
 import LandingFooter from "./components/LandingFooter";
 import { SeasonProvider } from "./contexts/SeasonContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
               <Route path="/refund-policy" element={<MainLayout><RefundPolicy /></MainLayout>} />
               <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
+              <Route path="/pricing" element={<MainLayout><Pricing /></MainLayout>} />
 
               {/* All routes are now public */}
               <Route path="/auth" element={<Auth />} />

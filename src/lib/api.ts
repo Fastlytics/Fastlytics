@@ -798,13 +798,39 @@ export const fetchSessionIncidents = async (year: number, event: string, session
             // Alternatively, throw new Error(errorDetail); if you want query hook to handle error state
         }
         const data: SessionIncident[] = await response.json();
-        console.log(`Successfully fetched ${data.length} incident periods.`);
+        console.log(`Successfully fetched ${data.length} incidents.`);
         return data;
-    } catch (error) {
-        console.error("Error fetching session incidents:", error);
-        // Return empty array on network/other errors
-        return [];
-        // Alternatively, throw error;
-    }
+    } catch (error) { console.error("Error fetching incidents:", error); throw error; }
 };
+
+export interface PaceDistributionData {
+    driverCode: string;
+    min: number;
+    q1: number;
+    median: number;
+    q3: number;
+    max: number;
+    count: number;
+}
+
+/** Fetches pace distribution statistics for selected drivers. */
+export const fetchPaceDistribution = async (year: number, event: string, session: string, drivers: string[]): Promise<PaceDistributionData[]> => {
+    const params = new URLSearchParams({ year: year.toString(), event, session });
+    params.append('drivers', drivers.join(','));
+    const url = `${API_BASE_URL}/api/telemetry/pace-distribution?${params.toString()}`;
+    console.log(`Fetching pace distribution from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: PaceDistributionData[] = await response.json();
+        console.log(`Successfully fetched pace distribution for ${data.length} drivers.`);
+        return data;
+    } catch (error) { console.error("Error fetching pace distribution:", error); throw error; }
+};
+
 
