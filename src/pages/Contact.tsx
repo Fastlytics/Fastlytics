@@ -3,8 +3,16 @@ import { motion } from 'framer-motion';
 import LandingNavbar from '@/components/LandingNavbar';
 import LandingFooter from '@/components/LandingFooter';
 import { Mail01Icon, Location01Icon } from 'hugeicons-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileContact } from '@/components/mobile';
 
 const Contact = () => {
+    const isMobile = useIsMobile();
+
+    if (isMobile) {
+        return <MobileContact />;
+    }
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
             <LandingNavbar />

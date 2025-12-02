@@ -32,12 +32,15 @@ import ConsentBanner from "@/components/ConsentBanner";
 const queryClient = new QueryClient();
 
 // Layout component to add footer to pages
-const MainLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen flex flex-col">
-    {children}
-    <LandingFooter />
-  </div>
-);
+const MainLayout = ({ children }: { children: React.ReactNode }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div className="min-h-screen flex flex-col">
+      {children}
+      {!isMobile && <LandingFooter />}
+    </div>
+  );
+};
 
 // Landing layout with footer only on desktop (mobile has its own footer)
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {

@@ -2,8 +2,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import LandingNavbar from '@/components/LandingNavbar';
 import LandingFooter from '@/components/LandingFooter';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobilePrivacyPolicy } from '@/components/mobile';
 
 const PrivacyPolicy = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobilePrivacyPolicy />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
       <LandingNavbar />

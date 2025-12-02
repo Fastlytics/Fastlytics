@@ -1,14 +1,12 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-    DashboardSquare01Icon, 
-    Calendar03Icon, 
-    UserGroupIcon, 
+import {
+    DashboardSquare01Icon,
+    Calendar03Icon,
+    UserGroupIcon,
     UserMultiple02Icon,
-    UserCircleIcon,
-    Home01Icon,
-    Home02Icon
+    UserCircleIcon
 } from 'hugeicons-react';
 import { cn } from '@/lib/utils';
 
@@ -22,30 +20,30 @@ const MobileBottomNav: React.FC = () => {
     const location = useLocation();
 
     const navItems: NavItem[] = [
-        { 
-            name: 'Home', 
-            path: '/dashboard', 
-            icon: <DashboardSquare01Icon size={24} />
+        {
+            name: 'Home',
+            path: '/dashboard',
+            icon: <DashboardSquare01Icon size={20} />
         },
-        { 
-            name: 'Calendar', 
-            path: '/calendar', 
-            icon: <Calendar03Icon size={24} />
+        {
+            name: 'Calendar',
+            path: '/calendar',
+            icon: <Calendar03Icon size={20} />
         },
-        { 
-            name: 'Drivers', 
-            path: '/standings/drivers', 
-            icon: <UserGroupIcon size={24} />
+        {
+            name: 'Drivers',
+            path: '/standings/drivers',
+            icon: <UserGroupIcon size={20} />
         },
-        { 
-            name: 'Teams', 
-            path: '/standings/teams', 
-            icon: <UserMultiple02Icon size={24} />
+        {
+            name: 'Teams',
+            path: '/standings/teams',
+            icon: <UserMultiple02Icon size={20} />
         },
-        { 
-            name: 'Account', 
-            path: '/account', 
-            icon: <UserCircleIcon size={24} />
+        {
+            name: 'Account',
+            path: '/account',
+            icon: <UserCircleIcon size={20} />
         },
     ];
 
@@ -59,8 +57,8 @@ const MobileBottomNav: React.FC = () => {
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
             {/* Main navigation bar */}
-            <div className="bg-black border-t border-gray-800 safe-area-bottom">
-                <div className="flex items-center justify-around h-16 px-2">
+            <div className="bg-black border-t-2 border-white/10 safe-area-bottom">
+                <div className="flex items-center justify-between h-16 px-0">
                     {navItems.map((item) => {
                         const active = isActive(item.path);
                         return (
@@ -68,37 +66,35 @@ const MobileBottomNav: React.FC = () => {
                                 key={item.path}
                                 to={item.path}
                                 className={cn(
-                                    "flex flex-col items-center justify-center flex-1 h-full relative",
+                                    "flex flex-col items-center justify-center flex-1 h-full relative group",
                                     "transition-all duration-200 tap-highlight-transparent",
-                                    active ? "text-red-500" : "text-gray-500 active:text-gray-400"
-                                )}
-                            >
-                                {/* Active indicator */}
+                                    "border-r border-white/5 last:border-r-0",
+                                    active ? "bg-black" : "bg-black hover:bg-zinc-900"
+                                )}>
+                                {/* Active indicator - Top Line */}
                                 {active && (
                                     <motion.div
                                         layoutId="mobile-nav-indicator"
-                                        className="absolute -top-px left-1/2 -translate-x-1/2 w-12 h-0.5 bg-red-500 rounded-full"
+                                        className="absolute top-0 left-0 right-0 h-0.5 bg-red-600"
                                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                     />
                                 )}
-                                
+
                                 {/* Icon with animation */}
                                 <motion.div
                                     initial={false}
-                                    animate={{ 
-                                        scale: active ? 1.1 : 1,
-                                        y: active ? -2 : 0
+                                    animate={{
+                                        y: active ? -1 : 0
                                     }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                                    className="mb-1"
+                                    className={cn("mb-1", active ? "text-red-600" : "text-gray-500 group-hover:text-gray-300")}
                                 >
                                     {item.icon}
                                 </motion.div>
-                                
+
                                 {/* Label */}
                                 <span className={cn(
-                                    "text-[10px] font-semibold uppercase tracking-wider",
-                                    active ? "text-red-500" : "text-gray-500"
+                                    "text-[9px] font-black uppercase tracking-widest",
+                                    active ? "text-red-600" : "text-gray-500 group-hover:text-gray-300"
                                 )}>
                                     {item.name}
                                 </span>

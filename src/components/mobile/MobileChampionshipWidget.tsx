@@ -4,7 +4,7 @@ import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/a
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
 import { Profile } from '@/contexts/AuthContext';
-import { ChampionIcon, UserGroupIcon, ArrowRight01Icon } from 'hugeicons-react';
+import { ChampionIcon, UserGroupIcon, ArrowRight01Icon, StarIcon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
@@ -76,23 +76,23 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
     if (isLoading) {
         return (
             <div className="space-y-3">
-                <div className="h-12 bg-gray-900/50 animate-pulse rounded-lg" />
-                <div className="h-64 bg-gray-900/50 animate-pulse rounded-xl" />
+                <div className="h-12 bg-zinc-900/50 animate-pulse border-2 border-white/5" />
+                <div className="h-64 bg-zinc-900/50 animate-pulse border-2 border-white/5" />
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            {/* Tab Selector */}
-            <div className="flex bg-gray-900/50 border border-gray-800 rounded-xl p-1">
+            {/* Tab Selector - Brutalist Style */}
+            <div className="flex bg-black border-2 border-white/10 p-1">
                 <button
                     onClick={() => setActiveTab('drivers')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all",
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant",
                         activeTab === 'drivers'
                             ? "bg-red-600 text-white"
-                            : "text-gray-500 active:bg-gray-800"
+                            : "text-gray-500 hover:text-white"
                     )}
                 >
                     <ChampionIcon className="w-4 h-4" />
@@ -101,10 +101,10 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 <button
                     onClick={() => setActiveTab('constructors')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all",
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant",
                         activeTab === 'constructors'
                             ? "bg-red-600 text-white"
-                            : "text-gray-500 active:bg-gray-800"
+                            : "text-gray-500 hover:text-white"
                     )}
                 >
                     <UserGroupIcon className="w-4 h-4" />
@@ -118,25 +118,25 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 initial={{ opacity: 0, x: activeTab === 'drivers' ? -20 : 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-black border border-gray-800 rounded-xl overflow-hidden"
+                className="bg-black border-2 border-white/10 overflow-hidden"
             >
                 {/* Header */}
-                <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                <div className="p-4 border-b-2 border-white/10 flex items-center justify-between bg-zinc-900/30">
                     <h3 className="text-lg font-black uppercase italic tracking-tighter flex items-center gap-2">
-                        <span className="w-1 h-6 bg-red-600 block rounded"></span>
+                        <span className="w-2 h-6 bg-red-600 block"></span>
                         {activeTab === 'drivers' ? 'Drivers' : 'Constructors'}
-                        <span className="text-gray-500 ml-1">Championship</span>
+                        <span className="text-gray-500 ml-1">Standings</span>
                     </h3>
                     <Link
                         to={activeTab === 'drivers' ? '/standings/drivers' : '/standings/teams'}
-                        className="text-[10px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1"
+                        className="text-[10px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1 hover:text-white transition-colors"
                     >
-                        All <ArrowRight01Icon className="w-3 h-3" />
+                        View All <ArrowRight01Icon className="w-3 h-3" />
                     </Link>
                 </div>
 
                 {/* Standings List */}
-                <div className="divide-y divide-gray-800/50">
+                <div className="divide-y-2 divide-white/5">
                     {activeTab === 'drivers' ? (
                         topDrivers.map((driver, index) => {
                             const isFavorite = profile?.favorite_driver && (
@@ -151,28 +151,28 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                     key={driver.code}
                                     to={`/driver/${driver.code}`}
                                     className={cn(
-                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors border-l-4",
-                                        isFavorite ? "bg-red-600/10 border-red-600" : "bg-gray-900/50 border-transparent"
+                                        "flex items-center gap-4 p-4 active:bg-zinc-900 transition-colors border-l-4",
+                                        isFavorite ? "bg-red-600/5 border-red-600" : "bg-black border-transparent"
                                     )}
                                 >
                                     {/* Position */}
                                     <div className={cn(
-                                        "w-7 h-7 rounded-full flex items-center justify-center text-sm font-black",
-                                        isLeader ? "bg-yellow-500 text-black" : "bg-gray-800 text-gray-400"
+                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2",
+                                        isLeader ? "bg-yellow-500 text-black border-yellow-500" : "bg-zinc-900 text-gray-400 border-white/10"
                                     )}>
                                         {index + 1}
                                     </div>
 
                                     {/* Avatar */}
                                     <Avatar className={cn(
-                                        "h-10 w-10 border-2",
-                                        isFavorite ? "border-red-600" : "border-gray-700"
+                                        "h-10 w-10 border-2 rounded-none",
+                                        isFavorite ? "border-red-600" : "border-white/10"
                                     )}>
                                         <AvatarImage
                                             src={getDriverImage(driver.code, driver.name)}
-                                            className="object-cover bg-gray-800"
+                                            className="object-cover bg-zinc-900"
                                         />
-                                        <AvatarFallback className="bg-gray-800 text-xs">
+                                        <AvatarFallback className="bg-zinc-900 text-xs rounded-none font-bold">
                                             {driver.code}
                                         </AvatarFallback>
                                     </Avatar>
@@ -180,29 +180,29 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                     {/* Name & Team */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-base uppercase truncate">
+                                            <span className="font-black text-base uppercase italic truncate text-white">
                                                 {driver.name.split(' ').pop()}
                                             </span>
                                             {isChampion && (
-                                                <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
-                                                    Champion
+                                                <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider">
+                                                    Champ
                                                 </span>
                                             )}
                                             {isFavorite && !isChampion && (
-                                                <span className="text-red-500 text-[10px]">★</span>
+                                                <StarIcon className="w-3 h-3 text-red-600 fill-red-600" />
                                             )}
                                         </div>
-                                        <div className="text-[11px] text-gray-500 truncate">
+                                        <div className="text-[10px] text-gray-500 font-mono uppercase truncate">
                                             {driver.team}
                                         </div>
                                     </div>
 
                                     {/* Points */}
                                     <div className="text-right">
-                                        <div className="text-lg font-black tabular-nums">{driver.points}</div>
+                                        <div className="text-lg font-black tabular-nums text-white leading-none">{driver.points}</div>
                                         <div className={cn(
-                                            "text-[10px] font-mono",
-                                            isLeader ? "text-yellow-500" : "text-gray-500"
+                                            "text-[10px] font-mono mt-0.5",
+                                            isLeader ? "text-yellow-500" : "text-gray-600"
                                         )}>
                                             {getGap(driver.points, topDrivers[0].points)}
                                         </div>
@@ -224,20 +224,20 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                     key={team.team}
                                     to="/standings/teams"
                                     className={cn(
-                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors border-l-4",
-                                        isFavorite ? "bg-red-600/10 border-red-600" : "bg-gray-900/50 border-transparent"
+                                        "flex items-center gap-4 p-4 active:bg-zinc-900 transition-colors border-l-4",
+                                        isFavorite ? "bg-red-600/5 border-red-600" : "bg-black border-transparent"
                                     )}
                                 >
                                     {/* Position */}
                                     <div className={cn(
-                                        "w-7 h-7 rounded-full flex items-center justify-center text-sm font-black",
-                                        isLeader ? "bg-yellow-500 text-black" : "bg-gray-800 text-gray-400"
+                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2",
+                                        isLeader ? "bg-yellow-500 text-black border-yellow-500" : "bg-zinc-900 text-gray-400 border-white/10"
                                     )}>
                                         {index + 1}
                                     </div>
 
                                     {/* Logo */}
-                                    <div className="h-10 w-10 flex items-center justify-center bg-white/5 rounded-lg border border-gray-700 p-1.5">
+                                    <div className="h-10 w-10 flex items-center justify-center bg-transparent rounded-none border-2 border-white/10 p-1">
                                         {getTeamLogo(team.team) ? (
                                             <img
                                                 src={getTeamLogo(team.team)!}
@@ -252,26 +252,26 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                     {/* Name */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-bold text-base uppercase truncate">
+                                            <span className="font-black text-base uppercase italic truncate text-white">
                                                 {team.team}
                                             </span>
                                             {isChampion && (
-                                                <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
-                                                    Champion
+                                                <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wider">
+                                                    Champ
                                                 </span>
                                             )}
                                             {isFavorite && !isChampion && (
-                                                <span className="text-red-500 text-[10px]">★</span>
+                                                <StarIcon className="w-3 h-3 text-red-600 fill-red-600" />
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Points */}
                                     <div className="text-right">
-                                        <div className="text-lg font-black tabular-nums">{team.points}</div>
+                                        <div className="text-lg font-black tabular-nums text-white leading-none">{team.points}</div>
                                         <div className={cn(
-                                            "text-[10px] font-mono",
-                                            isLeader ? "text-yellow-500" : "text-gray-500"
+                                            "text-[10px] font-mono mt-0.5",
+                                            isLeader ? "text-yellow-500" : "text-gray-600"
                                         )}>
                                             {getGap(team.points, topTeams[0].points)}
                                         </div>
@@ -285,9 +285,9 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 {/* View All Link */}
                 <Link
                     to={activeTab === 'drivers' ? '/standings/drivers' : '/standings/teams'}
-                    className="flex items-center justify-center gap-2 p-3 border-t border-gray-800 text-sm font-bold uppercase tracking-widest text-gray-500 active:bg-gray-900/50"
+                    className="flex items-center justify-center gap-2 p-4 border-t-2 border-white/10 text-xs font-bold uppercase tracking-widest text-gray-500 active:bg-zinc-900 transition-colors hover:text-white"
                 >
-                    View Full Standings <ArrowRight01Icon className="w-4 h-4" />
+                    Full Standings <ArrowRight01Icon className="w-4 h-4" />
                 </Link>
             </motion.div>
         </div>
