@@ -147,7 +147,9 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden rounded-2xl bg-red-950 border-2 border-red-600"
-            onClick={() => navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
+            onClick={() => {
+                navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
+            }}
         >
 
             <div className="relative p-5">
@@ -238,7 +240,9 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                 ? 'bg-gray-900/50 border border-gray-800/50'
                 : 'bg-gray-900/50 border border-gray-800'
                 }`}
-            onClick={() => navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
+            onClick={() => {
+                navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
+            }}
         >
             <div className="p-3.5">
                 <div className="flex items-center gap-3">

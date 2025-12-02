@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon, LinkSquare01Icon } from 'hugeicons-react';
+import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon, LinkSquare01Icon, Analytics01Icon } from 'hugeicons-react';
+import ActivityItem from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
@@ -73,6 +74,10 @@ const Account = () => {
     const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
     const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
 
+    // Activity History State
+    const [userActivity, setUserActivity] = useState<any[]>([]);
+    const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+
     useEffect(() => {
         if (user) {
             setFullName(user.user_metadata?.full_name || '');
@@ -102,7 +107,34 @@ const Account = () => {
             }
         };
         loadF1Data();
+
     }, []);
+
+    useEffect(() => {
+        const fetchActivity = async () => {
+            if (!user) return;
+            setIsLoadingActivity(true);
+            try {
+                const { data, error } = await supabase
+                    .from('user_activity')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+                setUserActivity(data || []);
+            } catch (error) {
+                console.error('Error fetching activity:', error);
+            } finally {
+                setIsLoadingActivity(false);
+            }
+        };
+
+        if (activeSection === 'history') {
+            fetchActivity();
+        }
+    }, [user, activeSection]);
 
     const getDriverImage = (driverCode: string, driverName: string) => {
         const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
@@ -311,6 +343,7 @@ const Account = () => {
                             <NavItem id="profile" label="Profile" icon={UserIcon} active={activeSection === 'profile'} onClick={() => setActiveSection('profile')} />
                             <NavItem id="favorites" label="My Favorites" icon={StarIcon} active={activeSection === 'favorites'} onClick={() => setActiveSection('favorites')} />
                             <NavItem id="security" label="Security" icon={SecurityCheckIcon} active={activeSection === 'security'} onClick={() => setActiveSection('security')} />
+                            <NavItem id="history" label="History" icon={Analytics01Icon} active={activeSection === 'history'} onClick={() => setActiveSection('history')} />
                             <NavItem id="subscription" label="Subscription" icon={CreditCardIcon} active={activeSection === 'subscription'} onClick={() => setActiveSection('subscription')} />
                         </div>
                     </aside>
@@ -633,6 +666,39 @@ const Account = () => {
                                         </ul>
                                         <Button disabled className="w-full bg-zinc-800 text-zinc-500 font-bold uppercase tracking-wider">Coming Soon</Button>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. History Section */}
+                        {activeSection === 'history' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <SectionHeader title="Activity History" icon={Analytics01Icon} />
+                                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
+                                    <p className="text-zinc-400 mb-6">Your recent interactions and activity on Fastlytics.</p>
+
+                                    {isLoadingActivity ? (
+                                        <div className="space-y-4">
+                                            {[...Array(5)].map((_, i) => (
+                                                <div key={i} className="h-16 bg-zinc-800/50 animate-pulse rounded-lg" />
+                                            ))}
+                                        </div>
+                                    ) : userActivity.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {userActivity.map((activity) => (
+                                                <ActivityItem
+                                                    key={activity.id}
+                                                    activity={activity}
+                                                    drivers={openF1Drivers}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12 text-zinc-500">
+                                            <Analytics01Icon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                            <p>No recent activity found.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

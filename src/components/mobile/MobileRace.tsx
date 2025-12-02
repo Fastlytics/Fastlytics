@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import MobilePageHeader from './MobilePageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Driver image map for 2025
 const driverImageMap: Record<string, string> = {
@@ -723,6 +723,7 @@ const MobileRace: React.FC = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
     const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
+    const { trackEvent } = useAnalytics();
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -743,6 +744,7 @@ const MobileRace: React.FC = () => {
             newParams.set('session', session);
             return newParams;
         }, { replace: true });
+        trackEvent('mobile_session_changed', { session_type: session, race_name: eventName, year: year });
     };
 
     const setShowAnalysisView = (show: boolean) => {
@@ -765,10 +767,6 @@ const MobileRace: React.FC = () => {
         if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
         const slug = parts.slice(1).join('-');
         const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-        if (parsedYear && name) {
-            posthog.capture('race_analysis_viewed', { year: parsedYear, race: name, platform: 'mobile' });
-        }
 
         return { year: parsedYear, eventSlug: slug, eventName: name };
     }, [raceId]);
@@ -1174,15 +1172,21 @@ const MobileRace: React.FC = () => {
                 onClose={() => setShowSessionSelector(false)}
                 sessions={availableSessions}
                 selectedSession={selectedSession}
-                onSelect={setSelectedSession}
+                onSelect={(sessionType) => {
+                    setSelectedSession(sessionType);
+                    trackEvent('mobile_session_changed', { session_type: sessionType, race_name: eventName });
+                }}
             />
 
             {/* Custom Bottom Nav for Analysis View */}
             {!shouldShowSchedule && (
                 <RaceBottomNav
                     activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    hasStrategy={isRaceOrSprint}
+                    onTabChange={(tab) => {
+                        setActiveTab(tab);
+                        trackEvent('mobile_tab_switched', { tab: tab, context: 'race_analysis', race_name: eventName });
+                    }}
+                    hasStrategy={selectedSession === 'R' || selectedSession === 'Sprint'}
                 />
             )}
         </div>
@@ -1190,3 +1194,4 @@ const MobileRace: React.FC = () => {
 };
 
 export default MobileRace;
+

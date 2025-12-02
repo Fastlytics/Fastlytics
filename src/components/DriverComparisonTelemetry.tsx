@@ -21,6 +21,7 @@ import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint;
 
@@ -54,6 +55,18 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   telemetryType
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { trackEvent } = useAnalytics();
+
+  useEffect(() => {
+    if (shouldLoadChart && driver1 && driver2) {
+      trackEvent('driver_comparison', {
+        driver_1: driver1,
+        driver_2: driver2,
+        circuit: event,
+        telemetry_type: telemetryType
+      });
+    }
+  }, [shouldLoadChart, driver1, driver2, event, telemetryType]);
 
   // Auto-load logic: if shouldLoadChart is true, we load. 
   // We no longer have a local "shouldLoadTelemetry" state that requires a button click if shouldLoadChart is passed as true.

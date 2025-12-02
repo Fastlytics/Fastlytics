@@ -189,12 +189,18 @@ export interface TrackSection {
     type: 'straight' | 'corner' | 'sector';
     path: string; // SVG path data
     driver1Advantage?: number; // Positive means driver1 is faster, negative means driver2 is faster
+    driver1AvgSpeed?: number;
+    driver2AvgSpeed?: number;
 }
 
 export interface SectorComparisonData {
     sections: TrackSection[];
     driver1Code: string;
     driver2Code: string;
+    driver1LapNumber?: number;
+    driver1LapTime?: string;
+    driver2LapNumber?: number;
+    driver2LapTime?: string;
     circuitLayout: string; // SVG path data for the main track outline
 }
 
