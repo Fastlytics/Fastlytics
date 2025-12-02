@@ -17,6 +17,8 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileAccount } from '@/components/mobile';
 
 // ... existing imports
 
@@ -49,6 +51,7 @@ const NavItem = ({ id, label, icon: Icon, active, onClick }: { id: string, label
 const Account = () => {
     const { user, profile, refreshProfile, signOut } = useAuth();
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [activeSection, setActiveSection] = useState('profile');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -271,6 +274,11 @@ const Account = () => {
     };
 
     if (!user) return null;
+
+    // Mobile version
+    if (isMobile) {
+        return <MobileAccount />;
+    }
 
     return (
         <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">

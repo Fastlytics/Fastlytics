@@ -14,6 +14,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getCountryCode } from '@/utils/countryUtils';
 import RaceCard from '@/components/calendar/RaceCard';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileCalendar } from '@/components/mobile';
 
 // Countdown Component
 const Countdown = ({ targetDate }: { targetDate: Date }) => {
@@ -69,6 +71,7 @@ const Countdown = ({ targetDate }: { targetDate: Date }) => {
 };
 
 const Calendar = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const racesRef = useRef(null);
@@ -153,6 +156,20 @@ const Calendar = () => {
 
     return { combinedRaceData: processedData, nextRace: nextRaceEvent, nextSession: nextSessionData };
   }, [scheduleData, resultsData]);
+
+  // Render mobile version (after all hooks)
+  if (isMobile) {
+    return (
+      <>
+        <SEO
+          title={`F1 Calendar ${selectedYear} - Race Schedule & Results`}
+          description={`Full Formula 1 ${selectedYear} race calendar. Check race dates, times, and results for every Grand Prix.`}
+          keywords={['f1 calendar', 'f1 schedule', 'race dates', 'f1 2024 calendar', `${selectedYear} f1 schedule`]}
+        />
+        <MobileCalendar />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
