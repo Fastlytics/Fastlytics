@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import RacingChart from '@/components/RacingChart';
+import PaceAnalysisChart from '@/components/PaceAnalysisChart';
 import TireStrategy from '@/components/TireStrategy';
 import SpeedTraceChart from '@/components/SpeedTraceChart';
 import GearMapChart from '@/components/GearMapChart';
@@ -278,6 +279,7 @@ const Race = () => {
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState(initialTab || 'overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
+  const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace'>('history');
 
   // New State for Redesign
   const [now, setNow] = useState(new Date());
@@ -831,7 +833,32 @@ const Race = () => {
               {/* 4. Lap Times Section */}
               {activeSection === 'laptimes' && (
                 <section id="laptimes" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
+
+                    {/* Analysis Mode Toggle */}
+                    <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
+                      <button
+                        onClick={() => setLapAnalysisMode('history')}
+                        className={cn(
+                          "px-3 py-1 text-xs font-bold rounded transition-colors uppercase tracking-wider",
+                          lapAnalysisMode === 'history' ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-300"
+                        )}
+                      >
+                        Lap History
+                      </button>
+                      <button
+                        onClick={() => setLapAnalysisMode('pace')}
+                        className={cn(
+                          "px-3 py-1 text-xs font-bold rounded transition-colors uppercase tracking-wider",
+                          lapAnalysisMode === 'pace' ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-300"
+                        )}
+                      >
+                        Pace Distribution
+                      </button>
+                    </div>
+                  </div>
+
                   {(() => {
                     const favDriverCode = profile?.favorite_driver;
                     let rivalDriverCode = null;
@@ -847,16 +874,28 @@ const Race = () => {
                     }
 
                     return (
-                      <RacingChart
-                        year={year!}
-                        event={eventName}
-                        session={selectedSession}
-                        title="Lap Time Comparison"
-                        autoLoad={true}
-                        openF1Drivers={openF1Drivers}
-                        favoriteDriver={favDriverCode}
-                        rivalDriver={rivalDriverCode}
-                      />
+                      <>
+                        {lapAnalysisMode === 'history' ? (
+                          <RacingChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            title="Lap Time Comparison"
+                            autoLoad={true}
+                            openF1Drivers={openF1Drivers}
+                            favoriteDriver={favDriverCode}
+                            rivalDriver={rivalDriverCode}
+                          />
+                        ) : (
+                          <PaceAnalysisChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            initialDrivers={favDriverCode ? [favDriverCode, rivalDriverCode].filter(Boolean) as string[] : []}
+                            openF1Drivers={openF1Drivers}
+                          />
+                        )}
+                      </>
                     );
                   })()}
                 </section>

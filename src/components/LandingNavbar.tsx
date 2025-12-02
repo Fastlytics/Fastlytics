@@ -40,8 +40,8 @@ const LandingNavbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Features</a>
-            <a href="#pricing" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Pricing</a>
+            <a href="/#features" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Features</a>
+            <Link to="/pricing" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Pricing</Link>
             <Link to="/about" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">About</Link>
             <Link to="/dashboard">
               <Button
@@ -75,19 +75,19 @@ const LandingNavbar = () => {
           >
             <div className="px-4 py-8 flex flex-col gap-6">
               <a
-                href="#features"
+                href="/#features"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Features
               </a>
-              <a
-                href="#pricing"
+              <Link
+                to="/pricing"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Pricing
-              </a>
+              </Link>
               <Link
                 to="/about"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
