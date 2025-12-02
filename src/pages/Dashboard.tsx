@@ -135,7 +135,8 @@ const Dashboard = () => {
           profile={profile}
           drivers={driverStandings || []}
           teams={teamStandings || []}
-          isLoading={isLoadingDrivers || isLoadingTeams}
+          schedule={schedule || []}
+          isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
         />
 
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
