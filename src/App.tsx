@@ -26,6 +26,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ConsentBanner from "@/components/ConsentBanner";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ConsentBanner />
       <SeasonProvider>
         <AuthProvider>
           <BrowserRouter>
