@@ -33,6 +33,8 @@ import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileRace } from '@/components/mobile';
 
 // --- Helper Functions ---
 
@@ -242,6 +244,7 @@ const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
@@ -431,6 +434,20 @@ const Race = () => {
   };
 
   if (!year || !eventSlug) return null;
+
+  // Mobile version
+  if (isMobile) {
+    return (
+      <>
+        <SEO
+          title={`${eventName} ${year} - F1 Race Analysis`}
+          description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+          keywords={['f1 race analysis', 'race results', 'tire strategy', 'f1 telemetry', eventName, `${year} f1 season`]}
+        />
+        <MobileRace />
+      </>
+    );
+  }
 
   if (isLoadingSessions) {
     return (

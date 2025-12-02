@@ -314,7 +314,7 @@ const MobileAccount: React.FC = () => {
 
                 {/* Profile Card */}
                 <div className="px-4 py-6">
-                    <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-5">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
                         <div className="flex items-center gap-4">
                             <Avatar className="h-16 w-16 border-2 border-gray-700">
                                 <AvatarImage src={user.user_metadata?.avatar_url} />
@@ -763,7 +763,7 @@ const MobileAccount: React.FC = () => {
                 >
                     <div className="p-4 space-y-4">
                         {/* Current Plan */}
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 border border-gray-700">
+                        <div className="bg-gray-800 rounded-2xl p-5 border border-gray-700">
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Current Plan</span>
                                 <span className="text-xs font-bold uppercase bg-green-600/20 text-green-500 px-2 py-1 rounded">Active</span>
