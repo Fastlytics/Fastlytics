@@ -11,10 +11,13 @@ import posthog from 'posthog-js';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileOnboarding } from '@/components/mobile';
 
 const Onboarding = () => {
     const { user, refreshProfile } = useAuth();
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [drivers, setDrivers] = useState<DriverStanding[]>([]);
@@ -106,6 +109,11 @@ const Onboarding = () => {
             opacity: 0
         })
     };
+
+    // Mobile Onboarding
+    if (isMobile) {
+        return <MobileOnboarding />;
+    }
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 overflow-hidden relative">

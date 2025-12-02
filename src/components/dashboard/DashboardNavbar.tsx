@@ -5,12 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Gauge } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DashboardNavbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
     const { user } = useAuth();
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -28,6 +30,11 @@ const DashboardNavbar = () => {
     ];
 
     const isActive = (path: string) => location.pathname === path;
+
+    // Hide navbar on mobile - we use bottom navigation instead
+    if (isMobile) {
+        return null;
+    }
 
     return (
         <nav

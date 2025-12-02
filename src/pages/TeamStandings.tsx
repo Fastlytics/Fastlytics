@@ -15,8 +15,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { useQuery } from '@tanstack/react-query';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { useSeason } from '@/contexts/SeasonContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileTeamStandings } from '@/components/mobile';
 
 const TeamStandings = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const standingsRef = useRef(null);
@@ -79,6 +82,11 @@ const TeamStandings = () => {
     const p2Points = teamStandings[1].points;
     const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'team', selectedYear);
     championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
+  }
+
+  // Render mobile version (after all hooks)
+  if (isMobile) {
+    return <MobileTeamStandings />;
   }
 
   return (

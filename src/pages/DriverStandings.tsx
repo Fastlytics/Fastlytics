@@ -18,6 +18,8 @@ import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileDriverStandings } from '@/components/mobile';
 
 // Define rookies by season year
 const rookiesByYear: { [year: string]: string[] } = {
@@ -110,6 +112,7 @@ const driverImageMap: Record<string, string> = {
 };
 
 const DriverStandings = () => {
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const standingsRef = useRef(null);
@@ -186,6 +189,11 @@ const DriverStandings = () => {
     const p2Points = driverStandings[1].points;
     const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'driver', selectedYear);
     championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
+  }
+
+  // Render mobile version (after all hooks)
+  if (isMobile) {
+    return <MobileDriverStandings />;
   }
 
   return (

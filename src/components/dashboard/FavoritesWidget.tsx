@@ -50,18 +50,25 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
     }, [profile, teams]);
 
     // Calculate remaining points in the season
+    // 2025+: 25 pts per race (no fastest lap bonus), 8 pts for sprint = 33 max for sprint weekend
+    // 2019-2024: 26 pts per race (25 + 1 fastest lap), 8 pts for sprint = 34 max for sprint weekend
     const remainingPoints = useMemo(() => {
         if (!schedule || schedule.length === 0) return 0;
         const now = new Date();
         let points = 0;
 
+        // Determine the season year from the first event
+        const seasonYear = schedule[0]?.EventDate ? new Date(schedule[0].EventDate).getFullYear() : new Date().getFullYear();
+        const hasFastestLapPoint = seasonYear >= 2019 && seasonYear <= 2024;
+        const raceMaxPoints = hasFastestLapPoint ? 26 : 25;
+
         schedule.forEach(event => {
-            // Check Main Race (25 pts + 1 fastest lap)
+            // Check Main Race
             // Use Session5Date (Race) if available for precise timing, otherwise fallback to EventDate
             const raceDate = event.Session5Date ? new Date(event.Session5Date) : (event.EventDate ? new Date(event.EventDate) : null);
 
             if (raceDate && raceDate > now) {
-                points += 26;
+                points += raceMaxPoints;
             }
 
             // Check Sprint Race (8 pts)

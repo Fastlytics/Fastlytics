@@ -22,6 +22,14 @@ import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/SEO';
 import posthog from 'posthog-js';
 import { useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  MobileLayout,
+  MobileDashboardHeader,
+  MobileChampionshipWidget,
+  MobileRecentRaces,
+  MobileFavoritesWidget
+} from '@/components/mobile';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
@@ -115,6 +123,54 @@ const Dashboard = () => {
     return driver?.name.split(' ').pop()?.toUpperCase(); // Last name only
   }, [profile, driverStandings]);
 
+  const isMobile = useIsMobile();
+
+  // Mobile Dashboard
+  if (isMobile) {
+    return (
+      <MobileLayout>
+        <div className="min-h-screen bg-black text-white font-sans">
+          <SEO
+            title="F1 Dashboard - Live Telemetry & Standings"
+            description="Real-time F1 dashboard with live telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
+            keywords={['f1 dashboard', 'live telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+          />
+          
+          <main className="pt-4 pb-6 px-4 space-y-6">
+            {/* Mobile Header with Next Session */}
+            <MobileDashboardHeader
+              nextSession={nextSession}
+              favoriteDriverName={favoriteDriverName}
+            />
+
+            {/* Favorites / My Garage */}
+            <MobileFavoritesWidget
+              profile={profile}
+              drivers={driverStandings || []}
+              teams={teamStandings || []}
+              schedule={schedule || []}
+              isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+            />
+
+            {/* Championship Standings */}
+            <MobileChampionshipWidget
+              drivers={driverStandings || []}
+              teams={teamStandings || []}
+              schedule={schedule || []}
+              raceResults={raceResults || []}
+              isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+              profile={profile}
+            />
+
+            {/* Recent Races */}
+            <MobileRecentRaces recentRaces={recentRaces} />
+          </main>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // Desktop Dashboard
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
       <SEO
