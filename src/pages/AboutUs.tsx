@@ -6,8 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 // Using hugeicons-react as requested.
 import { ArrowRight01Icon, Database01Icon, DashboardSpeed01Icon, Analytics01Icon } from 'hugeicons-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileAbout } from '@/components/mobile';
 
 const AboutUs = () => {
+    const isMobile = useIsMobile();
+
+    if (isMobile) {
+        return <MobileAbout />;
+    }
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden">
             {/* Navbar */}

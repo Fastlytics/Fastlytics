@@ -45,63 +45,76 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ nextSessi
     }, [nextSession]);
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-6">
             {/* Centered Logo Header */}
-            <div className="flex items-center justify-center py-1">
-                <div className="flex items-center gap-2.5">
-                    <Gauge className="h-8 w-8 text-red-600" />
-                    <span className="text-2xl font-black tracking-tighter uppercase italic text-white">
+            <div className="flex items-center justify-center py-2 border-b-2 border-white/10 bg-black sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                    <Gauge className="h-6 w-6 text-red-600" />
+                    <span className="text-xl font-black tracking-tighter uppercase italic text-white">
                         Fast<span className="text-red-600">lytics</span>
                     </span>
                 </div>
             </div>
 
-            {/* Next Session Card - Ultra Compact */}
+            {/* Next Session Card - Cyber Brutalist */}
             {nextSession && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-900/80 border border-gray-800 rounded-xl p-3 active:scale-[0.98] transition-transform"
+                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors cursor-pointer"
                     onClick={() => navigate(`/race/${selectedYear}-${nextSession.eventName.toLowerCase().replace(/\s+/g, '-')}`)}
                 >
-                    <div className="flex items-center gap-3">
-                        {/* Flag */}
-                        <div className="w-10 h-7 rounded overflow-hidden border border-gray-700 flex-shrink-0">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="w-2 h-2 bg-red-600 animate-pulse" />
+                                <span className="text-xs font-bold text-red-600 uppercase tracking-wider">Next Up</span>
+                            </div>
+                            <h2 className="text-xl font-black uppercase italic leading-none max-w-[200px]">
+                                {nextSession.eventName.replace('Grand Prix', 'GP')}
+                            </h2>
+                        </div>
+                        <div className="w-12 h-8 border border-white/20">
                             <img
                                 src={`https://flagcdn.com/h80/${getCountryCode(nextSession.country || nextSession.location)}.png`}
                                 alt={nextSession.country}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-all"
                             />
                         </div>
+                    </div>
 
-                        {/* Event Info */}
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                                <span className="text-xs font-black uppercase text-white truncate">
-                                    {nextSession.eventName.replace('Grand Prix', 'GP')}
-                                </span>
+                    <div className="flex items-end justify-between">
+                        <div className="space-y-1">
+                            <div className="text-xs font-mono text-gray-400 uppercase">
+                                {nextSession.location}
                             </div>
-                            <div className="text-[10px] text-gray-500">
-                                <span className="text-red-500 font-bold">{nextSession.sessionName}</span>
-                                <span className="mx-1">•</span>
-                                <span>{nextSession.location}</span>
+                            <div className="text-sm font-bold text-white uppercase bg-red-600/10 px-2 py-0.5 inline-block border border-red-600/20">
+                                {nextSession.sessionName}
                             </div>
                         </div>
 
-                        {/* Countdown - Right aligned */}
+                        {/* Countdown */}
                         {timeLeft ? (
-                            <div className="flex items-center gap-0.5 font-mono text-right flex-shrink-0">
-                                <span className="text-sm font-bold text-white">{timeLeft.d}d</span>
-                                <span className="text-gray-600">:</span>
-                                <span className="text-sm font-bold text-white">{String(timeLeft.h).padStart(2, '0')}h</span>
-                                <span className="text-gray-600">:</span>
-                                <span className="text-sm font-bold text-red-500">{String(timeLeft.m).padStart(2, '0')}m</span>
+                            <div className="flex items-center gap-1 font-mono text-right">
+                                <div className="text-center">
+                                    <span className="block text-lg font-black leading-none">{timeLeft.d}</span>
+                                    <span className="text-[8px] text-gray-500 uppercase">Day</span>
+                                </div>
+                                <span className="text-gray-600 text-lg font-light">:</span>
+                                <div className="text-center">
+                                    <span className="block text-lg font-black leading-none">{String(timeLeft.h).padStart(2, '0')}</span>
+                                    <span className="text-[8px] text-gray-500 uppercase">Hr</span>
+                                </div>
+                                <span className="text-gray-600 text-lg font-light">:</span>
+                                <div className="text-center">
+                                    <span className="block text-lg font-black leading-none text-red-600">{String(timeLeft.m).padStart(2, '0')}</span>
+                                    <span className="text-[8px] text-gray-500 uppercase">Min</span>
+                                </div>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                <span className="text-xs font-bold text-red-500 uppercase">Live</span>
+                            <div className="flex items-center gap-2 px-3 py-1 bg-red-600 text-white">
+                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                                <span className="text-xs font-black uppercase tracking-wider">Live Now</span>
                             </div>
                         )}
                     </div>
@@ -110,9 +123,9 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ nextSessi
 
             {/* No session fallback */}
             {!nextSession && (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 text-center">
+                <div className="bg-black border-2 border-white/10 p-6 text-center">
                     <Activity01Icon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">No upcoming sessions</p>
+                    <p className="text-gray-500 text-sm font-mono uppercase">No upcoming sessions</p>
                 </div>
             )}
         </div>

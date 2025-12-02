@@ -199,8 +199,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     if (isLoading) {
         return (
             <div className="space-y-3">
-                <div className="h-24 bg-gray-900/50 animate-pulse rounded-xl" />
-                <div className="h-24 bg-gray-900/50 animate-pulse rounded-xl" />
+                <div className="h-24 bg-zinc-900/50 animate-pulse border-2 border-white/5" />
+                <div className="h-24 bg-zinc-900/50 animate-pulse border-2 border-white/5" />
             </div>
         );
     }
@@ -212,21 +212,21 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors group"
                 >
-                    <div className="flex items-start gap-3">
-                        <div className="p-2 bg-red-600/20 rounded-lg flex-shrink-0">
-                            <Settings02Icon className="w-5 h-5 text-red-500" />
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-zinc-900 border border-white/10 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                            <Settings02Icon className="w-5 h-5 text-red-600 group-hover:text-white" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-base text-white mb-1">
-                                Complete Your Setup
+                            <h3 className="font-black text-base text-white uppercase italic mb-1">
+                                Complete Setup
                             </h3>
-                            <p className="text-xs text-gray-500 leading-relaxed">
+                            <p className="text-xs text-gray-500 font-mono uppercase leading-relaxed">
                                 Select your favorite driver and team for personalized stats
                             </p>
                         </div>
-                        <ArrowRight01Icon className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        <ArrowRight01Icon className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
                     </div>
                 </motion.div>
             </Link>
@@ -236,10 +236,10 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     return (
         <div className="space-y-4">
             {/* Header - changes based on title contention */}
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black uppercase italic tracking-tighter flex items-center gap-2">
+            <div className="flex items-center justify-between border-b-2 border-white/10 pb-2">
+                <h3 className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-2">
                     <span className={cn(
-                        "w-1 h-6 block rounded",
+                        "w-2 h-6 block",
                         driverRivals?.isTitleContender ? "bg-yellow-500" : "bg-red-600"
                     )}></span>
                     {driverRivals?.isTitleContender ? (
@@ -249,7 +249,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                     )}
                 </h3>
                 {driverRivals?.isTitleContender && (
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-500/10 border border-yellow-500/30">
                         <Award01Icon className="w-3 h-3 text-yellow-500" />
                         <span className="text-[10px] font-bold uppercase tracking-wider text-yellow-500">
                             Contender
@@ -266,30 +266,30 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             className={cn(
-                                "rounded-xl overflow-hidden active:scale-[0.98] transition-transform",
+                                "border-2 active:scale-[0.99] transition-transform bg-black",
                                 driverRivals?.isTitleContender
-                                    ? "bg-yellow-950/30 border border-yellow-600/30"
-                                    : "bg-gray-900/50 border border-gray-800"
+                                    ? "border-yellow-600/50"
+                                    : "border-white/10"
                             )}
                         >
                             <div className="p-4">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-4">
                                     {/* Avatar & Position */}
                                     <div className="relative">
                                         <Avatar className={cn(
-                                            "h-14 w-14 border-2",
+                                            "h-16 w-16 rounded-none border-2",
                                             driverRivals?.isTitleContender ? "border-yellow-500" : "border-red-600"
                                         )}>
                                             <AvatarImage
                                                 src={getDriverImage(favoriteDriver.name)}
-                                                className="object-cover bg-gray-800"
+                                                className="object-cover bg-zinc-900"
                                             />
-                                            <AvatarFallback className="bg-gray-800">
+                                            <AvatarFallback className="bg-zinc-900 rounded-none font-black text-lg">
                                                 {favoriteDriver.code}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className={cn(
-                                            "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black",
+                                            "absolute -bottom-2 -right-2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black",
                                             driverRivals?.isTitleContender ? "bg-yellow-500 text-black" : "bg-red-600 text-white"
                                         )}>
                                             P{favoriteDriver.rank}
@@ -298,7 +298,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1 font-mono">
                                             {driverRivals?.isTitleContender ? (
                                                 <>
                                                     <Award01Icon className="w-3 h-3 text-yellow-500" />
@@ -311,42 +311,42 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                                 </>
                                             )}
                                         </div>
-                                        <div className="font-black text-xl uppercase italic truncate">
+                                        <div className="font-black text-2xl uppercase italic truncate leading-none mb-1">
                                             {favoriteDriver.name.split(' ').pop()}
                                         </div>
-                                        <div className="text-xs text-gray-500">{favoriteDriver.team}</div>
+                                        <div className="text-xs text-gray-400 font-mono uppercase">{favoriteDriver.team}</div>
                                     </div>
 
                                     {/* Points */}
                                     <div className="text-right">
                                         <div className={cn(
-                                            "text-2xl font-black",
-                                            driverRivals?.isTitleContender ? "text-yellow-500" : "text-red-500"
+                                            "text-3xl font-black leading-none",
+                                            driverRivals?.isTitleContender ? "text-yellow-500" : "text-red-600"
                                         )}>
                                             {favoriteDriver.points}
                                         </div>
-                                        <div className="text-[10px] text-gray-500 uppercase">Points</div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-mono mt-1">PTS</div>
                                     </div>
                                 </div>
 
                                 {/* Title Fight Rivalry Display */}
                                 {driverRivals?.isTitleContender && driverRivals.displayDrivers.length > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-yellow-600/20 space-y-2">
+                                    <div className="mt-4 pt-4 border-t-2 border-yellow-600/20 space-y-2">
                                         {driverRivals.displayDrivers
                                             .filter(item => item.type !== 'you')
                                             .slice(0, 1)
                                             .map((item) => (
                                                 <div key={item.driver.code} className="flex items-center justify-between text-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <Avatar className="h-6 w-6 border border-gray-700">
+                                                        <Avatar className="h-6 w-6 rounded-none border border-white/20">
                                                             <AvatarImage src={getDriverImage(item.driver.name)} className="object-cover" />
-                                                            <AvatarFallback className="text-[8px]">{item.driver.code}</AvatarFallback>
+                                                            <AvatarFallback className="text-[8px] rounded-none">{item.driver.code}</AvatarFallback>
                                                         </Avatar>
                                                         <div>
-                                                            <span className="font-bold text-white">
+                                                            <span className="font-bold text-white uppercase italic">
                                                                 {item.driver.name.split(' ').pop()}
                                                             </span>
-                                                            <span className="text-gray-500 text-xs ml-1.5">
+                                                            <span className="text-gray-500 text-xs ml-2 font-mono">
                                                                 P{item.driver.rank}
                                                             </span>
                                                         </div>
@@ -363,8 +363,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
 
                                         {/* Gap to Leader if not P1 */}
                                         {driverRivals.gapToLeader > 0 && (
-                                            <div className="text-[10px] text-gray-500 text-center mt-1">
-                                                {remainingPoints} points remaining • Gap: {driverRivals.gapToLeader} pts
+                                            <div className="text-[10px] text-gray-500 text-center mt-2 font-mono uppercase bg-zinc-900/50 py-1">
+                                                {remainingPoints} pts remaining • Gap: {driverRivals.gapToLeader} pts
                                             </div>
                                         )}
                                     </div>
@@ -372,16 +372,18 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
 
                                 {/* Standard Rivalry (non-title contender) */}
                                 {!driverRivals?.isTitleContender && driverRivals && (
-                                    <div className="mt-3 pt-3 border-t border-gray-800/50 flex gap-4">
+                                    <div className="mt-4 pt-4 border-t-2 border-white/5 flex gap-4">
                                         {driverRivals.displayDrivers
                                             .filter(item => item.type === 'ahead')
                                             .map(item => (
-                                                <div key={item.driver.code} className="flex-1 flex items-center gap-2 text-xs">
-                                                    <span className="text-gray-600">Ahead:</span>
-                                                    <span className="font-bold text-white">
-                                                        {item.driver.name.split(' ').pop()}
-                                                    </span>
-                                                    <span className="text-red-500 font-mono">
+                                                <div key={item.driver.code} className="flex-1 flex items-center justify-between text-xs bg-zinc-900/30 p-2 border border-white/5">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-gray-600 font-mono uppercase text-[10px] mb-0.5">Ahead</span>
+                                                        <span className="font-bold text-white uppercase italic">
+                                                            {item.driver.name.split(' ').pop()}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-red-500 font-mono font-bold">
                                                         +{item.driver.points - favoriteDriver.points}
                                                     </span>
                                                 </div>
@@ -389,12 +391,14 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                         {driverRivals.displayDrivers
                                             .filter(item => item.type === 'behind')
                                             .map(item => (
-                                                <div key={item.driver.code} className="flex-1 flex items-center gap-2 text-xs">
-                                                    <span className="text-gray-600">Behind:</span>
-                                                    <span className="font-bold text-white">
-                                                        {item.driver.name.split(' ').pop()}
-                                                    </span>
-                                                    <span className="text-green-500 font-mono">
+                                                <div key={item.driver.code} className="flex-1 flex items-center justify-between text-xs bg-zinc-900/30 p-2 border border-white/5">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-gray-600 font-mono uppercase text-[10px] mb-0.5">Behind</span>
+                                                        <span className="font-bold text-white uppercase italic">
+                                                            {item.driver.name.split(' ').pop()}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-green-500 font-mono font-bold">
                                                         +{favoriteDriver.points - item.driver.points}
                                                     </span>
                                                 </div>
@@ -413,12 +417,12 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                            className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors"
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-4">
                                 {/* Logo & Position */}
                                 <div className="relative">
-                                    <div className="h-14 w-14 flex items-center justify-center bg-white/5 rounded-xl border border-gray-700 p-2">
+                                    <div className="h-16 w-16 flex items-center justify-center bg-transparent rounded-none border-2 border-white/10 p-2">
                                         {getTeamLogo(favoriteTeam.team) ? (
                                             <img
                                                 src={getTeamLogo(favoriteTeam.team)!}
@@ -426,29 +430,29 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                                 className="w-full h-full object-contain"
                                             />
                                         ) : (
-                                            <UserGroupIcon className="w-6 h-6 text-gray-400" />
+                                            <UserGroupIcon className="w-6 h-6 text-white" />
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-xs font-black">
+                                    <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-red-600 flex items-center justify-center text-xs font-black text-white border-2 border-black">
                                         P{favoriteTeam.rank}
                                     </div>
                                 </div>
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1 font-mono">
                                         <StarIcon className="w-3 h-3 text-red-500" />
                                         Favorite Team
                                     </div>
-                                    <div className="font-black text-xl uppercase italic truncate">
+                                    <div className="font-black text-xl uppercase italic truncate leading-none">
                                         {favoriteTeam.team}
                                     </div>
                                 </div>
 
                                 {/* Points */}
                                 <div className="text-right">
-                                    <div className="text-2xl font-black text-red-500">{favoriteTeam.points}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase">Points</div>
+                                    <div className="text-3xl font-black text-red-600 leading-none">{favoriteTeam.points}</div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-mono mt-1">PTS</div>
                                 </div>
                             </div>
                         </motion.div>

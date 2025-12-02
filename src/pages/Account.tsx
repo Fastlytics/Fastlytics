@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon, LinkSquare01Icon, Analytics01Icon } from 'hugeicons-react';
+import { UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon, LinkSquare01Icon, Analytics01Icon, Rocket01Icon } from 'hugeicons-react';
 import ActivityItem from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -77,6 +77,18 @@ const Account = () => {
     // Activity History State
     const [userActivity, setUserActivity] = useState<any[]>([]);
     const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+
+    // Subscription State
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
+
+    const proPrices = {
+        monthly: { price: 6.99, label: '/mo', period: 'Monthly' },
+        quarterly: { price: 19.99, label: '/3 mo', period: 'Quarterly' },
+        biannual: { price: 32.99, label: '/6 mo', period: 'Semi-Annual' },
+        yearly: { price: 59.99, label: '/yr', period: 'Yearly' },
+    };
+
+    const currentPro = proPrices[billingCycle];
 
     useEffect(() => {
         if (user) {
@@ -344,7 +356,19 @@ const Account = () => {
                             <NavItem id="favorites" label="My Favorites" icon={StarIcon} active={activeSection === 'favorites'} onClick={() => setActiveSection('favorites')} />
                             <NavItem id="security" label="Security" icon={SecurityCheckIcon} active={activeSection === 'security'} onClick={() => setActiveSection('security')} />
                             <NavItem id="history" label="History" icon={Analytics01Icon} active={activeSection === 'history'} onClick={() => setActiveSection('history')} />
-                            <NavItem id="subscription" label="Subscription" icon={CreditCardIcon} active={activeSection === 'subscription'} onClick={() => setActiveSection('subscription')} />
+
+                            <button
+                                onClick={() => setActiveSection('subscription')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left mt-4 rounded-r-md shadow-lg",
+                                    activeSection === 'subscription'
+                                        ? "border-yellow-500 bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-yellow-900/20"
+                                        : "border-transparent bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 hover:shadow-yellow-500/20"
+                                )}
+                            >
+                                <Rocket01Icon className={cn("w-5 h-5", activeSection === 'subscription' ? "text-white" : "text-black")} />
+                                Upgrade
+                            </button>
                         </div>
                     </aside>
 
@@ -638,33 +662,74 @@ const Account = () => {
                         {/* 4. Subscription Section */}
                         {activeSection === 'subscription' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <SectionHeader title="Subscription" icon={CreditCardIcon} />
+                                <SectionHeader title="Upgrade" icon={Rocket01Icon} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {/* Free Tier */}
-                                    <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg relative overflow-hidden">
+                                    <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg relative overflow-hidden flex flex-col">
                                         <div className="absolute top-0 right-0 bg-zinc-800 text-xs font-bold px-3 py-1 uppercase tracking-wider">Current Plan</div>
-                                        <h3 className="text-2xl font-black uppercase italic text-white mb-2">Free Tier</h3>
-                                        <div className="text-3xl font-bold text-white mb-6">$0<span className="text-lg text-zinc-500 font-normal">/mo</span></div>
-                                        <ul className="space-y-3 mb-8">
-                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Basic Telemetry Access</li>
-                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Live Timing</li>
-                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Race Results Archive</li>
+                                        <div className="mb-6">
+                                            <h3 className="text-2xl font-black uppercase italic text-white mb-2">Standard</h3>
+                                            <div className="text-3xl font-bold text-white">Free</div>
+                                            <p className="text-zinc-500 font-mono mt-2 text-sm">Essential telemetry for casual analysis.</p>
+                                        </div>
+                                        <ul className="space-y-3 mb-8 flex-grow">
+                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Standard Telemetry Data</li>
+                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Race Results & Standings</li>
+                                            <li className="flex items-center text-zinc-400"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Basic Lap Times</li>
                                         </ul>
                                         <Button disabled className="w-full bg-zinc-800 text-zinc-400 font-bold uppercase tracking-wider">Active</Button>
                                     </div>
 
                                     {/* Pro Tier */}
-                                    <div className="bg-zinc-900/10 border border-zinc-800 p-8 rounded-lg relative overflow-hidden opacity-60 cursor-not-allowed">
-                                        <div className="absolute top-0 right-0 bg-zinc-800 text-xs font-bold px-3 py-1 uppercase tracking-wider text-zinc-400">Coming Soon</div>
-                                        <h3 className="text-2xl font-black uppercase italic text-zinc-400 mb-2">Pro Tier</h3>
-                                        <div className="text-3xl font-bold text-zinc-500 mb-6">$4.99<span className="text-lg text-zinc-600 font-normal">/mo</span></div>
-                                        <ul className="space-y-3 mb-8">
-                                            <li className="flex items-center text-zinc-500"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-600 mr-3" /> Advanced Telemetry Analysis</li>
-                                            <li className="flex items-center text-zinc-500"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-600 mr-3" /> Driver Comparison Tools</li>
-                                            <li className="flex items-center text-zinc-500"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-600 mr-3" /> Unlimited Historical Data</li>
-                                            <li className="flex items-center text-zinc-500"><CheckmarkCircle01Icon className="w-5 h-5 text-zinc-600 mr-3" /> Priority Support</li>
+                                    <div className="bg-gradient-to-b from-zinc-900 to-black border border-red-600 p-8 rounded-lg relative overflow-hidden flex flex-col shadow-[0_0_30px_rgba(220,38,38,0.1)]">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
+                                        <div className="absolute top-4 right-4">
+                                            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
+                                                <StarIcon className="w-3 h-3 fill-current" /> Recommended
+                                            </span>
+                                        </div>
+
+                                        <div className="mb-6">
+                                            <h3 className="text-2xl font-black uppercase italic text-red-500 mb-2 flex items-center gap-2">
+                                                Pro <span className="text-white text-xs bg-red-600/20 px-2 py-0.5 rounded border border-red-600/30 not-italic font-sans">All Access</span>
+                                            </h3>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl font-bold text-white">${currentPro.price}</span>
+                                                <span className="text-lg text-zinc-500 font-normal">{currentPro.label}</span>
+                                            </div>
+                                            <p className="text-zinc-400 font-mono mt-2 text-sm">Advanced tools for serious analysis.</p>
+                                        </div>
+
+                                        {/* Billing Cycle Selector */}
+                                        <div className="grid grid-cols-2 gap-2 mb-6">
+                                            {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
+                                                <button
+                                                    key={cycle}
+                                                    onClick={() => setBillingCycle(cycle)}
+                                                    className={cn(
+                                                        "px-2 py-2 text-[10px] font-bold uppercase rounded border transition-all duration-200",
+                                                        billingCycle === cycle
+                                                            ? "bg-red-600 border-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]"
+                                                            : "bg-transparent border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white"
+                                                    )}
+                                                >
+                                                    {proPrices[cycle].period}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <ul className="space-y-3 mb-8 flex-grow">
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Advanced Telemetry</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Session Replay</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Time Synced Data</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Unlimited History</li>
                                         </ul>
-                                        <Button disabled className="w-full bg-zinc-800 text-zinc-500 font-bold uppercase tracking-wider">Coming Soon</Button>
+                                        <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider shadow-[0_4px_0_0_rgba(153,27,27,1)] active:shadow-none active:translate-y-[4px] transition-all">
+                                            Upgrade to Pro
+                                        </Button>
+                                        <p className="text-center text-[10px] text-zinc-500 mt-3 font-mono">
+                                            Secure payment via Paddle.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    ArrowUp01Icon, ArrowDown01Icon, MinusSignCircleIcon, CrownIcon, Cancel01Icon
+    ArrowUp01Icon, ArrowDown01Icon, MinusSignCircleIcon, CrownIcon, Cancel01Icon, CheckmarkCircle02Icon
 } from 'hugeicons-react';
 import { fetchTeamStandings, TeamStanding, fetchSchedule, fetchRaceResults, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
@@ -38,12 +38,12 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="w-full max-w-md bg-gray-900 rounded-t-2xl border-t border-gray-700 pb-24"
+                    className="w-full max-w-md bg-black border-t-2 border-white/10 pb-24"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex items-center justify-between p-4 border-b border-gray-800">
-                        <h3 className="text-lg font-bold uppercase tracking-tight">Select Season</h3>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-full">
+                    <div className="flex items-center justify-between p-4 border-b-2 border-white/10">
+                        <h3 className="text-lg font-black uppercase italic tracking-tight">Select Season</h3>
+                        <button onClick={onClose} className="p-2 hover:bg-zinc-900 transition-colors">
                             <Cancel01Icon className="w-5 h-5" />
                         </button>
                     </div>
@@ -55,14 +55,14 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-colors flex items-center justify-between ${selectedYear === year
-                                    ? 'bg-red-600 text-white'
-                                    : 'hover:bg-gray-800 text-gray-300'
+                                className={`w-full p-4 text-left border-2 transition-colors flex items-center justify-between mb-2 ${selectedYear === year
+                                    ? 'bg-red-600 text-white border-red-600'
+                                    : 'bg-black hover:bg-zinc-900 text-gray-300 border-white/10'
                                     }`}
                             >
-                                <span className="text-lg font-bold">{year} Season</span>
+                                <span className="text-lg font-black uppercase italic">{year} Season</span>
                                 {selectedYear === year && (
-                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                    <CheckmarkCircle02Icon className="w-5 h-5" />
                                 )}
                             </button>
                         ))}
@@ -122,10 +122,10 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-yellow-950 border-2 border-yellow-500"
+            className="relative overflow-hidden bg-black border-2 border-yellow-600"
         >
             {/* Crown Icon */}
-            <div className="absolute -top-2 -right-2 text-yellow-500/20">
+            <div className="absolute -top-2 -right-2 text-yellow-600/20">
                 <CrownIcon className="w-24 h-24" />
             </div>
 
@@ -135,7 +135,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
             <div className="relative z-10 p-4">
                 {/* Champion Badge */}
                 <div className="text-center mb-3">
-                    <span className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-[10px] uppercase tracking-widest rounded">
+                    <span className="inline-block px-3 py-1 bg-yellow-600 text-black font-black text-[10px] uppercase tracking-widest">
                         {championshipStatus === 'champion' ? "Constructors' Champion" : "Constructors' Leader"}
                     </span>
                 </div>
@@ -156,29 +156,29 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
                                 className="w-20 h-auto object-contain mx-auto"
                             />
                         ) : (
-                            <div className={`w-20 h-12 rounded bg-f1-${teamColor}/30 mx-auto`} />
+                            <div className={`w-20 h-12 bg-f1-${teamColor}/30 mx-auto`} />
                         )}
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-black font-black text-sm">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-600 flex items-center justify-center text-black font-black text-sm border-2 border-black">
                             1
                         </div>
                     </div>
 
                     {/* Team Info */}
                     <div className="flex-1">
-                        <h2 className="text-lg font-black uppercase tracking-tight mb-1">{team.team}</h2>
+                        <h2 className="text-lg font-black uppercase italic tracking-tight mb-1">{team.team}</h2>
                         <div className="flex items-center gap-4">
                             <div>
-                                <span className="text-3xl font-black text-white">{team.points}</span>
-                                <span className="text-xs text-gray-500 ml-1">PTS</span>
+                                <span className="text-3xl font-black text-white italic">{team.points}</span>
+                                <span className="text-xs text-gray-500 ml-1 font-mono">PTS</span>
                             </div>
                             <div className="flex gap-3 text-center">
                                 <div>
-                                    <div className="text-lg font-bold text-yellow-500">{team.wins}</div>
-                                    <div className="text-[9px] text-gray-500 uppercase">Wins</div>
+                                    <div className="text-lg font-black text-yellow-600">{team.wins}</div>
+                                    <div className="text-[9px] text-gray-500 uppercase font-mono">Wins</div>
                                 </div>
                                 <div>
-                                    <div className="text-lg font-bold text-gray-300">{team.podiums}</div>
-                                    <div className="text-[9px] text-gray-500 uppercase">Pods</div>
+                                    <div className="text-lg font-black text-gray-300">{team.podiums}</div>
+                                    <div className="text-[9px] text-gray-500 uppercase font-mono">Pods</div>
                                 </div>
                             </div>
                         </div>
@@ -217,7 +217,7 @@ const TeamRow: React.FC<{
             transition={{ delay: index * 0.03 }}
             layout
             onClick={onToggle}
-            className="relative bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
+            className="relative bg-black border-2 border-white/10 active:scale-[0.98] transition-transform cursor-pointer group hover:border-white/20"
         >
             {/* Team Color Bar */}
             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-f1-${teamColor}`} />
@@ -248,12 +248,12 @@ const TeamRow: React.FC<{
                                         className="w-16 h-auto object-contain mx-auto"
                                     />
                                 ) : (
-                                    <div className={`w-16 h-10 rounded bg-f1-${teamColor}/30 mx-auto`} />
+                                    <div className={`w-16 h-10 bg-f1-${teamColor}/30 mx-auto`} />
                                 )}
                                 <div className={cn(
-                                    "absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black",
+                                    "absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black",
                                     team.rank === 2 ? "bg-gray-300 text-black" :
-                                        team.rank === 3 ? "bg-amber-600 text-black" : "bg-gray-600 text-white"
+                                        team.rank === 3 ? "bg-amber-700 text-black" : "bg-zinc-800 text-white"
                                 )}>
                                     {team.rank}
                                 </div>
@@ -261,20 +261,20 @@ const TeamRow: React.FC<{
 
                             {/* Team Info */}
                             <div className="flex-1">
-                                <h2 className="text-lg font-black uppercase tracking-tight mb-2">{team.team}</h2>
+                                <h2 className="text-lg font-black uppercase italic tracking-tight mb-2">{team.team}</h2>
                                 <div className="flex items-center gap-4">
                                     <div>
-                                        <span className="text-2xl font-black text-white">{team.points}</span>
-                                        <span className="text-xs text-gray-500 ml-1">PTS</span>
+                                        <span className="text-2xl font-black text-white italic">{team.points}</span>
+                                        <span className="text-xs text-gray-500 ml-1 font-mono">PTS</span>
                                     </div>
                                     <div className="flex gap-3 text-center">
                                         <div>
-                                            <div className="text-base font-bold text-yellow-500">{team.wins}</div>
-                                            <div className="text-[9px] text-gray-500 uppercase">Wins</div>
+                                            <div className="text-base font-black text-yellow-600">{team.wins}</div>
+                                            <div className="text-[9px] text-gray-500 uppercase font-mono">Wins</div>
                                         </div>
                                         <div>
-                                            <div className="text-base font-bold text-gray-300">{team.podiums}</div>
-                                            <div className="text-[9px] text-gray-500 uppercase">Pods</div>
+                                            <div className="text-base font-black text-gray-300">{team.podiums}</div>
+                                            <div className="text-[9px] text-gray-500 uppercase font-mono">Pods</div>
                                         </div>
                                     </div>
                                 </div>
@@ -293,9 +293,9 @@ const TeamRow: React.FC<{
                         {/* Position */}
                         <div className="w-8 text-center">
                             <span className={cn(
-                                "text-lg font-black",
+                                "text-lg font-black italic",
                                 team.rank === 2 ? "text-gray-300" :
-                                    team.rank === 3 ? "text-amber-600" : "text-gray-500"
+                                    team.rank === 3 ? "text-amber-700" : "text-gray-500"
                             )}>
                                 {team.rank}
                             </span>
@@ -316,20 +316,20 @@ const TeamRow: React.FC<{
                                     className={cn("h-6 w-auto object-contain", team.team.toLowerCase().includes('aston') ? "h-3" : "")}
                                 />
                             ) : (
-                                <div className={`w-12 h-8 rounded bg-f1-${teamColor}/30`} />
+                                <div className={`w-12 h-8 bg-f1-${teamColor}/30`} />
                             )}
                         </div>
 
                         {/* Team Name */}
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-sm uppercase truncate">{team.team}</h3>
+                            <h3 className="font-black text-sm uppercase italic truncate">{team.team}</h3>
                         </div>
 
                         {/* Stats */}
                         <div className="flex items-center gap-3">
                             <div className="text-right min-w-[50px]">
-                                <div className="text-lg font-black">{team.points}</div>
-                                <div className="flex items-center justify-end gap-0.5 text-[9px] text-gray-500">
+                                <div className="text-lg font-black italic">{team.points}</div>
+                                <div className="flex items-center justify-end gap-0.5 text-[9px] text-gray-500 font-mono">
                                     <span>PTS</span>
                                     {indicator && (
                                         <span className={cn("flex items-center", indicator.color)}>
@@ -390,7 +390,7 @@ const MobileTeamStandings: React.FC = () => {
                 <div className="px-4 py-3">
                     <button
                         onClick={() => setShowSeasonSelector(true)}
-                        className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm font-bold active:scale-95 transition-transform"
+                        className="flex items-center gap-2 bg-black border-2 border-white/10 rounded-none px-3 py-2 text-sm font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900"
                     >
                         <span>{selectedYear} Season</span>
                         <ArrowDown01Icon className="w-4 h-4 text-gray-400" />
@@ -401,9 +401,9 @@ const MobileTeamStandings: React.FC = () => {
                 <div className="px-4 py-4 space-y-3">
                     {isLoading ? (
                         <div className="space-y-3">
-                            <div className="h-36 bg-gray-900/50 animate-pulse rounded-2xl" />
+                            <div className="h-36 bg-zinc-900 animate-pulse border-2 border-white/5" />
                             {[...Array(9)].map((_, i) => (
-                                <div key={i} className="h-16 bg-gray-900/50 animate-pulse rounded-xl" />
+                                <div key={i} className="h-16 bg-zinc-900 animate-pulse border-2 border-white/5" />
                             ))}
                         </div>
                     ) : teamStandings && teamStandings.length > 0 ? (
@@ -434,8 +434,8 @@ const MobileTeamStandings: React.FC = () => {
                             </AnimatePresence>
                         </>
                     ) : (
-                        <div className="text-center py-12 text-gray-500">
-                            <p className="text-sm">No standings available for {selectedYear}</p>
+                        <div className="text-center py-12 text-gray-500 border-2 border-white/10 bg-zinc-900/30">
+                            <p className="text-sm font-mono uppercase">No standings available for {selectedYear}</p>
                         </div>
                     )}
                 </div>

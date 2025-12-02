@@ -4,8 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
-import { CheckmarkCircle01Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
-import { Gauge, ChevronRight, ChevronLeft, Check, Sparkles } from 'lucide-react';
+import {
+    CheckmarkCircle01Icon,
+    ArrowRight01Icon,
+    ArrowLeft01Icon,
+    Tick02Icon,
+    StarIcon
+} from 'hugeicons-react';
+import { Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import posthog from 'posthog-js';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
@@ -72,8 +78,8 @@ const MobileOnboarding: React.FC = () => {
         if (driverImageMap[driverCode]) {
             return driverImageMap[driverCode];
         }
-        const driver = openF1Drivers.find(d => 
-            d.name_acronym === driverCode || 
+        const driver = openF1Drivers.find(d =>
+            d.name_acronym === driverCode ||
             d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return driver?.headshot_url;
@@ -114,22 +120,22 @@ const MobileOnboarding: React.FC = () => {
     const totalSteps = 3;
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col overflow-hidden">
-            {/* Background Gradient */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="h-[100dvh] bg-black text-white flex flex-col overflow-hidden">
+            {/* Background Gradient - REMOVED for Cyber Brutalist */}
+            {/* <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute -top-[30%] -left-[20%] w-[80%] h-[50%] bg-red-600/20 blur-[120px] rounded-full" />
                 <div className="absolute bottom-[20%] -right-[20%] w-[60%] h-[40%] bg-red-600/10 blur-[100px] rounded-full" />
-            </div>
+            </div> */}
 
-            {/* Progress Dots */}
+            {/* Progress Bars */}
             <div className="relative z-10 pt-12 pb-6 px-4">
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-1">
                     {[0, 1, 2].map((i) => (
                         <div
                             key={i}
                             className={cn(
-                                "h-2 rounded-full transition-all duration-300",
-                                step === i ? "w-8 bg-red-600" : "w-2 bg-gray-700"
+                                "h-1 transition-all duration-300",
+                                step === i ? "w-12 bg-red-600" : "w-4 bg-zinc-800"
                             )}
                         />
                     ))}
@@ -153,14 +159,14 @@ const MobileOnboarding: React.FC = () => {
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
-                                className="mb-8"
+                                className="mb-8 flex flex-col items-center"
                             >
-                                <div className="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                                    <Gauge className="w-10 h-10 text-white" />
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Gauge className="h-10 w-10 text-red-600" />
+                                    <span className="text-4xl font-black tracking-tighter uppercase italic text-white">
+                                        Fast<span className="text-red-600">lytics</span>
+                                    </span>
                                 </div>
-                                <h1 className="text-3xl font-black uppercase italic tracking-tighter">
-                                    Fast<span className="text-red-600">lytics</span>
-                                </h1>
                             </motion.div>
 
                             <motion.div
@@ -169,8 +175,8 @@ const MobileOnboarding: React.FC = () => {
                                 transition={{ delay: 0.4 }}
                                 className="space-y-4 mb-12"
                             >
-                                <h2 className="text-2xl font-bold">Welcome aboard!</h2>
-                                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                                <h2 className="text-2xl font-black uppercase tracking-tight">Welcome aboard!</h2>
+                                <p className="text-gray-400 text-sm font-mono uppercase max-w-xs">
                                     Let's personalize your F1 experience. Pick your favorites to get started.
                                 </p>
                             </motion.div>
@@ -187,11 +193,11 @@ const MobileOnboarding: React.FC = () => {
                                     'Driver & team standings',
                                     'Race calendar & results',
                                 ].map((feature, i) => (
-                                    <div key={i} className="flex items-center gap-3 text-left bg-gray-900/50 rounded-lg p-3">
-                                        <div className="w-8 h-8 bg-red-600/20 rounded-full flex items-center justify-center">
-                                            <Sparkles className="w-4 h-4 text-red-500" />
+                                    <div key={i} className="flex items-center gap-3 text-left bg-black border-2 border-white/10 p-3">
+                                        <div className="w-8 h-8 bg-red-600/20 flex items-center justify-center border border-red-600/30">
+                                            <StarIcon className="w-4 h-4 text-red-500" />
                                         </div>
-                                        <span className="text-sm text-gray-300">{feature}</span>
+                                        <span className="text-sm text-gray-300 font-bold uppercase">{feature}</span>
                                     </div>
                                 ))}
                             </motion.div>
@@ -221,21 +227,21 @@ const MobileOnboarding: React.FC = () => {
                                         const isSelected = selectedDriver === driver.code;
                                         const driverImg = getDriverImage(driver.code, driver.name);
                                         const has2025Img = driverImageMap[driver.code];
-                                        
+
                                         return (
                                             <motion.button
                                                 key={driver.code}
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => setSelectedDriver(driver.code)}
                                                 className={cn(
-                                                    "relative rounded-xl overflow-hidden border-2 transition-all",
-                                                    isSelected 
-                                                        ? "border-red-600 bg-red-600/10" 
-                                                        : "border-gray-800 bg-gray-900/50"
+                                                    "relative overflow-hidden border-2 transition-all",
+                                                    isSelected
+                                                        ? "border-red-600 bg-red-600/10"
+                                                        : "border-white/10 bg-black hover:border-white/30"
                                                 )}
                                             >
                                                 {/* Driver Image */}
-                                                <div className="aspect-[4/3] relative overflow-hidden bg-gray-800">
+                                                <div className="aspect-[4/3] relative overflow-hidden bg-zinc-900">
                                                     {driverImg ? (
                                                         <img
                                                             src={driverImg}
@@ -247,23 +253,23 @@ const MobileOnboarding: React.FC = () => {
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center">
-                                                            <span className="text-2xl font-bold text-gray-600">{driver.code}</span>
+                                                            <span className="text-2xl font-black text-gray-600">{driver.code}</span>
                                                         </div>
                                                     )}
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                                    
+
                                                     {/* Selection Check */}
                                                     {isSelected && (
-                                                        <div className="absolute top-2 right-2 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
-                                                            <Check className="w-4 h-4" />
+                                                        <div className="absolute top-0 right-0 w-6 h-6 bg-red-600 flex items-center justify-center">
+                                                            <Tick02Icon className="w-4 h-4 text-white" />
                                                         </div>
                                                     )}
                                                 </div>
 
                                                 {/* Driver Info */}
-                                                <div className="p-3">
-                                                    <div className="font-bold text-sm uppercase truncate">{driver.name}</div>
-                                                    <div className="text-[10px] text-gray-500 uppercase truncate">{driver.team}</div>
+                                                <div className="p-3 text-left">
+                                                    <div className="font-black text-sm uppercase truncate">{driver.name}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono uppercase truncate">{driver.team}</div>
                                                 </div>
                                             </motion.button>
                                         );
@@ -301,14 +307,14 @@ const MobileOnboarding: React.FC = () => {
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => setSelectedTeam(team.team)}
                                             className={cn(
-                                                "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                                                isSelected 
-                                                    ? "border-red-600 bg-red-600/10" 
-                                                    : "border-gray-800 bg-gray-900/50"
+                                                "w-full flex items-center gap-4 p-4 border-2 transition-all",
+                                                isSelected
+                                                    ? "border-red-600 bg-red-600/10"
+                                                    : "border-white/10 bg-black hover:border-white/30"
                                             )}
                                         >
                                             {/* Team Logo */}
-                                            <div className="w-14 h-14 bg-white/10 rounded-xl p-2 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-14 h-14 bg-white/10 p-2 flex items-center justify-center flex-shrink-0">
                                                 {logo ? (
                                                     <img
                                                         src={logo}
@@ -316,7 +322,7 @@ const MobileOnboarding: React.FC = () => {
                                                         className="w-full h-full object-contain"
                                                     />
                                                 ) : (
-                                                    <div className="text-lg font-bold text-gray-500">
+                                                    <div className="text-lg font-black text-gray-500">
                                                         {team.team.substring(0, 2)}
                                                     </div>
                                                 )}
@@ -324,16 +330,16 @@ const MobileOnboarding: React.FC = () => {
 
                                             {/* Team Info */}
                                             <div className="flex-1 text-left">
-                                                <div className="font-bold text-base uppercase">{team.team}</div>
-                                                <div className="text-xs text-gray-500">
+                                                <div className="font-black text-base uppercase">{team.team}</div>
+                                                <div className="text-xs text-gray-500 font-mono">
                                                     {team.points} PTS • {team.wins} WINS
                                                 </div>
                                             </div>
 
                                             {/* Selection Check */}
                                             {isSelected && (
-                                                <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                                    <Check className="w-4 h-4" />
+                                                <div className="w-6 h-6 bg-red-600 flex items-center justify-center flex-shrink-0">
+                                                    <Tick02Icon className="w-4 h-4 text-white" />
                                                 </div>
                                             )}
                                         </motion.button>
@@ -346,7 +352,7 @@ const MobileOnboarding: React.FC = () => {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="relative z-10 p-4 pb-8 space-y-3">
+            <div className="relative z-10 p-4 pb-8 space-y-3 bg-black border-t-2 border-white/10">
                 {/* Primary Action */}
                 <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -359,24 +365,24 @@ const MobileOnboarding: React.FC = () => {
                     }}
                     disabled={(step === 1 && !selectedDriver) || (step === 2 && !selectedTeam) || isLoading}
                     className={cn(
-                        "w-full py-4 rounded-xl font-bold uppercase tracking-wider text-center transition-all",
+                        "w-full py-4 font-black uppercase tracking-wider text-center transition-all border-2",
                         "disabled:opacity-50 disabled:cursor-not-allowed",
-                        step === 2 
-                            ? "bg-red-600 text-white" 
-                            : "bg-white text-black"
+                        step === 2
+                            ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
+                            : "bg-white text-black border-white hover:bg-gray-200"
                     )}
                 >
                     <div className="flex items-center justify-center gap-2">
                         {step === 0 && (
                             <>
                                 <span>Get Started</span>
-                                <ChevronRight className="w-5 h-5" />
+                                <ArrowRight01Icon className="w-5 h-5" />
                             </>
                         )}
                         {step === 1 && (
                             <>
                                 <span>Continue</span>
-                                <ChevronRight className="w-5 h-5" />
+                                <ArrowRight01Icon className="w-5 h-5" />
                             </>
                         )}
                         {step === 2 && (
@@ -389,9 +395,9 @@ const MobileOnboarding: React.FC = () => {
                 {step > 0 && (
                     <button
                         onClick={() => setStep(step - 1)}
-                        className="w-full py-3 text-gray-500 font-medium flex items-center justify-center gap-2"
+                        className="w-full py-3 text-gray-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-white transition-colors"
                     >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ArrowLeft01Icon className="w-4 h-4" />
                         <span>Back</span>
                     </button>
                 )}
@@ -403,7 +409,7 @@ const MobileOnboarding: React.FC = () => {
                             // Skip directly to dashboard without setting favorites
                             navigate('/dashboard');
                         }}
-                        className="w-full py-3 text-gray-600 text-sm"
+                        className="w-full py-3 text-gray-600 text-xs font-mono uppercase tracking-widest hover:text-white transition-colors"
                     >
                         Skip for now
                     </button>

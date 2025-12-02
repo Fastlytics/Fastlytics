@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import LandingNavbar from '@/components/LandingNavbar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobilePricing } from '@/components/mobile';
 
 const Pricing = () => {
+    const isMobile = useIsMobile();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
+
+    if (isMobile) {
+        return <MobilePricing />;
+    }
 
     const proPrices = {
         monthly: { price: 6.99, label: '/mo', period: 'Monthly' },
