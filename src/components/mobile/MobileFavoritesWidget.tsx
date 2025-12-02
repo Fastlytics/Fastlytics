@@ -6,12 +6,12 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
-import { 
-    ChampionIcon, 
-    UserGroupIcon, 
-    ArrowRight01Icon, 
-    Settings02Icon, 
-    FireIcon, 
+import {
+    ChampionIcon,
+    UserGroupIcon,
+    ArrowRight01Icon,
+    Settings02Icon,
+    FireIcon,
     CheckmarkCircle02Icon,
     StarIcon,
     Award01Icon
@@ -27,12 +27,12 @@ interface MobileFavoritesWidgetProps {
     isLoading: boolean;
 }
 
-const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({ 
-    profile, 
-    drivers, 
-    teams, 
-    schedule, 
-    isLoading 
+const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
+    profile,
+    drivers,
+    teams,
+    schedule,
+    isLoading
 }) => {
     const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
@@ -45,7 +45,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     }, []);
 
     const getDriverImage = (driverName: string) => {
-        const driver = openF1Drivers.find(d => 
+        const driver = openF1Drivers.find(d =>
             d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return driver?.headshot_url;
@@ -74,7 +74,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
         if (!schedule || schedule.length === 0) return 0;
         const now = new Date();
         let points = 0;
-        
+
         // Determine the season year from the first event
         const seasonYear = schedule[0]?.EventDate ? new Date(schedule[0].EventDate).getFullYear() : new Date().getFullYear();
         const hasFastestLapPoint = seasonYear >= 2019 && seasonYear <= 2024;
@@ -109,13 +109,13 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     // Full rivalry tracker with title contention logic
     const driverRivals = useMemo(() => {
         if (!favoriteDriver || drivers.length < 2) return null;
-        
+
         const index = drivers.findIndex(d => d === favoriteDriver);
         const leader = drivers[0];
-        
+
         // Title Contender Logic - same as desktop
         const isTitleContender = (leader.points - favoriteDriver.points) <= remainingPoints;
-        
+
         // Rivalry Status Logic
         const getRivalryStatus = (rival: DriverStanding | null) => {
             if (!rival) return 'none';
@@ -125,11 +125,11 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
         };
 
         // Determine which drivers to display
-        type DisplayDriver = { 
-            driver: DriverStanding; 
-            label: string; 
-            status: string; 
-            type: 'leader' | 'ahead' | 'you' | 'behind' | 'rival' 
+        type DisplayDriver = {
+            driver: DriverStanding;
+            label: string;
+            status: string;
+            type: 'leader' | 'ahead' | 'you' | 'behind' | 'rival'
         };
         let displayDrivers: DisplayDriver[] = [];
 
@@ -209,10 +209,10 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     if (!profile?.favorite_driver && !profile?.favorite_team) {
         return (
             <Link to="/account">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                    className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
                 >
                     <div className="flex items-start gap-3">
                         <div className="p-2 bg-red-600/20 rounded-lg flex-shrink-0">
@@ -267,9 +267,9 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             animate={{ opacity: 1, x: 0 }}
                             className={cn(
                                 "rounded-xl overflow-hidden active:scale-[0.98] transition-transform",
-                                driverRivals?.isTitleContender 
+                                driverRivals?.isTitleContender
                                     ? "bg-yellow-950/30 border border-yellow-600/30"
-                                    : "bg-gray-900 border border-gray-800"
+                                    : "bg-gray-900/50 border border-gray-800"
                             )}
                         >
                             <div className="p-4">
@@ -280,9 +280,9 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                             "h-14 w-14 border-2",
                                             driverRivals?.isTitleContender ? "border-yellow-500" : "border-red-600"
                                         )}>
-                                            <AvatarImage 
-                                                src={getDriverImage(favoriteDriver.name)} 
-                                                className="object-cover bg-gray-800" 
+                                            <AvatarImage
+                                                src={getDriverImage(favoriteDriver.name)}
+                                                className="object-cover bg-gray-800"
                                             />
                                             <AvatarFallback className="bg-gray-800">
                                                 {favoriteDriver.code}
@@ -360,7 +360,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                                     </div>
                                                 </div>
                                             ))}
-                                        
+
                                         {/* Gap to Leader if not P1 */}
                                         {driverRivals.gapToLeader > 0 && (
                                             <div className="text-[10px] text-gray-500 text-center mt-1">
@@ -413,17 +413,17 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="bg-gray-900 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                            className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
                         >
                             <div className="flex items-center gap-3">
                                 {/* Logo & Position */}
                                 <div className="relative">
                                     <div className="h-14 w-14 flex items-center justify-center bg-white/5 rounded-xl border border-gray-700 p-2">
                                         {getTeamLogo(favoriteTeam.team) ? (
-                                            <img 
-                                                src={getTeamLogo(favoriteTeam.team)!} 
-                                                alt={favoriteTeam.team} 
-                                                className="w-full h-full object-contain" 
+                                            <img
+                                                src={getTeamLogo(favoriteTeam.team)!}
+                                                alt={favoriteTeam.team}
+                                                className="w-full h-full object-contain"
                                             />
                                         ) : (
                                             <UserGroupIcon className="w-6 h-6 text-gray-400" />

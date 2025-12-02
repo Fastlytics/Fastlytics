@@ -20,13 +20,13 @@ interface MobileChampionshipWidgetProps {
     profile?: Profile | null;
 }
 
-const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({ 
-    drivers, 
-    teams, 
-    schedule, 
-    raceResults, 
-    isLoading, 
-    profile 
+const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
+    drivers,
+    teams,
+    schedule,
+    raceResults,
+    isLoading,
+    profile
 }) => {
     const [activeTab, setActiveTab] = useState<'drivers' | 'constructors'>('drivers');
     const topDrivers = drivers.slice(0, 5);
@@ -43,8 +43,8 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
     }, []);
 
     const getDriverImage = (driverCode: string, driverName: string) => {
-        const driver = openF1Drivers.find(d => 
-            d.name_acronym === driverCode || 
+        const driver = openF1Drivers.find(d =>
+            d.name_acronym === driverCode ||
             d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return driver?.headshot_url;
@@ -90,8 +90,8 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                     onClick={() => setActiveTab('drivers')}
                     className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all",
-                        activeTab === 'drivers' 
-                            ? "bg-red-600 text-white" 
+                        activeTab === 'drivers'
+                            ? "bg-red-600 text-white"
                             : "text-gray-500 active:bg-gray-800"
                     )}
                 >
@@ -102,8 +102,8 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                     onClick={() => setActiveTab('constructors')}
                     className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider transition-all",
-                        activeTab === 'constructors' 
-                            ? "bg-red-600 text-white" 
+                        activeTab === 'constructors'
+                            ? "bg-red-600 text-white"
                             : "text-gray-500 active:bg-gray-800"
                     )}
                 >
@@ -127,8 +127,8 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                         {activeTab === 'drivers' ? 'Drivers' : 'Constructors'}
                         <span className="text-gray-500 ml-1">Championship</span>
                     </h3>
-                    <Link 
-                        to={activeTab === 'drivers' ? '/standings/drivers' : '/standings/teams'} 
+                    <Link
+                        to={activeTab === 'drivers' ? '/standings/drivers' : '/standings/teams'}
                         className="text-[10px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1"
                     >
                         All <ArrowRight01Icon className="w-3 h-3" />
@@ -140,19 +140,19 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                     {activeTab === 'drivers' ? (
                         topDrivers.map((driver, index) => {
                             const isFavorite = profile?.favorite_driver && (
-                                driver.code === profile.favorite_driver || 
+                                driver.code === profile.favorite_driver ||
                                 driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
                             );
                             const isLeader = index === 0;
                             const isChampion = isLeader && driverChampionshipStatus === 'champion';
 
                             return (
-                                <Link 
+                                <Link
                                     key={driver.code}
                                     to={`/driver/${driver.code}`}
                                     className={cn(
-                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors",
-                                        isFavorite && "bg-red-600/5"
+                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors border-l-4",
+                                        isFavorite ? "bg-red-600/10 border-red-600" : "bg-gray-900/50 border-transparent"
                                     )}
                                 >
                                     {/* Position */}
@@ -168,9 +168,9 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                         "h-10 w-10 border-2",
                                         isFavorite ? "border-red-600" : "border-gray-700"
                                     )}>
-                                        <AvatarImage 
-                                            src={getDriverImage(driver.code, driver.name)} 
-                                            className="object-cover bg-gray-800" 
+                                        <AvatarImage
+                                            src={getDriverImage(driver.code, driver.name)}
+                                            className="object-cover bg-gray-800"
                                         />
                                         <AvatarFallback className="bg-gray-800 text-xs">
                                             {driver.code}
@@ -213,19 +213,19 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                     ) : (
                         topTeams.map((team, index) => {
                             const isFavorite = profile?.favorite_team && (
-                                team.team === profile.favorite_team || 
+                                team.team === profile.favorite_team ||
                                 team.team.toLowerCase().includes(profile.favorite_team.toLowerCase())
                             );
                             const isLeader = index === 0;
                             const isChampion = isLeader && teamChampionshipStatus === 'champion';
 
                             return (
-                                <Link 
+                                <Link
                                     key={team.team}
                                     to="/standings/teams"
                                     className={cn(
-                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors",
-                                        isFavorite && "bg-red-600/5"
+                                        "flex items-center gap-3 p-3 active:bg-gray-900/50 transition-colors border-l-4",
+                                        isFavorite ? "bg-red-600/10 border-red-600" : "bg-gray-900/50 border-transparent"
                                     )}
                                 >
                                     {/* Position */}
@@ -239,10 +239,10 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                     {/* Logo */}
                                     <div className="h-10 w-10 flex items-center justify-center bg-white/5 rounded-lg border border-gray-700 p-1.5">
                                         {getTeamLogo(team.team) ? (
-                                            <img 
-                                                src={getTeamLogo(team.team)!} 
-                                                alt={team.team} 
-                                                className="w-full h-full object-contain" 
+                                            <img
+                                                src={getTeamLogo(team.team)!}
+                                                alt={team.team}
+                                                className="w-full h-full object-contain"
                                             />
                                         ) : (
                                             <UserGroupIcon className="w-5 h-5 text-gray-400" />
@@ -283,7 +283,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 </div>
 
                 {/* View All Link */}
-                <Link 
+                <Link
                     to={activeTab === 'drivers' ? '/standings/drivers' : '/standings/teams'}
                     className="flex items-center justify-center gap-2 p-3 border-t border-gray-800 text-sm font-bold uppercase tracking-widest text-gray-500 active:bg-gray-900/50"
                 >
