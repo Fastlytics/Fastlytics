@@ -60,6 +60,12 @@ const TermsOfService = () => {
                 In no event shall Fastlytics or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on Fastlytics' website, even if Fastlytics or a Fastlytics authorized representative has been notified orally or in writing of the possibility of such damage.
               </p>
             </section>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">6. F1 Trademark Disclaimer</h2>
+              <p className="text-sm text-zinc-500 italic">
+                This website is unofficial and is not associated in any way with the Formula 1 companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing B.V.
+              </p>
+            </section>
           </div>
         </motion.div>
       </main>
