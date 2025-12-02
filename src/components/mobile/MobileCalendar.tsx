@@ -110,11 +110,10 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-all flex items-center justify-between mb-1 ${
-                                    selectedYear === year 
-                                        ? 'bg-red-600 text-white' 
-                                        : 'bg-gray-800/50 hover:bg-gray-800 text-gray-300'
-                                }`}
+                                className={`w-full p-4 text-left rounded-xl transition-all flex items-center justify-between mb-1 ${selectedYear === year
+                                    ? 'bg-red-600 text-white'
+                                    : 'bg-gray-800/50 hover:bg-gray-800 text-gray-300'
+                                    }`}
                             >
                                 <span className="text-lg font-bold">{year} Season</span>
                                 {selectedYear === year && (
@@ -131,7 +130,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
 
 // Next Race Hero Card
 interface NextRaceHeroProps {
-    event: ScheduleEvent & { 
+    event: ScheduleEvent & {
         countryCode?: string;
         displayDate: string;
         isSprint: boolean;
@@ -147,12 +146,9 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-red-950/40 border border-red-600/50"
+            className="relative overflow-hidden rounded-2xl bg-red-950 border-2 border-red-600"
             onClick={() => navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
         >
-            {/* Background decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-red-600/5 rounded-full blur-3xl" />
 
             <div className="relative p-5">
                 {/* Header with badge */}
@@ -195,7 +191,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
 
                 {/* Countdown */}
                 {nextSession && (
-                    <div className="bg-black/40 backdrop-blur-sm rounded-xl p-4 border border-gray-800/50">
+                    <div className="bg-black rounded-xl p-4 border border-gray-800">
                         <div className="flex items-center justify-center gap-1.5 mb-3">
                             <Clock01Icon className="w-3.5 h-3.5 text-red-500" />
                             <span className="text-xs uppercase tracking-wider text-gray-400">
@@ -218,9 +214,9 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
 
 // Compact Race Card for mobile
 interface MobileRaceCardProps {
-    event: ScheduleEvent & { 
-        result?: RaceResult; 
-        isUpcoming: boolean; 
+    event: ScheduleEvent & {
+        result?: RaceResult;
+        isUpcoming: boolean;
         isSprint: boolean;
         countryCode?: string;
         displayDate: string;
@@ -238,28 +234,25 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.98 }}
-            className={`relative overflow-hidden rounded-xl transition-all ${
-                isCompleted 
-                    ? 'bg-gray-900/40 border border-gray-800/50' 
-                    : 'bg-gray-900/70 border border-gray-700/50'
-            }`}
+            className={`relative overflow-hidden rounded-xl transition-all ${isCompleted
+                ? 'bg-gray-900/50 border border-gray-800/50'
+                : 'bg-gray-900/50 border border-gray-800'
+                }`}
             onClick={() => navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
         >
             <div className="p-3.5">
                 <div className="flex items-center gap-3">
                     {/* Round Number */}
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isCompleted ? 'bg-gray-800/50' : 'bg-gray-800'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isCompleted ? 'bg-gray-800/50' : 'bg-gray-800'
+                        }`}>
                         <span className={`text-xs font-bold ${isCompleted ? 'text-gray-500' : 'text-gray-300'}`}>
                             {event.RoundNumber}
                         </span>
                     </div>
 
                     {/* Flag */}
-                    <div className={`w-10 h-7 rounded overflow-hidden flex-shrink-0 border ${
-                        isCompleted ? 'border-gray-800 opacity-70' : 'border-gray-700'
-                    }`}>
+                    <div className={`w-10 h-7 rounded overflow-hidden flex-shrink-0 border ${isCompleted ? 'border-gray-800 opacity-70' : 'border-gray-700'
+                        }`}>
                         {event.countryCode && (
                             <img
                                 src={`https://flagcdn.com/h80/${event.countryCode}.png`}
@@ -272,9 +265,8 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                     {/* Event Info */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                            <h3 className={`font-bold text-sm uppercase tracking-tight truncate ${
-                                isCompleted ? 'text-gray-400' : 'text-white'
-                            }`}>
+                            <h3 className={`font-bold text-sm uppercase tracking-tight truncate ${isCompleted ? 'text-gray-400' : 'text-white'
+                                }`}>
                                 {event.EventName.replace('Grand Prix', 'GP')}
                             </h3>
                             {event.isSprint && (
@@ -303,9 +295,8 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                                 <span className="text-[10px] text-gray-500">{event.result.team?.split(' ')[0]}</span>
                             </div>
                         ) : (
-                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${
-                                event.isUpcoming ? 'bg-blue-600/20 text-blue-400' : 'bg-gray-800 text-gray-500'
-                            }`}>
+                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${event.isUpcoming ? 'bg-blue-600/20 text-blue-400' : 'bg-gray-800 text-gray-500'
+                                }`}>
                                 {event.isUpcoming ? 'TBD' : '-'}
                             </span>
                         )}
@@ -342,7 +333,7 @@ const MobileCalendar: React.FC = () => {
         let nextRaceEvent: (ScheduleEvent & { countryCode?: string; displayDate: string; isSprint: boolean }) | null = null;
         let nextSessionData: { name: string; date: Date } | null = null;
 
-        const sortedSchedule = [...scheduleData].sort((a, b) => 
+        const sortedSchedule = [...scheduleData].sort((a, b) =>
             new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
         );
 
@@ -399,12 +390,12 @@ const MobileCalendar: React.FC = () => {
     // Filter races excluding the next race (it's shown in hero)
     const filteredRaces = useMemo(() => {
         let races = combinedRaceData;
-        
+
         // Exclude next race from list as it's shown in hero
         if (nextRace) {
             races = races.filter(r => r.EventName !== nextRace.EventName);
         }
-        
+
         if (filter === 'upcoming') return races.filter(r => r.isUpcoming);
         if (filter === 'completed') return races.filter(r => !r.isUpcoming);
         return races;
@@ -452,11 +443,10 @@ const MobileCalendar: React.FC = () => {
                             <button
                                 key={f.key}
                                 onClick={() => setFilter(f.key)}
-                                className={`flex-1 px-3 py-2 text-xs font-bold uppercase rounded-lg transition-all ${
-                                    filter === f.key 
-                                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' 
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
+                                className={`flex-1 px-3 py-2 text-xs font-bold uppercase rounded-lg transition-all ${filter === f.key
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                                    : 'text-gray-400 hover:text-white'
+                                    }`}
                             >
                                 {f.key === 'all' ? 'All' : f.key === 'upcoming' ? 'Up' : 'Done'}
                             </button>
@@ -467,10 +457,10 @@ const MobileCalendar: React.FC = () => {
                 {/* Next Race Hero Card */}
                 {nextRace && filter !== 'completed' && (
                     <div className="px-4 pb-4">
-                        <NextRaceHero 
-                            event={nextRace} 
-                            nextSession={nextSession} 
-                            selectedYear={selectedYear} 
+                        <NextRaceHero
+                            event={nextRace}
+                            nextSession={nextSession}
+                            selectedYear={selectedYear}
                         />
                     </div>
                 )}

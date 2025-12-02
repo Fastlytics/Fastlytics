@@ -55,11 +55,10 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-colors flex items-center justify-between ${
-                                    selectedYear === year 
-                                        ? 'bg-red-600 text-white' 
-                                        : 'hover:bg-gray-800 text-gray-300'
-                                }`}
+                                className={`w-full p-4 text-left rounded-xl transition-colors flex items-center justify-between ${selectedYear === year
+                                    ? 'bg-red-600 text-white'
+                                    : 'hover:bg-gray-800 text-gray-300'
+                                    }`}
                             >
                                 <span className="text-lg font-bold">{year} Season</span>
                                 {selectedYear === year && (
@@ -112,8 +111,8 @@ const getTeamCarImage = (teamName: string): string | undefined => {
 };
 
 // Leader Card Component - P1
-const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 'champion'; selectedYear: number }> = ({ 
-    team, championshipStatus, selectedYear 
+const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 'champion'; selectedYear: number }> = ({
+    team, championshipStatus, selectedYear
 }) => {
     const teamColor = getTeamColorClass(team.team);
     const carImage = selectedYear === 2025 ? getTeamCarImage(team.team) : undefined;
@@ -123,7 +122,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-yellow-950/30 border-2 border-yellow-500/50"
+            className="relative overflow-hidden rounded-2xl bg-yellow-950 border-2 border-yellow-500"
         >
             {/* Crown Icon */}
             <div className="absolute -top-2 -right-2 text-yellow-500/20">
@@ -191,9 +190,9 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
 };
 
 // Regular Team Row Component (Expandable)
-const TeamRow: React.FC<{ 
-    team: TeamStanding; 
-    index: number; 
+const TeamRow: React.FC<{
+    team: TeamStanding;
+    index: number;
     selectedYear: number;
     isExpanded: boolean;
     onToggle: () => void;
@@ -218,7 +217,7 @@ const TeamRow: React.FC<{
             transition={{ delay: index * 0.03 }}
             layout
             onClick={onToggle}
-            className="relative bg-gray-900/60 rounded-xl overflow-hidden border border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
+            className="relative bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
         >
             {/* Team Color Bar */}
             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-f1-${teamColor}`} />
@@ -253,8 +252,8 @@ const TeamRow: React.FC<{
                                 )}
                                 <div className={cn(
                                     "absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black",
-                                    team.rank === 2 ? "bg-gray-300 text-black" : 
-                                    team.rank === 3 ? "bg-amber-600 text-black" : "bg-gray-600 text-white"
+                                    team.rank === 2 ? "bg-gray-300 text-black" :
+                                        team.rank === 3 ? "bg-amber-600 text-black" : "bg-gray-600 text-white"
                                 )}>
                                     {team.rank}
                                 </div>
@@ -295,8 +294,8 @@ const TeamRow: React.FC<{
                         <div className="w-8 text-center">
                             <span className={cn(
                                 "text-lg font-black",
-                                team.rank === 2 ? "text-gray-300" : 
-                                team.rank === 3 ? "text-amber-600" : "text-gray-500"
+                                team.rank === 2 ? "text-gray-300" :
+                                    team.rank === 3 ? "text-amber-600" : "text-gray-500"
                             )}>
                                 {team.rank}
                             </span>
@@ -411,8 +410,8 @@ const MobileTeamStandings: React.FC = () => {
                         <>
                             {/* P1 Leader Card */}
                             {leader && (
-                                <LeaderCard 
-                                    team={leader} 
+                                <LeaderCard
+                                    team={leader}
                                     championshipStatus={championshipStatus}
                                     selectedYear={selectedYear}
                                 />

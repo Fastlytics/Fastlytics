@@ -199,11 +199,10 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({ isOpen, onClose, sess
                                     onSelect(session.type);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-all flex items-center justify-between mb-1 ${
-                                    selectedSession === session.type
-                                        ? 'bg-red-600 text-white'
-                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                                }`}
+                                className={`w-full p-4 text-left rounded-xl transition-all flex items-center justify-between mb-1 ${selectedSession === session.type
+                                    ? 'bg-red-600 text-white'
+                                    : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                    }`}
                             >
                                 <span className="text-base font-bold uppercase">{session.name}</span>
                                 {selectedSession === session.type && (
@@ -264,7 +263,7 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className={cn(
                 "rounded-xl overflow-hidden",
-                isNext ? "bg-red-950/50 border border-red-600/50" : "bg-gray-900 border border-gray-800"
+                isNext ? "bg-red-950 border-2 border-red-600" : "bg-gray-900 border border-gray-800"
             )}
         >
             <div className="p-4">
@@ -399,14 +398,14 @@ interface HighlightCardProps {
 
 const HighlightCard: React.FC<HighlightCardProps> = ({ data, getDriverImage, getTeamColorClass }) => {
     const Icon = data.icon;
-    
+
     return (
         <div className={cn("rounded-2xl border p-6", data.bgColor, data.borderColor)}>
             <div className="flex items-start gap-4">
                 <Avatar className={cn("w-16 h-16 border-2", data.borderColor)}>
-                    <AvatarImage 
-                        src={getDriverImage(data.driver.driverCode, data.driver.fullName)} 
-                        className="object-cover object-top" 
+                    <AvatarImage
+                        src={getDriverImage(data.driver.driverCode, data.driver.fullName)}
+                        className="object-cover object-top"
                     />
                     <AvatarFallback className={cn("text-lg font-bold", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
                         {data.driver.driverCode}
@@ -439,14 +438,14 @@ interface StackedHighlightCardsProps {
     getTeamColorClass: (team: string | undefined) => string;
 }
 
-const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({ 
-    highlights, 
-    getDriverImage, 
-    getTeamColorClass 
+const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
+    highlights,
+    getDriverImage,
+    getTeamColorClass
 }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const x = useMotionValue(0);
-    
+
     const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const threshold = 50;
         if (Math.abs(info.offset.x) > threshold) {
@@ -473,7 +472,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
                 const isTop = relativeIndex === 0;
                 const isSecond = relativeIndex === 1;
                 const isThird = relativeIndex === 2;
-                
+
                 // Stack effect: cards behind are slightly scaled down and offset
                 const scale = isTop ? 1 : isSecond ? 0.95 : 0.9;
                 const yOffset = isTop ? 0 : isSecond ? 8 : 16;
@@ -499,15 +498,15 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
                         dragElastic={0.2}
                         onDragEnd={isTop ? handleDragEnd : undefined}
                     >
-                        <HighlightCard 
-                            data={highlight} 
+                        <HighlightCard
+                            data={highlight}
                             getDriverImage={getDriverImage}
                             getTeamColorClass={getTeamColorClass}
                         />
                     </motion.div>
                 );
             })}
-            
+
             {/* Indicator Dots */}
             {highlights.length > 1 && (
                 <div className="absolute -bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-2">
@@ -523,7 +522,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
                     ))}
                 </div>
             )}
-            
+
             {/* Swipe hint */}
             {highlights.length > 1 && (
                 <div className="absolute -bottom-0 right-0 flex items-center gap-1 text-gray-600">
@@ -555,12 +554,12 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={cn(
-                "rounded-xl transition-colors overflow-hidden",
-                isFavorite ? "bg-red-950/30 border border-red-600/30" : "bg-gray-900"
+                "rounded-xl transition-colors overflow-hidden border",
+                isFavorite ? "bg-red-900/20 border-red-600" : "bg-gray-900 border-transparent"
             )}
         >
             {/* Main Row - Clickable */}
-            <div 
+            <div
                 className="flex items-center gap-3 p-3 cursor-pointer active:bg-gray-800/50"
                 onClick={onToggle}
             >
@@ -569,8 +568,8 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                     "w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm",
                     isPodium ? (
                         position === 1 ? "bg-yellow-900/50 text-yellow-500" :
-                        position === 2 ? "bg-gray-700 text-gray-300" :
-                        "bg-amber-900/50 text-amber-500"
+                            position === 2 ? "bg-gray-700 text-gray-300" :
+                                "bg-amber-900/50 text-amber-500"
                     ) : "bg-gray-800 text-gray-400"
                 )}>
                     {position}
@@ -682,8 +681,8 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                                                 "text-[10px] font-bold",
                                                 result.gridPosition > position ? "text-green-500" : "text-red-500"
                                             )}>
-                                                {result.gridPosition > position 
-                                                    ? `↑ +${result.gridPosition - position}` 
+                                                {result.gridPosition > position
+                                                    ? `↑ +${result.gridPosition - position}`
                                                     : `↓ ${position - result.gridPosition}`}
                                             </div>
                                         )}
@@ -781,8 +780,8 @@ const MobileRace: React.FC = () => {
             return driverImageMap[driverCode];
         }
         // Fallback to OpenF1
-        const driver = openF1Drivers.find(d => 
-            d.name_acronym === driverCode || 
+        const driver = openF1Drivers.find(d =>
+            d.name_acronym === driverCode ||
             d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return driver?.headshot_url;
@@ -860,7 +859,7 @@ const MobileRace: React.FC = () => {
     // Build highlight cards data
     const highlightCards = useMemo((): HighlightCardData[] => {
         const cards: HighlightCardData[] = [];
-        
+
         if (raceWinner) {
             cards.push({
                 type: 'winner',
@@ -874,7 +873,7 @@ const MobileRace: React.FC = () => {
                 timeValue: formatRaceTime(raceWinner.time, true),
             });
         }
-        
+
         if (fastestLapDriver) {
             cards.push({
                 type: 'fastestLap',
@@ -888,7 +887,7 @@ const MobileRace: React.FC = () => {
                 timeValue: fastestLapDriver.driverFastestLapTime || fastestLapDriver.fastestLapTime || '-',
             });
         }
-        
+
         if (poleDriver) {
             cards.push({
                 type: 'pole',
@@ -902,7 +901,7 @@ const MobileRace: React.FC = () => {
                 timeValue: 'P1',
             });
         }
-        
+
         return cards;
     }, [raceWinner, fastestLapDriver, poleDriver]);
 
@@ -1004,179 +1003,179 @@ const MobileRace: React.FC = () => {
                 </div>
             </div>
 
-                {shouldShowSchedule ? (
-                    sessionSchedule ? (
-                        // UPCOMING RACE - SCHEDULE VIEW
-                        <div className="px-4 py-6 space-y-6">
-                            {/* Countdown Hero */}
-                            {nextSession && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-red-950/30 rounded-2xl border border-red-600/30 p-6"
-                                >
-                                    <div className="text-center mb-4">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                            <span className="text-xs font-bold uppercase tracking-wider text-red-400">
-                                                Countdown to {nextSession.name}
-                                            </span>
-                                        </div>
-                                        <div className="text-sm text-gray-400 font-mono">
-                                            {new Date(nextSession.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-                                        </div>
+            {shouldShowSchedule ? (
+                sessionSchedule ? (
+                    // UPCOMING RACE - SCHEDULE VIEW
+                    <div className="px-4 py-6 space-y-6">
+                        {/* Countdown Hero */}
+                        {nextSession && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-red-950/30 rounded-2xl border border-red-600/30 p-6"
+                            >
+                                <div className="text-center mb-4">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                        <span className="text-xs font-bold uppercase tracking-wider text-red-400">
+                                            Countdown to {nextSession.name}
+                                        </span>
                                     </div>
-                                    <MobileCountdown targetDate={new Date(nextSession.date)} />
-                                </motion.div>
-                            )}
-
-                            {/* Time Format Toggle */}
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-base font-bold uppercase tracking-tight text-gray-400">
-                                    Weekend Schedule
-                                </h2>
-                                <div className="flex bg-gray-900 rounded-lg p-0.5 border border-gray-800">
-                                    <button
-                                        onClick={() => setIs24Hour(true)}
-                                        className={cn(
-                                            "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
-                                            is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
-                                        )}
-                                    >
-                                        24H
-                                    </button>
-                                    <button
-                                        onClick={() => setIs24Hour(false)}
-                                        className={cn(
-                                            "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
-                                            !is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
-                                        )}
-                                    >
-                                        12H
-                                    </button>
+                                    <div className="text-sm text-gray-400 font-mono">
+                                        {new Date(nextSession.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Session List */}
-                            <div className="space-y-2.5">
-                                {sessionSchedule.sessions.map((session, idx) => {
-                                    const sessionType = getSessionType(session.name);
-                                    const isNext = nextSession && session.name === nextSession.name;
-                                    const isAvailable = isSessionAvailable(sessionType);
-                                    const isLive = isSessionLive(session.date, sessionType);
-
-                                    return (
-                                        <ScheduleSessionCard
-                                            key={idx}
-                                            session={session}
-                                            isNext={isNext}
-                                            isLive={isLive}
-                                            isAvailable={isAvailable}
-                                            is24Hour={is24Hour}
-                                            onViewResults={() => {
-                                                let targetSession = sessionType;
-                                                if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
-                                                    if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
-                                                }
-                                                if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
-                                                    if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
-                                                }
-                                                setSelectedSession(targetSession);
-                                                setShowAnalysisView(true);
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </div>
-
-                            {/* View Past Sessions if available */}
-                            {availableSessions.length > 0 && (
-                                <motion.button
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    onClick={() => setShowAnalysisView(true)}
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                                >
-                                    <Analytics01Icon className="w-4 h-4 text-red-500" />
-                                    <span className="text-sm font-bold uppercase tracking-wider">View Session Results</span>
-                                </motion.button>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-center h-64">
-                            <div className="w-10 h-10 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin" />
-                        </div>
-                    )
-                ) : (
-                    // RESULTS VIEW
-                    <div className="px-4 py-4 space-y-4">
-                        {/* Stacked Highlight Cards (Winner, Fastest Lap, Pole) */}
-                        {highlightCards.length > 0 && activeTab === 'overview' && (
-                            <div className="mb-0">
-                                <StackedHighlightCards 
-                                    highlights={highlightCards}
-                                    getDriverImage={getDriverImage}
-                                    getTeamColorClass={getTeamColorClass}
-                                />
-                            </div>
+                                <MobileCountdown targetDate={new Date(nextSession.date)} />
+                            </motion.div>
                         )}
 
-                        {/* Results Header */}
+                        {/* Time Format Toggle */}
                         <div className="flex items-center justify-between">
                             <h2 className="text-base font-bold uppercase tracking-tight text-gray-400">
-                                {availableSessions.find(s => s.type === selectedSession)?.name || 'Results'}
+                                Weekend Schedule
                             </h2>
-                            <span className="text-xs text-gray-600 font-mono">
-                                {sortedResults.length} drivers
-                            </span>
+                            <div className="flex bg-gray-900 rounded-lg p-0.5 border border-gray-800">
+                                <button
+                                    onClick={() => setIs24Hour(true)}
+                                    className={cn(
+                                        "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                                        is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
+                                    )}
+                                >
+                                    24H
+                                </button>
+                                <button
+                                    onClick={() => setIs24Hour(false)}
+                                    className={cn(
+                                        "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                                        !is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
+                                    )}
+                                >
+                                    12H
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Results List */}
-                        {isLoadingResults ? (
-                            <div className="space-y-2">
-                                {[...Array(10)].map((_, i) => (
-                                    <div key={i} className="h-16 bg-gray-900 animate-pulse rounded-xl" />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {sortedResults.map((result, idx) => {
-                                    const position = selectedSession.startsWith('FP') || selectedSession.startsWith('Q') || selectedSession.startsWith('SQ')
-                                        ? idx + 1
-                                        : result.position ?? idx + 1;
-                                    const isFavorite = profile?.favorite_driver && (
-                                        result.driverCode === profile.favorite_driver ||
-                                        result.fullName.toLowerCase().includes(profile.favorite_driver.toLowerCase())
-                                    );
+                        {/* Session List */}
+                        <div className="space-y-2.5">
+                            {sessionSchedule.sessions.map((session, idx) => {
+                                const sessionType = getSessionType(session.name);
+                                const isNext = nextSession && session.name === nextSession.name;
+                                const isAvailable = isSessionAvailable(sessionType);
+                                const isLive = isSessionLive(session.date, sessionType);
 
-                                    return (
-                                        <ResultRow
-                                            key={result.driverCode}
-                                            result={result}
-                                            position={position}
-                                            sessionType={selectedSession}
-                                            isFavorite={!!isFavorite}
-                                            driverImage={getDriverImage(result.driverCode, result.fullName)}
-                                            isExpanded={expandedDriver === result.driverCode}
-                                            onToggle={() => setExpandedDriver(
-                                                expandedDriver === result.driverCode ? null : result.driverCode
-                                            )}
-                                        />
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <ScheduleSessionCard
+                                        key={idx}
+                                        session={session}
+                                        isNext={isNext}
+                                        isLive={isLive}
+                                        isAvailable={isAvailable}
+                                        is24Hour={is24Hour}
+                                        onViewResults={() => {
+                                            let targetSession = sessionType;
+                                            if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
+                                                if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
+                                            }
+                                            if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
+                                                if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
+                                            }
+                                            setSelectedSession(targetSession);
+                                            setShowAnalysisView(true);
+                                        }}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        {/* View Past Sessions if available */}
+                        {availableSessions.length > 0 && (
+                            <motion.button
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                onClick={() => setShowAnalysisView(true)}
+                                className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                            >
+                                <Analytics01Icon className="w-4 h-4 text-red-500" />
+                                <span className="text-sm font-bold uppercase tracking-wider">View Session Results</span>
+                            </motion.button>
                         )}
                     </div>
-                )}
+                ) : (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="w-10 h-10 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin" />
+                    </div>
+                )
+            ) : (
+                // RESULTS VIEW
+                <div className="px-4 py-4 space-y-4">
+                    {/* Stacked Highlight Cards (Winner, Fastest Lap, Pole) */}
+                    {highlightCards.length > 0 && activeTab === 'overview' && (
+                        <div className="mb-0">
+                            <StackedHighlightCards
+                                highlights={highlightCards}
+                                getDriverImage={getDriverImage}
+                                getTeamColorClass={getTeamColorClass}
+                            />
+                        </div>
+                    )}
 
-                {/* Session Selector Modal */}
-                <SessionSelector
-                    isOpen={showSessionSelector}
-                    onClose={() => setShowSessionSelector(false)}
-                    sessions={availableSessions}
-                    selectedSession={selectedSession}
-                    onSelect={setSelectedSession}
-                />
+                    {/* Results Header */}
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-base font-bold uppercase tracking-tight text-gray-400">
+                            {availableSessions.find(s => s.type === selectedSession)?.name || 'Results'}
+                        </h2>
+                        <span className="text-xs text-gray-600 font-mono">
+                            {sortedResults.length} drivers
+                        </span>
+                    </div>
+
+                    {/* Results List */}
+                    {isLoadingResults ? (
+                        <div className="space-y-2">
+                            {[...Array(10)].map((_, i) => (
+                                <div key={i} className="h-16 bg-gray-900 animate-pulse rounded-xl" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {sortedResults.map((result, idx) => {
+                                const position = selectedSession.startsWith('FP') || selectedSession.startsWith('Q') || selectedSession.startsWith('SQ')
+                                    ? idx + 1
+                                    : result.position ?? idx + 1;
+                                const isFavorite = profile?.favorite_driver && (
+                                    result.driverCode === profile.favorite_driver ||
+                                    result.fullName.toLowerCase().includes(profile.favorite_driver.toLowerCase())
+                                );
+
+                                return (
+                                    <ResultRow
+                                        key={result.driverCode}
+                                        result={result}
+                                        position={position}
+                                        sessionType={selectedSession}
+                                        isFavorite={!!isFavorite}
+                                        driverImage={getDriverImage(result.driverCode, result.fullName)}
+                                        isExpanded={expandedDriver === result.driverCode}
+                                        onToggle={() => setExpandedDriver(
+                                            expandedDriver === result.driverCode ? null : result.driverCode
+                                        )}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Session Selector Modal */}
+            <SessionSelector
+                isOpen={showSessionSelector}
+                onClose={() => setShowSessionSelector(false)}
+                sessions={availableSessions}
+                selectedSession={selectedSession}
+                onSelect={setSelectedSession}
+            />
 
             {/* Custom Bottom Nav for Analysis View */}
             {!shouldShowSchedule && (

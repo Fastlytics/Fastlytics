@@ -57,11 +57,10 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-colors flex items-center justify-between ${
-                                    selectedYear === year 
-                                        ? 'bg-red-600 text-white' 
-                                        : 'hover:bg-gray-800 text-gray-300'
-                                }`}
+                                className={`w-full p-4 text-left rounded-xl transition-colors flex items-center justify-between ${selectedYear === year
+                                    ? 'bg-red-600 text-white'
+                                    : 'hover:bg-gray-800 text-gray-300'
+                                    }`}
                             >
                                 <span className="text-lg font-bold">{year} Season</span>
                                 {selectedYear === year && (
@@ -133,8 +132,8 @@ const getTeamColorClass = (teamName: string | undefined): string => {
 };
 
 // Leader Card Component - P1
-const LeaderCard: React.FC<{ driver: DriverStanding; championshipStatus: 'leader' | 'champion'; selectedYear: number }> = ({ 
-    driver, championshipStatus, selectedYear 
+const LeaderCard: React.FC<{ driver: DriverStanding; championshipStatus: 'leader' | 'champion'; selectedYear: number }> = ({
+    driver, championshipStatus, selectedYear
 }) => {
     const teamColor = getTeamColorClass(driver.team);
     const driverIsRookie = isRookie(driver.code, selectedYear);
@@ -143,7 +142,7 @@ const LeaderCard: React.FC<{ driver: DriverStanding; championshipStatus: 'leader
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-yellow-950/30 border-2 border-yellow-500/50"
+            className="relative overflow-hidden rounded-2xl bg-yellow-950 border-2 border-yellow-500"
         >
             {/* Crown Icon */}
             <div className="absolute -top-2 -right-2 text-yellow-500/20">
@@ -214,9 +213,9 @@ const LeaderCard: React.FC<{ driver: DriverStanding; championshipStatus: 'leader
 };
 
 // Regular Driver Row Component (Expandable)
-const DriverRow: React.FC<{ 
-    driver: DriverStanding; 
-    index: number; 
+const DriverRow: React.FC<{
+    driver: DriverStanding;
+    index: number;
     selectedYear: number;
     openF1Drivers: OpenF1Driver[];
     isExpanded: boolean;
@@ -239,8 +238,8 @@ const DriverRow: React.FC<{
             return driverImageMap[driverCode];
         }
         const openF1Driver = openF1Drivers.find(
-            d => d.name_acronym === driverCode || 
-            d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
+            d => d.name_acronym === driverCode ||
+                d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return openF1Driver?.headshot_url;
     };
@@ -255,7 +254,7 @@ const DriverRow: React.FC<{
             transition={{ delay: index * 0.03 }}
             layout
             onClick={onToggle}
-            className="relative bg-gray-900/60 rounded-xl overflow-hidden border border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
+            className="relative bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800 active:scale-[0.98] transition-transform cursor-pointer"
         >
             {/* Team Color Bar */}
             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-f1-${teamColor}`} />
@@ -282,17 +281,17 @@ const DriverRow: React.FC<{
                                     />
                                 ) : (
                                     <Avatar className="w-full h-full border-2 border-gray-700">
-                                        <AvatarImage 
-                                            src={driverImage} 
-                                            className="object-cover object-top bg-gray-800" 
+                                        <AvatarImage
+                                            src={driverImage}
+                                            className="object-cover object-top bg-gray-800"
                                         />
                                         <AvatarFallback className="text-xl">{driver.code}</AvatarFallback>
                                     </Avatar>
                                 )}
                                 <div className={cn(
                                     "absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black",
-                                    driver.rank === 2 ? "bg-gray-300 text-black" : 
-                                    driver.rank === 3 ? "bg-amber-600 text-black" : "bg-gray-600 text-white"
+                                    driver.rank === 2 ? "bg-gray-300 text-black" :
+                                        driver.rank === 3 ? "bg-amber-600 text-black" : "bg-gray-600 text-white"
                                 )}>
                                     {driver.rank}
                                 </div>
@@ -339,8 +338,8 @@ const DriverRow: React.FC<{
                         <div className="w-8 text-center">
                             <span className={cn(
                                 "text-lg font-black",
-                                driver.rank === 2 ? "text-gray-300" : 
-                                driver.rank === 3 ? "text-amber-600" : "text-gray-500"
+                                driver.rank === 2 ? "text-gray-300" :
+                                    driver.rank === 3 ? "text-amber-600" : "text-gray-500"
                             )}>
                                 {driver.rank}
                             </span>
@@ -356,9 +355,9 @@ const DriverRow: React.FC<{
                                 />
                             ) : (
                                 <Avatar className="h-full w-full">
-                                    <AvatarImage 
-                                        src={driverImage} 
-                                        className="object-cover object-top bg-gray-800" 
+                                    <AvatarImage
+                                        src={driverImage}
+                                        className="object-cover object-top bg-gray-800"
                                     />
                                     <AvatarFallback>{driver.code}</AvatarFallback>
                                 </Avatar>
@@ -470,8 +469,8 @@ const MobileDriverStandings: React.FC = () => {
                         <>
                             {/* P1 Leader Card */}
                             {leader && (
-                                <LeaderCard 
-                                    driver={leader} 
+                                <LeaderCard
+                                    driver={leader}
                                     championshipStatus={championshipStatus}
                                     selectedYear={selectedYear}
                                 />
