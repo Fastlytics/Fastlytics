@@ -526,7 +526,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
             
             {/* Swipe hint */}
             {highlights.length > 1 && (
-                <div className="absolute -bottom-4 right-0 flex items-center gap-1 text-gray-600">
+                <div className="absolute -bottom-0 right-0 flex items-center gap-1 text-gray-600">
                     <span className="text-[10px] uppercase tracking-wider">Swipe</span>
                     <ArrowLeft01Icon className="w-3 h-3 rotate-180" />
                 </div>
@@ -542,9 +542,11 @@ interface ResultRowProps {
     sessionType: string;
     isFavorite: boolean;
     driverImage?: string;
+    isExpanded: boolean;
+    onToggle: () => void;
 }
 
-const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, isFavorite, driverImage }) => {
+const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, isFavorite, driverImage, isExpanded, onToggle }) => {
     const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
     const isPodium = position <= 3;
 
@@ -553,57 +555,155 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={cn(
-                "flex items-center gap-3 p-3 rounded-xl transition-colors",
+                "rounded-xl transition-colors overflow-hidden",
                 isFavorite ? "bg-red-950/30 border border-red-600/30" : "bg-gray-900"
             )}
         >
-            {/* Position */}
-            <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm",
-                isPodium ? (
-                    position === 1 ? "bg-yellow-900/50 text-yellow-500" :
-                    position === 2 ? "bg-gray-700 text-gray-300" :
-                    "bg-amber-900/50 text-amber-500"
-                ) : "bg-gray-800 text-gray-400"
-            )}>
-                {position}
-            </div>
-
-            {/* Driver Avatar */}
-            <Avatar className="w-10 h-10 border border-gray-700">
-                <AvatarImage src={driverImage} className="object-cover object-top" />
-                <AvatarFallback className={cn("text-xs font-bold", `bg-f1-${getTeamColorClass(result.team)}`)}>
-                    {result.driverCode}
-                </AvatarFallback>
-            </Avatar>
-
-            {/* Driver Info */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm text-white truncate">{result.fullName}</span>
-                    {result.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500 flex-shrink-0" />}
+            {/* Main Row - Clickable */}
+            <div 
+                className="flex items-center gap-3 p-3 cursor-pointer active:bg-gray-800/50"
+                onClick={onToggle}
+            >
+                {/* Position */}
+                <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm",
+                    isPodium ? (
+                        position === 1 ? "bg-yellow-900/50 text-yellow-500" :
+                        position === 2 ? "bg-gray-700 text-gray-300" :
+                        "bg-amber-900/50 text-amber-500"
+                    ) : "bg-gray-800 text-gray-400"
+                )}>
+                    {position}
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", `bg-f1-${getTeamColorClass(result.team)}`)} />
-                    <span className="text-xs text-gray-500 truncate">{result.team}</span>
-                </div>
-            </div>
 
-            {/* Time/Gap */}
-            <div className="text-right flex-shrink-0">
-                {isRaceOrSprint ? (
-                    <>
-                        <div className="text-xs font-mono text-gray-300">
-                            {formatRaceTime(result.time, position === 1)}
-                        </div>
-                        {result.points !== null && result.points > 0 && (
-                            <div className="text-[10px] font-bold text-red-500">+{result.points} PTS</div>
+                {/* Driver Avatar */}
+                <Avatar className="w-10 h-10 border border-gray-700">
+                    <AvatarImage src={driverImage} className="object-cover object-top" />
+                    <AvatarFallback className={cn("text-xs font-bold", `bg-f1-${getTeamColorClass(result.team)}`)}>
+                        {result.driverCode}
+                    </AvatarFallback>
+                </Avatar>
+
+                {/* Driver Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-sm text-white truncate">{result.fullName}</span>
+                        {result.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500 flex-shrink-0" />}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", `bg-f1-${getTeamColorClass(result.team)}`)} />
+                        <span className="text-xs text-gray-500 truncate">{result.team}</span>
+                    </div>
+                </div>
+
+                {/* Time/Gap + Expand Indicator */}
+                <div className="flex items-center gap-2">
+                    <div className="text-right flex-shrink-0">
+                        {isRaceOrSprint ? (
+                            <>
+                                <div className="text-xs font-mono text-gray-300">
+                                    {formatRaceTime(result.time, position === 1)}
+                                </div>
+                                {result.points !== null && result.points > 0 && (
+                                    <div className="text-[10px] font-bold text-red-500">+{result.points} PTS</div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-xs font-mono text-gray-300">{result.fastestLapTime || '-'}</div>
                         )}
-                    </>
-                ) : (
-                    <div className="text-xs font-mono text-gray-300">{result.fastestLapTime || '-'}</div>
-                )}
+                    </div>
+                    <ArrowDown01Icon className={cn(
+                        "w-4 h-4 text-gray-500 transition-transform",
+                        isExpanded && "rotate-180"
+                    )} />
+                </div>
             </div>
+
+            {/* Expanded Stats */}
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-3 pb-3 pt-1 border-t border-gray-800">
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Race Time */}
+                                {isRaceOrSprint && result.time && (
+                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Race Time</div>
+                                        <div className="text-sm font-mono text-white">
+                                            {position === 1 ? formatRaceTime(result.time, true) : result.time}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fastest Lap */}
+                                {isRaceOrSprint && (
+                                    <div className={cn(
+                                        "rounded-lg p-2.5",
+                                        result.isFastestLap ? "bg-purple-900/30 border border-purple-600/30" : "bg-gray-800/50"
+                                    )}>
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Fastest Lap</div>
+                                            {result.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
+                                        </div>
+                                        <div className="text-sm font-mono text-white">
+                                            {result.driverFastestLapTime || '-'}
+                                        </div>
+                                        {result.driverFastestLapNumber && (
+                                            <div className="text-[10px] text-gray-500">Lap {result.driverFastestLapNumber}</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Laps Completed */}
+                                {(result.laps || result.lapsCompleted) && (
+                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Laps</div>
+                                        <div className="text-sm font-mono text-white">
+                                            {result.laps || result.lapsCompleted}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Grid Position */}
+                                {isRaceOrSprint && result.gridPosition !== null && result.gridPosition !== undefined && (
+                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Started</div>
+                                        <div className="text-sm font-mono text-white">
+                                            P{result.gridPosition}
+                                        </div>
+                                        {result.gridPosition !== position && (
+                                            <div className={cn(
+                                                "text-[10px] font-bold",
+                                                result.gridPosition > position ? "text-green-500" : "text-red-500"
+                                            )}>
+                                                {result.gridPosition > position 
+                                                    ? `↑ +${result.gridPosition - position}` 
+                                                    : `↓ ${position - result.gridPosition}`}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Status */}
+                                {result.status && result.status !== 'Finished' && (
+                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Status</div>
+                                        <div className="text-sm text-orange-400">
+                                            {result.status}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
@@ -623,6 +723,7 @@ const MobileRace: React.FC = () => {
     const [showSessionSelector, setShowSessionSelector] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
     const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
+    const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -1011,7 +1112,7 @@ const MobileRace: React.FC = () => {
                     <div className="px-4 py-4 space-y-4">
                         {/* Stacked Highlight Cards (Winner, Fastest Lap, Pole) */}
                         {highlightCards.length > 0 && activeTab === 'overview' && (
-                            <div className="mb-4">
+                            <div className="mb-0">
                                 <StackedHighlightCards 
                                     highlights={highlightCards}
                                     getDriverImage={getDriverImage}
@@ -1056,6 +1157,10 @@ const MobileRace: React.FC = () => {
                                             sessionType={selectedSession}
                                             isFavorite={!!isFavorite}
                                             driverImage={getDriverImage(result.driverCode, result.fullName)}
+                                            isExpanded={expandedDriver === result.driverCode}
+                                            onToggle={() => setExpandedDriver(
+                                                expandedDriver === result.driverCode ? null : result.driverCode
+                                            )}
                                         />
                                     );
                                 })}
