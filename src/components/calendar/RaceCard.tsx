@@ -32,7 +32,9 @@ const RaceCard: React.FC<RaceCardProps> = ({
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            onClick={() => navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)}
+            onClick={() => {
+                navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
+            }}
             className={`group cursor-pointer h-full flex flex-col relative overflow-hidden bg-black border-2 border-gray-800 hover:border-red-600 transition-colors duration-300 ${!isUpcoming && !result ? 'opacity-50 hover:opacity-100' : ''}`}
         >
             {/* Status Badge - Moved to Bottom Right */}

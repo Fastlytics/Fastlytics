@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { SEO } from '@/components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +33,7 @@ import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
 
@@ -249,6 +250,9 @@ const Race = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
+  const initialTab = searchParams.get('tab');
+
+  const { trackEvent } = useAnalytics();
 
   const setSelectedSession = (session: string) => {
     setSearchParams(prev => {
@@ -256,6 +260,7 @@ const Race = () => {
       newParams.set('session', session);
       return newParams;
     }, { replace: true });
+    trackEvent('session_changed', { session_type: session, race_name: eventName, year: year });
   };
 
   const setShowAnalysis = (show: boolean) => {
@@ -271,7 +276,7 @@ const Race = () => {
   };
 
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState(initialTab || 'overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
   // New State for Redesign
@@ -310,12 +315,23 @@ const Race = () => {
     const slug = parts.slice(1).join('-');
     const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-    if (parsedYear && name) {
-      posthog.capture('race_analysis_viewed', { year: parsedYear, race: name });
-    }
-
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
+
+  const trackedEventRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (year && eventName && eventName !== 'Invalid Race ID') {
+      const eventKey = `${year}-${eventName}`;
+      if (trackedEventRef.current !== eventKey) {
+        trackEvent('race_analysis_viewed', {
+          year,
+          race: eventName,
+        });
+        trackedEventRef.current = eventKey;
+      }
+    }
+  }, [year, eventName]);
 
   // Queries
   const { data: fetchedAvailableSessions, isLoading: isLoadingSessions } = useQuery<AvailableSession[]>({
@@ -418,7 +434,7 @@ const Race = () => {
   const handleCircuitDriversSelected = React.useCallback((drivers: { driver1: string; driver2: string; lap1: string | number; lap2: string | number; shouldLoadChart: boolean; }) => {
     setCircuitDrivers(drivers);
     if (drivers.shouldLoadChart) {
-      posthog.capture('chart_interaction', {
+      trackEvent('chart_interaction', {
         chart: 'circuit_comparison',
         action: 'compare_drivers',
         driver1: drivers.driver1,
@@ -430,7 +446,7 @@ const Race = () => {
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    posthog.capture('tab_switched', { tab: section, context: 'race_analysis' });
+    trackEvent('tab_switched', { tab: section, context: 'race_analysis', race_name: eventName });
   };
 
   if (!year || !eventSlug) return null;

@@ -53,6 +53,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   const [hoveredSection, setHoveredSection] = useState<{
     name: string;
     advantage: number;
+    driver1AvgSpeed?: number;
+    driver2AvgSpeed?: number;
     x: number;
     y: number;
   } | null>(null);
@@ -62,6 +64,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     setHoveredSection({
       name: section.name,
       advantage: advantage,
+      driver1AvgSpeed: section.driver1AvgSpeed,
+      driver2AvgSpeed: section.driver2AvgSpeed,
       x: e.clientX,
       y: e.clientY
     });
@@ -257,16 +261,92 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
           </g>
         </svg>
 
+        {/* Lap Info Overlay */}
+        {comparisonData && (
+          <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs font-mono text-gray-500 uppercase">Lap {comparisonData.driver1LapNumber}</span>
+              <span className="text-xs font-mono text-white font-bold">{comparisonData.driver1LapTime}</span>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver1Color }} />
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs font-mono text-gray-500 uppercase">Lap {comparisonData.driver2LapNumber}</span>
+              <span className="text-xs font-mono text-white font-bold">{comparisonData.driver2LapTime}</span>
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver2Color }} />
+            </div>
+          </div>
+        )}
+
         {/* Hover Tooltip */}
         {hoveredSection && (
           <div
-            className="fixed z-50 bg-black/90 border border-gray-700 p-3 rounded-none shadow-2xl backdrop-blur-md pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px]"
+            className="fixed z-50 bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] min-w-[200px]"
             style={{ left: hoveredSection.x, top: hoveredSection.y }}
           >
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-gray-500 uppercase font-mono tracking-wider">Sector</span>
-              <span className="text-sm font-bold text-white font-mono">{hoveredSection.name}</span>
-              <div className="h-px w-full bg-gray-800 my-1" />
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] text-gray-500 uppercase font-mono tracking-wider">Sector</span>
+                <span className="text-sm font-bold text-white font-mono">{hoveredSection.name}</span>
+              </div>
+
+              <div className="h-px w-full bg-gray-800" />
+
+              {/* Driver 1 Stats */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                    {(() => {
+                      const openF1Driver = openF1Drivers.find(d => d.name_acronym === selectedDriver1 || d.last_name.toUpperCase().slice(0, 3) === selectedDriver1);
+                      return openF1Driver?.headshot_url ? (
+                        <img src={openF1Driver.headshot_url} alt={selectedDriver1} className="w-full h-full object-cover scale-125 translate-y-1" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">{selectedDriver1[0]}</div>
+                      );
+                    })()}
+                  </div>
+                  <span className="text-xs font-mono text-gray-300 font-bold">{selectedDriver1}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  {hoveredSection.driver1AvgSpeed && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] text-gray-500 uppercase font-mono">Avg Speed</span>
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        {Math.round(hoveredSection.driver1AvgSpeed)} km/h
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Driver 2 Stats */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                    {(() => {
+                      const openF1Driver = openF1Drivers.find(d => d.name_acronym === selectedDriver2 || d.last_name.toUpperCase().slice(0, 3) === selectedDriver2);
+                      return openF1Driver?.headshot_url ? (
+                        <img src={openF1Driver.headshot_url} alt={selectedDriver2} className="w-full h-full object-cover scale-125 translate-y-1" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">{selectedDriver2[0]}</div>
+                      );
+                    })()}
+                  </div>
+                  <span className="text-xs font-mono text-gray-300 font-bold">{selectedDriver2}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  {hoveredSection.driver2AvgSpeed && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] text-gray-500 uppercase font-mono">Avg Speed</span>
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        {Math.round(hoveredSection.driver2AvgSpeed)} km/h
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px w-full bg-gray-800" />
+
               <div className="flex items-center gap-2">
                 {hoveredSection.advantage !== 0 ? (
                   <>

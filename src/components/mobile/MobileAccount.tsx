@@ -4,10 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-    UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon, 
+    UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon,
     CheckmarkCircle01Icon, PencilEdit02Icon, Tick02Icon, Cancel01Icon
 } from 'hugeicons-react';
-import { Star, ChevronRight, Shield, User, CreditCard, LogOut, Check, X, Eye, EyeOff } from 'lucide-react';
+import { Star, ChevronRight, Shield, User, CreditCard, LogOut, Check, X, Eye, EyeOff, Activity } from 'lucide-react';
+import ActivityItem from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
@@ -50,7 +51,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, child
                     <div className="flex justify-center pt-3 pb-2">
                         <div className="w-10 h-1 bg-gray-700 rounded-full" />
                     </div>
-                    
+
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pb-4 border-b border-gray-800">
                         <h3 className="text-lg font-bold uppercase tracking-tight">{title}</h3>
@@ -58,7 +59,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, child
                             <Cancel01Icon className="w-5 h-5" />
                         </button>
                     </div>
-                    
+
                     {/* Content - with bottom padding for safe area */}
                     <div className="flex-1 overflow-y-auto pb-24">
                         {children}
@@ -137,6 +138,7 @@ const MobileAccount: React.FC = () => {
     const [showSubscriptionSheet, setShowSubscriptionSheet] = useState(false);
     const [showDriverPicker, setShowDriverPicker] = useState(false);
     const [showTeamPicker, setShowTeamPicker] = useState(false);
+    const [showHistorySheet, setShowHistorySheet] = useState(false);
 
     // Form States
     const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
@@ -154,6 +156,10 @@ const MobileAccount: React.FC = () => {
     const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
     const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
     const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
+
+    // Activity History State
+    const [userActivity, setUserActivity] = useState<any[]>([]);
+    const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -185,12 +191,38 @@ const MobileAccount: React.FC = () => {
         loadF1Data();
     }, []);
 
+    useEffect(() => {
+        const fetchActivity = async () => {
+            if (!user) return;
+            setIsLoadingActivity(true);
+            try {
+                const { data, error } = await supabase
+                    .from('user_activity')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+                setUserActivity(data || []);
+            } catch (error) {
+                console.error('Error fetching activity:', error);
+            } finally {
+                setIsLoadingActivity(false);
+            }
+        };
+
+        if (showHistorySheet) {
+            fetchActivity();
+        }
+    }, [user, showHistorySheet]);
+
     const getDriverImage = (driverCode: string, driverName: string) => {
         if (driverImageMap[driverCode]) {
             return driverImageMap[driverCode];
         }
-        const driver = openF1Drivers.find(d => 
-            d.name_acronym === driverCode || 
+        const driver = openF1Drivers.find(d =>
+            d.name_acronym === driverCode ||
             d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
         );
         return driver?.headshot_url;
@@ -355,6 +387,12 @@ const MobileAccount: React.FC = () => {
                                 value={`${getFavoriteDriverName()}`}
                                 onClick={() => setShowFavoritesSheet(true)}
                             />
+                            <MenuItem
+                                icon={Activity}
+                                label="History"
+                                value="Recent activity"
+                                onClick={() => setShowHistorySheet(true)}
+                            />
                         </div>
                     </div>
 
@@ -422,14 +460,14 @@ const MobileAccount: React.FC = () => {
                                         className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-red-600 focus:outline-none"
                                         autoFocus
                                     />
-                                    <button 
+                                    <button
                                         onClick={() => handleSaveField('fullName')}
                                         disabled={isLoading}
                                         className="p-3 bg-green-600 rounded-lg"
                                     >
                                         <Check className="w-5 h-5" />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setEditingField(null)}
                                         className="p-3 bg-gray-700 rounded-lg"
                                     >
@@ -460,14 +498,14 @@ const MobileAccount: React.FC = () => {
                                         className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-red-600 focus:outline-none"
                                         autoFocus
                                     />
-                                    <button 
+                                    <button
                                         onClick={() => handleSaveField('username')}
                                         disabled={isLoading}
                                         className="p-3 bg-green-600 rounded-lg"
                                     >
                                         <Check className="w-5 h-5" />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setEditingField(null)}
                                         className="p-3 bg-gray-700 rounded-lg"
                                     >
@@ -516,8 +554,8 @@ const MobileAccount: React.FC = () => {
                                 {favoriteDriver ? (
                                     <>
                                         <Avatar className="h-10 w-10 border border-gray-700">
-                                            <AvatarImage 
-                                                src={getDriverImage(favoriteDriver, getFavoriteDriverName())} 
+                                            <AvatarImage
+                                                src={getDriverImage(favoriteDriver, getFavoriteDriverName())}
                                                 className="object-cover object-top"
                                             />
                                             <AvatarFallback>{favoriteDriver}</AvatarFallback>
@@ -543,9 +581,9 @@ const MobileAccount: React.FC = () => {
                                 {favoriteTeam ? (
                                     <>
                                         <div className="w-10 h-10 bg-white/10 rounded-lg p-1 flex items-center justify-center">
-                                            <img 
-                                                src={getTeamLogo(favoriteTeam) || ''} 
-                                                alt={favoriteTeam} 
+                                            <img
+                                                src={getTeamLogo(favoriteTeam) || ''}
+                                                alt={favoriteTeam}
                                                 className="w-full h-full object-contain"
                                             />
                                         </div>
@@ -601,8 +639,8 @@ const MobileAccount: React.FC = () => {
                                             )}
                                         >
                                             <Avatar className="h-12 w-12 border border-gray-700">
-                                                <AvatarImage 
-                                                    src={getDriverImage(driver.code, driver.name)} 
+                                                <AvatarImage
+                                                    src={getDriverImage(driver.code, driver.name)}
                                                     className="object-cover object-top"
                                                 />
                                                 <AvatarFallback>{driver.code}</AvatarFallback>
@@ -657,9 +695,9 @@ const MobileAccount: React.FC = () => {
                                             )}
                                         >
                                             <div className="w-12 h-12 bg-white/10 rounded-lg p-1 flex items-center justify-center">
-                                                <img 
-                                                    src={getTeamLogo(team.team) || ''} 
-                                                    alt={team.team} 
+                                                <img
+                                                    src={getTeamLogo(team.team) || ''}
+                                                    alt={team.team}
                                                     className="w-full h-full object-contain"
                                                 />
                                             </div>
@@ -797,6 +835,39 @@ const MobileAccount: React.FC = () => {
                             <p className="text-2xl font-bold text-gray-600">$4.99<span className="text-sm text-gray-700 font-normal">/month</span></p>
                             <p className="text-xs text-gray-600 mt-2">Advanced analytics, unlimited history, and more.</p>
                         </div>
+                    </div>
+
+                </BottomSheet>
+
+                {/* History Sheet */}
+                <BottomSheet
+                    isOpen={showHistorySheet}
+                    onClose={() => setShowHistorySheet(false)}
+                    title="Activity History"
+                >
+                    <div className="p-4">
+                        {isLoadingActivity ? (
+                            <div className="space-y-3">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="h-16 bg-gray-800/50 animate-pulse rounded-xl" />
+                                ))}
+                            </div>
+                        ) : userActivity.length > 0 ? (
+                            <div className="space-y-3">
+                                {userActivity.map((activity) => (
+                                    <ActivityItem
+                                        key={activity.id}
+                                        activity={activity}
+                                        drivers={openF1Drivers}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12 text-gray-500">
+                                <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                <p>No recent activity found.</p>
+                            </div>
+                        )}
                     </div>
                 </BottomSheet>
             </div>
