@@ -9,10 +9,12 @@ import {
   fetchTelemetryBrake,
   fetchTelemetryRPM,
   fetchTelemetryDRS,
+  fetchTelemetrySpeed,
   ThrottleDataPoint,
   BrakeDataPoint,
   RPMDataPoint,
-  DRSDataPoint
+  DRSDataPoint,
+  SpeedDataPoint
 } from '@/lib/api';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
@@ -20,7 +22,7 @@ import { driverColor } from '@/lib/driverColor';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
 
-type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint;
+type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint;
 
 interface DriverComparisonTelemetryProps {
   className?: string;
@@ -34,7 +36,7 @@ interface DriverComparisonTelemetryProps {
   lap1: string | number;
   lap2: string | number;
   shouldLoadChart: boolean;
-  telemetryType: 'throttle' | 'brake' | 'rpm' | 'drs';
+  telemetryType: 'throttle' | 'brake' | 'rpm' | 'drs' | 'speed';
 }
 
 const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
@@ -53,18 +55,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
-  const [shouldLoadTelemetry, setShouldLoadTelemetry] = useState(false);
-
-  useEffect(() => {
-    if (shouldLoadTelemetry && (driver1 !== prevDriver1.current || driver2 !== prevDriver2.current)) {
-      setShouldLoadTelemetry(false);
-    }
-    prevDriver1.current = driver1;
-    prevDriver2.current = driver2;
-  }, [driver1, driver2, shouldLoadTelemetry]);
-
-  const prevDriver1 = useRef(driver1);
-  const prevDriver2 = useRef(driver2);
+  // Auto-load logic: if shouldLoadChart is true, we load. 
+  // We no longer have a local "shouldLoadTelemetry" state that requires a button click if shouldLoadChart is passed as true.
+  // However, to respect the prop name, we'll use it directly.
 
   const { data: telemetryData1, isLoading: isLoadingTelemetry1, error: error1 } = useQuery<TelemetryDataPoint[]>({
     queryKey: [`${telemetryType}Trace`, year, event, session, driver1, lap1],
@@ -74,13 +67,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         case 'brake': return fetchTelemetryBrake(year, event, session, driver1, lap1);
         case 'rpm': return fetchTelemetryRPM(year, event, session, driver1, lap1);
         case 'drs': return fetchTelemetryDRS(year, event, session, driver1, lap1);
+        case 'speed': return fetchTelemetrySpeed(year, event, session, driver1, lap1);
         default: return fetchTelemetryThrottle(year, event, session, driver1, lap1);
       }
     },
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
     retry: 1,
-    enabled: !!year && !!event && !!session && !!driver1 && !!lap1 && shouldLoadTelemetry,
+    enabled: !!year && !!event && !!session && !!driver1 && !!lap1 && shouldLoadChart,
   });
 
   const { data: telemetryData2, isLoading: isLoadingTelemetry2, error: error2 } = useQuery<TelemetryDataPoint[]>({
@@ -91,13 +85,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         case 'brake': return fetchTelemetryBrake(year, event, session, driver2, lap2);
         case 'rpm': return fetchTelemetryRPM(year, event, session, driver2, lap2);
         case 'drs': return fetchTelemetryDRS(year, event, session, driver2, lap2);
+        case 'speed': return fetchTelemetrySpeed(year, event, session, driver2, lap2);
         default: return fetchTelemetryThrottle(year, event, session, driver2, lap2);
       }
     },
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
     retry: 1,
-    enabled: !!year && !!event && !!session && !!driver2 && !!lap2 && shouldLoadTelemetry && driver1 !== driver2,
+    enabled: !!year && !!event && !!session && !!driver2 && !!lap2 && shouldLoadChart && driver1 !== driver2,
   });
 
   const combinedTelemetryData = React.useMemo(() => {
@@ -123,6 +118,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         case 'brake': return 'Brake';
         case 'rpm': return 'RPM';
         case 'drs': return 'DRS';
+        case 'speed': return 'Speed';
         default: return type.charAt(0).toUpperCase() + type.slice(1);
       }
     };
@@ -220,6 +216,18 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           showYAxisTicks: false,
           showActiveDot: false
         };
+      case 'speed':
+        return {
+          dataKey: 'Speed',
+          yAxisFormatter: (value: number) => `${Math.round(value)}`,
+          color1: '#3b82f6', // Will be overridden by driver colors
+          color2: '#3b82f6',
+          domain: ['auto', 'auto'] as [any, any],
+          tooltipUnit: ' kph',
+          type: 'monotone' as const,
+          showYAxisTicks: true,
+          showActiveDot: true
+        };
       default:
         return {
           dataKey: 'Throttle',
@@ -238,18 +246,10 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   const props = getTelemetryProps();
 
   const renderContent = () => {
-    if (!shouldLoadTelemetry) {
+    if (!shouldLoadChart) {
       return (
         <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Click load to view {telemetryType} comparison</p>
-          <Button
-            onClick={() => setShouldLoadTelemetry(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
-            disabled={!driver1 || !driver2 || driver1 === driver2}
-          >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
-            Load Data
-          </Button>
+          <p className="text-gray-400 font-mono text-sm uppercase">Waiting for driver selection...</p>
         </div>
       );
     }
@@ -288,7 +288,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             dataKey="Distance"
             stroke="#666"
             tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
-            tickFormatter={(value: number) => `${value.toFixed(2)}m`}
+            tickFormatter={(value: number) => `${value.toFixed(0)}m`}
             domain={['dataMin', 'dataMax']}
           />
           <YAxis
@@ -327,6 +327,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               } else if ((telemetryType === 'throttle' || telemetryType === 'brake') && typeof value === 'number') {
                 formattedValue = `${value.toFixed(1)}${props.tooltipUnit}`;
                 formattedName = `${driverName} ${props.dataKey}`;
+              } else if (telemetryType === 'speed' && typeof value === 'number') {
+                formattedValue = `${Math.round(value)}${props.tooltipUnit}`;
+                formattedName = `${driverName} ${props.dataKey}`;
               } else {
                 formattedValue = `${typeof value === 'number' ? value : 0}${props.tooltipUnit}`;
                 formattedName = `${driverName} ${props.dataKey}`;
@@ -337,7 +340,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                 <span style={colorStyle}>{formattedName}</span>
               ];
             }}
-            labelFormatter={(label: number) => `DIST: ${label.toFixed(2)}m`}
+            labelFormatter={(label: number) => `DIST: ${label.toFixed(0)}m`}
             cursor={telemetryType !== 'drs'}
           />
           <Line
@@ -372,18 +375,18 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">{title}</h3>
+        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">{title}</h3>
 
-        {shouldLoadTelemetry && !isLoading && combinedTelemetryData && combinedTelemetryData.length > 0 && (
+        {shouldLoadChart && !isLoading && combinedTelemetryData && combinedTelemetryData.length > 0 && (
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver1Color }}></div>
-              <span className="text-xs font-bold text-gray-300">{driver1}</span>
+              <span className="text-xs font-bold text-gray-300 font-mono">{driver1}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver2Color }}></div>
-              <span className="text-xs font-bold text-gray-300">{driver2}</span>
-              {sameTeam && <span className="text-[10px] text-gray-500 uppercase">(teammate)</span>}
+              <span className="text-xs font-bold text-gray-300 font-mono">{driver2}</span>
+              {sameTeam && <span className="text-[10px] text-gray-500 uppercase font-mono">(teammate)</span>}
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { SEO } from '@/components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon } from 'hugeicons-react';
+import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import RacingChart from '@/components/RacingChart';
 import TireStrategy from '@/components/TireStrategy';
@@ -739,6 +739,9 @@ const Race = () => {
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
                   <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
                 )}
+                {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+                  <NavItem id="positions" label="Positions" icon={ChartLineData01Icon} active={activeSection === 'positions'} onClick={() => handleSectionChange('positions')} />
+                )}
                 <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
                 <NavItem id="dominance" label="Head to Head" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
                 <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
@@ -790,13 +793,22 @@ const Race = () => {
               {/* 3. Strategy Section (Race Only) */}
               {activeSection === 'strategy' && (selectedSession === 'R' || selectedSession === 'Sprint') && (
                 <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
-                  <SectionHeader title="Tire Strategy" icon={Flag01Icon} />
-                  <TireStrategy year={year!} event={eventName} session={selectedSession} />
 
-                  <div>
-                    <h3 className="text-xl font-bold uppercase italic mb-4 text-gray-400">Position Changes</h3>
-                    <PositionsTabContent year={year!} event={eventName} session={selectedSession} />
-                  </div>
+                  <TireStrategy year={year!} event={eventName} session={selectedSession} favoriteDriver={profile?.favorite_driver} />
+
+                </section>
+              )}
+
+              {/* 3.5 Positions Section (Race Only) */}
+              {activeSection === 'positions' && (selectedSession === 'R' || selectedSession === 'Sprint') && (
+                <section id="positions" className="animate-in fade-in duration-500">
+                  <PositionsTabContent
+                    year={year!}
+                    event={eventName}
+                    session={selectedSession}
+                    openF1Drivers={openF1Drivers}
+                    favoriteDriver={profile?.favorite_driver}
+                  />
                 </section>
               )}
 
@@ -804,7 +816,33 @@ const Race = () => {
               {activeSection === 'laptimes' && (
                 <section id="laptimes" className="animate-in fade-in duration-500">
                   <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
-                  <RacingChart year={year!} event={eventName} session={selectedSession} title="Lap Time Comparison" autoLoad={true} />
+                  {(() => {
+                    const favDriverCode = profile?.favorite_driver;
+                    let rivalDriverCode = null;
+
+                    if (favDriverCode && sessionResults) {
+                      const favResult = sessionResults.find(r => r.driverCode === favDriverCode || r.fullName.toLowerCase().includes(favDriverCode.toLowerCase()));
+                      if (favResult && favResult.position) {
+                        // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
+                        const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                        const rivalResult = sessionResults.find(r => r.position === rivalPos);
+                        if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                      }
+                    }
+
+                    return (
+                      <RacingChart
+                        year={year!}
+                        event={eventName}
+                        session={selectedSession}
+                        title="Lap Time Comparison"
+                        autoLoad={true}
+                        openF1Drivers={openF1Drivers}
+                        favoriteDriver={favDriverCode}
+                        rivalDriver={rivalDriverCode}
+                      />
+                    );
+                  })()}
                 </section>
               )}
 
@@ -812,25 +850,62 @@ const Race = () => {
               {activeSection === 'dominance' && (
                 <section id="dominance" className="animate-in fade-in duration-500">
                   <SectionHeader title="Head to Head" icon={MapsLocation01Icon} />
-                  <CircuitComparisonChart
-                    year={year!}
-                    event={eventName}
-                    session={selectedSession}
-                    onDriversSelected={handleCircuitDriversSelected}
-                  />
 
-                  {/* Comparison Charts if selected */}
-                  {circuitDrivers.shouldLoadChart && (
-                    <div className="mt-12 space-y-8">
-                      <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-red-600 pl-4">Telemetry Comparison</h3>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
-                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
-                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" />
-                        <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" />
+                  {(() => {
+                    const favDriverCode = profile?.favorite_driver;
+                    let rivalDriverCode = null;
+
+                    if (favDriverCode && sessionResults) {
+                      const favResult = sessionResults.find(r => r.driverCode === favDriverCode || r.fullName.toLowerCase().includes(favDriverCode.toLowerCase()));
+                      if (favResult && favResult.position) {
+                        // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
+                        const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                        const rivalResult = sessionResults.find(r => r.position === rivalPos);
+                        if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                      }
+                    }
+
+                    return (
+                      <div className="space-y-12">
+                        <CircuitComparisonChart
+                          year={year!}
+                          event={eventName}
+                          session={selectedSession}
+                          initialDriver1={favDriverCode}
+                          initialDriver2={rivalDriverCode || undefined}
+                          onDriversSelected={handleCircuitDriversSelected}
+                          openF1Drivers={openF1Drivers}
+                        />
+
+                        {/* Comparison Charts if selected */}
+                        {circuitDrivers.shouldLoadChart && (
+                          <div className="space-y-12">
+                            {/* Speed Trace - Full Width */}
+                            <DriverComparisonTelemetry
+                              year={year!}
+                              event={eventName}
+                              session={selectedSession}
+                              driver1={circuitDrivers.driver1}
+                              driver2={circuitDrivers.driver2}
+                              lap1={circuitDrivers.lap1}
+                              lap2={circuitDrivers.lap2}
+                              shouldLoadChart={true}
+                              telemetryType="speed"
+                              title="Speed Trace"
+                            />
+
+                            {/* Other Telemetry - Stacked */}
+                            <div className="space-y-12">
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </section>
               )}
 
