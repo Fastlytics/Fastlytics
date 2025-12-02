@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,6 +12,9 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import posthog from 'posthog-js';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileAuth } from '@/components/mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Auth = () => {
     const [email, setEmail] = useState('');
@@ -19,6 +22,15 @@ const Auth = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('signup');
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
+    const { user, loading } = useAuth();
+
+    // Redirect to dashboard if already logged in
+    useEffect(() => {
+        if (!loading && user) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, loading, navigate]);
 
     const handleSocialLogin = async (provider: 'google' | 'spotify' | 'discord') => {
         setIsLoading(true);
@@ -57,6 +69,11 @@ const Auth = () => {
             setIsLoading(false);
         }
     };
+
+    // Mobile Auth
+    if (isMobile) {
+        return <MobileAuth />;
+    }
 
     return (
         <div className="min-h-screen w-full flex bg-black text-white overflow-hidden">
