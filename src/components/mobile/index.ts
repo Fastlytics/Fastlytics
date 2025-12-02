@@ -13,3 +13,4 @@ export { default as MobileAccount } from './MobileAccount';
 export { default as MobileOnboarding } from './MobileOnboarding';
 export { default as MobileLanding } from './MobileLanding';
 export { default as MobileAuth } from './MobileAuth';
+export { default as MobileRace } from './MobileRace';

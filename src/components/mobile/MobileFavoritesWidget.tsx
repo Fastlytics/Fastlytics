@@ -212,7 +212,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                 <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                    className="bg-gray-900 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
                 >
                     <div className="flex items-start gap-3">
                         <div className="p-2 bg-red-600/20 rounded-lg flex-shrink-0">
@@ -268,8 +268,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             className={cn(
                                 "rounded-xl overflow-hidden active:scale-[0.98] transition-transform",
                                 driverRivals?.isTitleContender 
-                                    ? "bg-gradient-to-br from-yellow-950/30 via-gray-900 to-black border border-yellow-600/30"
-                                    : "bg-gradient-to-br from-gray-900 to-black border border-gray-800"
+                                    ? "bg-yellow-950/30 border border-yellow-600/30"
+                                    : "bg-gray-900 border border-gray-800"
                             )}
                         >
                             <div className="p-4">
@@ -413,7 +413,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
+                            className="bg-gray-900 border border-gray-800 rounded-xl p-4 active:scale-[0.98] transition-transform"
                         >
                             <div className="flex items-center gap-3">
                                 {/* Logo & Position */}

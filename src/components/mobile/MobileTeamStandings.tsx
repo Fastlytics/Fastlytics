@@ -123,7 +123,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-900/30 via-gray-900 to-black border-2 border-yellow-500/50"
+            className="relative overflow-hidden rounded-2xl bg-yellow-950/30 border-2 border-yellow-500/50"
         >
             {/* Crown Icon */}
             <div className="absolute -top-2 -right-2 text-yellow-500/20">

@@ -59,7 +59,7 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
                             });
                             navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`);
                         }}
-                        className="flex-shrink-0 w-[160px] snap-start bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl overflow-hidden active:scale-95 transition-transform cursor-pointer"
+                        className="flex-shrink-0 w-[160px] snap-start bg-gray-900 border border-gray-800 rounded-xl overflow-hidden active:scale-95 transition-transform cursor-pointer"
                     >
                         {/* Flag & Round */}
                         <div className="relative h-20 overflow-hidden">
@@ -68,7 +68,7 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
                                 alt={race.Country || race.Location}
                                 className="w-full h-full object-cover opacity-60"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
+                            <div className="absolute inset-0 bg-black/70" />
                             <div className="absolute bottom-2 left-2 right-2">
                                 <div className="text-[10px] text-gray-400 uppercase tracking-wider">
                                     Round {race.RoundNumber}
