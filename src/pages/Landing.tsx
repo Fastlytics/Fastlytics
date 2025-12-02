@@ -8,8 +8,26 @@ import StrategySection from '@/components/landing/StrategySection';
 import LapTimeSection from '@/components/landing/LapTimeSection';
 import SpeedTraceSection from '@/components/landing/SpeedTraceSection';
 import PricingSection from '@/components/landing/PricingSection';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileLanding } from '@/components/mobile';
 
 const Landing: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  // Mobile Landing
+  if (isMobile) {
+    return (
+      <>
+        <SEO
+          title="Fastlytics - F1 Telemetry & Data Analysis"
+          description="The ultimate F1 data analysis platform. Visualize track dominance, compare telemetry, analyze race strategies, and more with Fastlytics."
+          keywords={['f1 analytics', 'f1 telemetry', 'track dominance', 'race strategy', 'f1 data', 'motorsport data analysis']}
+        />
+        <MobileLanding />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white overflow-x-hidden">
       <SEO

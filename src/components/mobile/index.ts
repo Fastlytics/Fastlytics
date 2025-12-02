@@ -11,3 +11,5 @@ export { default as MobileDriverStandings } from './MobileDriverStandings';
 export { default as MobileTeamStandings } from './MobileTeamStandings';
 export { default as MobileAccount } from './MobileAccount';
 export { default as MobileOnboarding } from './MobileOnboarding';
+export { default as MobileLanding } from './MobileLanding';
+export { default as MobileAuth } from './MobileAuth';
