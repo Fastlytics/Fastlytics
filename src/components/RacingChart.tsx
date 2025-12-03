@@ -46,7 +46,7 @@ interface RacingChartProps {
 }
 
 const MIN_DRIVERS = 2;
-const MAX_DRIVERS = 5;
+const MAX_DRIVERS = 20;
 
 const RacingChart: React.FC<RacingChartProps> = ({
   className,
