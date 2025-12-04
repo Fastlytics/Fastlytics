@@ -24,6 +24,13 @@ export interface LapTimeDataPoint {
 }
 export interface SpeedDataPoint { Distance: number; Speed: number; }
 export interface GearMapDataPoint { X: number; Y: number; nGear: number; }
+export interface GearShiftMapData {
+    circuitLayout: string;
+    segments: { gear: number; path: string; }[];
+    driverCode: string;
+    lapNumber: number;
+    stats: { avgGear: number; mostUsedGear: number; };
+}
 export interface ThrottleDataPoint { Distance: number; Throttle: number; }
 export interface BrakeDataPoint { Distance: number; Brake: number; }
 export interface RPMDataPoint { Distance: number; RPM: number; }
@@ -307,6 +314,25 @@ export const fetchTelemetryGear = async (year: number, event: string, session: s
         console.log(`Successfully fetched ${data.length} gear telemetry records.`);
         return data;
     } catch (error) { console.error("Error fetching gear telemetry:", error); throw error; }
+};
+
+/** Fetches gear shift map data (SVG paths) for a specific lap. */
+export const fetchGearShiftMap = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<GearShiftMapData> => {
+    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
+    const url = `${API_BASE_URL}/api/telemetry/gear-map?${params.toString()}`;
+    console.log(`Fetching gear map from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: GearShiftMapData = await response.json();
+        console.log(`Successfully fetched gear map with ${data.segments.length} segments.`);
+        return data;
+    } catch (error) { console.error("Error fetching gear map:", error); throw error; }
 };
 
 /** Fetches throttle telemetry data for a specific lap. */

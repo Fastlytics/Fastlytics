@@ -71,7 +71,7 @@ const DRSChart: React.FC<DRSChartProps> = ({
   };
 
   return (
-    <TelemetryChartWrapper<DRSDataPoint>
+    <TelemetryChartWrapper<DRSDataPoint[]>
       className={className}
       title={title}
       icon={Analytics01Icon}

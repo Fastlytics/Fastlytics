@@ -17,9 +17,9 @@ interface TelemetryChartWrapperProps<T> {
     initialDriver?: string;
     lap?: string | number;
     openF1Drivers?: OpenF1Driver[];
-    onLoadData: (driver: string, lap: string | number) => { data: T[] | undefined, isLoading: boolean, error: unknown };
-    renderChart: (data: T[], color: string, selectedDriver: string) => React.ReactNode;
-    renderStats?: (data: T[]) => React.ReactNode;
+    onLoadData: (driver: string, lap: string | number) => { data: T | undefined, isLoading: boolean, error: unknown };
+    renderChart: (data: T, color: string, selectedDriver: string) => React.ReactNode;
+    renderStats?: (data: T) => React.ReactNode;
 }
 
 const TelemetryChartWrapper = <T,>({
@@ -113,7 +113,7 @@ const TelemetryChartWrapper = <T,>({
             );
         }
 
-        if (data.length === 0) {
+        if (Array.isArray(data) && data.length === 0) {
             return (
                 <div className="w-full h-[350px] bg-black border border-gray-800 flex items-center justify-center text-gray-600 font-mono uppercase text-xs tracking-widest">
                     No data for {selectedDriver}

@@ -71,7 +71,7 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
   };
 
   return (
-    <TelemetryChartWrapper<ThrottleDataPoint>
+    <TelemetryChartWrapper<ThrottleDataPoint[]>
       className={className}
       title={title}
       icon={Analytics01Icon}
