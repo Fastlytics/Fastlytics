@@ -76,9 +76,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
         <div className="grid md:grid-cols-2 gap-8">
             {/* Drivers Championship */}
             <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <ChampionIcon className="w-32 h-32 text-white" />
-                </div>
+
 
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="w-1 h-8 bg-red-600 block"></span>
@@ -93,10 +91,10 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 }}
                             className={`flex items-center justify-between p-3 border-l-4 ${index === 0
-                                    ? (driverChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
-                                    : (profile?.favorite_driver && (driver.code === profile.favorite_driver || driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())))
-                                        ? 'bg-red-600/10 border-red-600'
-                                        : 'bg-gray-900/50 border-gray-700'
+                                ? (driverChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
+                                : (profile?.favorite_driver && (driver.code === profile.favorite_driver || driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())))
+                                    ? 'bg-red-600/10 border-red-600'
+                                    : 'bg-gray-900/50 border-gray-700'
                                 }`}
                         >
                             <div className="flex items-center gap-4">
@@ -138,9 +136,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
 
             {/* Constructors Championship */}
             <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <UserGroupIcon className="w-32 h-32 text-white" />
-                </div>
+
 
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="w-1 h-8 bg-red-600 block"></span>
@@ -155,10 +151,10 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 + 0.3 }}
                             className={`flex items-center justify-between p-3 border-l-4 ${index === 0
-                                    ? (teamChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
-                                    : (profile?.favorite_team && (team.team === profile.favorite_team || team.team.toLowerCase().includes(profile.favorite_team.toLowerCase())))
-                                        ? 'bg-red-600/10 border-red-600'
-                                        : 'bg-gray-900/50 border-gray-700'
+                                ? (teamChampionshipStatus === 'champion' ? 'bg-yellow-500/10 border-yellow-500' : 'bg-gray-900 border-yellow-500')
+                                : (profile?.favorite_team && (team.team === profile.favorite_team || team.team.toLowerCase().includes(profile.favorite_team.toLowerCase())))
+                                    ? 'bg-red-600/10 border-red-600'
+                                    : 'bg-gray-900/50 border-gray-700'
                                 }`}
                         >
                             <div className="flex items-center gap-4">

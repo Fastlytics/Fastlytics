@@ -201,9 +201,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
     if (!profile?.favorite_driver && !profile?.favorite_team) {
         return (
             <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-gray-800 p-8 rounded-lg relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Settings02Icon className="w-32 h-32 text-white" />
-                </div>
+
                 <div className="relative z-10 max-w-lg">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-red-600/20 rounded-lg">
@@ -230,9 +228,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
             {/* My Garage */}
             <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors">
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <ChampionIcon className="w-40 h-40 text-white" />
-                </div>
+
 
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="w-1 h-8 bg-red-600 block"></span>
@@ -291,13 +287,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
             {/* Rivalry Tracker */}
             {favoriteDriver && driverRivals && (
                 <div className={`bg-black border-2 ${driverRivals.isTitleContender ? 'border-yellow-600/50' : 'border-gray-800'} p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col`}>
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                        {driverRivals.isTitleContender ? (
-                            <ChampionIcon className="w-40 h-40 text-yellow-500" />
-                        ) : (
-                            <FireIcon className="w-40 h-40 text-white" />
-                        )}
-                    </div>
+
 
                     <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                         <span className={`w-1 h-8 ${driverRivals.isTitleContender ? 'bg-yellow-500' : 'bg-red-600'} block`}></span>
