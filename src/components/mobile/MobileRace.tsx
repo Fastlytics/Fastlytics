@@ -16,6 +16,7 @@ import MobilePageHeader from './MobilePageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import MobileStrategy from './MobileStrategy';
+import MobileLapTimes from './MobileLapTimes';
 
 // Driver image map for 2025
 const driverImageMap: Record<string, string> = {
@@ -1066,6 +1067,16 @@ const MobileRace: React.FC = () => {
                         session={selectedSession}
                         raceResults={raceResults}
                         getDriverImage={getDriverImage}
+                    />
+                )}
+
+                {activeTab === 'laptimes' && year && (
+                    <MobileLapTimes
+                        year={year}
+                        event={eventName}
+                        session={selectedSession}
+                        raceResults={raceResults}
+                        openF1Drivers={openF1Drivers}
                     />
                 )}
             </div>
