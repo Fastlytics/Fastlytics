@@ -134,15 +134,8 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
         const hardBrakingPercentage = (hardBraking / brakes.length) * 100;
 
         return (
-          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
-              <div className="flex justify-between items-end">
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg Brake</span>
-                  <span className="text-lg font-bold text-white font-mono">{Math.round(avgBrake)} <span className="text-[10px] text-gray-500">%</span></span>
-                </div>
-              </div>
-            </div>
+          <div className="border-t border-gray-800 pt-4">
+
             <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">

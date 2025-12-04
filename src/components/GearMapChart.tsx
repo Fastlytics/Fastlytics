@@ -132,15 +132,8 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       }}
       renderStats={(data) => {
         return (
-          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
-              <div className="flex justify-between items-end">
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg Gear</span>
-                  <span className="text-lg font-bold text-white font-mono">{data.stats.avgGear.toFixed(1)}</span>
-                </div>
-              </div>
-            </div>
+          <div className="border-t border-gray-800 pt-4">
+
             <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
