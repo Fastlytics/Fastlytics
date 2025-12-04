@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useMotionValue } from 'framer-motion';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-    ArrowLeft01Icon, ChampionIcon, Clock01Icon, FlashIcon, Calendar01Icon,
-    Flag01Icon, CheckmarkCircle02Icon, Time01Icon,
-    Analytics01Icon, Cancel01Icon, MapsLocation01Icon, StartUp02Icon, ArrowDown01Icon,
-    ArrowRight01Icon
+    ArrowLeft01Icon, ChampionIcon, Clock01Icon, Calendar01Icon,
+    CheckmarkCircle02Icon,
+    Analytics01Icon, Cancel01Icon, StartUp02Icon, ArrowDown01Icon,
+    GitCompareIcon, ChartLineData01Icon
 } from 'hugeicons-react';
+import TireIcon from './tireicon';
 import { fetchSpecificRaceResults, fetchAvailableSessions, fetchEventSessionSchedule, DetailedRaceResult, AvailableSession, EventSessionSchedule } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +18,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import MobileStrategy from './MobileStrategy';
 import MobileLapTimes from './MobileLapTimes';
+import MobileHeadToHead from './MobileHeadToHead';
+import SpeedTraceChart from '@/components/SpeedTraceChart';
+import ThrottleChart from '@/components/ThrottleChart';
+import BrakeChart from '@/components/BrakeChart';
+import RPMChart from '@/components/RPMChart';
+import DRSChart from '@/components/DRSChart';
 
 // Driver image map for 2025
 const driverImageMap: Record<string, string> = {
@@ -356,9 +363,9 @@ interface RaceBottomNavProps {
 const RaceBottomNav: React.FC<RaceBottomNavProps> = ({ activeTab, onTabChange, hasStrategy }) => {
     const tabs = [
         { id: 'overview', label: 'Overview', icon: ChampionIcon },
-        ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: Flag01Icon }] : []),
-        { id: 'laptimes', label: 'Laps', icon: Time01Icon },
-        { id: 'h2h', label: 'H2H', icon: MapsLocation01Icon },
+        ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: TireIcon }] : []),
+        { id: 'laptimes', label: 'Laps', icon: ChartLineData01Icon },
+        { id: 'h2h', label: 'H2H', icon: GitCompareIcon },
         { id: 'telemetry', label: 'Data', icon: Analytics01Icon },
     ];
 
@@ -1014,6 +1021,23 @@ const MobileRace: React.FC = () => {
             </div>
 
             <div className="p-4 space-y-6">
+                {activeTab === 'h2h' && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-4"
+                    >
+                        <MobileHeadToHead
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            openF1Drivers={openF1Drivers}
+                            raceResults={raceResults}
+                        />
+                    </motion.div>
+                )}
+
                 {activeTab === 'overview' && (
                     <>
                         {/* Highlights Carousel (Race Only) */}
@@ -1078,6 +1102,22 @@ const MobileRace: React.FC = () => {
                         raceResults={raceResults}
                         openF1Drivers={openF1Drivers}
                     />
+                )}
+
+                {activeTab === 'telemetry' && (
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                            <Analytics01Icon className="w-6 h-6 text-red-600" />
+                            <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">
+                                Telemetry Data
+                            </h2>
+                        </div>
+                        <SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
+                        <ThrottleChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
+                        <BrakeChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
+                        <RPMChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
+                        <DRSChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
+                    </div>
                 )}
             </div>
 
