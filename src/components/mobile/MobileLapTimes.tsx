@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DetailedRaceResult, fetchLapTimes, fetchPaceDistribution, LapTimeDataPoint, PaceDistributionData, SessionDriver, fetchSessionDrivers } from '@/lib/api';
 import { OpenF1Driver } from '@/lib/openf1';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Time01Icon, ArrowDown01Icon, Analytics01Icon, Cancel01Icon } from 'hugeicons-react';
+import { Time01Icon, Analytics01Icon, Cancel01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { useQuery } from '@tanstack/react-query';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { driverColor } from '@/lib/driverColor';
@@ -127,6 +127,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
 
     // --- Render Helpers ---
     const [selectedLap, setSelectedLap] = useState<number | null>(null);
+    const [selectedPaceDriver, setSelectedPaceDriver] = useState<PaceDistributionData | null>(null);
 
     // Calculate global min/max for pace bars
     const { globalMinPace, globalMaxPace } = useMemo(() => {
@@ -134,7 +135,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
         let min = Infinity;
         let max = -Infinity;
         paceData.forEach(d => {
-            if (d.q1 < min) min = d.q1; // Use Q1/Q3 or Min/Max? Let's use Min/Max for full range
+            if (d.q1 < min) min = d.q1;
             if (d.min < min) min = d.min;
             if (d.max > max) max = d.max;
         });
@@ -146,29 +147,29 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
             {/* Header & Controls */}
             <div className="flex flex-col gap-4">
                 {/* Analysis Mode Toggle */}
-
-                {/* Analysis Mode Toggle */}
-                <div className="grid grid-cols-2 gap-2 bg-black border border-white/10 p-1">
+                <div className="flex p-1 bg-zinc-900 border border-white/10 rounded-lg">
                     <button
                         onClick={() => setLapAnalysisMode('history')}
                         className={cn(
-                            "py-2 text-xs font-black uppercase tracking-wider transition-all",
+                            "flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-2",
                             lapAnalysisMode === 'history'
-                                ? "bg-red-600 text-white"
-                                : "text-gray-500 hover:text-gray-300"
+                                ? "bg-white text-black shadow-sm"
+                                : "text-gray-500 hover:text-white"
                         )}
                     >
+                        <Time01Icon className="w-3 h-3" />
                         Lap History
                     </button>
                     <button
                         onClick={() => setLapAnalysisMode('pace')}
                         className={cn(
-                            "py-2 text-xs font-black uppercase tracking-wider transition-all",
+                            "flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-2",
                             lapAnalysisMode === 'pace'
-                                ? "bg-red-600 text-white"
-                                : "text-gray-500 hover:text-gray-300"
+                                ? "bg-white text-black shadow-sm"
+                                : "text-gray-500 hover:text-white"
                         )}
                     >
+                        <Analytics01Icon className="w-3 h-3" />
                         Pace Dist.
                     </button>
                 </div>
@@ -186,16 +187,19 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                             <div key={idx} className="space-y-1">
                                 <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{control.label}</label>
                                 <Select value={control.value} onValueChange={control.setter}>
-                                    <SelectTrigger className="w-full bg-black border border-white/20 text-white h-10 px-2">
+                                    <SelectTrigger className="w-full bg-black border border-white/20 text-white h-12 px-2 rounded-md">
                                         {control.value ? (
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="w-5 h-5 border border-white/10">
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <Avatar className="w-6 h-6 border border-white/10">
                                                     <AvatarImage src={getDriverImage(control.value)} />
                                                     <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(control.value))}`)}>
                                                         {control.value}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className="font-mono font-bold text-sm">{control.value}</span>
+                                                <div className="flex flex-col items-start">
+                                                    <span className="font-black font-mono text-sm uppercase leading-none">{control.value}</span>
+                                                    <span className="text-[10px] text-gray-500 uppercase font-mono leading-none mt-0.5">{getDriverTeam(control.value)}</span>
+                                                </div>
                                             </div>
                                         ) : (
                                             <SelectValue placeholder="Select" />
@@ -203,9 +207,9 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                     </SelectTrigger>
                                     <SelectContent className="bg-black border border-white/20 text-white max-h-[300px]">
                                         {raceResults?.map(r => (
-                                            <SelectItem key={r.driverCode} value={r.driverCode}>
-                                                <div className="flex items-center gap-2">
-                                                    <Avatar className="w-5 h-5 border border-white/10">
+                                            <SelectItem key={r.driverCode} value={r.driverCode} className="focus:bg-zinc-800 focus:text-white">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="w-6 h-6 border border-white/10">
                                                         <AvatarImage src={getDriverImage(r.driverCode)} />
                                                         <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(r.team)}`)}>
                                                             {r.driverCode}
@@ -222,67 +226,82 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                     </div>
 
                     {/* Scrollable Chart Container */}
-                    <div className="w-full overflow-x-auto pb-4 touch-pan-x">
-                        <div style={{ width: Math.max(window.innerWidth - 32, (lapData?.length || 0) * 25), height: 300 }}>
-                            {isLoadingLaps ? (
-                                <div className="w-full h-full flex items-center justify-center text-gray-500 animate-pulse">Loading Lap Data...</div>
-                            ) : (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart
-                                        data={lapData}
-                                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                                        onMouseMove={(e: any) => {
-                                            if (e && e.activeLabel) {
+                    <div className="relative bg-zinc-900/30 border border-white/10 rounded-lg p-2">
+                        <div className="absolute top-2 right-2 z-10">
+                            <span className="text-[9px] text-gray-600 uppercase font-bold bg-black/50 px-2 py-1 rounded backdrop-blur-sm border border-white/5">
+                                Scroll / Tap
+                            </span>
+                        </div>
+                        <div className="w-full overflow-x-auto pb-2 touch-pan-x no-scrollbar">
+                            <div style={{ width: Math.max(window.innerWidth - 48, (lapData?.length || 0) * 30), height: 350 }}>
+                                {isLoadingLaps ? (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-500 animate-pulse">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                            <span className="text-xs font-mono uppercase">Loading Telemetry...</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart
+                                            data={lapData}
+                                            margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
+                                            onMouseMove={(e: any) => {
                                                 // Optional: enable hover support if desired, but for mobile touch/click is better
-                                                // setSelectedLap(e.activeLabel);
-                                            }
-                                        }}
-                                        onTouchMove={(e: any) => {
-                                            if (e && e.activeLabel) {
-                                                setSelectedLap(e.activeLabel);
-                                            }
-                                        }}
-                                        onClick={(e: any) => {
-                                            if (e && e.activeLabel) {
-                                                setSelectedLap(e.activeLabel);
-                                            }
-                                        }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
-                                        <XAxis
-                                            dataKey="LapNumber"
-                                            stroke="#666"
-                                            tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
-                                            interval="preserveStartEnd"
-                                        />
-                                        <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
-                                        <Tooltip
-                                            content={() => null} // Hide default tooltip, using overlay
-                                            cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey={driver1}
-                                            stroke={driverColor(driver1, year)}
-                                            strokeWidth={3}
-                                            dot={false}
-                                            activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
-                                            connectNulls
-                                        />
-                                        {driver2 && (
+                                            }}
+                                            onTouchMove={(e: any) => {
+                                                if (e && e.activeLabel) {
+                                                    setSelectedLap(e.activeLabel);
+                                                }
+                                            }}
+                                            onClick={(e: any) => {
+                                                if (e && e.activeLabel) {
+                                                    setSelectedLap(e.activeLabel);
+                                                }
+                                            }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                                            <XAxis
+                                                dataKey="LapNumber"
+                                                stroke="#666"
+                                                tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+                                                interval="preserveStartEnd"
+                                                tickLine={false}
+                                                axisLine={false}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                hide
+                                                domain={['dataMin - 1', 'dataMax + 1']}
+                                            />
+                                            <Tooltip
+                                                content={() => null} // Hide default tooltip, using overlay
+                                                cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                            />
                                             <Line
                                                 type="monotone"
-                                                dataKey={driver2}
-                                                stroke={driverColor(driver2, year)}
+                                                dataKey={driver1}
+                                                stroke={driverColor(driver1, year)}
                                                 strokeWidth={3}
                                                 dot={false}
-                                                activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                                                activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }}
                                                 connectNulls
                                             />
-                                        )}
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            )}
+                                            {driver2 && (
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey={driver2}
+                                                    stroke={driverColor(driver2, year)}
+                                                    strokeWidth={3}
+                                                    dot={false}
+                                                    activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }}
+                                                    connectNulls
+                                                />
+                                            )}
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -308,10 +327,13 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
             {lapAnalysisMode === 'pace' && (
                 <div className="space-y-4">
                     {isLoadingPace ? (
-                        <div className="text-center py-10 text-gray-500 animate-pulse">Loading Pace Data...</div>
+                        <div className="text-center py-20 text-gray-500 animate-pulse flex flex-col items-center gap-3">
+                            <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs font-mono uppercase">Calculating Pace Distribution...</span>
+                        </div>
                     ) : (
                         <div className="space-y-3">
-                            {paceData?.sort((a, b) => a.median - b.median).map((driverPace) => {
+                            {paceData?.sort((a, b) => a.median - b.median).map((driverPace, idx) => {
                                 const driverCode = driverPace.driverCode;
                                 const team = getDriverTeam(driverCode);
                                 const color = driverColor(driverCode, year);
@@ -321,10 +343,17 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                 const leftPct = ((driverPace.min - globalMinPace) / range) * 100;
                                 const widthPct = ((driverPace.max - driverPace.min) / range) * 100;
                                 const medianPct = ((driverPace.median - globalMinPace) / range) * 100;
+                                const q1Pct = ((driverPace.q1 - globalMinPace) / range) * 100;
+                                const q3Pct = ((driverPace.q3 - globalMinPace) / range) * 100;
 
                                 return (
-                                    <div key={driverCode} className="bg-black border border-white/10 p-3 rounded-lg">
-                                        <div className="flex items-center gap-3 mb-3">
+                                    <button
+                                        key={driverCode}
+                                        onClick={() => setSelectedPaceDriver(driverPace)}
+                                        className="w-full bg-black border border-white/10 p-3 rounded-lg relative overflow-hidden hover:bg-zinc-900/50 transition-colors text-left group"
+                                    >
+                                        <div className="flex items-center gap-3 mb-4 relative z-10">
+                                            <span className="text-xs font-mono font-bold text-gray-600 w-4 text-center">{idx + 1}</span>
                                             <Avatar className="w-8 h-8 border border-white/10 rounded-none">
                                                 <AvatarImage src={getDriverImage(driverCode)} className="object-cover object-top" />
                                                 <AvatarFallback className={cn("text-[10px] font-bold rounded-none", `bg-f1-${getTeamColorClass(team)}`)}>
@@ -333,47 +362,70 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                             </Avatar>
                                             <div className="flex-1">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="font-black text-sm text-white">{driverCode}</span>
-                                                    <span className="font-mono font-bold text-xs text-white">{formatLapTime(driverPace.median)}</span>
+                                                    <span className="font-black text-sm text-white group-hover:text-red-500 transition-colors">{driverCode}</span>
+                                                    <span className="font-mono font-bold text-sm text-white">{formatLapTime(driverPace.median)}</span>
                                                 </div>
-                                                <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Median Pace</div>
                                             </div>
+                                            <ArrowRight01Icon className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors -rotate-45" />
                                         </div>
 
-                                        {/* Pace Bar */}
-                                        <div className="relative h-6 bg-zinc-900 rounded-sm w-full overflow-hidden">
-                                            {/* Grid lines for context */}
-                                            <div className="absolute inset-0 flex justify-between px-1">
-                                                <div className="w-px h-full bg-white/5" />
-                                                <div className="w-px h-full bg-white/5" />
-                                                <div className="w-px h-full bg-white/5" />
+                                        {/* Technical Box Plot Visualization */}
+                                        <div className="relative h-8 w-full mt-2">
+                                            {/* Background Grid */}
+                                            <div className="absolute inset-0 flex justify-between px-0 opacity-20">
+                                                {[0, 25, 50, 75, 100].map(p => (
+                                                    <div key={p} className="h-full w-px bg-white/20" style={{ left: `${p}%` }} />
+                                                ))}
                                             </div>
 
-                                            {/* The Range Bar */}
+                                            {/* Range Line (Min to Max) */}
                                             <div
-                                                className="absolute top-1 bottom-1 rounded-sm opacity-60"
+                                                className="absolute top-1/2 h-px bg-white/30 -translate-y-1/2"
                                                 style={{
                                                     left: `${leftPct}%`,
-                                                    width: `${widthPct}%`,
-                                                    backgroundColor: color
+                                                    width: `${widthPct}%`
+                                                }}
+                                            >
+                                                {/* End Caps */}
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-white/50" />
+                                                <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-white/50" />
+                                            </div>
+
+                                            {/* IQR Box (Q1 to Q3) */}
+                                            <div
+                                                className="absolute top-1/2 -translate-y-1/2 h-4 border border-white/20 backdrop-blur-sm"
+                                                style={{
+                                                    left: `${q1Pct}%`,
+                                                    width: `${q3Pct - q1Pct}%`,
+                                                    backgroundColor: `${color}40`, // 25% opacity
+                                                    borderColor: color
                                                 }}
                                             />
 
-                                            {/* Median Marker */}
+                                            {/* Median Line */}
                                             <div
-                                                className="absolute top-0 bottom-0 w-1 bg-white z-10 shadow-[0_0_4px_rgba(0,0,0,0.5)]"
+                                                className="absolute top-1/2 -translate-y-1/2 h-6 w-0.5 bg-white z-20 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                                                 style={{ left: `${medianPct}%` }}
                                             />
                                         </div>
-                                        <div className="flex justify-between text-[9px] text-gray-600 font-mono mt-1 px-1">
-                                            <span>{formatLapTime(driverPace.min)}</span>
-                                            <span>{formatLapTime(driverPace.max)}</span>
-                                        </div>
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
                     )}
+
+                    {/* Pace Detail Overlay */}
+                    <AnimatePresence>
+                        {selectedPaceDriver && (
+                            <PaceOverlayContent
+                                data={selectedPaceDriver}
+                                onClose={() => setSelectedPaceDriver(null)}
+                                getDriverImage={getDriverImage}
+                                getDriverTeam={getDriverTeam}
+                                year={year}
+                            />
+                        )}
+                    </AnimatePresence>
                 </div>
             )}
         </div>
@@ -414,49 +466,52 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-24 left-4 right-4 bg-zinc-900/95 border border-white/10 p-3 rounded-xl shadow-2xl z-50 backdrop-blur-md"
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed bottom-24 left-4 right-4 bg-zinc-900/95 border border-white/10 p-4 rounded-xl shadow-2xl z-50 backdrop-blur-xl"
         >
-            <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
-                <h4 className="text-base font-black italic uppercase text-white">Lap {lapNumber}</h4>
+            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                <div className="flex items-center gap-2">
+                    <div className="w-1 h-4 bg-red-600 rounded-full" />
+                    <h4 className="text-lg font-black italic uppercase text-white">Lap {lapNumber}</h4>
+                </div>
                 <button
                     onClick={onClose}
-                    className="p-1 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                    className="p-2 bg-white/5 rounded-full hover:bg-white/20 transition-colors border border-white/10"
                 >
-                    <Cancel01Icon className="w-3 h-3 text-white" />
+                    <Cancel01Icon className="w-4 h-4 text-white" />
                 </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
                 {/* Driver 1 */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Avatar className="w-6 h-6 border border-white/10">
+                <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/5">
+                    <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8 border border-white/10">
                             <AvatarImage src={getDriverImage(driver1)} />
-                            <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver1))}`)}>
+                            <AvatarFallback className={cn("text-[10px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver1))}`)}>
                                 {driver1}
                             </AvatarFallback>
                         </Avatar>
                         <span className="font-bold text-sm text-white">{driver1}</span>
                     </div>
-                    <span className="font-mono font-bold text-base text-white">
+                    <span className="font-mono font-bold text-lg text-white">
                         {formatLapTime(d1Time)}
                     </span>
                 </div>
 
                 {/* Driver 2 */}
                 {driver2 && (
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Avatar className="w-6 h-6 border border-white/10">
+                    <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/5">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="w-8 h-8 border border-white/10">
                                 <AvatarImage src={getDriverImage(driver2)} />
-                                <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver2))}`)}>
+                                <AvatarFallback className={cn("text-[10px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver2))}`)}>
                                     {driver2}
                                 </AvatarFallback>
                             </Avatar>
                             <span className="font-bold text-sm text-white">{driver2}</span>
                         </div>
-                        <span className="font-mono font-bold text-base text-white">
+                        <span className="font-mono font-bold text-lg text-white">
                             {formatLapTime(d2Time)}
                         </span>
                     </div>
@@ -464,13 +519,110 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
 
                 {/* Gap */}
                 {driver2 && d1Time !== null && d2Time !== null && (
-                    <div className="mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
-                        <span className="text-xs uppercase font-bold text-gray-500">Gap</span>
-                        <span className="font-mono font-bold text-yellow-500">
-                            +{Math.abs(d1Time - d2Time).toFixed(3)}s
-                        </span>
+                    <div className="mt-2 pt-2 flex justify-between items-center">
+                        <span className="text-xs uppercase font-bold text-gray-500 tracking-wider">Gap Delta</span>
+                        <div className="flex items-center gap-2">
+                            <span className={cn(
+                                "font-mono font-black text-xl",
+                                d1Time < d2Time ? "text-green-500" : "text-red-500"
+                            )}>
+                                {d1Time < d2Time ? '-' : '+'}{Math.abs(d1Time - d2Time).toFixed(3)}s
+                            </span>
+                            <ArrowRight01Icon className={cn(
+                                "w-4 h-4",
+                                d1Time < d2Time ? "text-green-500 -rotate-45" : "text-red-500 rotate-45"
+                            )} />
+                        </div>
                     </div>
                 )}
+            </div>
+        </motion.div>
+    );
+};
+
+interface PaceOverlayProps {
+    data: PaceDistributionData;
+    onClose: () => void;
+    getDriverImage: (code: string) => string | undefined;
+    getDriverTeam: (code: string) => string | undefined;
+    year: number;
+}
+
+const PaceOverlayContent: React.FC<PaceOverlayProps> = ({
+    data,
+    onClose,
+    getDriverImage,
+    getDriverTeam,
+    year
+}) => {
+    const team = getDriverTeam(data.driverCode);
+    const color = driverColor(data.driverCode, year);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed bottom-24 left-4 right-4 bg-zinc-900/95 border border-white/10 p-4 rounded-xl shadow-2xl z-50 backdrop-blur-xl"
+        >
+            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 border border-white/10">
+                        <AvatarImage src={getDriverImage(data.driverCode)} />
+                        <AvatarFallback className={cn("text-[10px] font-bold", `bg-f1-${getTeamColorClass(team)}`)}>
+                            {data.driverCode}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <h4 className="text-lg font-black italic uppercase text-white leading-none">{data.driverCode}</h4>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">{team}</span>
+                    </div>
+                </div>
+                <button
+                    onClick={onClose}
+                    className="p-2 bg-white/5 rounded-full hover:bg-white/20 transition-colors border border-white/10"
+                >
+                    <Cancel01Icon className="w-4 h-4 text-white" />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Median Pace</span>
+                    <span className="font-mono font-black text-xl text-white">{formatLapTime(data.median)}</span>
+                </div>
+                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Fastest Lap</span>
+                    <span className="font-mono font-bold text-lg text-green-500">{formatLapTime(data.min)}</span>
+                </div>
+                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Slowest Lap</span>
+                    <span className="font-mono font-bold text-lg text-red-500">{formatLapTime(data.max)}</span>
+                </div>
+                <div className="bg-black/40 p-3 rounded-lg border border-white/5">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Consistency (IQR)</span>
+                    <span className="font-mono font-bold text-lg text-blue-400">{(data.q3 - data.q1).toFixed(3)}s</span>
+                </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-white/10">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] uppercase font-bold text-gray-500">Pace Spread</span>
+                </div>
+                {/* Mini Box Plot Legend/Vis */}
+                <div className="relative h-6 w-full bg-black/40 rounded border border-white/5">
+                    <div className="absolute top-1/2 -translate-y-1/2 left-2 right-2 h-px bg-white/20"></div>
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] right-[25%] h-3 bg-white/10 border border-white/30 backdrop-blur-sm"></div>
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[50%] h-4 w-0.5 bg-white"></div>
+                </div>
+                <div className="flex justify-between text-[9px] text-gray-600 font-mono mt-1 px-1">
+                    <span>Min</span>
+                    <span>Q1</span>
+                    <span>Med</span>
+                    <span>Q3</span>
+                    <span>Max</span>
+                </div>
             </div>
         </motion.div>
     );
