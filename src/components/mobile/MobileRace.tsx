@@ -19,11 +19,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import MobileStrategy from './MobileStrategy';
 import MobileLapTimes from './MobileLapTimes';
 import MobileHeadToHead from './MobileHeadToHead';
-import SpeedTraceChart from '@/components/SpeedTraceChart';
-import ThrottleChart from '@/components/ThrottleChart';
-import BrakeChart from '@/components/BrakeChart';
-import RPMChart from '@/components/RPMChart';
-import DRSChart from '@/components/DRSChart';
+import MobileTelemetry from './MobileTelemetry';
 
 // Driver image map for 2025
 const driverImageMap: Record<string, string> = {
@@ -1105,19 +1101,13 @@ const MobileRace: React.FC = () => {
                 )}
 
                 {activeTab === 'telemetry' && (
-                    <div className="space-y-8 animate-in fade-in duration-500">
-                        <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                            <Analytics01Icon className="w-6 h-6 text-red-600" />
-                            <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">
-                                Telemetry Data
-                            </h2>
-                        </div>
-                        <SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
-                        <ThrottleChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
-                        <BrakeChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
-                        <RPMChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
-                        <DRSChart year={year!} event={eventName} session={selectedSession} lap={'fastest'} openF1Drivers={openF1Drivers} initialDriver={profile?.favorite_driver} />
-                    </div>
+                    <MobileTelemetry
+                        year={year!}
+                        event={eventName}
+                        session={selectedSession}
+                        openF1Drivers={openF1Drivers}
+                        raceResults={raceResults}
+                    />
                 )}
             </div>
 
