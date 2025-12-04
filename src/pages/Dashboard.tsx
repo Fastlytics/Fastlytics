@@ -17,6 +17,7 @@ import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
+import QuickLinksWidget from '@/components/dashboard/QuickLinksWidget';
 import { Flag01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/SEO';
@@ -135,7 +136,7 @@ const Dashboard = () => {
             description="Real-time F1 dashboard with live telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
             keywords={['f1 dashboard', 'live telemetry', 'f1 standings', 'f1 schedule', 'race results']}
           />
-          
+
           <main className="pt-4 pb-6 px-4 space-y-6">
             {/* Mobile Header with Next Session */}
             <MobileDashboardHeader
@@ -194,6 +195,8 @@ const Dashboard = () => {
           schedule={schedule || []}
           isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
         />
+
+        <QuickLinksWidget />
 
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
           {/* Main Content Area (3 cols) */}
