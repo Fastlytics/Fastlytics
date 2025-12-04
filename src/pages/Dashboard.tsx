@@ -26,7 +26,8 @@ import { useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   MobileLayout,
-  MobileDashboardHeader,
+  MobilePageHeader,
+  MobileNextSessionCard,
   MobileChampionshipWidget,
   MobileRecentRaces,
   MobileFavoritesWidget
@@ -138,11 +139,11 @@ const Dashboard = () => {
           />
 
           <main className="pt-4 pb-6 px-4 space-y-6">
-            {/* Mobile Header with Next Session */}
-            <MobileDashboardHeader
-              nextSession={nextSession}
-              favoriteDriverName={favoriteDriverName}
-            />
+            {/* Mobile Header */}
+            <MobilePageHeader />
+
+            {/* Next Session Card */}
+            <MobileNextSessionCard nextSession={nextSession} />
 
             {/* Favorites / My Garage */}
             <MobileFavoritesWidget

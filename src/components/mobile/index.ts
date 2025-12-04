@@ -1,7 +1,7 @@
 // Mobile Components Export
 export { default as MobileBottomNav } from './MobileBottomNav';
 export { default as MobileLayout } from './MobileLayout';
-export { default as MobileDashboardHeader } from './MobileDashboardHeader';
+export { default as MobileNextSessionCard } from './MobileNextSessionCard';
 export { default as MobileChampionshipWidget } from './MobileChampionshipWidget';
 export { default as MobileRecentRaces } from './MobileRecentRaces';
 export { default as MobileFavoritesWidget } from './MobileFavoritesWidget';

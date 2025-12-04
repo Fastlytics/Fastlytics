@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getCountryCode } from '@/utils/countryUtils';
-import { Activity01Icon, Location01Icon } from 'hugeicons-react';
+import { Activity01Icon } from 'hugeicons-react';
 import { useNavigate } from 'react-router-dom';
-import { Gauge } from 'lucide-react';
 import { useSeason } from '@/contexts/SeasonContext';
 
-interface MobileDashboardHeaderProps {
+interface MobileNextSessionCardProps {
     nextSession?: {
         eventName: string;
         sessionName: string;
@@ -14,10 +13,9 @@ interface MobileDashboardHeaderProps {
         location: string;
         country: string;
     };
-    favoriteDriverName?: string;
 }
 
-const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ nextSession, favoriteDriverName }) => {
+const MobileNextSessionCard: React.FC<MobileNextSessionCardProps> = ({ nextSession }) => {
     const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
     const navigate = useNavigate();
     const { selectedYear } = useSeason();
@@ -46,16 +44,6 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ nextSessi
 
     return (
         <div className="space-y-6">
-            {/* Centered Logo Header */}
-            <div className="flex items-center justify-center py-2 border-b-2 border-white/10 bg-black sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                    <Gauge className="h-6 w-6 text-red-600" />
-                    <span className="text-xl font-black tracking-tighter uppercase italic text-white">
-                        Fast<span className="text-red-600">lytics</span>
-                    </span>
-                </div>
-            </div>
-
             {/* Next Session Card - Cyber Brutalist */}
             {nextSession && (
                 <motion.div
@@ -132,4 +120,4 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ nextSessi
     );
 };
 
-export default MobileDashboardHeader;
+export default MobileNextSessionCard;
