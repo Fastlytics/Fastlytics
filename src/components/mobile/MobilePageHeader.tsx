@@ -28,24 +28,17 @@ const MobilePageHeader: React.FC<MobilePageHeaderProps> = ({ title, showBack }) 
                     </button>
                 )}
 
-                {/* Center Content */}
+                {/* Center Content - Always Logo */}
                 <div className="flex-1 flex items-center justify-center">
-                    {title ? (
-                        <span className="text-xl font-black tracking-tighter uppercase italic text-white truncate max-w-[200px]">
-                            {title}
+                    <div className="flex items-center gap-2">
+                        <Gauge className="h-6 w-6 text-red-600" />
+                        <span className="text-xl font-black tracking-tighter uppercase italic text-white">
+                            Fast<span className="text-red-600">lytics</span>
                         </span>
-                    ) : (
-                        <div className="flex items-center gap-2.5">
-                            <Gauge className="h-8 w-8 text-red-600" />
-                            <span className="text-2xl font-black tracking-tighter uppercase italic text-white">
-                                Fast<span className="text-red-600">lytics</span>
-                            </span>
-                        </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Spacer for alignment if back button exists but no right action */}
-                {showBack && <div className="w-10" />}
+
             </div>
         </div>
     );

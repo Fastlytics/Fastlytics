@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import MobilePageHeader from './MobilePageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import MobileStrategy from './MobileStrategy';
 
 // Driver image map for 2025
 const driverImageMap: Record<string, string> = {
@@ -993,64 +994,80 @@ const MobileRace: React.FC = () => {
             {/* Session Selector Header */}
             <div className="sticky top-[58px] z-40 bg-black/95 backdrop-blur-md border-b border-white/10">
                 <div className="px-4 py-3 flex items-center justify-between">
+                    {/* Left: GP Name */}
+                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-white truncate max-w-[60%]">
+                        {eventName}
+                    </h2>
+
+                    {/* Right: Session Selector */}
                     <button
                         onClick={() => setShowSessionSelector(true)}
                         className="flex items-center gap-2 active:opacity-70"
                     >
-                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">
+                        <span className="text-sm font-bold uppercase tracking-wider text-gray-400">
                             {currentSessionName}
-                        </h2>
+                        </span>
                         <ArrowDown01Icon className="w-5 h-5 text-red-600" />
                     </button>
-                    <div className="flex items-center gap-2">
-                        {/* View Toggle (Analysis vs Overview) */}
-                        {/* Placeholder for future toggles */}
-                    </div>
                 </div>
             </div>
 
             <div className="p-4 space-y-6">
-                {/* Highlights Carousel (Race Only) */}
-                {isRaceOrSprint && highlights.length > 0 && (
-                    <div className="mb-8">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Highlights</h3>
-                        <StackedHighlightCards
-                            highlights={highlights}
-                            getDriverImage={getDriverImage}
-                            getTeamColorClass={getTeamColorClass}
-                        />
-                    </div>
+                {activeTab === 'overview' && (
+                    <>
+                        {/* Highlights Carousel (Race Only) */}
+                        {isRaceOrSprint && highlights.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Highlights</h3>
+                                <StackedHighlightCards
+                                    highlights={highlights}
+                                    getDriverImage={getDriverImage}
+                                    getTeamColorClass={getTeamColorClass}
+                                />
+                            </div>
+                        )}
+
+                        {/* Results Table */}
+                        <div>
+                            <div className="flex items-center justify-between mb-3 px-1">
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Classification</h3>
+                                <span className="text-[10px] font-mono text-gray-600">{raceResults?.length || 0} DRIVERS</span>
+                            </div>
+
+                            <div className="space-y-px bg-white/10 border-t border-b border-white/10">
+                                {isLoadingResults ? (
+                                    <div className="p-8 text-center text-gray-500 animate-pulse bg-black">
+                                        Loading results...
+                                    </div>
+                                ) : (
+                                    raceResults?.map((result) => (
+                                        <ResultRow
+                                            key={result.driverCode}
+                                            result={result}
+                                            position={result.position}
+                                            sessionType={selectedSession}
+                                            isFavorite={profile?.favorite_driver === result.driverCode}
+                                            driverImage={getDriverImage(result.driverCode, result.fullName)}
+                                            isExpanded={expandedDriver === result.driverCode}
+                                            onToggle={() => setExpandedDriver(expandedDriver === result.driverCode ? null : result.driverCode)}
+                                            fastestLapHolder={fastestLapHolder}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </>
                 )}
 
-                {/* Results Table */}
-                <div>
-                    <div className="flex items-center justify-between mb-3 px-1">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Classification</h3>
-                        <span className="text-[10px] font-mono text-gray-600">{raceResults?.length || 0} DRIVERS</span>
-                    </div>
-
-                    <div className="space-y-px bg-white/10 border-t border-b border-white/10">
-                        {isLoadingResults ? (
-                            <div className="p-8 text-center text-gray-500 animate-pulse bg-black">
-                                Loading results...
-                            </div>
-                        ) : (
-                            raceResults?.map((result) => (
-                                <ResultRow
-                                    key={result.driverCode}
-                                    result={result}
-                                    position={result.position}
-                                    sessionType={selectedSession}
-                                    isFavorite={profile?.favorite_driver === result.driverCode}
-                                    driverImage={getDriverImage(result.driverCode, result.fullName)}
-                                    isExpanded={expandedDriver === result.driverCode}
-                                    onToggle={() => setExpandedDriver(expandedDriver === result.driverCode ? null : result.driverCode)}
-                                    fastestLapHolder={fastestLapHolder}
-                                />
-                            ))
-                        )}
-                    </div>
-                </div>
+                {activeTab === 'strategy' && year && (
+                    <MobileStrategy
+                        year={year}
+                        event={eventName}
+                        session={selectedSession}
+                        raceResults={raceResults}
+                        getDriverImage={getDriverImage}
+                    />
+                )}
             </div>
 
             {/* Bottom Nav */}
