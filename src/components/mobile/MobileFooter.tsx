@@ -14,7 +14,6 @@ const MobileFooter: React.FC = () => {
 
             {/* Quick Links */}
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-8">
-                <Link to="/dashboard" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Dashboard</Link>
                 <Link to="/pricing" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Pricing</Link>
                 <Link to="/about" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">About</Link>
                 <Link to="/privacy-policy" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Privacy</Link>

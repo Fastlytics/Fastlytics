@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flag01Icon, Analytics01Icon, UserIcon, UserGroupIcon, FlashIcon } from 'hugeicons-react';
+import { Flag01Icon, Analytics01Icon, UserIcon, UserGroupIcon, FlashIcon, SecurityCheckIcon } from 'hugeicons-react';
+import { StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ActivityItemProps {
@@ -197,6 +198,134 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, drivers }) => {
                 </div>
             );
             onClick = () => navigate(`/team/${teamId}`);
+            break;
+
+        case 'tab_switched':
+            const tabName = event_data.tab;
+            const raceNameTab = event_data.race_name;
+            const tabYear = event_data.year || new Date().getFullYear(); // Fallback if missing in old logs
+            const countryCodeTab = getCountryCode(raceNameTab);
+
+            let actionVerb = "Viewed";
+            if (['telemetry', 'strategy', 'dominance', 'positions', 'laptimes'].includes(tabName)) {
+                actionVerb = "Analysed";
+            }
+
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
+                        {countryCodeTab ? (
+                            <img
+                                src={`https://flagcdn.com/h40/${countryCodeTab}.png`}
+                                alt={raceNameTab}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <Analytics01Icon className="w-5 h-5 text-zinc-500" />
+                        )}
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">{actionVerb} {tabName.charAt(0).toUpperCase() + tabName.slice(1)}</div>
+                        <div className="text-xs text-zinc-500">{raceNameTab} • {tabYear}</div>
+                    </div>
+                </div>
+            );
+            onClick = () => {
+                const slug = `${tabYear}-${raceNameTab.toLowerCase().replace(/\s+/g, '-')}`;
+                navigate(`/race/${slug}?view=analysis&tab=${tabName}`);
+            };
+            break;
+
+        case 'session_changed':
+        case 'mobile_session_changed':
+            const sessionType = event_data.session_type;
+            const raceNameSession = event_data.race_name;
+            const sessionYear = event_data.year;
+            const countryCodeSession = getCountryCode(raceNameSession);
+
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
+                        {countryCodeSession ? (
+                            <img
+                                src={`https://flagcdn.com/h40/${countryCodeSession}.png`}
+                                alt={raceNameSession}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <Flag01Icon className="w-5 h-5 text-zinc-500" />
+                        )}
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">Viewed {sessionType} Results</div>
+                        <div className="text-xs text-zinc-500">{raceNameSession} • {sessionYear}</div>
+                    </div>
+                </div>
+            );
+            onClick = () => {
+                const slug = `${sessionYear}-${raceNameSession.toLowerCase().replace(/\s+/g, '-')}`;
+                navigate(`/race/${slug}?session=${sessionType}`);
+            };
+            break;
+
+        case 'chart_interaction':
+            const chartAction = event_data.action;
+            const chartName = event_data.chart;
+
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+                        <FlashIcon className="w-5 h-5 text-yellow-500" />
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">Interacted with {chartName.replace(/_/g, ' ')}</div>
+                        <div className="text-xs text-zinc-500 capitalize">{chartAction.replace(/_/g, ' ')}</div>
+                    </div>
+                </div>
+            );
+            break;
+
+        case 'favorites_updated':
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+                        <StarIcon className="w-5 h-5 text-yellow-500" />
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">Updated Favorites</div>
+                        <div className="text-xs text-zinc-500">Profile Settings</div>
+                    </div>
+                </div>
+            );
+            break;
+
+        case 'profile_updated':
+            const field = event_data.field;
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+                        <UserIcon className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">Updated Profile</div>
+                        <div className="text-xs text-zinc-500">Changed {field}</div>
+                    </div>
+                </div>
+            );
+            break;
+
+        case 'password_updated':
+            content = (
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+                        <SecurityCheckIcon className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                        <div className="font-bold text-white text-sm">Updated Password</div>
+                        <div className="text-xs text-zinc-500">Security Settings</div>
+                    </div>
+                </div>
+            );
             break;
 
         default:

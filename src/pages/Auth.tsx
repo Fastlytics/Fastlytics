@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ const Auth = () => {
         }
     }, [user, loading, navigate]);
 
-    const handleSocialLogin = async (provider: 'google' | 'spotify' | 'discord') => {
+    const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
         setIsLoading(true);
         posthog.capture('login_started', { method: 'social', provider });
         try {
@@ -221,11 +221,11 @@ const Auth = () => {
                                                 <Button
                                                     variant="outline"
                                                     className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('spotify')}
+                                                    onClick={() => handleSocialLogin('github')}
                                                     disabled={isLoading}
                                                 >
-                                                    <FontAwesomeIcon icon={faSpotify} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign up with Spotify
+                                                    <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign up with GitHub
                                                 </Button>
                                                 <Button
                                                     variant="outline"
@@ -264,11 +264,11 @@ const Auth = () => {
                                                 <Button
                                                     variant="outline"
                                                     className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('spotify')}
+                                                    onClick={() => handleSocialLogin('github')}
                                                     disabled={isLoading}
                                                 >
-                                                    <FontAwesomeIcon icon={faSpotify} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign in with Spotify
+                                                    <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                    Sign in with GitHub
                                                 </Button>
                                                 <Button
                                                     variant="outline"
