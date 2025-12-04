@@ -245,7 +245,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
             </div>
 
             {/* 2. Telemetry Navigation */}
-            <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar px-1 snap-x">
+            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide px-1 snap-x">
                 {['speed', 'throttle', 'brake', 'rpm', 'drs', 'gear'].map((t) => (
                     <button
                         key={t}
