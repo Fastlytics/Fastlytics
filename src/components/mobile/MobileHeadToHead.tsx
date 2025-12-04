@@ -430,28 +430,88 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="bg-zinc-900/50 border border-white/10 p-3 rounded-lg flex justify-between items-center"
+                                    className="bg-zinc-900/50 border border-white/10 p-3 rounded-lg space-y-3"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="w-8 h-8 border border-white/10">
-                                            <AvatarImage src={getDriverImage(selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2)} />
-                                            <AvatarFallback className={cn("text-[10px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2))}`)}>
-                                                {selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] uppercase font-bold text-gray-500">Advantage</span>
-                                            <span className="text-sm font-mono font-bold" style={{ color: selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? driver1Color : driver2Color }}>
-                                                {Math.abs(selectedSectionData.driver1Advantage || 0).toFixed(3)}s
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="w-8 h-8 border border-white/10">
+                                                <AvatarImage src={getDriverImage(selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2)} />
+                                                <AvatarFallback className={cn("text-[10px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2))}`)}>
+                                                    {selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? selectedDriver1 : selectedDriver2}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase font-bold text-gray-500">Advantage</span>
+                                                <span className="text-sm font-mono font-bold" style={{ color: selectedSectionData.driver1Advantage && selectedSectionData.driver1Advantage > 0 ? driver1Color : driver2Color }}>
+                                                    {Math.abs(selectedSectionData.driver1Advantage || 0).toFixed(3)}s
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] uppercase font-bold text-gray-500">Segment</span>
+                                            <span className="text-sm font-mono font-bold text-white">
+                                                {selectedSectionData.id.replace('segment_', '')}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[10px] uppercase font-bold text-gray-500">Segment</span>
-                                        <span className="text-sm font-mono font-bold text-white">
-                                            {selectedSectionData.id.replace('segment_', '')}
-                                        </span>
-                                    </div>
+
+                                    {/* Segment Telemetry Stats */}
+                                    {(() => {
+                                        // Calculate stats on the fly
+                                        const totalDist = speedData1 ? Math.max(...speedData1.map(d => d.Distance)) : 0;
+                                        const numSegments = comparisonData?.sections.length || 1;
+                                        const segmentLength = totalDist / numSegments;
+                                        const segmentIndex = parseInt(selectedSectionData.id.replace('segment_', '')) || 0;
+                                        const startDist = segmentIndex * segmentLength;
+                                        const endDist = (segmentIndex + 1) * segmentLength;
+
+                                        const calcAvg = (data: any[], key: string) => {
+                                            if (!data) return 0;
+                                            const segmentData = data.filter(d => d.Distance >= startDist && d.Distance <= endDist);
+                                            if (segmentData.length === 0) return 0;
+                                            const sum = segmentData.reduce((acc, curr) => acc + curr[key], 0);
+                                            return sum / segmentData.length;
+                                        };
+
+                                        const d1Speed = calcAvg(speedData1 || [], 'Speed');
+                                        const d2Speed = calcAvg(speedData2 || [], 'Speed');
+                                        const d1Throttle = calcAvg(throttleData1 || [], 'Throttle');
+                                        const d2Throttle = calcAvg(throttleData2 || [], 'Throttle');
+                                        const d1Brake = calcAvg(brakeData1 || [], 'Brake');
+                                        const d2Brake = calcAvg(brakeData2 || [], 'Brake');
+
+                                        return (
+                                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+                                                <div className="flex flex-col items-center p-2 bg-black/40 rounded">
+                                                    <span className="text-[9px] uppercase font-bold text-gray-500 mb-1">Avg Speed</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver1Color }}>{Math.round(d1Speed)}</span>
+                                                        <span className="text-[9px] text-gray-600">vs</span>
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver2Color }}>{Math.round(d2Speed)}</span>
+                                                    </div>
+                                                    <span className="text-[9px] text-gray-500 mt-0.5">km/h</span>
+                                                </div>
+                                                <div className="flex flex-col items-center p-2 bg-black/40 rounded">
+                                                    <span className="text-[9px] uppercase font-bold text-gray-500 mb-1">Avg Throttle</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver1Color }}>{Math.round(d1Throttle)}</span>
+                                                        <span className="text-[9px] text-gray-600">vs</span>
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver2Color }}>{Math.round(d2Throttle)}</span>
+                                                    </div>
+                                                    <span className="text-[9px] text-gray-500 mt-0.5">%</span>
+                                                </div>
+                                                <div className="flex flex-col items-center p-2 bg-black/40 rounded">
+                                                    <span className="text-[9px] uppercase font-bold text-gray-500 mb-1">Avg Brake</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver1Color }}>{Math.round(d1Brake)}</span>
+                                                        <span className="text-[9px] text-gray-600">vs</span>
+                                                        <span className="text-xs font-mono font-bold" style={{ color: driver2Color }}>{Math.round(d2Brake)}</span>
+                                                    </div>
+                                                    <span className="text-[9px] text-gray-500 mt-0.5">%</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </motion.div>
                             ) : (
                                 <div className="h-12 flex items-center justify-center text-[10px] text-gray-600 uppercase font-bold border border-transparent">
