@@ -18,6 +18,8 @@ import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
 // Driver Image Map for 2025
 const driverImageMap: Record<string, string> = {
@@ -117,7 +119,7 @@ const MobileOnboarding: React.FC = () => {
         }
     };
 
-    const totalSteps = 3;
+    const totalSteps = 4;
 
     return (
         <div className="h-[100dvh] bg-black text-white flex flex-col overflow-hidden">
@@ -130,7 +132,7 @@ const MobileOnboarding: React.FC = () => {
             {/* Progress Bars */}
             <div className="relative z-10 pt-12 pb-6 px-4">
                 <div className="flex items-center justify-center gap-1">
-                    {[0, 1, 2].map((i) => (
+                    {[0, 1, 2, 3].map((i) => (
                         <div
                             key={i}
                             className={cn(
@@ -348,6 +350,58 @@ const MobileOnboarding: React.FC = () => {
                             </div>
                         </motion.div>
                     )}
+
+                    {/* Step 3: Social Media */}
+                    {step === 3 && (
+                        <motion.div
+                            key="socials"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            className="h-full flex flex-col px-4"
+                        >
+                            <div className="text-center py-4">
+                                <h2 className="text-xl font-black uppercase italic tracking-tighter">
+                                    Stay Updated
+                                </h2>
+                                <p className="text-sm text-gray-500">Follow us on social media</p>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center justify-center gap-4 pb-12">
+                                <a
+                                    href="https://twitter.com/fastlytics"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center gap-4 p-4 border-2 border-white/10 bg-black hover:bg-white/5 active:scale-95 transition-all"
+                                >
+                                    <div className="w-12 h-12 bg-white/10 flex items-center justify-center">
+                                        <FontAwesomeIcon icon={faXTwitter} className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-black text-lg uppercase italic">X (Twitter)</div>
+                                        <div className="text-xs text-gray-500 font-mono">@fastlytics</div>
+                                    </div>
+                                    <ArrowRight01Icon className="w-5 h-5 text-gray-500" />
+                                </a>
+
+                                <a
+                                    href="https://instagram.com/fastlytics"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center gap-4 p-4 border-2 border-white/10 bg-black hover:bg-white/5 active:scale-95 transition-all"
+                                >
+                                    <div className="w-12 h-12 bg-white/10 flex items-center justify-center">
+                                        <FontAwesomeIcon icon={faInstagram} className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-black text-lg uppercase italic">Instagram</div>
+                                        <div className="text-xs text-gray-500 font-mono">@fastlytics</div>
+                                    </div>
+                                    <ArrowRight01Icon className="w-5 h-5 text-gray-500" />
+                                </a>
+                            </div>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </div>
 
@@ -357,7 +411,7 @@ const MobileOnboarding: React.FC = () => {
                 <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                        if (step === 2) {
+                        if (step === 3) {
                             handleComplete();
                         } else {
                             setStep(step + 1);
@@ -367,7 +421,7 @@ const MobileOnboarding: React.FC = () => {
                     className={cn(
                         "w-full py-4 font-black uppercase tracking-wider text-center transition-all border-2",
                         "disabled:opacity-50 disabled:cursor-not-allowed",
-                        step === 2
+                        step === 3
                             ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
                             : "bg-white text-black border-white hover:bg-gray-200"
                     )}
@@ -379,13 +433,13 @@ const MobileOnboarding: React.FC = () => {
                                 <ArrowRight01Icon className="w-5 h-5" />
                             </>
                         )}
-                        {step === 1 && (
+                        {(step === 1 || step === 2) && (
                             <>
                                 <span>Continue</span>
                                 <ArrowRight01Icon className="w-5 h-5" />
                             </>
                         )}
-                        {step === 2 && (
+                        {step === 3 && (
                             <span>{isLoading ? 'Setting up...' : 'Finish Setup'}</span>
                         )}
                     </div>

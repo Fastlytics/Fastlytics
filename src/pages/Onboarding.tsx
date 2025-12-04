@@ -13,6 +13,8 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileOnboarding } from '@/components/mobile';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
 const Onboarding = () => {
     const { user, refreshProfile } = useAuth();
@@ -130,12 +132,13 @@ const Onboarding = () => {
                         <span className={step >= 1 ? "text-white" : ""}>Welcome</span>
                         <span className={step >= 2 ? "text-white" : ""}>Driver</span>
                         <span className={step >= 3 ? "text-white" : ""}>Team</span>
+                        <span className={step >= 4 ? "text-white" : ""}>Socials</span>
                     </div>
                     <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-red-600"
                             initial={{ width: "0%" }}
-                            animate={{ width: `${(step / 3) * 100}%` }}
+                            animate={{ width: `${(step / 4) * 100}%` }}
                             transition={{ duration: 0.5, ease: "easeInOut" }}
                         />
                     </div>
@@ -279,8 +282,70 @@ const Onboarding = () => {
                                     <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
                                 </Button>
                                 <Button
+                                    onClick={handleNext}
+                                    disabled={!selectedTeam}
+                                    className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider rounded-none disabled:opacity-50"
+                                >
+                                    Next Step <ArrowRight01Icon className="ml-2 w-4 h-4" />
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {step === 4 && (
+                        <motion.div
+                            key="step4"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            className="space-y-8"
+                        >
+                            <div className="text-center space-y-2">
+                                <h2 className="text-3xl font-black uppercase italic tracking-tighter">Stay Updated</h2>
+                                <p className="text-zinc-400">Follow us on social media for the latest updates.</p>
+                            </div>
+
+                            <div className="flex flex-col items-center justify-center gap-6 py-12">
+                                <a
+                                    href="https://twitter.com/fastlytics"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-4 p-6 border-2 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900 hover:border-white transition-all w-full max-w-md group"
+                                >
+                                    <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                                        <FontAwesomeIcon icon={faXTwitter} className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-xl font-black uppercase italic">X (Twitter)</div>
+                                        <div className="text-zinc-500 text-sm">@fastlytics</div>
+                                    </div>
+                                    <ArrowRight01Icon className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                                </a>
+
+                                <a
+                                    href="https://instagram.com/fastlytics"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-4 p-6 border-2 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900 hover:border-white transition-all w-full max-w-md group"
+                                >
+                                    <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                                        <FontAwesomeIcon icon={faInstagram} className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="text-xl font-black uppercase italic">Instagram</div>
+                                        <div className="text-zinc-500 text-sm">@fastlytics</div>
+                                    </div>
+                                    <ArrowRight01Icon className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                                </a>
+                            </div>
+
+                            <div className="flex justify-between pt-4 max-w-4xl mx-auto w-full">
+                                <Button variant="ghost" onClick={handleBack} className="text-zinc-400 hover:text-white">
+                                    <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
+                                </Button>
+                                <Button
                                     onClick={handleComplete}
-                                    disabled={!selectedTeam || isLoading}
+                                    disabled={isLoading}
                                     className="bg-red-600 text-white hover:bg-red-700 font-bold uppercase tracking-wider rounded-none disabled:opacity-50 min-w-[140px]"
                                 >
                                     {isLoading ? 'Saving...' : 'Finish Setup'}

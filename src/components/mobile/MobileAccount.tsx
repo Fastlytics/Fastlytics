@@ -213,7 +213,7 @@ const MobileAccount: React.FC = () => {
                     .select('*')
                     .eq('user_id', user.id)
                     .order('created_at', { ascending: false })
-                    .limit(20);
+                    .limit(100);
 
                 if (error) throw error;
                 setUserActivity(data || []);
@@ -837,26 +837,26 @@ const MobileAccount: React.FC = () => {
                         </div>
 
                         {/* Pro Tier */}
-                        <div className="bg-black border-2 border-red-600 p-5 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
+                        <div className="bg-black border-2 border-red-600/50 p-5 relative overflow-hidden opacity-75 grayscale-[0.5]">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50" />
                             <div className="absolute top-3 right-3">
-                                <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 uppercase tracking-wider flex items-center gap-1">
-                                    <Star className="w-3 h-3 fill-current" /> Recommended
+                                <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black px-2 py-1 uppercase tracking-wider flex items-center gap-1">
+                                    Coming Soon
                                 </span>
                             </div>
 
                             <div className="mb-4">
-                                <h3 className="text-xl font-black uppercase italic text-red-500 mb-1 flex items-center gap-2">
-                                    Pro <span className="text-white text-[10px] bg-red-600/20 px-1.5 py-0.5 border border-red-600/30 not-italic font-sans uppercase font-bold">All Access</span>
+                                <h3 className="text-xl font-black uppercase italic text-red-500/70 mb-1 flex items-center gap-2">
+                                    Pro <span className="text-white/70 text-[10px] bg-red-600/10 px-1.5 py-0.5 border border-red-600/20 not-italic font-sans uppercase font-bold">All Access</span>
                                 </h3>
-                                <div className="flex items-baseline gap-1">
+                                <div className="flex items-baseline gap-1 opacity-50">
                                     <span className="text-3xl font-black text-white">${currentPro.price}</span>
                                     <span className="text-sm text-gray-500 font-bold uppercase">{currentPro.label}</span>
                                 </div>
                             </div>
 
                             {/* Billing Cycle Selector */}
-                            <div className="grid grid-cols-2 gap-2 mb-6">
+                            <div className="grid grid-cols-2 gap-2 mb-6 opacity-50 pointer-events-none">
                                 {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
                                     <button
                                         key={cycle}
@@ -873,16 +873,16 @@ const MobileAccount: React.FC = () => {
                                 ))}
                             </div>
 
-                            <ul className="space-y-2 mb-6">
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Advanced Telemetry</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Session Replay</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Time Synced Data</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Unlimited History</li>
+                            <ul className="space-y-2 mb-6 opacity-70">
+                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Advanced Telemetry</li>
+                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Session Replay</li>
+                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Time Synced Data</li>
+                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Unlimited History</li>
                             </ul>
-                            <button className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-3 text-sm active:bg-red-700 transition-all border-2 border-transparent hover:border-white">
-                                Upgrade to Pro
+                            <button disabled className="w-full bg-zinc-800 text-zinc-400 font-black uppercase tracking-wider py-3 text-sm border-2 border-zinc-800 cursor-not-allowed">
+                                Coming Soon
                             </button>
-                            <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase">
+                            <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase opacity-50">
                                 Secure payment via Paddle.
                             </p>
                         </div>

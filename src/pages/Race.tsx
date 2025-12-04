@@ -471,7 +471,7 @@ const Race = () => {
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    trackEvent('tab_switched', { tab: section, context: 'race_analysis', race_name: eventName });
+    trackEvent('tab_switched', { tab: section, context: 'race_analysis', race_name: eventName, year: year });
   };
 
   if (!year || !eventSlug) return null;

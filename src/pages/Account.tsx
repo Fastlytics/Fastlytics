@@ -17,7 +17,7 @@ import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAccount } from '@/components/mobile';
 
@@ -132,7 +132,7 @@ const Account = () => {
                     .select('*')
                     .eq('user_id', user.id)
                     .order('created_at', { ascending: false })
-                    .limit(20);
+                    .limit(100);
 
                 if (error) throw error;
                 setUserActivity(data || []);
@@ -279,14 +279,14 @@ const Account = () => {
         }
     };
 
-    const handleConnectSocial = async (provider: 'google' | 'spotify' | 'discord') => {
+    const handleConnectSocial = async (provider: 'google' | 'github' | 'discord') => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase.auth.linkIdentity({
                 provider: provider,
                 options: {
                     redirectTo: `${window.location.origin}/dashboard`,
-                    scopes: provider === 'spotify' ? 'user-read-email user-read-private' : undefined
+                    scopes: provider === 'github' ? 'read:user user:email' : undefined
                 }
             });
             if (error) throw error;
@@ -619,7 +619,7 @@ const Account = () => {
                                         <div className="space-y-4 max-w-xl">
                                             {[
                                                 { provider: 'google', icon: faGoogle, label: 'Google' },
-                                                { provider: 'spotify', icon: faSpotify, label: 'Spotify' },
+                                                { provider: 'github', icon: faGithub, label: 'GitHub' },
                                                 { provider: 'discord', icon: faDiscord, label: 'Discord' }
                                             ].map((social) => {
                                                 const isConnected = isProviderConnected(social.provider);
@@ -681,19 +681,19 @@ const Account = () => {
                                     </div>
 
                                     {/* Pro Tier */}
-                                    <div className="bg-gradient-to-b from-zinc-900 to-black border border-red-600 p-8 rounded-lg relative overflow-hidden flex flex-col shadow-[0_0_30px_rgba(220,38,38,0.1)]">
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
+                                    <div className="bg-gradient-to-b from-zinc-900 to-black border border-red-600/50 p-8 rounded-lg relative overflow-hidden flex flex-col shadow-[0_0_30px_rgba(220,38,38,0.05)] opacity-75 grayscale-[0.5]">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50" />
                                         <div className="absolute top-4 right-4">
-                                            <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
-                                                <StarIcon className="w-3 h-3 fill-current" /> Recommended
+                                            <span className="bg-zinc-800 text-zinc-400 text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
+                                                Coming Soon
                                             </span>
                                         </div>
 
                                         <div className="mb-6">
-                                            <h3 className="text-2xl font-black uppercase italic text-red-500 mb-2 flex items-center gap-2">
-                                                Pro <span className="text-white text-xs bg-red-600/20 px-2 py-0.5 rounded border border-red-600/30 not-italic font-sans">All Access</span>
+                                            <h3 className="text-2xl font-black uppercase italic text-red-500/70 mb-2 flex items-center gap-2">
+                                                Pro <span className="text-white/70 text-xs bg-red-600/10 px-2 py-0.5 rounded border border-red-600/20 not-italic font-sans">All Access</span>
                                             </h3>
-                                            <div className="flex items-baseline gap-1">
+                                            <div className="flex items-baseline gap-1 opacity-50">
                                                 <span className="text-3xl font-bold text-white">${currentPro.price}</span>
                                                 <span className="text-lg text-zinc-500 font-normal">{currentPro.label}</span>
                                             </div>
@@ -701,7 +701,7 @@ const Account = () => {
                                         </div>
 
                                         {/* Billing Cycle Selector */}
-                                        <div className="grid grid-cols-2 gap-2 mb-6">
+                                        <div className="grid grid-cols-2 gap-2 mb-6 opacity-50 pointer-events-none">
                                             {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
                                                 <button
                                                     key={cycle}
@@ -718,16 +718,16 @@ const Account = () => {
                                             ))}
                                         </div>
 
-                                        <ul className="space-y-3 mb-8 flex-grow">
-                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Advanced Telemetry</li>
-                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Session Replay</li>
-                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Time Synced Data</li>
-                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Unlimited History</li>
+                                        <ul className="space-y-3 mb-8 flex-grow opacity-70">
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500/70 mr-3" /> Advanced Telemetry</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500/70 mr-3" /> Session Replay</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500/70 mr-3" /> Time Synced Data</li>
+                                            <li className="flex items-center text-zinc-300"><CheckmarkCircle01Icon className="w-5 h-5 text-red-500/70 mr-3" /> Unlimited History</li>
                                         </ul>
-                                        <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider shadow-[0_4px_0_0_rgba(153,27,27,1)] active:shadow-none active:translate-y-[4px] transition-all">
-                                            Upgrade to Pro
+                                        <Button disabled className="w-full bg-zinc-800 text-zinc-400 font-bold uppercase tracking-wider cursor-not-allowed">
+                                            Coming Soon
                                         </Button>
-                                        <p className="text-center text-[10px] text-zinc-500 mt-3 font-mono">
+                                        <p className="text-center text-[10px] text-zinc-500 mt-3 font-mono opacity-50">
                                             Secure payment via Paddle.
                                         </p>
                                     </div>

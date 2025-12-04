@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faSpotify, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import {
     ArrowLeft01Icon,
     Mail01Icon,
@@ -34,7 +34,7 @@ const MobileAuth: React.FC = () => {
         }
     }, [user, loading, navigate]);
 
-    const handleSocialLogin = async (provider: 'google' | 'spotify' | 'discord') => {
+    const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
         setIsLoading(true);
         posthog.capture('login_started', { method: 'social', provider, platform: 'mobile' });
         try {
@@ -74,7 +74,7 @@ const MobileAuth: React.FC = () => {
 
     const socialProviders = [
         { id: 'google' as const, icon: faGoogle, label: 'Google', bgColor: 'bg-gray-900' },
-        { id: 'spotify' as const, icon: faSpotify, label: 'Spotify', bgColor: 'bg-gray-900' },
+        { id: 'github' as const, icon: faGithub, label: 'GitHub', bgColor: 'bg-gray-900' },
         { id: 'discord' as const, icon: faDiscord, label: 'Discord', bgColor: 'bg-gray-900' },
     ];
 

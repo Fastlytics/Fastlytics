@@ -97,18 +97,18 @@ const MobilePricing: React.FC = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="bg-zinc-950 border-2 border-red-600 p-6 relative"
+                        className="bg-zinc-950 border-2 border-red-600/50 p-6 relative opacity-75 grayscale-[0.5]"
                     >
-                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-wider flex items-center gap-1">
-                            <StarIcon className="w-3 h-3 fill-current" /> Recommended
+                        <div className="absolute top-0 right-0 bg-zinc-800 text-zinc-400 text-[10px] font-bold px-3 py-1 uppercase tracking-wider flex items-center gap-1">
+                            Coming Soon
                         </div>
 
                         <div className="mb-6 mt-2">
-                            <h3 className="text-xl font-black uppercase italic mb-2 text-red-600 flex items-center gap-2">
-                                Pro <span className="text-white text-[10px] bg-red-600/20 px-2 py-0.5 border border-red-600/30 not-italic">All Access</span>
+                            <h3 className="text-xl font-black uppercase italic mb-2 text-red-600/70 flex items-center gap-2">
+                                Pro <span className="text-white/70 text-[10px] bg-red-600/10 px-2 py-0.5 border border-red-600/20 not-italic">All Access</span>
                             </h3>
 
-                            <div className="flex items-baseline gap-1 mt-4">
+                            <div className="flex items-baseline gap-1 mt-4 opacity-50">
                                 <span className="text-4xl font-black tracking-tight">${currentPro.price}</span>
                                 <span className="text-gray-400 font-mono text-sm">{currentPro.label}</span>
                             </div>
@@ -116,7 +116,7 @@ const MobilePricing: React.FC = () => {
                         </div>
 
                         {/* Billing Cycle Selector */}
-                        <div className="grid grid-cols-2 gap-2 mb-6">
+                        <div className="grid grid-cols-2 gap-2 mb-6 opacity-50 pointer-events-none">
                             {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
                                 <button
                                     key={cycle}
@@ -133,32 +133,30 @@ const MobilePricing: React.FC = () => {
                             ))}
                         </div>
 
-                        <ul className="space-y-3 mb-8 font-mono text-xs text-gray-300">
+                        <ul className="space-y-3 mb-8 font-mono text-xs text-gray-300 opacity-70">
                             <li className="flex items-center gap-3">
-                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
-                                <span className="font-bold text-white">Advanced Telemetry</span>
+                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600/70" />
+                                <span className="font-bold text-white/70">Advanced Telemetry</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
+                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600/70" />
                                 <span>Session Replay</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
+                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600/70" />
                                 <span>Time Synced Data</span>
                             </li>
                             <li className="flex items-center gap-3">
-                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
+                                <CheckmarkCircle02Icon className="w-4 h-4 text-red-600/70" />
                                 <span>Unlimited History</span>
                             </li>
                         </ul>
 
-                        <Link to="/auth">
-                            <button className="w-full bg-red-600 border-2 border-red-600 text-white font-black uppercase hover:bg-red-700 hover:border-red-700 py-4 tracking-wider transition-all text-sm">
-                                Upgrade to Pro
-                            </button>
-                        </Link>
+                        <button disabled className="w-full bg-zinc-800 border-2 border-zinc-800 text-zinc-400 font-black uppercase py-4 tracking-wider transition-all text-sm cursor-not-allowed">
+                            Coming Soon
+                        </button>
 
-                        <p className="text-center text-[10px] text-gray-500 mt-4 font-mono uppercase">
+                        <p className="text-center text-[10px] text-gray-500 mt-4 font-mono uppercase opacity-50">
                             Secure payment via Paddle. Cancel anytime.
                         </p>
                     </motion.div>
