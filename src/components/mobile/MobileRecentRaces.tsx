@@ -4,7 +4,7 @@ import { ScheduleEvent } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useNavigate } from 'react-router-dom';
 import { getCountryCode } from '@/utils/countryUtils';
-import { Flag01Icon, ArrowRight01Icon, Calendar03Icon } from 'hugeicons-react';
+import { Location01Icon, ArrowRight01Icon, Calendar03Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 
@@ -82,7 +82,7 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
                                 {race.EventName.replace('Grand Prix', 'GP')}
                             </div>
                             <div className="text-[10px] text-gray-500 flex items-center gap-1 font-mono uppercase border-t border-white/5 pt-2">
-                                <Flag01Icon className="w-3 h-3 text-red-600" />
+                                <Location01Icon className="w-3 h-3 text-red-600" />
                                 {race.Location}
                             </div>
                         </div>

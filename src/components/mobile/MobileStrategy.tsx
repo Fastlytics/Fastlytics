@@ -65,6 +65,17 @@ const getTireColorClass = (compound: string): string => {
     return tireCompoundColors[compound?.toUpperCase()] || tireCompoundColors.UNKNOWN;
 };
 
+const getTireImage = (compound: string): string | null => {
+    if (!compound) return null;
+    const c = compound.toLowerCase();
+    if (c.includes('soft')) return '/tyres/soft.png';
+    if (c.includes('medium')) return '/tyres/medium.png';
+    if (c.includes('hard')) return '/tyres/hard.png';
+    if (c.includes('intermediate') || c.includes('inter')) return '/tyres/intermediate.png';
+    if (c.includes('wet')) return '/tyres/wet.png';
+    return null;
+};
+
 const MobileStrategy: React.FC<MobileStrategyProps> = ({ year, event, session, raceResults, getDriverImage }) => {
     const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
 
@@ -145,14 +156,20 @@ const MobileStrategy: React.FC<MobileStrategyProps> = ({ year, event, session, r
         <div className="space-y-6">
             {/* Legend */}
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 border-b border-white/10 pb-4">
-                {Object.entries(tireCompoundColors).map(([compound, colorClass]) => (
-                    compound !== 'UNKNOWN' && (
+                {Object.entries(tireCompoundColors).map(([compound, colorClass]) => {
+                    if (compound === 'UNKNOWN') return null;
+                    const tireImage = getTireImage(compound);
+                    return (
                         <div key={compound} className="flex items-center gap-2">
-                            <span className={cn("w-2 h-2 rounded-full", colorClass)}></span>
+                            {tireImage ? (
+                                <img src={tireImage} alt={compound} className="w-4 h-4 object-contain" />
+                            ) : (
+                                <span className={cn("w-2 h-2 rounded-full", colorClass)}></span>
+                            )}
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{compound}</span>
                         </div>
-                    )
-                ))}
+                    );
+                })}
             </div>
 
             {/* Drivers List */}
@@ -261,7 +278,11 @@ const MobileStrategy: React.FC<MobileStrategyProps> = ({ year, event, session, r
                                                     <div key={idx} className="bg-black/40 border border-white/5 p-2 rounded-sm">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
-                                                                <span className={cn("w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]", getTireColorClass(stint.compound).replace('bg-', 'text-'))} />
+                                                                {getTireImage(stint.compound) ? (
+                                                                    <img src={getTireImage(stint.compound)!} alt={stint.compound} className="w-5 h-5 object-contain" />
+                                                                ) : (
+                                                                    <span className={cn("w-2 h-2 rounded-full shadow-[0_0_5px_currentColor]", getTireColorClass(stint.compound).replace('bg-', 'text-'))} />
+                                                                )}
                                                                 <span className="font-black uppercase text-white text-sm tracking-wider">{stint.compound}</span>
                                                             </div>
                                                             <div className="text-xs font-mono text-gray-400">
