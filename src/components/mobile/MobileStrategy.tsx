@@ -154,24 +154,6 @@ const MobileStrategy: React.FC<MobileStrategyProps> = ({ year, event, session, r
 
     return (
         <div className="space-y-6">
-            {/* Legend */}
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 border-b border-white/10 pb-4">
-                {Object.entries(tireCompoundColors).map(([compound, colorClass]) => {
-                    if (compound === 'UNKNOWN') return null;
-                    const tireImage = getTireImage(compound);
-                    return (
-                        <div key={compound} className="flex items-center gap-2">
-                            {tireImage ? (
-                                <img src={tireImage} alt={compound} className="w-4 h-4 object-contain" />
-                            ) : (
-                                <span className={cn("w-2 h-2 rounded-full", colorClass)}></span>
-                            )}
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{compound}</span>
-                        </div>
-                    );
-                })}
-            </div>
-
             {/* Drivers List */}
             <div className="space-y-3">
                 {sortedStrategyData.map((driverData) => {
