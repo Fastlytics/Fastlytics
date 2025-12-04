@@ -3,12 +3,13 @@ import { DetailedRaceResult, fetchLapTimes, fetchPaceDistribution, LapTimeDataPo
 import { OpenF1Driver } from '@/lib/openf1';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Time01Icon, ArrowDown01Icon, Analytics01Icon } from 'hugeicons-react';
+import { Time01Icon, ArrowDown01Icon, Analytics01Icon, Cancel01Icon } from 'hugeicons-react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { driverColor } from '@/lib/driverColor';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MobileLapTimesProps {
     year: number;
@@ -125,7 +126,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
     };
 
     // --- Render Helpers ---
-    const [hoveredLap, setHoveredLap] = useState<any | null>(null);
+    const [selectedLap, setSelectedLap] = useState<number | null>(null);
 
     // Calculate global min/max for pace bars
     const { globalMinPace, globalMaxPace } = useMemo(() => {
@@ -144,12 +145,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
         <div className="space-y-6 animate-in fade-in duration-500 pb-20">
             {/* Header & Controls */}
             <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                        <Time01Icon className="w-5 h-5 text-red-600" />
-                        <h3 className="text-lg font-black uppercase italic tracking-tight">Lap Analysis</h3>
-                    </div>
-                </div>
+                {/* Analysis Mode Toggle */}
 
                 {/* Analysis Mode Toggle */}
                 <div className="grid grid-cols-2 gap-2 bg-black border border-white/10 p-1">
@@ -190,52 +186,39 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                             <div key={idx} className="space-y-1">
                                 <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{control.label}</label>
                                 <Select value={control.value} onValueChange={control.setter}>
-                                    <SelectTrigger className="w-full bg-black border border-white/20 text-white h-10">
-                                        <SelectValue placeholder="Select Driver" />
+                                    <SelectTrigger className="w-full bg-black border border-white/20 text-white h-10 px-2">
+                                        {control.value ? (
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="w-5 h-5 border border-white/10">
+                                                    <AvatarImage src={getDriverImage(control.value)} />
+                                                    <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(control.value))}`)}>
+                                                        {control.value}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-mono font-bold text-sm">{control.value}</span>
+                                            </div>
+                                        ) : (
+                                            <SelectValue placeholder="Select" />
+                                        )}
                                     </SelectTrigger>
-                                    <SelectContent className="bg-black border border-white/20 text-white max-h-[200px]">
+                                    <SelectContent className="bg-black border border-white/20 text-white max-h-[300px]">
                                         {raceResults?.map(r => (
                                             <SelectItem key={r.driverCode} value={r.driverCode}>
-                                                <span className="font-mono font-bold">{r.driverCode}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="w-5 h-5 border border-white/10">
+                                                        <AvatarImage src={getDriverImage(r.driverCode)} />
+                                                        <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(r.team)}`)}>
+                                                            {r.driverCode}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="font-mono font-bold">{r.driverCode}</span>
+                                                </div>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                         ))}
-                    </div>
-
-                    {/* Fixed Tooltip Header */}
-                    <div className="bg-zinc-900/50 border border-white/10 p-3 rounded-lg min-h-[60px] flex items-center justify-between">
-                        {hoveredLap ? (
-                            <>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase text-gray-500 font-bold">Lap {hoveredLap.label}</span>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driverColor(driver1, year) }} />
-                                            <span className="font-mono font-bold text-sm">{formatLapTime(hoveredLap.payload[0]?.value)}</span>
-                                        </div>
-                                        {driver2 && hoveredLap.payload[1] && (
-                                            <div className="flex items-center gap-1.5">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driverColor(driver2, year) }} />
-                                                <span className="font-mono font-bold text-sm">{formatLapTime(hoveredLap.payload[1]?.value)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                {driver2 && hoveredLap.payload[0] && hoveredLap.payload[1] && (
-                                    <div className="text-right">
-                                        <span className="text-[10px] uppercase text-gray-500 font-bold">Gap</span>
-                                        <div className="font-mono font-bold text-sm text-white">
-                                            {Math.abs(hoveredLap.payload[0].value - hoveredLap.payload[1].value).toFixed(3)}s
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="text-xs text-gray-500 italic text-center w-full">Touch chart to view lap times</div>
-                        )}
                     </div>
 
                     {/* Scrollable Chart Container */}
@@ -249,13 +232,19 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                         data={lapData}
                                         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                                         onMouseMove={(e: any) => {
-                                            if (e && e.activePayload) {
-                                                setHoveredLap(e);
+                                            if (e && e.activeLabel) {
+                                                // Optional: enable hover support if desired, but for mobile touch/click is better
+                                                // setSelectedLap(e.activeLabel);
                                             }
                                         }}
                                         onTouchMove={(e: any) => {
-                                            if (e && e.activePayload) {
-                                                setHoveredLap(e);
+                                            if (e && e.activeLabel) {
+                                                setSelectedLap(e.activeLabel);
+                                            }
+                                        }}
+                                        onClick={(e: any) => {
+                                            if (e && e.activeLabel) {
+                                                setSelectedLap(e.activeLabel);
                                             }
                                         }}
                                     >
@@ -268,7 +257,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                         />
                                         <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
                                         <Tooltip
-                                            content={<></>} // Hide default tooltip, using fixed header
+                                            content={() => null} // Hide default tooltip, using overlay
                                             cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
                                         />
                                         <Line
@@ -296,6 +285,22 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                             )}
                         </div>
                     </div>
+
+                    {/* Detail Overlay */}
+                    <AnimatePresence>
+                        {selectedLap !== null && (
+                            <OverlayContent
+                                lapNumber={selectedLap}
+                                lapData={lapData}
+                                driver1={driver1}
+                                driver2={driver2}
+                                onClose={() => setSelectedLap(null)}
+                                getDriverImage={getDriverImage}
+                                getDriverTeam={getDriverTeam}
+                                year={year}
+                            />
+                        )}
+                    </AnimatePresence>
                 </div>
             )}
 
@@ -376,3 +381,97 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
 };
 
 export default MobileLapTimes;
+
+interface OverlayContentProps {
+    lapNumber: number;
+    lapData: LapTimeDataPoint[] | undefined;
+    driver1: string;
+    driver2: string;
+    onClose: () => void;
+    getDriverImage: (code: string) => string | undefined;
+    getDriverTeam: (code: string) => string | undefined;
+    year: number;
+}
+
+const OverlayContent: React.FC<OverlayContentProps> = ({
+    lapNumber,
+    lapData,
+    driver1,
+    driver2,
+    onClose,
+    getDriverImage,
+    getDriverTeam,
+    year
+}) => {
+    const dataPoint = lapData?.find(d => d.LapNumber === lapNumber);
+    if (!dataPoint) return null;
+
+    const d1Time = dataPoint[driver1];
+    const d2Time = driver2 ? dataPoint[driver2] : null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 left-4 right-4 bg-zinc-900/95 border border-white/10 p-3 rounded-xl shadow-2xl z-50 backdrop-blur-md"
+        >
+            <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2">
+                <h4 className="text-base font-black italic uppercase text-white">Lap {lapNumber}</h4>
+                <button
+                    onClick={onClose}
+                    className="p-1 bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+                >
+                    <Cancel01Icon className="w-3 h-3 text-white" />
+                </button>
+            </div>
+
+            <div className="space-y-2">
+                {/* Driver 1 */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6 border border-white/10">
+                            <AvatarImage src={getDriverImage(driver1)} />
+                            <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver1))}`)}>
+                                {driver1}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="font-bold text-sm text-white">{driver1}</span>
+                    </div>
+                    <span className="font-mono font-bold text-base text-white">
+                        {formatLapTime(d1Time)}
+                    </span>
+                </div>
+
+                {/* Driver 2 */}
+                {driver2 && (
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="w-6 h-6 border border-white/10">
+                                <AvatarImage src={getDriverImage(driver2)} />
+                                <AvatarFallback className={cn("text-[8px] font-bold", `bg-f1-${getTeamColorClass(getDriverTeam(driver2))}`)}>
+                                    {driver2}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span className="font-bold text-sm text-white">{driver2}</span>
+                        </div>
+                        <span className="font-mono font-bold text-base text-white">
+                            {formatLapTime(d2Time)}
+                        </span>
+                    </div>
+                )}
+
+                {/* Gap */}
+                {driver2 && d1Time !== null && d2Time !== null && (
+                    <div className="mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
+                        <span className="text-xs uppercase font-bold text-gray-500">Gap</span>
+                        <span className="font-mono font-bold text-yellow-500">
+                            +{Math.abs(d1Time - d2Time).toFixed(3)}s
+                        </span>
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+};
