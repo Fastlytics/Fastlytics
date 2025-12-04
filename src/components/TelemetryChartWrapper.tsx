@@ -166,7 +166,6 @@ const TelemetryChartWrapper = <T,>({
                                             <span className="font-mono font-bold truncate">
                                                 {openF1Driver ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}` : displayCode}
                                             </span>
-                                            <div className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: color }}></div>
                                         </>
                                     );
                                 })()}
@@ -196,7 +195,6 @@ const TelemetryChartWrapper = <T,>({
                                                 <span>
                                                     {openF1Driver ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}` : driver.code}
                                                 </span>
-                                                <div className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: color }}></div>
                                             </div>
                                         </SelectItem>
                                     );
