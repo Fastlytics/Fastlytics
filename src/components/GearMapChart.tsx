@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ZAxis, Cell
+  ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ZAxis, Cell
 } from 'recharts';
-import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
-import { fetchTelemetryGear, fetchSessionDrivers, fetchLapTimes, SessionDriver, GearMapDataPoint } from '@/lib/api';
-import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from '@/components/ui/button';
+import { fetchTelemetryGear, GearMapDataPoint } from '@/lib/api';
+import { Analytics01Icon } from 'hugeicons-react';
+import { driverColor } from '@/lib/driverColor';
+import { OpenF1Driver } from '@/lib/openf1';
+import TelemetryChartWrapper from './TelemetryChartWrapper';
 
 const gearColors = [
   '#33bbee', // 1st Gear (Cyan)
@@ -36,216 +35,155 @@ interface GearMapChartProps {
   session: string;
   initialDriver?: string;
   lap?: string | number;
+  openF1Drivers?: OpenF1Driver[];
 }
 
 const GearMapChart: React.FC<GearMapChartProps> = ({
   className,
   delay = 0,
-  title,
+  title = "Gear Shifts",
   year,
   event,
   session,
   initialDriver = '',
-  lap = 'fastest'
+  lap = 'fastest',
+  openF1Drivers = []
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver || '');
-  const [selectedLap, setSelectedLap] = useState<string | number>(lap);
-  const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
 
-  const [shouldLoadChart, setShouldLoadChart] = useState(false);
+  // Custom Tooltip
+  const CustomTooltip = ({ active, payload, label, selectedDriver }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const openF1Driver = openF1Drivers.find(d => d.name_acronym === selectedDriver || d.last_name.toUpperCase().slice(0, 3) === selectedDriver);
+      const color = driverColor(selectedDriver, year);
 
-  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity, gcTime: 1000 * 60 * 60 * 24, enabled: !!year && !!event && !!session,
-  });
-
-  const { data: lapTimes } = useQuery({
-    queryKey: ['lapTimes', year, event, session, selectedDriver],
-    queryFn: () => fetchLapTimes(year, event, session, [selectedDriver]),
-    enabled: !!year && !!event && !!session && !!selectedDriver,
-  });
-
-  useEffect(() => {
-    if (lapTimes && lapTimes.length > 0) {
-      const validLaps = lapTimes
-        .filter(lap => lap[selectedDriver] !== null)
-        .map(lap => lap.LapNumber.toString());
-      setLapOptions(['fastest', ...validLaps]);
-    } else {
-      setLapOptions(['fastest']);
-    }
-    if (selectedDriver !== initialDriver) {
-      setSelectedLap('fastest');
-    } else {
-      setSelectedLap(lap);
-    }
-  }, [lapTimes, selectedDriver, initialDriver, lap]);
-
-  const { data: gearData, isLoading: isLoadingGear, error, isError } = useQuery<GearMapDataPoint[]>({
-    queryKey: ['gearTrace', year, event, session, selectedDriver, selectedLap],
-    queryFn: () => fetchTelemetryGear(year, event, session, selectedDriver, selectedLap),
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 30,
-    retry: 1,
-    enabled: !!year && !!event && !!session && !!selectedDriver && !!selectedLap && shouldLoadChart,
-  });
-
-  const isLoading = isLoadingDrivers || isLoadingGear;
-  const chartTitle = title || (selectedDriver
-    ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Gear Shifts`
-    : "Gear Shifts");
-
-
-
-  const renderContent = () => {
-    if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select a driver and click load to view gear data</p>
-          <Button
-            onClick={() => setShouldLoadChart(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
-            disabled={!selectedDriver}
-          >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
-            Load Chart
-          </Button>
+        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[200px]">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                {openF1Driver?.headshot_url ? (
+                  <img src={openF1Driver.headshot_url} alt={selectedDriver} className="w-full h-full object-cover scale-125 translate-y-1" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">{selectedDriver[0]}</div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-gray-300 font-mono">{selectedDriver}</span>
+                <span className="text-[10px] text-gray-500 font-mono">Gear Map</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Current Gear</span>
+              <span className="text-xl font-bold text-white font-mono" style={{ color: getGearColor(data.z) }}>
+                {data.z}
+              </span>
+            </div>
+          </div>
         </div>
       );
     }
-
-    if (isLoading) {
-      return (
-        <div className="w-full h-[350px] flex items-center justify-center bg-gray-900/50 border border-gray-800">
-          <LoadingSpinnerF1 />
-        </div>
-      );
-    }
-
-    if (isError || !gearData || gearData.length === 0) {
-      const message = isError
-        ? (error as Error)?.message || 'Could not fetch data.'
-        : `No gear telemetry data found for ${selectedDriver} lap ${selectedLap}.`;
-      const title = isError ? "Error loading gear map" : "No Data Available";
-      return (
-        <div className="w-full h-[350px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircleIcon className={`w-10 h-10 mb-2 ${isError ? 'text-red-400' : ''}`} />
-          <p className={`font-bold uppercase ${isError ? 'text-red-400' : ''}`}>{title}</p>
-          <p className="text-xs mt-1 text-gray-500">{message}</p>
-        </div>
-      );
-    }
-
-    const scatterData = gearData.map(point => ({
-      x: point.X,
-      y: point.Y,
-      z: point.nGear
-    }));
-
-    return (
-      <ResponsiveContainer width="100%" height={350} className="export-chart-container">
-        <ScatterChart margin={{ top: 15, right: 10, bottom: 10, left: 10 }}>
-          <XAxis type="number" dataKey="x" hide={true} domain={['dataMin', 'dataMax']} />
-          <YAxis type="number" dataKey="y" hide={true} domain={['dataMin', 'dataMax']} axisLine={false} tickLine={false} />
-          <ZAxis type="number" dataKey="z" range={[1, 8]} name="Gear" />
-          <Tooltip
-            cursor={{ strokeDasharray: '3 3' }}
-            contentStyle={{
-              backgroundColor: '#000',
-              borderColor: '#333',
-              color: '#fff',
-              borderRadius: '0px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.8)',
-              fontFamily: 'monospace'
-            }}
-            labelStyle={{ display: 'none' }}
-            formatter={(value: number, name: string, props: any) => [`Gear: ${props.payload.z}`, null]}
-          />
-          <Legend
-            {...({
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter: (value: any, entry: any, index: number) => <span className="text-gray-400 font-mono text-xs uppercase">Gear {index + 1}</span>,
-              iconSize: 10,
-              wrapperStyle: { paddingTop: '10px' },
-              payload: gearColors.map((color, index) => ({
-                value: `Gear ${index + 1}`, type: 'circle', id: `ID${index}`, color: color
-              }))
-            } as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
-          />
-          <Scatter name="Track Position" data={scatterData} fill="#8884d8" shape="circle">
-            {scatterData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getGearColor(entry.z)} />
-            ))}
-          </Scatter>
-        </ScatterChart>
-      </ResponsiveContainer>
-    );
+    return null;
   };
 
   return (
-    <div
-      ref={chartRef}
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
-      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
-    >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">{chartTitle}</h3>
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={selectedDriver}
-            onValueChange={(value) => {
-              setSelectedDriver(value);
-              setSelectedLap('fastest');
-              if (shouldLoadChart) {
-                setShouldLoadChart(false);
-              }
-            }}
-            disabled={isLoadingDrivers || !availableDrivers}
-          >
-            <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <UserIcon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Select Driver" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Driver</SelectLabel>
-                {availableDrivers?.map((drv) => (
-                  <SelectItem key={drv.code} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {drv.code}
-                  </SelectItem>
+    <TelemetryChartWrapper<GearMapDataPoint>
+      className={className}
+      title={title}
+      icon={Analytics01Icon}
+      year={year}
+      event={event}
+      session={session}
+      initialDriver={initialDriver}
+      lap={lap}
+      openF1Drivers={openF1Drivers}
+      onLoadData={(driver, lapVal) => {
+        return useQuery<GearMapDataPoint[]>({
+          queryKey: ['gearTrace', year, event, session, driver, lapVal],
+          queryFn: () => fetchTelemetryGear(year, event, session, driver, lapVal),
+          staleTime: 1000 * 60 * 10,
+          gcTime: 1000 * 60 * 30,
+          retry: 1,
+          enabled: !!year && !!event && !!session && !!driver && !!lapVal,
+        });
+      }}
+      renderChart={(data, color, selectedDriver) => {
+        const scatterData = data.map(point => ({
+          x: point.X,
+          y: point.Y,
+          z: point.nGear
+        }));
+
+        return (
+          <ResponsiveContainer width="100%" height={350} className="export-chart-container">
+            <ScatterChart margin={{ top: 15, right: 10, bottom: 10, left: 10 }}>
+              <XAxis type="number" dataKey="x" hide={true} domain={['dataMin', 'dataMax']} />
+              <YAxis type="number" dataKey="y" hide={true} domain={['dataMin', 'dataMax']} axisLine={false} tickLine={false} />
+              <ZAxis type="number" dataKey="z" range={[1, 8]} name="Gear" />
+              <Tooltip content={<CustomTooltip selectedDriver={selectedDriver} />} cursor={{ strokeDasharray: '3 3' }} />
+              <Legend
+                wrapperStyle={{ paddingTop: '10px' }}
+                payload={gearColors.map((c, i) => ({
+                  value: `Gear ${i + 1}`,
+                  type: 'circle',
+                  id: `ID${i}`,
+                  color: c
+                }))}
+                formatter={(value) => <span className="text-gray-400 font-mono text-[10px] uppercase ml-1">{value}</span>}
+                {...({} as any)}
+              />
+              <Scatter name="Track Position" data={scatterData} fill="#8884d8" shape="circle">
+                {scatterData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getGearColor(entry.z)} />
                 ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedLap.toString()}
-            onValueChange={(value) => setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))}
-            disabled={lapOptions.length <= 1}
-          >
-            <SelectTrigger className="w-full sm:w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <Clock01Icon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Lap" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
-                {lapOptions.map((lap) => (
-                  <SelectItem key={lap.toString()} value={lap.toString()} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {lap === 'fastest' ? 'Fastest' : lap}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        );
+      }}
+      renderStats={(data) => {
+        // Calculate gear usage stats
+        const gears = data.map(d => d.nGear);
+        const gearCounts = gears.reduce((acc, gear) => {
+          acc[gear] = (acc[gear] || 0) + 1;
+          return acc;
+        }, {} as Record<number, number>);
 
-      {renderContent()}
+        // Find most used gear
+        let mostUsedGear = 0;
+        let maxCount = 0;
+        Object.entries(gearCounts).forEach(([gear, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            mostUsedGear = parseInt(gear);
+          }
+        });
 
+        const avgGear = gears.reduce((a, b) => a + b, 0) / gears.length;
 
-    </div>
+        return (
+          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg Gear</span>
+                  <span className="text-lg font-bold text-white font-mono">{avgGear.toFixed(1)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Most Used</span>
+                  <span className="text-lg font-bold text-white font-mono" style={{ color: getGearColor(mostUsedGear) }}>{mostUsedGear}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }}
+    />
   );
 };
 
