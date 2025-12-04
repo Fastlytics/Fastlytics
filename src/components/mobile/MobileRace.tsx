@@ -409,6 +409,7 @@ interface HighlightCardData {
     textColor: string;
     timeLabel: string;
     timeValue: string;
+    driverNumber?: number;
 }
 
 // Individual Highlight Card
@@ -420,38 +421,71 @@ interface HighlightCardProps {
 
 const HighlightCard: React.FC<HighlightCardProps> = ({ data, getDriverImage, getTeamColorClass }) => {
     const Icon = data.icon;
+    const teamColorClass = getTeamColorClass(data.driver.team);
+
+    // Helper to get a color value for inline styles (approximate based on team)
+    // In a real app, we'd want exact hex codes, but we can rely on Tailwind classes or CSS variables if set up.
+    // For now, we'll use a mapping or just rely on the class names for background.
+    // We'll use a dark card with a gradient overlay.
+
+    const firstName = data.driver.fullName.split(' ')[0];
+    const lastName = data.driver.fullName.split(' ').slice(1).join(' ');
 
     return (
-        <div className={cn("border-2 p-6 bg-black relative overflow-hidden rounded-2xl", data.borderColor)}>
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+        <div className="relative h-full w-full overflow-hidden rounded-3xl bg-zinc-950 shadow-2xl border border-white/5">
 
-            <div className="relative z-10 flex items-start gap-4">
-                <Avatar className={cn("w-16 h-16 border-2 rounded-xl", data.borderColor)}>
-                    <AvatarImage
-                        src={getDriverImage(data.driver.driverCode, data.driver.fullName)}
-                        className="object-cover object-top"
-                    />
-                    <AvatarFallback className={cn("text-lg font-black rounded-xl", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
-                        {data.driver.driverCode}
-                    </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-1">
-                        <Icon className={cn("w-4 h-4", data.textColor)} />
-                        <span className={cn("text-xs font-black uppercase tracking-widest", data.textColor)}>{data.label}</span>
+            {/* Tech Grid Overlay */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+            {/* Content Container */}
+            <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+
+                {/* Header: Label & Number */}
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-sm">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/90">{data.label}</span>
                     </div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-2xl font-black uppercase italic text-white leading-none">{data.driver.fullName}</h3>
+                    {data.driverNumber && (
+                        <div className="flex flex-col items-end">
+                            <span className={cn("text-3xl font-black italic leading-none opacity-30", `text-f1-${teamColorClass}`)}>
+                                {data.driverNumber}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Main Content: Driver Image & Name */}
+                <div className="flex items-end gap-4 mt-2">
+                    <div className="relative">
+                        <div className={cn("absolute -inset-1 rounded-2xl opacity-30 blur-md", `bg-f1-${teamColorClass}`)}></div>
+                        <Avatar className="relative w-20 h-20 rounded-xl border border-white/10 shadow-2xl bg-zinc-900">
+                            <AvatarImage
+                                src={getDriverImage(data.driver.driverCode, data.driver.fullName)}
+                                className="object-cover object-top"
+                            />
+                            <AvatarFallback className={cn("text-xl font-black rounded-xl text-white", `bg-f1-${teamColorClass}`)}>
+                                {data.driver.driverCode}
+                            </AvatarFallback>
+                        </Avatar>
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className={cn("w-2 h-2 flex-shrink-0", `bg-f1-${getTeamColorClass(data.driver.team)}`)} />
-                        <span className="text-xs font-mono text-gray-400 uppercase">{data.driver.team}</span>
+
+                    <div className="flex-1 pb-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-mono uppercase text-white/50 tracking-wider truncate">{data.driver.team}</span>
+                        </div>
+                        <h3 className="text-2xl font-black italic uppercase text-white leading-none tracking-tighter truncate">
+                            {lastName}
+                        </h3>
+                        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">{firstName}</p>
                     </div>
-                    <div className="flex items-center gap-2 border-t border-white/10 pt-2">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{data.timeLabel}</span>
-                        <span className="text-sm font-mono font-bold text-white">{data.timeValue}</span>
-                    </div>
+                </div>
+
+                {/* Footer: Stats */}
+                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between bg-gradient-to-r from-white/5 to-transparent -mx-5 px-5 -mb-5 pb-5">
+                    <span className="text-[10px] font-bold uppercase text-white/40 tracking-wider">{data.timeLabel}</span>
+                    <span className={cn("text-xl font-mono font-black tracking-tight", data.textColor)}>
+                        {data.timeValue}
+                    </span>
                 </div>
             </div>
         </div>
@@ -491,7 +525,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
     if (highlights.length === 0) return null;
 
     return (
-        <div className="relative h-[220px]">
+        <div className="relative h-[240px]">
             {/* Card Stack */}
             {highlights.map((highlight, index) => {
                 // Calculate position relative to current
@@ -502,9 +536,9 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
 
                 // Stack effect: cards behind are slightly scaled down and offset
                 const scale = isTop ? 1 : isSecond ? 0.95 : 0.9;
-                const yOffset = isTop ? 0 : isSecond ? 8 : 16;
+                const yOffset = isTop ? 0 : isSecond ? 10 : 20;
                 const zIndex = isTop ? 30 : isSecond ? 20 : 10;
-                const opacity = isTop ? 1 : isSecond ? 0.7 : 0.4;
+                const opacity = isTop ? 1 : isSecond ? 0.6 : 0.3;
 
                 return (
                     <motion.div
@@ -877,6 +911,14 @@ const MobileRace: React.FC = () => {
         if (!raceResults || raceResults.length === 0) return [];
         const cards: HighlightCardData[] = [];
 
+        const getDriverNumber = (driverCode: string, name: string) => {
+            const driver = openF1Drivers.find(d =>
+                d.name_acronym === driverCode ||
+                d.last_name.toUpperCase().includes(name.split(' ').pop()?.toUpperCase() || '')
+            );
+            return driver?.driver_number;
+        };
+
         // Winner
         const winner = raceResults.find(r => r.position === 1);
         if (winner) {
@@ -889,7 +931,8 @@ const MobileRace: React.FC = () => {
                 borderColor: 'border-yellow-500',
                 textColor: 'text-yellow-500',
                 timeLabel: 'Race Time',
-                timeValue: formatRaceTime(winner.time, true)
+                timeValue: formatRaceTime(winner.time, true),
+                driverNumber: getDriverNumber(winner.driverCode, winner.fullName)
             });
         }
 
@@ -904,7 +947,8 @@ const MobileRace: React.FC = () => {
                 borderColor: 'border-purple-600',
                 textColor: 'text-purple-500',
                 timeLabel: 'Lap Time',
-                timeValue: fastestLapHolder.driverFastestLapTime || '-'
+                timeValue: fastestLapHolder.driverFastestLapTime || '-',
+                driverNumber: getDriverNumber(fastestLapHolder.driverCode, fastestLapHolder.fullName)
             });
         }
 
@@ -919,13 +963,14 @@ const MobileRace: React.FC = () => {
                 bgColor: 'bg-black',
                 borderColor: 'border-red-600',
                 textColor: 'text-red-600',
-                timeLabel: 'Finish Position',
-                timeValue: `P${pole.position}`
+                timeLabel: 'Pole Time',
+                timeValue: pole.poleLapTimeValue || '-',
+                driverNumber: getDriverNumber(pole.driverCode, pole.fullName)
             });
         }
 
         return cards;
-    }, [raceResults]);
+    }, [raceResults, fastestLapHolder, openF1Drivers]);
 
     // Loading State
     if (isLoadingSessions) {
