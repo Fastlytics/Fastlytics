@@ -323,10 +323,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
 
   return (
     <div className="mt-6 bg-black overflow-hidden">
-      <div className="p-4 border-b border-gray-800 flex items-center gap-2 mb-4">
-        <Analytics01Icon className="w-5 h-5 text-white" />
-        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">Stint Performance Metrics</h3>
-      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-transparent border-b-2 border-white">

@@ -123,7 +123,7 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
 
 // --- Components ---
 
-const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType: string, year: number, favoriteDriver?: string | null }> = ({ results, sessionType, year, favoriteDriver }) => {
+const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType: string, year: number, favoriteDriver?: string | null, fastestLapHolder?: DetailedRaceResult | null }> = ({ results, sessionType, year, favoriteDriver, fastestLapHolder }) => {
   const isPractice = sessionType.startsWith('FP');
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
@@ -182,7 +182,7 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
                     ) : col.key === 'driver' ? (
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-white group-hover:text-red-500 transition-colors">{res.fullName}</span>
-                        {res.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
+                        {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && res.isFastestLap)) && <Clock01Icon className="w-3 h-3 text-purple-500" />}
                       </div>
                     ) : col.key === 'team' ? (
                       <span className="flex items-center gap-2 text-sm text-gray-400">
@@ -195,12 +195,24 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
                         {res.isProvisional && <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">Prov</span>}
                       </span>
                     ) : col.key === 'time' ? (
-                      <span className="text-gray-300">{formatRaceTime(res.time, res.position === 1)}</span>
+                      <span className="text-gray-300">
+                        {(() => {
+                          const isLapped = res.status.includes('Lap');
+                          const isFinished = res.status === 'Finished' || res.status.startsWith('+') || isLapped;
+
+                          if (isFinished) {
+                            if (res.time) return formatRaceTime(res.time, res.position === 1);
+                            if (isLapped) return res.status;
+                            return '-';
+                          }
+                          return <span className="text-red-500 font-bold uppercase text-[10px]">{res.status}</span>;
+                        })()}
+                      </span>
                     ) : col.key === 'laps' ? (
                       <span className="text-gray-500">{res.laps ?? '-'}</span>
                     ) : col.key === 'driverFastestLapTime' ? (
                       res.driverFastestLapTime ? (
-                        <span className={cn(res.isFastestLap ? 'text-purple-400 font-bold' : 'text-gray-400')}>
+                        <span className={cn(((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && res.isFastestLap)) ? 'text-purple-400 font-bold' : 'text-gray-400')}>
                           {res.driverFastestLapTime}
                         </span>
                       ) : '-'
@@ -382,7 +394,17 @@ const Race = () => {
   // Derived Data
   const raceWinner = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.position === 1) : null, [sessionResults, selectedSession]);
   const poleSitter = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.gridPosition === 1) : null, [sessionResults, selectedSession]);
-  const fastestLapHolder = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.isFastestLap) : null, [sessionResults, selectedSession]);
+  const fastestLapHolder = useMemo(() => {
+    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !sessionResults) return null;
+
+    const validResults = sessionResults.filter(r =>
+      !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
+    );
+
+    if (validResults.length === 0) return null;
+
+    return validResults.sort((a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime))[0];
+  }, [sessionResults, selectedSession]);
 
   const topPerformers = useMemo(() => {
     if (!sessionResults || !selectedSession || (selectedSession === 'R' || selectedSession === 'Sprint')) return [];
@@ -803,7 +825,7 @@ const Race = () => {
                       </Alert>
                     )}
 
-                    {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} favoriteDriver={profile?.favorite_driver} />}
+                    {sessionResults && <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year!} favoriteDriver={profile?.favorite_driver} fastestLapHolder={fastestLapHolder} />}
                   </section>
                 </div>
               )}
