@@ -143,6 +143,7 @@ const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType
 
   if (isRaceOrSprint) {
     columns.push({ key: 'time', label: 'TIME/GAP', className: 'text-right font-mono' });
+    columns.push({ key: 'driverFastestLapTime', label: 'FASTEST LAP', className: 'text-right font-mono' });
     columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
     columns.push({ key: 'points', label: 'PTS', className: 'text-right font-bold text-red-500' });
   } else if (isQualifying) {
@@ -801,7 +802,7 @@ const Race = () => {
                         <>
                           {raceWinner && <F1Card title="WINNER" value={raceWinner.fullName} subValue={formatRaceTime(raceWinner.time, true)} team={getTeamColorClass(raceWinner.team) as any} icon={<ChampionIcon />} imageUrl={getDriverImage(raceWinner.fullName)} />}
                           {poleSitter && <F1Card title="POLE POSITION" value={poleSitter.fullName} subValue={poleSitter.poleLapTimeValue} team={getTeamColorClass(poleSitter.team) as any} icon={<FlashIcon />} imageUrl={getDriverImage(poleSitter.fullName)} />}
-                          {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.fastestLapTimeValue} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} imageUrl={getDriverImage(fastestLapHolder.fullName)} />}
+                          {fastestLapHolder && <F1Card title="FASTEST LAP" value={fastestLapHolder.fullName} subValue={fastestLapHolder.driverFastestLapTime} team={getTeamColorClass(fastestLapHolder.team) as any} icon={<Clock01Icon />} imageUrl={getDriverImage(fastestLapHolder.fullName)} />}
                         </>
                       ) : (
                         topPerformers.map((p, i) => (
