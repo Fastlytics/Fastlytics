@@ -422,17 +422,17 @@ const HighlightCard: React.FC<HighlightCardProps> = ({ data, getDriverImage, get
     const Icon = data.icon;
 
     return (
-        <div className={cn("border-2 p-6 bg-black relative overflow-hidden", data.borderColor)}>
+        <div className={cn("border-2 p-6 bg-black relative overflow-hidden rounded-2xl", data.borderColor)}>
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
 
             <div className="relative z-10 flex items-start gap-4">
-                <Avatar className={cn("w-16 h-16 border-2 rounded-none", data.borderColor)}>
+                <Avatar className={cn("w-16 h-16 border-2 rounded-xl", data.borderColor)}>
                     <AvatarImage
                         src={getDriverImage(data.driver.driverCode, data.driver.fullName)}
                         className="object-cover object-top"
                     />
-                    <AvatarFallback className={cn("text-lg font-black rounded-none", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
+                    <AvatarFallback className={cn("text-lg font-black rounded-xl", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
                         {data.driver.driverCode}
                     </AvatarFallback>
                 </Avatar>
@@ -542,7 +542,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
                             key={index}
                             onClick={() => setCurrentIndex(index)}
                             className={cn(
-                                "h-1 transition-all",
+                                "h-1 transition-all rounded-full",
                                 index === currentIndex ? "bg-red-600 w-8" : "bg-gray-800 w-4"
                             )}
                         />
@@ -582,7 +582,7 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={cn(
-                "transition-colors overflow-hidden border-b border-white/10",
+                "transition-colors overflow-hidden rounded-xl border border-white/10",
                 isFavorite ? "bg-red-900/10" : "bg-black"
             )}
         >
@@ -604,9 +604,9 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                 </div>
 
                 {/* Driver Avatar */}
-                <Avatar className="w-10 h-10 border border-white/10 rounded-none">
+                <Avatar className="w-10 h-10 border border-white/10 rounded-lg">
                     <AvatarImage src={driverImage} className="object-cover object-top" />
-                    <AvatarFallback className={cn("text-xs font-bold rounded-none", `bg-f1-${getTeamColorClass(result.team)}`)}>
+                    <AvatarFallback className={cn("text-xs font-bold rounded-lg", `bg-f1-${getTeamColorClass(result.team)}`)}>
                         {result.driverCode}
                     </AvatarFallback>
                 </Avatar>
@@ -1055,7 +1055,7 @@ const MobileRace: React.FC = () => {
                                 <span className="text-[10px] font-mono text-gray-600">{raceResults?.length || 0} DRIVERS</span>
                             </div>
 
-                            <div className="space-y-px bg-white/10 border-t border-b border-white/10">
+                            <div className="space-y-2">
                                 {isLoadingResults ? (
                                     <div className="p-8 text-center text-gray-500 animate-pulse bg-black">
                                         Loading results...
