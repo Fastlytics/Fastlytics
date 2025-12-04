@@ -4,7 +4,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     ArrowLeft01Icon, ChampionIcon, Clock01Icon, FlashIcon, Calendar01Icon,
     Flag01Icon, CheckmarkCircle02Icon, Time01Icon,
-    Analytics01Icon, Cancel01Icon, MapsLocation01Icon, StartUp02Icon, ArrowDown01Icon
+    Analytics01Icon, Cancel01Icon, MapsLocation01Icon, StartUp02Icon, ArrowDown01Icon,
+    ArrowRight01Icon
 } from 'hugeicons-react';
 import { fetchSpecificRaceResults, fetchAvailableSessions, fetchEventSessionSchedule, DetailedRaceResult, AvailableSession, EventSessionSchedule } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
@@ -141,10 +142,10 @@ const MobileCountdown = ({ targetDate }: { targetDate: Date }) => {
             ].map((item, idx) => (
                 <React.Fragment key={item.label}>
                     <div className="flex flex-col items-center">
-                        <div className={`text-3xl font-black font-mono ${item.highlight ? 'text-red-500' : 'text-white'}`}>
+                        <div className={`text-3xl font-black font-mono ${item.highlight ? 'text-red-600' : 'text-white'}`}>
                             {pad(item.value)}
                         </div>
-                        <div className="text-[10px] uppercase tracking-wider text-gray-500">{item.label}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{item.label}</div>
                     </div>
                     {idx < 3 && <span className="text-2xl font-bold text-gray-700 -mt-4">:</span>}
                 </React.Fragment>
@@ -171,7 +172,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({ isOpen, onClose, sess
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end justify-center"
+                className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-end justify-center"
                 onClick={onClose}
             >
                 <motion.div
@@ -179,19 +180,19 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({ isOpen, onClose, sess
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="w-full max-w-md bg-gray-900 rounded-t-3xl border-t border-gray-700 pb-24"
+                    className="w-full max-w-md bg-black border-t-2 border-white/20 pb-24"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-center pt-3 pb-2">
-                        <div className="w-10 h-1 bg-gray-600 rounded-full" />
+                        <div className="w-10 h-1 bg-gray-800" />
                     </div>
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
-                        <h3 className="text-lg font-bold uppercase tracking-tight">Select Session</h3>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                            <Cancel01Icon className="w-5 h-5" />
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+                        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">Select Session</h3>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 transition-colors">
+                            <Cancel01Icon className="w-5 h-5 text-white" />
                         </button>
                     </div>
-                    <div className="p-3 max-h-80 overflow-y-auto">
+                    <div className="p-3 max-h-80 overflow-y-auto space-y-2">
                         {sessions.filter(s => s.type !== 'Q').map(session => (
                             <button
                                 key={session.type}
@@ -199,12 +200,12 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({ isOpen, onClose, sess
                                     onSelect(session.type);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left rounded-xl transition-all flex items-center justify-between mb-1 ${selectedSession === session.type
-                                    ? 'bg-red-600 text-white'
-                                    : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                className={`w-full p-4 text-left transition-all flex items-center justify-between border-2 ${selectedSession === session.type
+                                    ? 'bg-red-600 border-red-600 text-white'
+                                    : 'bg-black border-white/10 hover:border-white/30 text-gray-300'
                                     }`}
                             >
-                                <span className="text-base font-bold uppercase">{session.name}</span>
+                                <span className="text-base font-black uppercase tracking-wide">{session.name}</span>
                                 {selectedSession === session.type && (
                                     <CheckmarkCircle02Icon className="w-5 h-5" />
                                 )}
@@ -262,34 +263,44 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-                "rounded-xl overflow-hidden",
-                isNext ? "bg-red-950 border-2 border-red-600" : "bg-gray-900 border border-gray-800"
+                "overflow-hidden relative",
+                isNext ? "bg-black border-2 border-red-600" : "bg-black border border-white/10"
             )}
         >
+            {/* Decorative Corners for Next Session */}
+            {isNext && (
+                <>
+                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-red-600" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-red-600" />
+                    <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-red-600" />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-red-600" />
+                </>
+            )}
+
             <div className="p-4">
                 <div className="flex items-center justify-between">
                     {/* Left: Date & Session Name */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <div className={cn(
-                            "w-12 h-12 rounded-lg flex flex-col items-center justify-center",
-                            isNext ? "bg-red-900/50" : "bg-gray-800"
+                            "w-12 h-12 flex flex-col items-center justify-center border",
+                            isNext ? "bg-red-600/10 border-red-600 text-red-600" : "bg-zinc-900 border-white/10 text-gray-400"
                         )}>
-                            <span className="text-[10px] uppercase text-gray-500 font-bold">{dayName}</span>
-                            <span className={cn("text-sm font-black", isNext ? "text-red-400" : "text-white")}>
+                            <span className="text-[10px] uppercase font-black tracking-wider">{dayName}</span>
+                            <span className="text-lg font-black leading-none">
                                 {sessionDate.getDate()}
                             </span>
                         </div>
                         <div>
                             <h3 className={cn(
-                                "font-bold text-base uppercase tracking-tight",
-                                isNext ? "text-red-400" : "text-white"
+                                "font-black text-base uppercase italic tracking-tighter",
+                                isNext ? "text-white" : "text-gray-300"
                             )}>
                                 {session.name}
                             </h3>
                             {isNext && (
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                                    <span className="text-[10px] uppercase tracking-wider text-red-400 font-bold">Next Up</span>
+                                    <div className="w-1.5 h-1.5 bg-red-600 animate-pulse" />
+                                    <span className="text-[10px] uppercase tracking-wider text-red-600 font-bold">Next Up</span>
                                 </div>
                             )}
                         </div>
@@ -298,28 +309,28 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
                     {/* Right: Time or Status */}
                     <div className="text-right">
                         {isLive ? (
-                            <div className="flex items-center gap-2 text-red-500">
-                                <div className="relative flex h-2.5 w-2.5">
+                            <div className="flex items-center gap-2 text-red-600 border border-red-600 px-2 py-1 bg-red-600/10">
+                                <div className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
                                 </div>
-                                <span className="font-bold uppercase text-xs">LIVE</span>
+                                <span className="font-black uppercase text-xs tracking-wider">LIVE</span>
                             </div>
                         ) : isAvailable ? (
                             <button
                                 onClick={onViewResults}
-                                className="bg-red-600 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+                                className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors border border-transparent hover:border-white"
                             >
                                 Results
                             </button>
                         ) : (
                             <div className="space-y-0.5">
                                 <div className="flex items-center gap-2 justify-end">
-                                    <span className="text-xs text-gray-500 uppercase">Local</span>
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Local</span>
                                     <span className="text-sm font-mono text-gray-400">{formatLocalTime(session.localTime)}</span>
                                 </div>
                                 <div className="flex items-center gap-2 justify-end">
-                                    <span className="text-xs text-gray-500 uppercase">You</span>
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">You</span>
                                     <span className={cn("text-sm font-mono font-bold", isNext ? "text-white" : "text-gray-300")}>
                                         {formatUserTime(session.date)}
                                     </span>
@@ -350,7 +361,7 @@ const RaceBottomNav: React.FC<RaceBottomNavProps> = ({ activeTab, onTabChange, h
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 safe-area-pb">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t-2 border-white/10 safe-area-pb">
             <div className="flex items-center justify-around px-2 py-2">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -360,12 +371,18 @@ const RaceBottomNav: React.FC<RaceBottomNavProps> = ({ activeTab, onTabChange, h
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={cn(
-                                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[60px]",
-                                isActive ? "text-red-500" : "text-gray-500"
+                                "flex flex-col items-center gap-1 px-3 py-2 transition-colors min-w-[60px] relative",
+                                isActive ? "text-red-600" : "text-gray-500 hover:text-gray-300"
                             )}
                         >
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeTabIndicator"
+                                    className="absolute -top-[2px] left-0 right-0 h-[2px] bg-red-600"
+                                />
+                            )}
                             <Icon className="w-5 h-5" />
-                            <span className="text-[10px] font-bold uppercase tracking-wide">{tab.label}</span>
+                            <span className="text-[10px] font-black uppercase tracking-wider">{tab.label}</span>
                         </button>
                     );
                 })}
@@ -400,30 +417,35 @@ const HighlightCard: React.FC<HighlightCardProps> = ({ data, getDriverImage, get
     const Icon = data.icon;
 
     return (
-        <div className={cn("rounded-2xl border p-6", data.bgColor, data.borderColor)}>
-            <div className="flex items-start gap-4">
-                <Avatar className={cn("w-16 h-16 border-2", data.borderColor)}>
+        <div className={cn("border-2 p-6 bg-black relative overflow-hidden", data.borderColor)}>
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+
+            <div className="relative z-10 flex items-start gap-4">
+                <Avatar className={cn("w-16 h-16 border-2 rounded-none", data.borderColor)}>
                     <AvatarImage
                         src={getDriverImage(data.driver.driverCode, data.driver.fullName)}
                         className="object-cover object-top"
                     />
-                    <AvatarFallback className={cn("text-lg font-bold", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
+                    <AvatarFallback className={cn("text-lg font-black rounded-none", `bg-f1-${getTeamColorClass(data.driver.team)}`)}>
                         {data.driver.driverCode}
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                     <div className="flex items-center gap-1.5 mb-1">
                         <Icon className={cn("w-4 h-4", data.textColor)} />
-                        <span className={cn("text-xs font-bold uppercase tracking-wider", data.textColor)}>{data.label}</span>
+                        <span className={cn("text-xs font-black uppercase tracking-widest", data.textColor)}>{data.label}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-xl font-black uppercase italic text-white">{data.driver.fullName}</h3>
-                        <span className={cn("w-2 h-2 rounded-full flex-shrink-0", `bg-f1-${getTeamColorClass(data.driver.team)}`)} />
-                        <span className="text-sm text-gray-400">{data.driver.team}</span>
+                        <h3 className="text-2xl font-black uppercase italic text-white leading-none">{data.driver.fullName}</h3>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-500 uppercase">{data.timeLabel}</span>
-                        <span className="text-sm font-mono text-gray-300">{data.timeValue}</span>
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className={cn("w-2 h-2 flex-shrink-0", `bg-f1-${getTeamColorClass(data.driver.team)}`)} />
+                        <span className="text-xs font-mono text-gray-400 uppercase">{data.driver.team}</span>
+                    </div>
+                    <div className="flex items-center gap-2 border-t border-white/10 pt-2">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{data.timeLabel}</span>
+                        <span className="text-sm font-mono font-bold text-white">{data.timeValue}</span>
                     </div>
                 </div>
             </div>
@@ -464,7 +486,7 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
     if (highlights.length === 0) return null;
 
     return (
-        <div className="relative h-[200px]">
+        <div className="relative h-[220px]">
             {/* Card Stack */}
             {highlights.map((highlight, index) => {
                 // Calculate position relative to current
@@ -509,14 +531,14 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
 
             {/* Indicator Dots */}
             {highlights.length > 1 && (
-                <div className="absolute -bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
                     {highlights.map((_, index) => (
                         <button
                             key={index}
                             onClick={() => setCurrentIndex(index)}
                             className={cn(
-                                "w-2 h-2 rounded-full transition-all",
-                                index === currentIndex ? "bg-white w-4" : "bg-gray-600"
+                                "h-1 transition-all",
+                                index === currentIndex ? "bg-red-600 w-8" : "bg-gray-800 w-4"
                             )}
                         />
                     ))}
@@ -525,8 +547,8 @@ const StackedHighlightCards: React.FC<StackedHighlightCardsProps> = ({
 
             {/* Swipe hint */}
             {highlights.length > 1 && (
-                <div className="absolute -bottom-0 right-0 flex items-center gap-1 text-gray-600">
-                    <span className="text-[10px] uppercase tracking-wider">Swipe</span>
+                <div className="absolute -bottom-6 right-0 flex items-center gap-1 text-gray-600">
+                    <span className="text-[10px] uppercase tracking-wider font-bold">Swipe</span>
                     <ArrowLeft01Icon className="w-3 h-3 rotate-180" />
                 </div>
             )}
@@ -543,9 +565,10 @@ interface ResultRowProps {
     driverImage?: string;
     isExpanded: boolean;
     onToggle: () => void;
+    fastestLapHolder?: DetailedRaceResult | null;
 }
 
-const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, isFavorite, driverImage, isExpanded, onToggle }) => {
+const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, isFavorite, driverImage, isExpanded, onToggle, fastestLapHolder }) => {
     const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
     const isPodium = position <= 3;
 
@@ -554,31 +577,31 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={cn(
-                "rounded-xl transition-colors overflow-hidden border",
-                isFavorite ? "bg-red-900/20 border-red-600" : "bg-gray-900 border-transparent"
+                "transition-colors overflow-hidden border-b border-white/10",
+                isFavorite ? "bg-red-900/10" : "bg-black"
             )}
         >
             {/* Main Row - Clickable */}
             <div
-                className="flex items-center gap-3 p-3 cursor-pointer active:bg-gray-800/50"
+                className="flex items-center gap-3 p-3 cursor-pointer active:bg-zinc-900"
                 onClick={onToggle}
             >
                 {/* Position */}
                 <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm",
+                    "w-8 h-8 flex items-center justify-center font-black text-sm font-mono border",
                     isPodium ? (
-                        position === 1 ? "bg-yellow-900/50 text-yellow-500" :
-                            position === 2 ? "bg-gray-700 text-gray-300" :
-                                "bg-amber-900/50 text-amber-500"
-                    ) : "bg-gray-800 text-gray-400"
+                        position === 1 ? "bg-yellow-500 text-black border-yellow-500" :
+                            position === 2 ? "bg-gray-300 text-black border-gray-300" :
+                                "bg-amber-700 text-white border-amber-700"
+                    ) : "bg-black text-gray-500 border-white/20"
                 )}>
                     {position}
                 </div>
 
                 {/* Driver Avatar */}
-                <Avatar className="w-10 h-10 border border-gray-700">
+                <Avatar className="w-10 h-10 border border-white/10 rounded-none">
                     <AvatarImage src={driverImage} className="object-cover object-top" />
-                    <AvatarFallback className={cn("text-xs font-bold", `bg-f1-${getTeamColorClass(result.team)}`)}>
+                    <AvatarFallback className={cn("text-xs font-bold rounded-none", `bg-f1-${getTeamColorClass(result.team)}`)}>
                         {result.driverCode}
                     </AvatarFallback>
                 </Avatar>
@@ -586,29 +609,39 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                 {/* Driver Info */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-sm text-white truncate">{result.fullName}</span>
-                        {result.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500 flex-shrink-0" />}
+                        <span className="font-black text-sm text-white truncate uppercase italic tracking-tight">{result.fullName}</span>
+                        {((fastestLapHolder && result.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && result.isFastestLap)) && <Clock01Icon className="w-3 h-3 text-purple-500 flex-shrink-0" />}
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", `bg-f1-${getTeamColorClass(result.team)}`)} />
-                        <span className="text-xs text-gray-500 truncate">{result.team}</span>
+                        <span className={cn("w-1.5 h-1.5 flex-shrink-0", `bg-f1-${getTeamColorClass(result.team)}`)} />
+                        <span className="text-xs text-gray-500 truncate font-mono uppercase">{result.team}</span>
                     </div>
                 </div>
 
                 {/* Time/Gap + Expand Indicator */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <div className="text-right flex-shrink-0">
                         {isRaceOrSprint ? (
                             <>
-                                <div className="text-xs font-mono text-gray-300">
-                                    {formatRaceTime(result.time, position === 1)}
+                                <div className="text-xs font-mono text-white font-bold">
+                                    {(() => {
+                                        const isLapped = result.status.includes('Lap');
+                                        const isFinished = result.status === 'Finished' || result.status.startsWith('+') || isLapped;
+
+                                        if (isFinished) {
+                                            if (result.time) return formatRaceTime(result.time, position === 1);
+                                            if (isLapped) return result.status;
+                                            return '-';
+                                        }
+                                        return <span className="text-red-500 font-bold uppercase text-[10px]">{result.status}</span>;
+                                    })()}
                                 </div>
                                 {result.points !== null && result.points > 0 && (
-                                    <div className="text-[10px] font-bold text-red-500">+{result.points} PTS</div>
+                                    <div className="text-[10px] font-black text-red-600 bg-red-600/10 px-1 border border-red-600/20 inline-block mt-0.5">+{result.points} PTS</div>
                                 )}
                             </>
                         ) : (
-                            <div className="text-xs font-mono text-gray-300">{result.fastestLapTime || '-'}</div>
+                            <div className="text-xs font-mono text-white font-bold">{result.fastestLapTime || '-'}</div>
                         )}
                     </div>
                     <ArrowDown01Icon className={cn(
@@ -626,15 +659,15 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
+                        className="overflow-hidden bg-zinc-900/30"
                     >
-                        <div className="px-3 pb-3 pt-1 border-t border-gray-800">
-                            <div className="grid grid-cols-2 gap-3">
+                        <div className="px-3 pb-3 pt-2 border-t border-white/5">
+                            <div className="grid grid-cols-2 gap-2">
                                 {/* Race Time */}
                                 {isRaceOrSprint && result.time && (
-                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Race Time</div>
-                                        <div className="text-sm font-mono text-white">
+                                    <div className="bg-black border border-white/10 p-2">
+                                        <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Race Time</div>
+                                        <div className="text-xs font-mono text-white">
                                             {position === 1 ? formatRaceTime(result.time, true) : result.time}
                                         </div>
                                     </div>
@@ -643,27 +676,27 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
                                 {/* Fastest Lap */}
                                 {isRaceOrSprint && (
                                     <div className={cn(
-                                        "rounded-lg p-2.5",
-                                        result.isFastestLap ? "bg-purple-900/30 border border-purple-600/30" : "bg-gray-800/50"
+                                        "p-2 border",
+                                        ((fastestLapHolder && result.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && result.isFastestLap)) ? "bg-purple-900/10 border-purple-600/50" : "bg-black border-white/10"
                                     )}>
                                         <div className="flex items-center gap-1 mb-0.5">
-                                            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Fastest Lap</div>
-                                            {result.isFastestLap && <Clock01Icon className="w-3 h-3 text-purple-500" />}
+                                            <div className={cn("text-[9px] uppercase font-bold tracking-wider", ((fastestLapHolder && result.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && result.isFastestLap)) ? "text-purple-400" : "text-gray-500")}>Fastest Lap</div>
+                                            {((fastestLapHolder && result.driverCode === fastestLapHolder.driverCode) || (!fastestLapHolder && result.isFastestLap)) && <Clock01Icon className="w-3 h-3 text-purple-500" />}
                                         </div>
-                                        <div className="text-sm font-mono text-white">
+                                        <div className="text-xs font-mono text-white">
                                             {result.driverFastestLapTime || '-'}
                                         </div>
                                         {result.driverFastestLapNumber && (
-                                            <div className="text-[10px] text-gray-500">Lap {result.driverFastestLapNumber}</div>
+                                            <div className="text-[9px] text-gray-500 font-mono">Lap {result.driverFastestLapNumber}</div>
                                         )}
                                     </div>
                                 )}
 
                                 {/* Laps Completed */}
                                 {(result.laps || result.lapsCompleted) && (
-                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Laps</div>
-                                        <div className="text-sm font-mono text-white">
+                                    <div className="bg-black border border-white/10 p-2">
+                                        <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Laps</div>
+                                        <div className="text-xs font-mono text-white">
                                             {result.laps || result.lapsCompleted}
                                         </div>
                                     </div>
@@ -671,29 +704,31 @@ const ResultRow: React.FC<ResultRowProps> = ({ result, position, sessionType, is
 
                                 {/* Grid Position */}
                                 {isRaceOrSprint && result.gridPosition !== null && result.gridPosition !== undefined && (
-                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Started</div>
-                                        <div className="text-sm font-mono text-white">
-                                            P{result.gridPosition}
-                                        </div>
-                                        {result.gridPosition !== position && (
-                                            <div className={cn(
-                                                "text-[10px] font-bold",
-                                                result.gridPosition > position ? "text-green-500" : "text-red-500"
-                                            )}>
-                                                {result.gridPosition > position
-                                                    ? `↑ +${result.gridPosition - position}`
-                                                    : `↓ ${position - result.gridPosition}`}
+                                    <div className="bg-black border border-white/10 p-2">
+                                        <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Started</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-xs font-mono text-white">
+                                                P{result.gridPosition}
                                             </div>
-                                        )}
+                                            {result.gridPosition !== position && (
+                                                <div className={cn(
+                                                    "text-[9px] font-black px-1",
+                                                    result.gridPosition > position ? "text-green-500 bg-green-500/10" : "text-red-500 bg-red-500/10"
+                                                )}>
+                                                    {result.gridPosition > position
+                                                        ? `↑ ${result.gridPosition - position}`
+                                                        : `↓ ${position - result.gridPosition}`}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* Status */}
                                 {result.status && result.status !== 'Finished' && (
-                                    <div className="bg-gray-800/50 rounded-lg p-2.5">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Status</div>
-                                        <div className="text-sm text-orange-400">
+                                    <div className="bg-black border border-white/10 p-2">
+                                        <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Status</div>
+                                        <div className="text-xs text-orange-500 font-bold uppercase">
                                             {result.status}
                                         </div>
                                     </div>
@@ -798,373 +833,232 @@ const MobileRace: React.FC = () => {
         enabled: !!year && !!eventSlug && !isLoadingSessions && (!fetchedAvailableSessions || !fetchedAvailableSessions.some(s => s.type === 'R')),
     });
 
-    const { data: sessionResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
-        queryKey: ['sessionResult', year, eventSlug, selectedSession],
-        queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
-        enabled: !!year && !!eventSlug && !!selectedSession && (fetchedAvailableSessions && fetchedAvailableSessions.length > 0),
+    const { data: raceResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
+        queryKey: ['raceResults', year, eventName, selectedSession],
+        queryFn: () => fetchSpecificRaceResults(year!, eventName, selectedSession),
+        enabled: !!year && !!eventName && !!selectedSession,
     });
 
+    // Effects
     useEffect(() => {
-        if (fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
+        if (fetchedAvailableSessions) {
             setAvailableSessions(fetchedAvailableSessions);
-            if (!searchParams.get('session')) {
-                let defaultSession = '';
-                if (fetchedAvailableSessions.some(s => s.type === 'R')) {
-                    defaultSession = 'R';
-                } else {
-                    defaultSession = fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type;
-                }
-                setSearchParams(prev => {
-                    const newParams = new URLSearchParams(prev);
-                    newParams.set('session', defaultSession);
-                    return newParams;
-                }, { replace: true });
+            if (!selectedSession && fetchedAvailableSessions.length > 0) {
+                // Default to Race if available, else first session
+                const hasRace = fetchedAvailableSessions.some(s => s.type === 'R');
+                setSelectedSession(hasRace ? 'R' : fetchedAvailableSessions[0].type);
             }
-        } else if (fetchedAvailableSessions) {
-            setAvailableSessions([]);
         }
     }, [fetchedAvailableSessions]);
 
-    // Derived Data
-    const nextSession = useMemo(() => {
-        if (!sessionSchedule) return null;
-        return sessionSchedule.sessions.find(s => new Date(s.date) > now);
-    }, [sessionSchedule, now]);
+    // Derived State
+    const currentSessionName = availableSessions.find(s => s.type === selectedSession)?.name || 'Session';
+    const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
 
-    const sortedResults = useMemo(() => {
-        if (!sessionResults) return [];
-        const isPracticeOrQual = selectedSession.startsWith('FP') || selectedSession.startsWith('Q') || selectedSession.startsWith('SQ');
-        if (isPracticeOrQual) {
-            return [...sessionResults].sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime));
-        }
-        return sessionResults;
-    }, [sessionResults, selectedSession]);
+    const fastestLapHolder = useMemo(() => {
+        if (!isRaceOrSprint || !raceResults) return null;
 
-    const raceWinner = useMemo(() => (selectedSession === 'R' || selectedSession === 'Sprint') ? sessionResults?.find(r => r.position === 1) : null, [sessionResults, selectedSession]);
+        const validResults = raceResults.filter(r =>
+            !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
+        );
 
-    // Get fastest lap driver
-    const fastestLapDriver = useMemo(() => {
-        if (selectedSession !== 'R' && selectedSession !== 'Sprint') return null;
-        return sessionResults?.find(r => r.isFastestLap);
-    }, [sessionResults, selectedSession]);
+        if (validResults.length === 0) return null;
 
-    // Get pole position driver (grid position 1)
-    const poleDriver = useMemo(() => {
-        if (selectedSession !== 'R' && selectedSession !== 'Sprint') return null;
-        return sessionResults?.find(r => r.gridPosition === 1);
-    }, [sessionResults, selectedSession]);
+        return validResults.sort((a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime))[0];
+    }, [raceResults, isRaceOrSprint]);
 
-    // Build highlight cards data
-    const highlightCards = useMemo((): HighlightCardData[] => {
+    // Highlights Logic
+    const highlights = useMemo(() => {
+        if (!raceResults || raceResults.length === 0) return [];
         const cards: HighlightCardData[] = [];
 
-        if (raceWinner) {
+        // Winner
+        const winner = raceResults.find(r => r.position === 1);
+        if (winner) {
             cards.push({
                 type: 'winner',
-                driver: raceWinner,
-                label: 'Winner',
+                driver: winner,
+                label: 'Race Winner',
                 icon: ChampionIcon,
-                bgColor: 'bg-[#1a1400]',
-                borderColor: 'border-yellow-600',
+                bgColor: 'bg-black',
+                borderColor: 'border-yellow-500',
                 textColor: 'text-yellow-500',
-                timeLabel: 'Time',
-                timeValue: formatRaceTime(raceWinner.time, true),
+                timeLabel: 'Race Time',
+                timeValue: formatRaceTime(winner.time, true)
             });
         }
 
-        if (fastestLapDriver) {
+        // Fastest Lap
+        if (fastestLapHolder) {
             cards.push({
                 type: 'fastestLap',
-                driver: fastestLapDriver,
+                driver: fastestLapHolder,
                 label: 'Fastest Lap',
                 icon: Clock01Icon,
-                bgColor: 'bg-[#1a0a1a]',
+                bgColor: 'bg-black',
                 borderColor: 'border-purple-600',
                 textColor: 'text-purple-500',
                 timeLabel: 'Lap Time',
-                timeValue: fastestLapDriver.driverFastestLapTime || fastestLapDriver.fastestLapTime || '-',
+                timeValue: fastestLapHolder.driverFastestLapTime || '-'
             });
         }
 
-        if (poleDriver) {
+        // Pole Position (if grid data available)
+        const pole = raceResults.find(r => r.gridPosition === 1);
+        if (pole) {
             cards.push({
                 type: 'pole',
-                driver: poleDriver,
+                driver: pole,
                 label: 'Pole Position',
                 icon: StartUp02Icon,
-                bgColor: 'bg-[#0a1a1a]',
-                borderColor: 'border-cyan-600',
-                textColor: 'text-cyan-500',
-                timeLabel: 'Started',
-                timeValue: 'P1',
+                bgColor: 'bg-black',
+                borderColor: 'border-red-600',
+                textColor: 'text-red-600',
+                timeLabel: 'Finish Position',
+                timeValue: `P${pole.position}`
             });
         }
 
         return cards;
-    }, [raceWinner, fastestLapDriver, poleDriver]);
+    }, [raceResults]);
 
-    if (!year || !eventSlug) return null;
-
+    // Loading State
     if (isLoadingSessions) {
         return (
-            <div className="min-h-screen bg-black text-white">
-                <MobilePageHeader />
-                <div className="flex items-center justify-center h-64">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-10 h-10 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin" />
-                        <div className="text-gray-500 font-mono text-xs animate-pulse uppercase">Loading...</div>
-                    </div>
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="text-red-600 font-black uppercase tracking-widest text-sm animate-pulse">Loading Race Data...</div>
                 </div>
             </div>
         );
     }
 
-    const isRaceFuture = !availableSessions.some(s => s.type === 'R');
-    const shouldShowSchedule = isRaceFuture && !showAnalysis;
-    const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
+    // Schedule View (No Results Yet)
+    if (availableSessions.length === 0 && sessionSchedule) {
+        const upcomingSession = sessionSchedule.sessions.find(s => new Date(s.date) > now);
+        const nextSession = upcomingSession || sessionSchedule.sessions[sessionSchedule.sessions.length - 1];
 
-    const getSessionType = (sessionName: string) => {
-        const lowerName = sessionName.toLowerCase();
-        if (lowerName.includes('practice 1')) return 'FP1';
-        if (lowerName.includes('practice 2')) return 'FP2';
-        if (lowerName.includes('practice 3')) return 'FP3';
-        if (lowerName.includes('sprint qualifying') || lowerName.includes('sprint shootout')) return 'SQ';
-        if (lowerName.includes('sprint') && !lowerName.includes('qualifying')) return 'Sprint';
-        if (lowerName.includes('qualifying') && !lowerName.includes('sprint')) return 'Q';
-        if (lowerName === 'race') return 'R';
-        return '';
-    };
+        return (
+            <div className="min-h-screen bg-black text-white pb-20 font-sans">
+                <MobilePageHeader title={eventName} showBack />
 
-    const isSessionAvailable = (sessionType: string) => {
-        return availableSessions.some(s => {
-            if (sessionType === 'Q') return s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3';
-            if (sessionType === 'SQ') return s.type === 'SQ' || s.type === 'SQ1' || s.type === 'SQ2' || s.type === 'SQ3';
-            return s.type === sessionType;
-        });
-    };
+                <div className="p-4 space-y-6">
+                    {/* Countdown */}
+                    {nextSession && new Date(nextSession.date) > now && (
+                        <div className="py-8">
+                            <div className="text-center mb-6">
+                                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Next Session</h2>
+                                <h1 className="text-3xl font-black uppercase italic text-white">{nextSession.name}</h1>
+                            </div>
+                            <MobileCountdown targetDate={new Date(nextSession.date)} />
+                        </div>
+                    )}
 
-    const isSessionLive = (sessionDate: string, sessionType: string) => {
-        const date = new Date(sessionDate);
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = diffMs / (1000 * 60);
-        let duration = 60;
-        if (sessionType === 'R') duration = 180;
-        else if (sessionType === 'Sprint') duration = 60;
-        return diffMins >= 0 && diffMins < duration;
-    };
+                    {/* Schedule List */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar01Icon className="w-5 h-5 text-red-600" />
+                            <h3 className="text-lg font-black uppercase italic tracking-tight">Weekend Schedule</h3>
+                        </div>
+                        {sessionSchedule.sessions.map((session) => {
+                            const sessionDate = new Date(session.date);
+                            const isNext = nextSession === session && sessionDate > now;
+                            const isLive = sessionDate <= now && new Date(sessionDate.getTime() + 2 * 60 * 60 * 1000) > now; // Approx 2h duration
+                            const isAvailable = false; // No results in this view
+
+                            return (
+                                <ScheduleSessionCard
+                                    key={session.name}
+                                    session={session}
+                                    isNext={isNext}
+                                    isLive={isLive}
+                                    isAvailable={isAvailable}
+                                    is24Hour={is24Hour}
+                                    onViewResults={() => { }}
+                                />
+                            );
+                        })}
+                    </div>
+                </div>
+                <MobilePageHeader title={eventName} showBack />
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-black text-white pb-20">
-            {/* Page Header with Logo */}
-            <MobilePageHeader />
+        <div className="min-h-screen bg-black text-white pb-[80px] font-sans selection:bg-red-600 selection:text-white">
+            <MobilePageHeader title={eventName} showBack />
 
-            {/* Race Header */}
-            <div className="px-4 py-3 border-b border-gray-800">
-                <div className="flex items-center gap-3">
+            {/* Session Selector Header */}
+            <div className="sticky top-[58px] z-40 bg-black/95 backdrop-blur-md border-b border-white/10">
+                <div className="px-4 py-3 flex items-center justify-between">
                     <button
-                        onClick={() => {
-                            if (showAnalysis && isRaceFuture) {
-                                setShowAnalysisView(false);
-                            } else {
-                                navigate(-1);
-                            }
-                        }}
-                        className="p-2 -ml-2 hover:bg-gray-800 rounded-lg transition-colors"
+                        onClick={() => setShowSessionSelector(true)}
+                        className="flex items-center gap-2 active:opacity-70"
                     >
-                        <ArrowLeft01Icon className="w-5 h-5" />
+                        <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">
+                            {currentSessionName}
+                        </h2>
+                        <ArrowDown01Icon className="w-5 h-5 text-red-600" />
                     </button>
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-lg font-black uppercase italic tracking-tight truncate">
-                            {eventName}
-                        </h1>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span className="font-mono">{year}</span>
-                            {selectedSession && availableSessions.find(s => s.type === selectedSession) && (
-                                <>
-                                    <span>•</span>
-                                    <span className="text-red-500 font-bold uppercase">
-                                        {availableSessions.find(s => s.type === selectedSession)?.name}
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                    <div className="flex items-center gap-2">
+                        {/* View Toggle (Analysis vs Overview) */}
+                        {/* Placeholder for future toggles */}
                     </div>
-                    {!shouldShowSchedule && availableSessions.length > 0 && (
-                        <button
-                            onClick={() => setShowSessionSelector(true)}
-                            className="flex items-center gap-1.5 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold uppercase active:scale-95 transition-transform"
-                        >
-                            Session
-                            <ArrowDown01Icon className="w-3.5 h-3.5" />
-                        </button>
-                    )}
                 </div>
             </div>
 
-            {shouldShowSchedule ? (
-                sessionSchedule ? (
-                    // UPCOMING RACE - SCHEDULE VIEW
-                    <div className="px-4 py-6 space-y-6">
-                        {/* Countdown Hero */}
-                        {nextSession && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-red-950/30 rounded-2xl border border-red-600/30 p-6"
-                            >
-                                <div className="text-center mb-4">
-                                    <div className="flex items-center justify-center gap-2 mb-2">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-red-400">
-                                            Countdown to {nextSession.name}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-gray-400 font-mono">
-                                        {new Date(nextSession.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-                                    </div>
-                                </div>
-                                <MobileCountdown targetDate={new Date(nextSession.date)} />
-                            </motion.div>
-                        )}
+            <div className="p-4 space-y-6">
+                {/* Highlights Carousel (Race Only) */}
+                {isRaceOrSprint && highlights.length > 0 && (
+                    <div className="mb-8">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">Highlights</h3>
+                        <StackedHighlightCards
+                            highlights={highlights}
+                            getDriverImage={getDriverImage}
+                            getTeamColorClass={getTeamColorClass}
+                        />
+                    </div>
+                )}
 
-                        {/* Time Format Toggle */}
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-base font-bold uppercase tracking-tight text-gray-400">
-                                Weekend Schedule
-                            </h2>
-                            <div className="flex bg-gray-900 rounded-lg p-0.5 border border-gray-800">
-                                <button
-                                    onClick={() => setIs24Hour(true)}
-                                    className={cn(
-                                        "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
-                                        is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
-                                    )}
-                                >
-                                    24H
-                                </button>
-                                <button
-                                    onClick={() => setIs24Hour(false)}
-                                    className={cn(
-                                        "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
-                                        !is24Hour ? "bg-gray-700 text-white" : "text-gray-500"
-                                    )}
-                                >
-                                    12H
-                                </button>
+                {/* Results Table */}
+                <div>
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Classification</h3>
+                        <span className="text-[10px] font-mono text-gray-600">{raceResults?.length || 0} DRIVERS</span>
+                    </div>
+
+                    <div className="space-y-px bg-white/10 border-t border-b border-white/10">
+                        {isLoadingResults ? (
+                            <div className="p-8 text-center text-gray-500 animate-pulse bg-black">
+                                Loading results...
                             </div>
-                        </div>
-
-                        {/* Session List */}
-                        <div className="space-y-2.5">
-                            {sessionSchedule.sessions.map((session, idx) => {
-                                const sessionType = getSessionType(session.name);
-                                const isNext = nextSession && session.name === nextSession.name;
-                                const isAvailable = isSessionAvailable(sessionType);
-                                const isLive = isSessionLive(session.date, sessionType);
-
-                                return (
-                                    <ScheduleSessionCard
-                                        key={idx}
-                                        session={session}
-                                        isNext={isNext}
-                                        isLive={isLive}
-                                        isAvailable={isAvailable}
-                                        is24Hour={is24Hour}
-                                        onViewResults={() => {
-                                            let targetSession = sessionType;
-                                            if (sessionType === 'Q' && !availableSessions.some(s => s.type === 'Q')) {
-                                                if (availableSessions.some(s => s.type === 'Q3')) targetSession = 'Q3';
-                                            }
-                                            if (sessionType === 'SQ' && !availableSessions.some(s => s.type === 'SQ')) {
-                                                if (availableSessions.some(s => s.type === 'SQ3')) targetSession = 'SQ3';
-                                            }
-                                            setSelectedSession(targetSession);
-                                            setShowAnalysisView(true);
-                                        }}
-                                    />
-                                );
-                            })}
-                        </div>
-
-                        {/* View Past Sessions if available */}
-                        {availableSessions.length > 0 && (
-                            <motion.button
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                onClick={() => setShowAnalysisView(true)}
-                                className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                            >
-                                <Analytics01Icon className="w-4 h-4 text-red-500" />
-                                <span className="text-sm font-bold uppercase tracking-wider">View Session Results</span>
-                            </motion.button>
+                        ) : (
+                            raceResults?.map((result) => (
+                                <ResultRow
+                                    key={result.driverCode}
+                                    result={result}
+                                    position={result.position}
+                                    sessionType={selectedSession}
+                                    isFavorite={profile?.favorite_driver === result.driverCode}
+                                    driverImage={getDriverImage(result.driverCode, result.fullName)}
+                                    isExpanded={expandedDriver === result.driverCode}
+                                    onToggle={() => setExpandedDriver(expandedDriver === result.driverCode ? null : result.driverCode)}
+                                    fastestLapHolder={fastestLapHolder}
+                                />
+                            ))
                         )}
                     </div>
-                ) : (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="w-10 h-10 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin" />
-                    </div>
-                )
-            ) : (
-                // RESULTS VIEW
-                <div className="px-4 py-4 space-y-4">
-                    {/* Stacked Highlight Cards (Winner, Fastest Lap, Pole) */}
-                    {highlightCards.length > 0 && activeTab === 'overview' && (
-                        <div className="mb-0">
-                            <StackedHighlightCards
-                                highlights={highlightCards}
-                                getDriverImage={getDriverImage}
-                                getTeamColorClass={getTeamColorClass}
-                            />
-                        </div>
-                    )}
-
-                    {/* Results Header */}
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-base font-bold uppercase tracking-tight text-gray-400">
-                            {availableSessions.find(s => s.type === selectedSession)?.name || 'Results'}
-                        </h2>
-                        <span className="text-xs text-gray-600 font-mono">
-                            {sortedResults.length} drivers
-                        </span>
-                    </div>
-
-                    {/* Results List */}
-                    {isLoadingResults ? (
-                        <div className="space-y-2">
-                            {[...Array(10)].map((_, i) => (
-                                <div key={i} className="h-16 bg-gray-900 animate-pulse rounded-xl" />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {sortedResults.map((result, idx) => {
-                                const position = selectedSession.startsWith('FP') || selectedSession.startsWith('Q') || selectedSession.startsWith('SQ')
-                                    ? idx + 1
-                                    : result.position ?? idx + 1;
-                                const isFavorite = profile?.favorite_driver && (
-                                    result.driverCode === profile.favorite_driver ||
-                                    result.fullName.toLowerCase().includes(profile.favorite_driver.toLowerCase())
-                                );
-
-                                return (
-                                    <ResultRow
-                                        key={result.driverCode}
-                                        result={result}
-                                        position={position}
-                                        sessionType={selectedSession}
-                                        isFavorite={!!isFavorite}
-                                        driverImage={getDriverImage(result.driverCode, result.fullName)}
-                                        isExpanded={expandedDriver === result.driverCode}
-                                        onToggle={() => setExpandedDriver(
-                                            expandedDriver === result.driverCode ? null : result.driverCode
-                                        )}
-                                    />
-                                );
-                            })}
-                        </div>
-                    )}
                 </div>
-            )}
+            </div>
+
+            {/* Bottom Nav */}
+            <RaceBottomNav
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                hasStrategy={isRaceOrSprint}
+            />
 
             {/* Session Selector Modal */}
             <SessionSelector
@@ -1172,26 +1066,10 @@ const MobileRace: React.FC = () => {
                 onClose={() => setShowSessionSelector(false)}
                 sessions={availableSessions}
                 selectedSession={selectedSession}
-                onSelect={(sessionType) => {
-                    setSelectedSession(sessionType);
-                    trackEvent('mobile_session_changed', { session_type: sessionType, race_name: eventName });
-                }}
+                onSelect={setSelectedSession}
             />
-
-            {/* Custom Bottom Nav for Analysis View */}
-            {!shouldShowSchedule && (
-                <RaceBottomNav
-                    activeTab={activeTab}
-                    onTabChange={(tab) => {
-                        setActiveTab(tab);
-                        trackEvent('mobile_tab_switched', { tab: tab, context: 'race_analysis', race_name: eventName });
-                    }}
-                    hasStrategy={selectedSession === 'R' || selectedSession === 'Sprint'}
-                />
-            )}
         </div>
     );
 };
 
 export default MobileRace;
-
