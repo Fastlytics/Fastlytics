@@ -1,0 +1,76 @@
+# Dependabot Configuration
+# This file configures Dependabot to automatically check for dependency updates
+# and create pull requests for version updates and security patches.
+
+version: 2
+updates:
+  # NPM Package Updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "subhashhhhhh"
+    assignees:
+      - "subhashhhhhh"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      prefix-scope: "deps"
+      include: "scope"
+    # Allow automatic merging for patch updates
+    allow:
+      - dependency-type: "indirect"
+      - dependency-type: "direct"
+    # Group updates by type
+    groups:
+      development-dependencies:
+        dependency-types:
+          - "dev"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-types:
+          - "prod"
+        update-types:
+          - "patch"
+
+  # Docker Image Updates
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:30"
+    labels:
+      - "docker"
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "subhashhhhhh"
+
+  # GitHub Actions Updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    labels:
+      - "ci/cd"
+      - "github-actions"
+      - "automated"
+    reviewers:
+      - "subhashhhhhh"
+    # Minor and patch updates for actions
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
