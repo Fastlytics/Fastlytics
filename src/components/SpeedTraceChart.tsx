@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
-import { fetchTelemetrySpeed, fetchSessionDrivers, fetchLapTimes, SessionDriver, SpeedDataPoint } from '@/lib/api';
-import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
+import { fetchTelemetrySpeed, SpeedDataPoint } from '@/lib/api';
+import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from '@/components/ui/button';
+import { OpenF1Driver } from '@/lib/openf1';
+import TelemetryChartWrapper from './TelemetryChartWrapper';
 
 interface SpeedTraceChartProps {
   className?: string;
@@ -20,229 +18,146 @@ interface SpeedTraceChartProps {
   session: string;
   initialDriver?: string;
   lap?: string | number;
+  openF1Drivers?: OpenF1Driver[];
 }
 
 const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   className,
   delay = 0,
-  title = "",
+  title = "Speed Trace",
   year,
   event,
   session,
   initialDriver = '',
-  lap = 'fastest'
+  lap = 'fastest',
+  openF1Drivers = []
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver);
-  const [selectedLap, setSelectedLap] = useState<string | number>(lap);
-  const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
 
-  const [shouldLoadChart, setShouldLoadChart] = useState(false);
+  // Custom Tooltip
+  const CustomTooltip = ({ active, payload, label, selectedDriver }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const openF1Driver = openF1Drivers.find(d => d.name_acronym === selectedDriver || d.last_name.toUpperCase().slice(0, 3) === selectedDriver);
+      const color = driverColor(selectedDriver, year);
 
-  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60 * 24,
-    enabled: !!year && !!event && !!session,
-  });
-
-  const { data: lapTimes } = useQuery({
-    queryKey: ['lapTimes', year, event, session, selectedDriver],
-    queryFn: () => fetchLapTimes(year, event, session, [selectedDriver]),
-    enabled: !!year && !!event && !!session && !!selectedDriver,
-  });
-
-  useEffect(() => {
-    if (lapTimes && lapTimes.length > 0) {
-      const validLaps = lapTimes
-        .filter(lap => lap[selectedDriver] !== null)
-        .map(lap => lap.LapNumber.toString());
-      setLapOptions(['fastest', ...validLaps]);
-    } else {
-      setLapOptions(['fastest']);
-    }
-    if (selectedDriver !== initialDriver) {
-      setSelectedLap('fastest');
-    } else {
-      setSelectedLap(lap);
-    }
-  }, [lapTimes, selectedDriver, initialDriver, lap]);
-
-  const { data: speedData, isLoading: isLoadingSpeed, error } = useQuery<SpeedDataPoint[]>({
-    queryKey: ['speedTrace', year, event, session, selectedDriver, selectedLap],
-    queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver, selectedLap),
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 30,
-    retry: 1,
-    enabled: !!year && !!event && !!session && !!selectedDriver && !!selectedLap && shouldLoadChart,
-  });
-
-  const color = driverColor(selectedDriver, year);
-  const isLoading = isLoadingSpeed;
-  const chartTitle = title || (selectedDriver
-    ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Speed Trace`
-    : "Speed Trace");
-
-
-
-  const renderContent = () => {
-    if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select a driver and click load to view speed data</p>
-          <Button
-            onClick={() => setShouldLoadChart(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
-            disabled={!selectedDriver}
-          >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
-            Load Chart
-          </Button>
+        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[200px]">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                {openF1Driver?.headshot_url ? (
+                  <img src={openF1Driver.headshot_url} alt={selectedDriver} className="w-full h-full object-cover scale-125 translate-y-1" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">{selectedDriver[0]}</div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-gray-300 font-mono">{selectedDriver}</span>
+                <span className="text-[10px] text-gray-500 font-mono">DIST: {Math.round(label)}m</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Speed</span>
+              <span className="text-xl font-bold text-white font-mono" style={{ color: color }}>
+                {Math.round(data.Speed)} <span className="text-xs text-gray-500">km/h</span>
+              </span>
+            </div>
+          </div>
         </div>
       );
     }
-    if (isLoading) {
-      return (
-        <div className="w-full h-[280px] flex items-center justify-center bg-gray-900/50 border border-gray-800">
-          <LoadingSpinnerF1 />
-        </div>
-      );
-    }
-    if (error || !speedData) {
-      return (
-        <div className="w-full h-[280px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-bold uppercase">Error loading speed trace</p>
-          <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
-        </div>
-      );
-    }
-    if (speedData.length === 0) {
-      return (
-        <div className="w-full h-[260px] bg-black border border-gray-800 flex items-center justify-center text-gray-500 font-mono uppercase">
-          No speed telemetry data found for {selectedDriver} lap {selectedLap}.
-        </div>
-      );
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={280} className="export-chart-container">
-        <LineChart
-          data={speedData}
-          margin={{ top: 0, right: 10, left: -15, bottom: 5 }}
-          className="chart-main-container"
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
-          <XAxis
-            type="number"
-            dataKey="Distance"
-            stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
-            tickFormatter={(value: number) => {
-              return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(2)}m`;
-            }}
-            domain={['dataMin', 'dataMax']}
-          />
-          <YAxis
-            dataKey="Speed"
-            stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
-            domain={['auto', 'dataMax + 10']}
-            tickFormatter={(value) => `${value} kph`}
-            width={50}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#000',
-              borderColor: '#333',
-              color: '#fff',
-              borderRadius: '0px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.8)',
-              fontFamily: 'monospace'
-            }}
-            labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px', borderBottom: '1px solid #333' }}
-            itemStyle={{ color: color }}
-            formatter={(value: number) => [`${value} kph`, 'Speed']}
-            labelFormatter={(label: number) => `DIST: ${label.toFixed(2)}m`}
-          />
-          <Line
-            type="monotone"
-            dataKey="Speed"
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, strokeWidth: 0, fill: color }}
-            name={selectedDriver}
-            connectNulls={true}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+    return null;
   };
 
   return (
-    <div
-      ref={chartRef}
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
-      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
-    >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">{chartTitle}</h3>
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={selectedDriver}
-            onValueChange={(value) => {
-              setSelectedDriver(value);
-              setSelectedLap('fastest');
-              if (shouldLoadChart) {
-                setShouldLoadChart(false);
-              }
-            }}
-            disabled={isLoadingDrivers || !availableDrivers}
+    <TelemetryChartWrapper<SpeedDataPoint>
+      className={className}
+      title={title}
+      icon={Analytics01Icon}
+      year={year}
+      event={event}
+      session={session}
+      initialDriver={initialDriver}
+      lap={lap}
+      openF1Drivers={openF1Drivers}
+      onLoadData={(driver, lapVal) => {
+        return useQuery<SpeedDataPoint[]>({
+          queryKey: ['speedTrace', year, event, session, driver, lapVal],
+          queryFn: () => fetchTelemetrySpeed(year, event, session, driver, lapVal),
+          staleTime: 1000 * 60 * 10,
+          gcTime: 1000 * 60 * 30,
+          retry: 1,
+          enabled: !!year && !!event && !!session && !!driver && !!lapVal,
+        });
+      }}
+      renderChart={(data, color, selectedDriver) => (
+        <ResponsiveContainer width="100%" height={350} className="export-chart-container">
+          <LineChart
+            data={data}
+            margin={{ top: 10, right: 10, left: -15, bottom: 5 }}
+            className="chart-main-container"
           >
-            <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <UserIcon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Select Driver" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Driver</SelectLabel>
-                {availableDrivers?.map((drv) => (
-                  <SelectItem key={drv.code} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {drv.code}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedLap.toString()}
-            onValueChange={(value) => setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))}
-            disabled={lapOptions.length <= 1}
-          >
-            <SelectTrigger className="w-full sm:w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <Clock01Icon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Lap" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
-                {lapOptions.map((lap) => (
-                  <SelectItem key={lap.toString()} value={lap.toString()} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {lap === 'fastest' ? 'Fastest' : lap}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <XAxis
+              type="number"
+              dataKey="Distance"
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tickFormatter={(value: number) => {
+                return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
+              }}
+              domain={['dataMin', 'dataMax']}
+            />
+            <YAxis
+              dataKey="Speed"
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              domain={['auto', 'dataMax + 10']}
+              tickFormatter={(value) => `${value}`}
+              width={40}
+            />
+            <Tooltip content={<CustomTooltip selectedDriver={selectedDriver} />} cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }} />
+            <Line
+              type="monotone"
+              dataKey="Speed"
+              stroke={driverColor(selectedDriver, year)}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff', fill: driverColor(selectedDriver, year) }}
+              name={selectedDriver}
+              connectNulls={true}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+      renderStats={(data) => {
+        const speeds = data.map(d => d.Speed);
+        const maxSpeed = Math.max(...speeds);
+        const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
 
-      {renderContent()}
-
-
-    </div>
+        return (
+          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Max Speed</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(maxSpeed)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg Speed</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(avgSpeed)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }}
+    />
   );
 };
 

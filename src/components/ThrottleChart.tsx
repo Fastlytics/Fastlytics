@@ -1,16 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
-import { fetchTelemetryThrottle, fetchSessionDrivers, fetchLapTimes, SessionDriver, ThrottleDataPoint } from '@/lib/api';
-import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
-import { AlertCircleIcon, UserIcon, Clock01Icon, Analytics01Icon } from 'hugeicons-react';
+import { fetchTelemetryThrottle, ThrottleDataPoint } from '@/lib/api';
+import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { OpenF1Driver } from '@/lib/openf1';
+import TelemetryChartWrapper from './TelemetryChartWrapper';
 
 interface ThrottleChartProps {
   className?: string;
@@ -21,230 +18,143 @@ interface ThrottleChartProps {
   session: string;
   initialDriver?: string;
   lap?: string | number;
+  openF1Drivers?: OpenF1Driver[];
 }
 
 const ThrottleChart: React.FC<ThrottleChartProps> = ({
   className,
   delay = 0,
-  title,
+  title = "Throttle Input",
   year,
   event,
   session,
   initialDriver = '',
-  lap = 'fastest'
+  lap = 'fastest',
+  openF1Drivers = []
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const [selectedDriver, setSelectedDriver] = useState<string>(initialDriver || '');
-  const [selectedLap, setSelectedLap] = useState<string | number>(lap);
-  const [lapOptions, setLapOptions] = useState<Array<string | number>>(['fastest']);
 
-  const [shouldLoadChart, setShouldLoadChart] = useState(false);
+  // Custom Tooltip
+  const CustomTooltip = ({ active, payload, label, selectedDriver }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const openF1Driver = openF1Drivers.find(d => d.name_acronym === selectedDriver || d.last_name.toUpperCase().slice(0, 3) === selectedDriver);
+      const color = driverColor(selectedDriver, year);
 
-  // Fetch available drivers
-  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60 * 24,
-    enabled: !!year && !!event && !!session,
-  });
-
-  // Fetch lap times to populate lap options
-  const { data: lapTimes } = useQuery({
-    queryKey: ['lapTimes', year, event, session, selectedDriver],
-    queryFn: () => fetchLapTimes(year, event, session, [selectedDriver]),
-    enabled: !!year && !!event && !!session && !!selectedDriver,
-  });
-
-  useEffect(() => {
-    if (lapTimes && lapTimes.length > 0) {
-      const validLaps = lapTimes
-        .filter(lap => lap[selectedDriver] !== null)
-        .map(lap => lap.LapNumber.toString());
-      setLapOptions(['fastest', ...validLaps]);
-    } else {
-      setLapOptions(['fastest']); // Reset if no lap times
-    }
-    // Reset selected lap when driver changes, unless it's the initial load
-    if (selectedDriver !== initialDriver) {
-      setSelectedLap('fastest');
-    } else {
-      setSelectedLap(lap); // Ensure initial lap prop is respected on mount
-    }
-  }, [lapTimes, selectedDriver, initialDriver, lap]);
-
-  // Fetch throttle data
-  const { data: throttleData, isLoading: isLoadingThrottle, error } = useQuery<ThrottleDataPoint[]>({
-    queryKey: ['throttleTrace', year, event, session, selectedDriver, selectedLap],
-    queryFn: () => fetchTelemetryThrottle(year, event, session, selectedDriver, selectedLap),
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 30,
-    retry: 1,
-    enabled: !!year && !!event && !!session && !!selectedDriver && !!selectedLap && shouldLoadChart,
-  });
-
-  const color = driverColor(selectedDriver, year);
-  const isLoading = isLoadingThrottle;
-  const chartTitle = title || (selectedDriver
-    ? `${selectedDriver}'s ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`} Throttle Input`
-    : "Throttle Input");
-
-
-
-  const renderContent = () => {
-    // If chart shouldn't be loaded yet, show load button
-    if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[280px] flex flex-col items-center justify-center bg-gray-900/50 rounded-lg gap-4">
-          <p className="text-gray-400">Select a driver and click load to view throttle data</p>
-          <Button
-            onClick={() => setShouldLoadChart(true)}
-            variant="secondary"
-            className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
-            disabled={!selectedDriver}
-          >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
-            Load Chart
-          </Button>
+        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[200px]">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                {openF1Driver?.headshot_url ? (
+                  <img src={openF1Driver.headshot_url} alt={selectedDriver} className="w-full h-full object-cover scale-125 translate-y-1" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">{selectedDriver[0]}</div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-gray-300 font-mono">{selectedDriver}</span>
+                <span className="text-[10px] text-gray-500 font-mono">DIST: {Math.round(label)}m</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Throttle</span>
+              <span className="text-xl font-bold text-white font-mono" style={{ color: color }}>
+                {Math.round(data.Throttle)} <span className="text-xs text-gray-500">%</span>
+              </span>
+            </div>
+          </div>
         </div>
       );
     }
-
-    if (isLoading) {
-      return (
-        <div className="w-full h-[280px] flex items-center justify-center bg-gray-900/50 rounded-lg">
-          <LoadingSpinnerF1 />
-        </div>
-      );
-    }
-    if (error || !throttleData) {
-      return (
-        <div className="w-full h-[280px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
-          <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-semibold">Error loading throttle data</p>
-          <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch data.'}</p>
-        </div>
-      );
-    }
-    if (throttleData.length === 0) {
-      return (
-        <div className="w-full h-[260px] bg-gray-900/80 border border-gray-700/50 rounded-lg flex items-center justify-center text-gray-500">
-          No throttle telemetry data found for {selectedDriver} lap {selectedLap}.
-        </div>
-      );
-    }
-
-    return (
-      <ResponsiveContainer width="100%" height={280} className="export-chart-container">
-        <LineChart data={throttleData} margin={{ top: 0, right: 10, left: -15, bottom: 5 }} className="chart-main-container">
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(100, 116, 139, 0.3)" />
-          <XAxis
-            type="number"
-            dataKey="Distance"
-            stroke="rgba(156, 163, 175, 0.7)"
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
-            tickFormatter={(value: number) => {
-              // Use shorter label on small screens
-              return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(2)}m`;
-            }}
-            domain={['dataMin', 'dataMax']}
-          />
-          <YAxis
-            dataKey="Throttle"
-            stroke="rgba(156, 163, 175, 0.7)"
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
-            tickFormatter={(value) => `${value}%`}
-            domain={[0, 100]}
-            width={50}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'rgba(31, 41, 55, 0.9)',
-              borderColor: 'rgba(100, 116, 139, 0.5)',
-              color: '#E5E7EB',
-              borderRadius: '6px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
-            }}
-            labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }}
-            itemStyle={{ color: color }}
-            formatter={(value: number) => [`${value}%`, 'Throttle']}
-            labelFormatter={(label: number) => `Distance: ${label.toFixed(2)}m`}
-          />
-          <Line
-            type="monotone"
-            dataKey="Throttle"
-            stroke="#4ade80"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: "#4ade80" }}
-            name={selectedDriver}
-            connectNulls={true}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+    return null;
   };
 
   return (
-    <div
-      ref={chartRef}
-      className={cn("bg-black border-2 border-gray-800 p-6", className)}
-      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
-    >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">{chartTitle}</h3>
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={selectedDriver}
-            onValueChange={(value) => {
-              setSelectedDriver(value);
-              setSelectedLap('fastest');
-              if (shouldLoadChart) {
-                setShouldLoadChart(false);
-              }
-            }}
-            disabled={isLoadingDrivers || !availableDrivers}
-          >
-            <SelectTrigger className="w-full sm:w-[150px] min-w-[100px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <UserIcon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Select Driver" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Driver</SelectLabel>
-                {availableDrivers?.map((drv) => (
-                  <SelectItem key={drv.code} value={drv.code} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {drv.code}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedLap.toString()}
-            onValueChange={(value) => setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))}
-            disabled={lapOptions.length <= 1}
-          >
-            <SelectTrigger className="w-full sm:w-[120px] bg-gray-900 border-gray-700 text-white text-xs h-8 rounded-none focus:ring-red-600">
-              <Clock01Icon className="w-3 h-3 mr-2 opacity-50" />
-              <SelectValue placeholder="Lap" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
-              <SelectGroup>
-                <SelectLabel className="text-xs text-gray-500 uppercase">Lap</SelectLabel>
-                {lapOptions.map((lap) => (
-                  <SelectItem key={lap.toString()} value={lap.toString()} className="text-xs font-mono focus:bg-gray-900 focus:text-red-500">
-                    {lap === 'fastest' ? 'Fastest' : lap}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <TelemetryChartWrapper<ThrottleDataPoint>
+      className={className}
+      title={title}
+      icon={Analytics01Icon}
+      year={year}
+      event={event}
+      session={session}
+      initialDriver={initialDriver}
+      lap={lap}
+      openF1Drivers={openF1Drivers}
+      onLoadData={(driver, lapVal) => {
+        return useQuery<ThrottleDataPoint[]>({
+          queryKey: ['throttleTrace', year, event, session, driver, lapVal],
+          queryFn: () => fetchTelemetryThrottle(year, event, session, driver, lapVal),
+          staleTime: 1000 * 60 * 10,
+          gcTime: 1000 * 60 * 30,
+          retry: 1,
+          enabled: !!year && !!event && !!session && !!driver && !!lapVal,
+        });
+      }}
+      renderChart={(data, color, selectedDriver) => (
+        <ResponsiveContainer width="100%" height={280} className="export-chart-container">
+          <LineChart data={data} margin={{ top: 0, right: 10, left: -15, bottom: 5 }} className="chart-main-container">
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <XAxis
+              type="number"
+              dataKey="Distance"
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tickFormatter={(value: number) => {
+                return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
+              }}
+              domain={['dataMin', 'dataMax']}
+            />
+            <YAxis
+              dataKey="Throttle"
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tickFormatter={(value) => `${value}%`}
+              domain={[0, 100]}
+              width={40}
+            />
+            <Tooltip content={<CustomTooltip selectedDriver={selectedDriver} />} cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }} />
+            <Line
+              type="monotone"
+              dataKey="Throttle"
+              stroke={driverColor(selectedDriver, year)}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 1, stroke: '#fff', fill: driverColor(selectedDriver, year) }}
+              name={selectedDriver}
+              connectNulls={true}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+      renderStats={(data) => {
+        const throttles = data.map(d => d.Throttle);
+        const avgThrottle = throttles.reduce((a, b) => a + b, 0) / throttles.length;
+        const fullThrottle = throttles.filter(t => t >= 99).length;
+        const fullThrottlePercentage = (fullThrottle / throttles.length) * 100;
 
-      {renderContent()}
-    </div>
+        return (
+          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg Throttle</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(avgThrottle)} <span className="text-[10px] text-gray-500">%</span></span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Full Throttle</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(fullThrottlePercentage)} <span className="text-[10px] text-gray-500">%</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }}
+    />
   );
 };
 

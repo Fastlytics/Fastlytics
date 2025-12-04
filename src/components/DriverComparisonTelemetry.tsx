@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -22,6 +22,7 @@ import { driverColor } from '@/lib/driverColor';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { OpenF1Driver } from '@/lib/openf1';
 
 type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint;
 
@@ -38,6 +39,7 @@ interface DriverComparisonTelemetryProps {
   lap2: string | number;
   shouldLoadChart: boolean;
   telemetryType: 'throttle' | 'brake' | 'rpm' | 'drs' | 'speed';
+  openF1Drivers?: OpenF1Driver[];
 }
 
 const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
@@ -52,7 +54,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   lap1,
   lap2,
   shouldLoadChart,
-  telemetryType
+  telemetryType,
+  openF1Drivers = []
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const { trackEvent } = useAnalytics();
@@ -67,10 +70,6 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       });
     }
   }, [shouldLoadChart, driver1, driver2, event, telemetryType]);
-
-  // Auto-load logic: if shouldLoadChart is true, we load. 
-  // We no longer have a local "shouldLoadTelemetry" state that requires a button click if shouldLoadChart is passed as true.
-  // However, to respect the prop name, we'll use it directly.
 
   const { data: telemetryData1, isLoading: isLoadingTelemetry1, error: error1 } = useQuery<TelemetryDataPoint[]>({
     queryKey: [`${telemetryType}Trace`, year, event, session, driver1, lap1],
@@ -153,6 +152,16 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       return beforeValue + distRatio * (afterValue - beforeValue);
     };
 
+    // Special handling for Gear (no interpolation, just nearest or previous)
+    const getNearestGear = (distance: number, data: TelemetryDataPoint[]) => {
+      if (!data.length) return null;
+      // Find the point with the largest distance <= current distance
+      const point = data.reduce((prev, curr) => {
+        return (curr.Distance <= distance && curr.Distance > prev.Distance) ? curr : prev;
+      }, data[0]);
+      return (point as any).nGear;
+    };
+
     const allDistances = new Set<number>();
     telemetryData1.forEach(point => allDistances.add(point.Distance));
     telemetryData2.forEach(point => allDistances.add(point.Distance));
@@ -160,11 +169,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     const sortedTelemetryData1 = [...telemetryData1].sort((a, b) => a.Distance - b.Distance);
     const sortedTelemetryData2 = [...telemetryData2].sort((a, b) => a.Distance - b.Distance);
 
-    return distances.map(distance => ({
-      Distance: distance,
-      [`${dataKey}_${driver1}`]: interpolateTelemetry(distance, sortedTelemetryData1, dataKey),
-      [`${dataKey}_${driver2}`]: interpolateTelemetry(distance, sortedTelemetryData2, dataKey)
-    }));
+    return distances.map(distance => {
+      const point: any = {
+        Distance: distance,
+        [`${dataKey}_${driver1}`]: interpolateTelemetry(distance, sortedTelemetryData1, dataKey),
+        [`${dataKey}_${driver2}`]: interpolateTelemetry(distance, sortedTelemetryData2, dataKey)
+      };
+      return point;
+    });
   }, [telemetryData1, telemetryData2, driver1, driver2, telemetryType]);
 
   const driver1Color = driverColor(driver1, year);
@@ -177,6 +189,22 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   const isLoading = isLoadingTelemetry1 || isLoadingTelemetry2;
   const error = error1 || error2;
 
+  // Stats Calculation
+  const stats = useMemo(() => {
+    if (telemetryType !== 'speed' || !telemetryData1 || !telemetryData2) return null;
+
+    const calcStats = (data: SpeedDataPoint[]) => {
+      const speeds = data.map(d => d.Speed);
+      const max = Math.max(...speeds);
+      const avg = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+      return { max, avg };
+    };
+
+    return {
+      driver1: calcStats(telemetryData1 as SpeedDataPoint[]),
+      driver2: calcStats(telemetryData2 as SpeedDataPoint[])
+    };
+  }, [telemetryData1, telemetryData2, telemetryType]);
 
 
   const getTelemetryProps = () => {
@@ -258,6 +286,71 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 
   const props = getTelemetryProps();
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[250px]">
+          <div className="flex flex-col gap-3">
+            <div className="border-b border-gray-800 pb-2 mb-1">
+              <span className="text-[10px] text-gray-500 font-mono">DIST: {Math.round(label)}m</span>
+            </div>
+
+            {/* Driver 1 */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                  {(() => {
+                    const openF1Driver = openF1Drivers.find(d => d.name_acronym === driver1 || d.last_name.toUpperCase().slice(0, 3) === driver1);
+                    return openF1Driver?.headshot_url ? (
+                      <img src={openF1Driver.headshot_url} alt={driver1} className="w-full h-full object-cover scale-125 translate-y-1" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">{driver1[0]}</div>
+                    );
+                  })()}
+                </div>
+                <span className="text-xs font-bold font-mono" style={{ color: driver1Color }}>{driver1}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                  <span className="text-[8px] text-gray-500 uppercase font-mono">{props.dataKey}</span>
+                  <span className="text-sm font-bold text-white font-mono">
+                    {Math.round(payload[0].value)}{props.tooltipUnit}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Driver 2 */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                  {(() => {
+                    const openF1Driver = openF1Drivers.find(d => d.name_acronym === driver2 || d.last_name.toUpperCase().slice(0, 3) === driver2);
+                    return openF1Driver?.headshot_url ? (
+                      <img src={openF1Driver.headshot_url} alt={driver2} className="w-full h-full object-cover scale-125 translate-y-1" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">{driver2[0]}</div>
+                    );
+                  })()}
+                </div>
+                <span className="text-xs font-bold font-mono" style={{ color: driver2Color }}>{driver2}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                  <span className="text-[8px] text-gray-500 uppercase font-mono">{props.dataKey}</span>
+                  <span className="text-sm font-bold text-white font-mono">
+                    {Math.round(payload[1]?.value ?? 0)}{props.tooltipUnit}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderContent = () => {
     if (!shouldLoadChart) {
       return (
@@ -293,91 +386,95 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     }
 
     return (
-      <ResponsiveContainer width="100%" height={280} className="export-chart-container">
-        <LineChart data={combinedTelemetryData} margin={{ top: 0, right: 10, left: -15, bottom: 5 }} className="chart-main-container">
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
-          <XAxis
-            type="number"
-            dataKey="Distance"
-            stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
-            tickFormatter={(value: number) => `${value.toFixed(0)}m`}
-            domain={['dataMin', 'dataMax']}
-          />
-          <YAxis
-            dataKey={`${props.dataKey}_${driver1}`}
-            stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
-            tickFormatter={props.yAxisFormatter}
-            domain={props.domain}
-            width={50}
-            hide={!props.showYAxisTicks}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#000',
-              borderColor: '#333',
-              color: '#fff',
-              borderRadius: '0px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.8)',
-              fontFamily: 'monospace'
-            }}
-            labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px', borderBottom: '1px solid #333' }}
-            formatter={(value: any, name: string) => {
-              const isDriver1 = name.endsWith(driver1);
-              const driverName = isDriver1 ? driver1 : driver2;
-              const colorStyle = { color: isDriver1 ? driver1Color : driver2Color };
+      <div className="flex flex-col gap-4">
+        <ResponsiveContainer width="100%" height={280} className="export-chart-container">
+          <LineChart data={combinedTelemetryData} margin={{ top: 0, right: 10, left: -15, bottom: 5 }} className="chart-main-container">
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <XAxis
+              type="number"
+              dataKey="Distance"
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+              tickFormatter={(value: number) => `${value.toFixed(0)}m`}
+              domain={['dataMin', 'dataMax']}
+            />
+            <YAxis
+              dataKey={`${props.dataKey}_${driver1}`}
+              stroke="#666"
+              tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+              tickFormatter={props.yAxisFormatter}
+              domain={props.domain}
+              width={50}
+              hide={!props.showYAxisTicks}
+            />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={telemetryType !== 'drs'}
+            />
+            <Line
+              type={props.type}
+              dataKey={`${props.dataKey}_${driver1}`}
+              stroke={driver1Color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: driver1Color } : false}
+              name={driver1}
+              connectNulls={true}
+            />
+            <Line
+              type={props.type}
+              dataKey={`${props.dataKey}_${driver2}`}
+              stroke={driver2Color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: driver2Color } : false}
+              name={driver2}
+              connectNulls={true}
+            />
+          </LineChart>
+        </ResponsiveContainer>
 
-              let formattedValue: string | number;
-              let formattedName: string;
+        {/* Stats Section for Speed */}
+        {telemetryType === 'speed' && stats && (
+          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+            {/* Driver 1 Stats */}
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver1Color }}></div>
+                <span className="text-xs font-bold text-gray-300 font-mono">{driver1}</span>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Max</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(stats.driver1.max)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(stats.driver1.avg)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+              </div>
+            </div>
 
-              if (telemetryType === 'drs') {
-                formattedValue = value === 1 ? 'Enabled' : 'Disabled';
-                formattedName = `${driverName} DRS`;
-              } else if (telemetryType === 'rpm' && typeof value === 'number') {
-                formattedValue = Math.round(value);
-                formattedName = `${driverName} RPM`;
-              } else if ((telemetryType === 'throttle' || telemetryType === 'brake') && typeof value === 'number') {
-                formattedValue = `${value.toFixed(1)}${props.tooltipUnit}`;
-                formattedName = `${driverName} ${props.dataKey}`;
-              } else if (telemetryType === 'speed' && typeof value === 'number') {
-                formattedValue = `${Math.round(value)}${props.tooltipUnit}`;
-                formattedName = `${driverName} ${props.dataKey}`;
-              } else {
-                formattedValue = `${typeof value === 'number' ? value : 0}${props.tooltipUnit}`;
-                formattedName = `${driverName} ${props.dataKey}`;
-              }
-
-              return [
-                <span style={colorStyle}>{formattedValue}</span>,
-                <span style={colorStyle}>{formattedName}</span>
-              ];
-            }}
-            labelFormatter={(label: number) => `DIST: ${label.toFixed(0)}m`}
-            cursor={telemetryType !== 'drs'}
-          />
-          <Line
-            type={props.type}
-            dataKey={`${props.dataKey}_${driver1}`}
-            stroke={driver1Color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: driver1Color } : false}
-            name={driver1}
-            connectNulls={true}
-          />
-          <Line
-            type={props.type}
-            dataKey={`${props.dataKey}_${driver2}`}
-            stroke={driver2Color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: driver2Color } : false}
-            name={driver2}
-            connectNulls={true}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+            {/* Driver 2 Stats */}
+            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver2Color }}></div>
+                <span className="text-xs font-bold text-gray-300 font-mono">{driver2}</span>
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Max</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(stats.driver2.max)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Avg</span>
+                  <span className="text-lg font-bold text-white font-mono">{Math.round(stats.driver2.avg)} <span className="text-[10px] text-gray-500">km/h</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 

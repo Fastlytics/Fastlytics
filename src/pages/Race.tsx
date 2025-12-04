@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { SEO } from '@/components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon } from 'hugeicons-react';
+import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon, GitCompareIcon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import RacingChart from '@/components/RacingChart';
 import PaceAnalysisChart from '@/components/PaceAnalysisChart';
@@ -761,7 +761,7 @@ const Race = () => {
                   <NavItem id="positions" label="Positions" icon={ChartLineData01Icon} active={activeSection === 'positions'} onClick={() => handleSectionChange('positions')} />
                 )}
                 <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
-                <NavItem id="dominance" label="Head to Head" icon={MapsLocation01Icon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
+                <NavItem id="dominance" label="Head to Head" icon={GitCompareIcon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
                 <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
               </div>
             </aside>
@@ -904,7 +904,7 @@ const Race = () => {
               {/* 5. Dominance Section */}
               {activeSection === 'dominance' && (
                 <section id="dominance" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Head to Head" icon={MapsLocation01Icon} />
+                  <SectionHeader title="Head to Head" icon={GitCompareIcon} />
 
                   {(() => {
                     const favDriverCode = profile?.favorite_driver;
@@ -947,14 +947,15 @@ const Race = () => {
                               shouldLoadChart={true}
                               telemetryType="speed"
                               title="Speed Trace"
+                              openF1Drivers={openF1Drivers}
                             />
 
                             {/* Other Telemetry - Stacked */}
                             <div className="space-y-12">
-                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" />
-                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" />
-                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" />
-                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="throttle" title="Throttle" openF1Drivers={openF1Drivers} />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="brake" title="Brake" openF1Drivers={openF1Drivers} />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" openF1Drivers={openF1Drivers} />
+                              <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" openF1Drivers={openF1Drivers} />
                             </div>
                           </div>
                         )}
@@ -967,17 +968,20 @@ const Race = () => {
               {/* 6. Telemetry Section */}
               {activeSection === 'telemetry' && (
                 <section id="telemetry" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Telemetry Data" icon={Analytics01Icon} />
+                  {(() => {
+                    const defaultDriver = profile?.favorite_driver || (sessionResults && sessionResults.length > 0 ? sessionResults[0].driverCode : undefined);
 
-                  <h3 className="text-xl font-bold uppercase italic text-gray-400 border-l-4 border-gray-700 pl-4 mb-6">Full Field Telemetry</h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} title="" />
-                    <GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
-                    <ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
-                    <BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
-                    <RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
-                    <DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} />
-                  </div>
+                    return (
+                      <div className="flex flex-col space-y-12">
+                        <SpeedTraceChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                        <ThrottleChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                        <BrakeChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                        <RPMChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                        <GearMapChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                        <DRSChart year={year!} event={eventName} session={selectedSession} lap={selectedLap} openF1Drivers={openF1Drivers} initialDriver={defaultDriver} />
+                      </div>
+                    );
+                  })()}
                 </section>
               )}
 
