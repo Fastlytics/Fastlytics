@@ -71,7 +71,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   };
 
   return (
-    <TelemetryChartWrapper<SpeedDataPoint>
+    <TelemetryChartWrapper<SpeedDataPoint[]>
       className={className}
       title={title}
       icon={Analytics01Icon}

@@ -71,7 +71,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
   };
 
   return (
-    <TelemetryChartWrapper<RPMDataPoint>
+    <TelemetryChartWrapper<RPMDataPoint[]>
       className={className}
       title={title}
       icon={Analytics01Icon}

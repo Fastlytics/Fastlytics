@@ -71,7 +71,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   };
 
   return (
-    <TelemetryChartWrapper<BrakeDataPoint>
+    <TelemetryChartWrapper<BrakeDataPoint[]>
       className={className}
       title={title}
       icon={Analytics01Icon}
