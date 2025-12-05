@@ -1,7 +1,6 @@
 # Dependabot Configuration
 # This file configures Dependabot to automatically check for dependency updates
 # and create pull requests for version updates and security patches.
-
 version: 2
 updates:
   # NPM Package Updates
@@ -25,19 +24,19 @@ updates:
       prefix: "chore"
       prefix-scope: "deps"
       include: "scope"
-    # Allow automatic merging for patch updates
-    allow:
-      - dependency-type: "indirect"
-      - dependency-type: "direct"
     # Group updates by type
     groups:
       development-dependencies:
+        patterns:
+          - "*"
         dependency-types:
           - "dev"
         update-types:
           - "minor"
           - "patch"
       production-dependencies:
+        patterns:
+          - "*"
         dependency-types:
           - "prod"
         update-types:
