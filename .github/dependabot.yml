@@ -22,7 +22,6 @@ updates:
       - "automated"
     commit-message:
       prefix: "chore"
-      prefix-scope: "deps"
       include: "scope"
     # Group updates by type
     groups:
