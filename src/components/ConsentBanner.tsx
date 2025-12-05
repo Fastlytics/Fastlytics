@@ -34,7 +34,7 @@ const ConsentBanner = () => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50"
+                    className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[60]"
                 >
                     <div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-800 p-4 rounded-xl shadow-2xl flex flex-col gap-4">
                         <div className="flex items-start gap-3">
