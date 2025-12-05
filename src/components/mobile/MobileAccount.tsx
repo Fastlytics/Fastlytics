@@ -44,7 +44,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, child
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-white/20 max-h-[90vh] flex flex-col"
+                    className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-white/20 max-h-[90vh] flex flex-col rounded-t-3xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Handle Bar */}
@@ -358,14 +358,14 @@ const MobileAccount: React.FC = () => {
 
                 {/* Profile Card */}
                 <div className="px-4 py-6">
-                    <div className="bg-black border-2 border-white/10 p-5 relative overflow-hidden">
+                    <div className="bg-black border-2 border-white/10 p-5 relative overflow-hidden rounded-xl">
                         {/* Decorative Corner */}
                         <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600" />
 
                         <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16 border-2 border-white/20 rounded-none">
+                            <Avatar className="h-16 w-16 border-2 border-white/20 rounded-md">
                                 <AvatarImage src={user.user_metadata?.avatar_url} />
-                                <AvatarFallback className="bg-zinc-900 text-xl font-black rounded-none">
+                                <AvatarFallback className="bg-zinc-900 text-xl font-black rounded-md">
                                     {user.email?.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
@@ -391,7 +391,7 @@ const MobileAccount: React.FC = () => {
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
                             Account
                         </h3>
-                        <div className="bg-black border-2 border-white/10">
+                        <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
                             <MenuItem
                                 icon={User}
                                 label="Profile"
@@ -418,7 +418,7 @@ const MobileAccount: React.FC = () => {
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
                             Security
                         </h3>
-                        <div className="bg-black border-2 border-white/10">
+                        <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
                             <MenuItem
                                 icon={Shield}
                                 label="Password & Security"
@@ -433,12 +433,12 @@ const MobileAccount: React.FC = () => {
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
                             Upgrade
                         </h3>
-                        <div className="bg-black border-2 border-white/10">
+                        <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
                             <button
                                 onClick={() => setShowSubscriptionSheet(true)}
                                 className="w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors bg-red-600 text-white group"
                             >
-                                <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10">
+                                <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10 rounded-md">
                                     <Rocket01Icon className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1 text-left">
@@ -452,7 +452,7 @@ const MobileAccount: React.FC = () => {
 
                     {/* Sign Out */}
                     <div className="pt-4">
-                        <div className="bg-black border-2 border-red-900/50">
+                        <div className="bg-black border-2 border-red-900/50 rounded-xl overflow-hidden">
                             <MenuItem
                                 icon={LogOut}
                                 label="Sign Out"
@@ -481,19 +481,19 @@ const MobileAccount: React.FC = () => {
                                     <input
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
-                                        className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-none"
+                                        className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg"
                                         autoFocus
                                     />
                                     <button
                                         onClick={() => handleSaveField('fullName')}
                                         disabled={isLoading}
-                                        className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors"
+                                        className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors rounded-lg"
                                     >
                                         <Check className="w-5 h-5 text-black" />
                                     </button>
                                     <button
                                         onClick={() => setEditingField(null)}
-                                        className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors"
+                                        className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors rounded-lg"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -501,7 +501,7 @@ const MobileAccount: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={() => setEditingField('fullName')}
-                                    className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors"
+                                    className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors rounded-lg"
                                 >
                                     <span className="font-bold uppercase">{fullName || 'Not set'}</span>
                                     <PencilEdit02Icon className="w-5 h-5 text-gray-500" />
@@ -519,19 +519,19 @@ const MobileAccount: React.FC = () => {
                                     <input
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
-                                        className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-none"
+                                        className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg"
                                         autoFocus
                                     />
                                     <button
                                         onClick={() => handleSaveField('username')}
                                         disabled={isLoading}
-                                        className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors"
+                                        className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors rounded-lg"
                                     >
                                         <Check className="w-5 h-5 text-black" />
                                     </button>
                                     <button
                                         onClick={() => setEditingField(null)}
-                                        className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors"
+                                        className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors rounded-lg"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -539,7 +539,7 @@ const MobileAccount: React.FC = () => {
                             ) : (
                                 <button
                                     onClick={() => setEditingField('username')}
-                                    className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors"
+                                    className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors rounded-lg"
                                 >
                                     <span className="font-bold uppercase">{username || 'Not set'}</span>
                                     <PencilEdit02Icon className="w-5 h-5 text-gray-500" />
@@ -552,7 +552,7 @@ const MobileAccount: React.FC = () => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
                                 Email
                             </label>
-                            <div className="bg-zinc-900/30 border-2 border-white/5 px-4 py-3 text-gray-500 font-mono text-sm">
+                            <div className="bg-zinc-900/30 border-2 border-white/5 px-4 py-3 text-gray-500 font-mono text-sm rounded-lg">
                                 {user.email}
                             </div>
                         </div>
@@ -573,16 +573,16 @@ const MobileAccount: React.FC = () => {
                             </label>
                             <button
                                 onClick={() => setShowDriverPicker(true)}
-                                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors"
+                                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors rounded-xl"
                             >
                                 {favoriteDriver ? (
                                     <>
-                                        <Avatar className="h-10 w-10 border border-white/20 rounded-none">
+                                        <Avatar className="h-10 w-10 border border-white/20 rounded-md">
                                             <AvatarImage
                                                 src={getDriverImage(favoriteDriver, getFavoriteDriverName())}
                                                 className="object-cover object-top"
                                             />
-                                            <AvatarFallback className="rounded-none">{favoriteDriver}</AvatarFallback>
+                                            <AvatarFallback className="rounded-md">{favoriteDriver}</AvatarFallback>
                                         </Avatar>
                                         <span className="flex-1 text-left font-black uppercase">{getFavoriteDriverName()}</span>
                                     </>
@@ -600,11 +600,11 @@ const MobileAccount: React.FC = () => {
                             </label>
                             <button
                                 onClick={() => setShowTeamPicker(true)}
-                                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors"
+                                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors rounded-xl"
                             >
                                 {favoriteTeam ? (
                                     <>
-                                        <div className="w-10 h-10 bg-white/10 p-1 flex items-center justify-center">
+                                        <div className="w-10 h-10 bg-white/10 p-1 flex items-center justify-center rounded-md">
                                             <img
                                                 src={getTeamLogo(favoriteTeam) || ''}
                                                 alt={favoriteTeam}
@@ -624,7 +624,7 @@ const MobileAccount: React.FC = () => {
                         <button
                             onClick={handleUpdateFavorites}
                             disabled={isLoading}
-                            className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-6 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white"
+                            className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-6 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white rounded-xl"
                         >
                             {isLoading ? 'Saving...' : 'Save Favorites'}
                         </button>
@@ -662,12 +662,12 @@ const MobileAccount: React.FC = () => {
                                                     : "hover:bg-zinc-900 text-gray-300"
                                             )}
                                         >
-                                            <Avatar className="h-12 w-12 border border-white/20 rounded-none">
+                                            <Avatar className="h-12 w-12 border border-white/20 rounded-md">
                                                 <AvatarImage
                                                     src={getDriverImage(driver.code, driver.name)}
                                                     className="object-cover object-top"
                                                 />
-                                                <AvatarFallback className="rounded-none">{driver.code}</AvatarFallback>
+                                                <AvatarFallback className="rounded-md">{driver.code}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1 text-left">
                                                 <div className="font-black uppercase">{driver.name}</div>
@@ -718,7 +718,7 @@ const MobileAccount: React.FC = () => {
                                                     : "hover:bg-zinc-900 text-gray-300"
                                             )}
                                         >
-                                            <div className="w-12 h-12 bg-white/10 p-1 flex items-center justify-center">
+                                            <div className="w-12 h-12 bg-white/10 p-1 flex items-center justify-center rounded-md">
                                                 <img
                                                     src={getTeamLogo(team.team) || ''}
                                                     alt={team.team}
@@ -757,7 +757,7 @@ const MobileAccount: React.FC = () => {
                                     value={oldPassword}
                                     onChange={(e) => setOldPassword(e.target.value)}
                                     placeholder="ENTER CURRENT PASSWORD"
-                                    className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-none placeholder:text-gray-700"
+                                    className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
                                 />
                                 <button
                                     type="button"
@@ -780,7 +780,7 @@ const MobileAccount: React.FC = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="ENTER NEW PASSWORD"
-                                    className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-none placeholder:text-gray-700"
+                                    className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
                                 />
                                 <button
                                     type="button"
@@ -802,7 +802,7 @@ const MobileAccount: React.FC = () => {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="CONFIRM NEW PASSWORD"
-                                className="w-full bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-none placeholder:text-gray-700"
+                                className="w-full bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
                             />
                         </div>
 
@@ -810,7 +810,7 @@ const MobileAccount: React.FC = () => {
                         <button
                             onClick={handleUpdatePassword}
                             disabled={isLoading || !password || !oldPassword || !confirmPassword}
-                            className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-4 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white"
+                            className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-4 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white rounded-xl"
                         >
                             {isLoading ? 'Updating...' : 'Update Password'}
                         </button>
@@ -825,7 +825,7 @@ const MobileAccount: React.FC = () => {
                 >
                     <div className="p-4 space-y-6">
                         {/* Free Tier (Current) */}
-                        <div className="bg-zinc-900/30 border-2 border-white/10 p-5 relative overflow-hidden">
+                        <div className="bg-zinc-900/30 border-2 border-white/10 p-5 relative overflow-hidden rounded-xl">
                             <div className="absolute top-0 right-0 bg-zinc-800 text-[10px] font-black px-2 py-1 uppercase tracking-wider text-gray-400">Current</div>
                             <h3 className="text-xl font-black uppercase italic text-white mb-1">Standard</h3>
                             <div className="text-2xl font-black text-white mb-4 uppercase">Free</div>
@@ -833,11 +833,11 @@ const MobileAccount: React.FC = () => {
                                 <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Standard Telemetry</li>
                                 <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Live Timing</li>
                             </ul>
-                            <button disabled className="w-full bg-zinc-800 text-gray-500 font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent">Active</button>
+                            <button disabled className="w-full bg-zinc-800 text-gray-500 font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg">Active</button>
                         </div>
 
                         {/* Pro Tier */}
-                        <div className="bg-black border-2 border-red-600/50 p-5 relative overflow-hidden opacity-75 grayscale-[0.5]">
+                        <div className="bg-black border-2 border-red-600/50 p-5 relative overflow-hidden opacity-75 grayscale-[0.5] rounded-xl">
                             <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50" />
                             <div className="absolute top-3 right-3">
                                 <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black px-2 py-1 uppercase tracking-wider flex items-center gap-1">
@@ -847,7 +847,7 @@ const MobileAccount: React.FC = () => {
 
                             <div className="mb-4">
                                 <h3 className="text-xl font-black uppercase italic text-red-500/70 mb-1 flex items-center gap-2">
-                                    Pro <span className="text-white/70 text-[10px] bg-red-600/10 px-1.5 py-0.5 border border-red-600/20 not-italic font-sans uppercase font-bold">All Access</span>
+                                    Pro <span className="text-white/70 text-[10px] bg-red-600/10 px-1.5 py-0.5 border border-red-600/20 not-italic font-sans uppercase font-bold rounded-sm">All Access</span>
                                 </h3>
                                 <div className="flex items-baseline gap-1 opacity-50">
                                     <span className="text-3xl font-black text-white">${currentPro.price}</span>
@@ -862,7 +862,7 @@ const MobileAccount: React.FC = () => {
                                         key={cycle}
                                         onClick={() => setBillingCycle(cycle)}
                                         className={cn(
-                                            "px-1 py-2 text-[10px] font-black uppercase border-2 transition-all duration-200",
+                                            "px-1 py-2 text-[10px] font-black uppercase border-2 transition-all duration-200 rounded-lg",
                                             billingCycle === cycle
                                                 ? "bg-red-600 border-red-600 text-white"
                                                 : "bg-transparent border-white/10 text-gray-400 hover:border-white/30"
@@ -879,7 +879,7 @@ const MobileAccount: React.FC = () => {
                                 <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Time Synced Data</li>
                                 <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Unlimited History</li>
                             </ul>
-                            <button disabled className="w-full bg-zinc-800 text-zinc-400 font-black uppercase tracking-wider py-3 text-sm border-2 border-zinc-800 cursor-not-allowed">
+                            <button disabled className="w-full bg-zinc-800 text-zinc-400 font-black uppercase tracking-wider py-3 text-sm border-2 border-zinc-800 cursor-not-allowed rounded-lg">
                                 Coming Soon
                             </button>
                             <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase opacity-50">
@@ -899,7 +899,7 @@ const MobileAccount: React.FC = () => {
                         {isLoadingActivity ? (
                             <div className="space-y-3">
                                 {[...Array(5)].map((_, i) => (
-                                    <div key={i} className="h-16 bg-zinc-900/50 animate-pulse border-2 border-white/5" />
+                                    <div key={i} className="h-16 bg-zinc-900/50 animate-pulse border-2 border-white/5 rounded-xl" />
                                 ))}
                             </div>
                         ) : userActivity.length > 0 ? (

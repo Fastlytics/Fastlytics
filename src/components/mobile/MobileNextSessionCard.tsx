@@ -49,7 +49,7 @@ const MobileNextSessionCard: React.FC<MobileNextSessionCardProps> = ({ nextSessi
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors cursor-pointer"
+                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors cursor-pointer rounded-xl"
                     onClick={() => navigate(`/race/${selectedYear}-${nextSession.eventName.toLowerCase().replace(/\s+/g, '-')}`)}
                 >
                     <div className="flex items-start justify-between mb-4">
@@ -111,7 +111,7 @@ const MobileNextSessionCard: React.FC<MobileNextSessionCardProps> = ({ nextSessi
 
             {/* No session fallback */}
             {!nextSession && (
-                <div className="bg-black border-2 border-white/10 p-6 text-center">
+                <div className="bg-black border-2 border-white/10 p-6 text-center rounded-xl">
                     <Activity01Icon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
                     <p className="text-gray-500 text-sm font-mono uppercase">No upcoming sessions</p>
                 </div>

@@ -212,7 +212,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors group"
+                    className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors group rounded-xl"
                 >
                     <div className="flex items-start gap-4">
                         <div className="p-3 bg-zinc-900 border border-white/10 group-hover:bg-red-600 group-hover:text-white transition-colors">
@@ -266,7 +266,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             className={cn(
-                                "border-2 active:scale-[0.99] transition-transform bg-black",
+                                "border-2 active:scale-[0.99] transition-transform bg-black rounded-xl",
                                 driverRivals?.isTitleContender
                                     ? "border-yellow-600/50"
                                     : "border-white/10"
@@ -277,19 +277,19 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                     {/* Avatar & Position */}
                                     <div className="relative">
                                         <Avatar className={cn(
-                                            "h-16 w-16 rounded-none border-2",
+                                            "h-16 w-16 rounded-md border-2",
                                             driverRivals?.isTitleContender ? "border-yellow-500" : "border-red-600"
                                         )}>
                                             <AvatarImage
                                                 src={getDriverImage(favoriteDriver.name)}
                                                 className="object-cover bg-zinc-900"
                                             />
-                                            <AvatarFallback className="bg-zinc-900 rounded-none font-black text-lg">
+                                            <AvatarFallback className="bg-zinc-900 rounded-md font-black text-lg">
                                                 {favoriteDriver.code}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className={cn(
-                                            "absolute -bottom-2 -right-2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black",
+                                            "absolute -bottom-2 -right-2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black rounded-md",
                                             driverRivals?.isTitleContender ? "bg-yellow-500 text-black" : "bg-red-600 text-white"
                                         )}>
                                             P{favoriteDriver.rank}
@@ -417,12 +417,12 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors"
+                            className="bg-black border-2 border-white/10 p-4 active:bg-zinc-900 transition-colors rounded-xl"
                         >
                             <div className="flex items-center gap-4">
                                 {/* Logo & Position */}
                                 <div className="relative">
-                                    <div className="h-16 w-16 flex items-center justify-center bg-transparent rounded-none border-2 border-white/10 p-2">
+                                    <div className="h-16 w-16 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-2">
                                         {getTeamLogo(favoriteTeam.team) ? (
                                             <img
                                                 src={getTeamLogo(favoriteTeam.team)!}
@@ -433,7 +433,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                             <UserGroupIcon className="w-6 h-6 text-white" />
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-red-600 flex items-center justify-center text-xs font-black text-white border-2 border-black">
+                                    <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-red-600 flex items-center justify-center text-xs font-black text-white border-2 border-black rounded-md">
                                         P{favoriteTeam.rank}
                                     </div>
                                 </div>

@@ -59,7 +59,7 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
                             });
                             navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`);
                         }}
-                        className="flex-shrink-0 w-[160px] snap-start bg-black border-2 border-white/10 overflow-hidden active:scale-95 transition-transform cursor-pointer group"
+                        className="flex-shrink-0 w-[160px] snap-start bg-black border-2 border-white/10 overflow-hidden active:scale-95 transition-transform cursor-pointer group rounded-xl"
                     >
                         {/* Flag & Round */}
                         <div className="relative h-24 overflow-hidden border-b-2 border-white/10">
@@ -95,7 +95,7 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: recentRaces.length * 0.1 }}
                     onClick={() => navigate('/calendar')}
-                    className="flex-shrink-0 w-[100px] snap-start bg-zinc-900 border-2 border-white/10 flex flex-col items-center justify-center gap-2 cursor-pointer active:bg-zinc-800 transition-colors group"
+                    className="flex-shrink-0 w-[100px] snap-start bg-zinc-900 border-2 border-white/10 flex flex-col items-center justify-center gap-2 cursor-pointer active:bg-zinc-800 transition-colors group rounded-xl"
                 >
                     <div className="p-3 border-2 border-white/10 group-hover:bg-white group-hover:text-black transition-colors">
                         <Calendar03Icon className="w-6 h-6 text-gray-500 group-hover:text-black transition-colors" />

@@ -85,7 +85,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="w-full max-w-md bg-black border-t-2 border-white/10 pb-24"
+                    className="w-full max-w-md bg-black border-t-2 border-white/10 pb-24 rounded-t-3xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Handle bar */}
@@ -110,7 +110,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left border-2 transition-all flex items-center justify-between mb-2 ${selectedYear === year
+                                className={`w-full p-4 text-left border-2 transition-all flex items-center justify-between mb-2 rounded-xl ${selectedYear === year
                                     ? 'bg-red-600 text-white border-red-600'
                                     : 'bg-black hover:bg-zinc-900 text-gray-300 border-white/10'
                                     }`}
@@ -146,7 +146,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden bg-black border-2 border-red-600"
+            className="relative overflow-hidden bg-black border-2 border-red-600 rounded-xl"
             onClick={() => {
                 navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
             }}
@@ -164,7 +164,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
 
                 {/* Flag and Event Name */}
                 <div className="flex items-start gap-4 mb-5">
-                    <div className="w-16 h-11 overflow-hidden border-2 border-white/10 flex-shrink-0">
+                    <div className="w-16 h-11 overflow-hidden border-2 border-white/10 flex-shrink-0 rounded-md">
                         {event.countryCode && (
                             <img
                                 src={`https://flagcdn.com/h80/${event.countryCode}.png`}
@@ -183,7 +183,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
                                 {event.displayDate}
                             </span>
                             {event.isSprint && (
-                                <span className="text-[10px] font-black uppercase bg-yellow-500 text-black px-2 py-0.5 flex items-center gap-1">
+                                <span className="text-[10px] font-black uppercase bg-yellow-500 text-black px-2 py-0.5 flex items-center gap-1 rounded-sm">
                                     <FlashIcon className="w-3 h-3" /> Sprint
                                 </span>
                             )}
@@ -193,7 +193,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
 
                 {/* Countdown */}
                 {nextSession && (
-                    <div className="bg-zinc-900/50 p-4 border-2 border-white/10">
+                    <div className="bg-zinc-900/50 p-4 border-2 border-white/10 rounded-md">
                         <div className="flex items-center justify-center gap-1.5 mb-3">
                             <Clock01Icon className="w-3.5 h-3.5 text-red-500" />
                             <span className="text-xs uppercase tracking-wider text-gray-400 font-mono">
@@ -236,7 +236,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.98 }}
-            className={`relative overflow-hidden transition-all group cursor-pointer ${isCompleted
+            className={`relative overflow-hidden transition-all group cursor-pointer rounded-xl ${isCompleted
                 ? 'bg-black border-2 border-white/5 opacity-80 hover:opacity-100'
                 : 'bg-black border-2 border-white/10 hover:border-white/20'
                 }`}
@@ -247,7 +247,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
             <div className="p-3.5">
                 <div className="flex items-center gap-3">
                     {/* Round Number */}
-                    <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 border-2 ${isCompleted ? 'bg-zinc-900 border-white/5' : 'bg-white text-black border-white'
+                    <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 border-2 rounded-md ${isCompleted ? 'bg-zinc-900 border-white/5' : 'bg-white text-black border-white'
                         }`}>
                         <span className={`text-xs font-black ${isCompleted ? 'text-gray-500' : 'text-black'}`}>
                             {event.RoundNumber}
@@ -255,7 +255,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                     </div>
 
                     {/* Flag */}
-                    <div className={`w-10 h-7 overflow-hidden flex-shrink-0 border-2 ${isCompleted ? 'border-white/5' : 'border-white/10'
+                    <div className={`w-10 h-7 overflow-hidden flex-shrink-0 border-2 rounded-md ${isCompleted ? 'border-white/5' : 'border-white/10'
                         }`}>
                         {event.countryCode && (
                             <img
@@ -299,7 +299,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                                 <span className="text-[10px] text-gray-500 font-mono uppercase">{event.result.team?.split(' ')[0]}</span>
                             </div>
                         ) : (
-                            <span className={`text-[10px] font-black uppercase px-2 py-1 border-2 ${event.isUpcoming ? 'bg-blue-900/20 text-blue-400 border-blue-900/50' : 'bg-zinc-900 text-gray-500 border-zinc-800'
+                            <span className={`text-[10px] font-black uppercase px-2 py-1 border-2 rounded-md ${event.isUpcoming ? 'bg-blue-900/20 text-blue-400 border-blue-900/50' : 'bg-zinc-900 text-gray-500 border-zinc-800'
                                 }`}>
                                 {event.isUpcoming ? 'TBD' : '-'}
                             </span>
@@ -425,20 +425,20 @@ const MobileCalendar: React.FC = () => {
                         {/* Season Selector Button */}
                         <button
                             onClick={() => setShowSeasonSelector(true)}
-                            className="flex items-center gap-2 bg-black border-2 border-white/10 px-4 py-2.5 text-base font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900"
+                            className="flex items-center gap-2 bg-black border-2 border-white/10 px-4 py-2.5 text-base font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900 rounded-xl"
                         >
                             <span className="text-white">{selectedYear} Season</span>
                             <ArrowDown01Icon className="w-4 h-4 text-gray-400" />
                         </button>
 
                         {/* Stats Badge */}
-                        <div className="text-xs text-gray-500 font-mono uppercase tracking-wider bg-zinc-900 px-3 py-2 border-2 border-white/10">
+                        <div className="text-xs text-gray-500 font-mono uppercase tracking-wider bg-zinc-900 px-3 py-2 border-2 border-white/10 rounded-xl">
                             {stats.completed}/{stats.total} Complete
                         </div>
                     </div>
 
                     {/* Filter Pills */}
-                    <div className="flex gap-1.5 bg-black p-1.5 border-2 border-white/10">
+                    <div className="flex gap-1.5 bg-black p-1.5 border-2 border-white/10 rounded-xl">
                         {([
                             { key: 'all', label: 'All Races' },
                             { key: 'upcoming', label: `Upcoming (${stats.upcoming})` },
@@ -447,7 +447,7 @@ const MobileCalendar: React.FC = () => {
                             <button
                                 key={f.key}
                                 onClick={() => setFilter(f.key)}
-                                className={`flex-1 px-3 py-2 text-xs font-black uppercase italic transition-all ${filter === f.key
+                                className={`flex-1 px-3 py-2 text-xs font-black uppercase italic transition-all rounded-lg ${filter === f.key
                                     ? 'bg-red-600 text-white'
                                     : 'text-gray-500 hover:text-white bg-zinc-900'
                                     }`}
