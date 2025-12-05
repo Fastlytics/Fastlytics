@@ -17,7 +17,6 @@ import {
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { OpenF1Driver } from '@/lib/openf1';
-import { Analytics01Icon } from 'hugeicons-react';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
@@ -297,7 +296,6 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     <div className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Analytics01Icon className="w-5 h-5 text-red-500" />
           <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">{title}</h3>
         </div>
         {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="w-4 h-4" />}

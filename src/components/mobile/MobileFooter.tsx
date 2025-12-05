@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Gauge } from 'lucide-react';
 
 const MobileFooter: React.FC = () => {
+    const location = useLocation();
     return (
         <footer className="relative z-10 px-4 py-12 bg-black border-t-2 border-white/10">
             <div className="flex items-center justify-center gap-2 mb-8">
@@ -14,7 +15,7 @@ const MobileFooter: React.FC = () => {
 
             {/* Quick Links */}
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 mb-8">
-                <Link to="/pricing" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Pricing</Link>
+                <Link to="/pricing" state={{ from: location.pathname + location.search }} className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Pricing</Link>
                 <Link to="/about" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">About</Link>
                 <Link to="/privacy-policy" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Privacy</Link>
                 <Link to="/terms-of-service" className="text-[10px] text-gray-500 hover:text-red-600 uppercase font-black tracking-widest transition-colors">Terms</Link>

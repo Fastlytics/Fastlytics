@@ -16,6 +16,8 @@ import { MobileOnboarding } from '@/components/mobile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
+import { startTrial } from '@/hooks/useSubscription';
+
 const Onboarding = () => {
     const { user, refreshProfile } = useAuth();
     const navigate = useNavigate();
@@ -132,13 +134,14 @@ const Onboarding = () => {
                         <span className={step >= 1 ? "text-white" : ""}>Welcome</span>
                         <span className={step >= 2 ? "text-white" : ""}>Driver</span>
                         <span className={step >= 3 ? "text-white" : ""}>Team</span>
-                        <span className={step >= 4 ? "text-white" : ""}>Socials</span>
+                        <span className={step >= 4 ? "text-white" : ""}>Plan</span>
+                        <span className={step >= 5 ? "text-white" : ""}>Socials</span>
                     </div>
                     <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-red-600"
                             initial={{ width: "0%" }}
-                            animate={{ width: `${(step / 4) * 100}%` }}
+                            animate={{ width: `${(step / 5) * 100}%` }}
                             transition={{ duration: 0.5, ease: "easeInOut" }}
                         />
                     </div>
@@ -295,6 +298,83 @@ const Onboarding = () => {
                     {step === 4 && (
                         <motion.div
                             key="step4"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            className="space-y-8"
+                        >
+                            <div className="text-center space-y-2">
+                                <h2 className="text-3xl font-black uppercase italic tracking-tighter">Choose Your Plan</h2>
+                                <p className="text-zinc-400">Unlock the full potential of Fastlytics.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                                {/* Free Plan */}
+                                <div className="p-6 border-2 border-zinc-800 bg-zinc-900/30 rounded-xl flex flex-col items-center text-center space-y-4">
+                                    <div className="text-xl font-black uppercase italic text-zinc-500">Standard</div>
+                                    <div className="text-4xl font-black text-white">$0<span className="text-lg font-bold text-zinc-600">/mo</span></div>
+                                    <ul className="text-sm text-zinc-400 space-y-2 font-mono">
+                                        <li>Basic Telemetry</li>
+                                        <li>Live Timing</li>
+                                        <li>Limited Driver Comparison (Max 2)</li>
+                                        <li>Current Season Data Only</li>
+                                    </ul>
+                                    <div className="flex-1" />
+                                    <Button
+                                        onClick={handleNext}
+                                        className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-wider py-6"
+                                    >
+                                        Continue with Free
+                                    </Button>
+                                    <p className="text-xs text-zinc-600">Basic access limits applied.</p>
+                                </div>
+
+                                {/* Pro Plan (Trial) */}
+                                <div className="p-6 border-2 border-red-600 bg-black rounded-xl flex flex-col items-center text-center space-y-4 relative overflow-hidden shadow-[0_0_30px_rgba(220,38,38,0.2)]">
+                                    <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase rounded-bl-lg">
+                                        Recommended
+                                    </div>
+                                    <div className="text-xl font-black uppercase italic text-red-500">Pro Access</div>
+                                    <div className="text-4xl font-black text-white">$6.99<span className="text-lg font-bold text-zinc-600">/mo</span></div>
+                                    <ul className="text-sm text-zinc-300 space-y-2 font-mono">
+                                        <li className="text-white font-bold">Advanced Telemetry & Analytics</li>
+                                        <li className="text-white font-bold">Unlimited Historical Data</li>
+                                        <li className="text-white font-bold">Full Session Replays</li>
+                                        <li className="text-white font-bold">Prioritized Support</li>
+                                    </ul>
+                                    <div className="flex-1" />
+                                    <Button
+                                        onClick={async () => {
+                                            if (user) {
+                                                try {
+                                                    await startTrial(user.id);
+                                                    toast.success('14-Day Free Trial Activated!');
+                                                    handleNext();
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    toast.error('Failed to start trial');
+                                                }
+                                            }
+                                        }}
+                                        className="w-full bg-red-600 text-white hover:bg-red-700 font-bold uppercase tracking-wider py-6"
+                                    >
+                                        Start 14-Day Free Trial
+                                    </Button>
+                                    <p className="text-xs text-zinc-500">No credit card required today.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center pt-4">
+                                <Button variant="ghost" onClick={handleBack} className="text-zinc-400 hover:text-white">
+                                    <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
+                                </Button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {step === 5 && (
+                        <motion.div
+                            key="step5"
                             initial={{ opacity: 0, x: 50 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -50 }}

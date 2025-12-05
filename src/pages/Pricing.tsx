@@ -7,9 +7,38 @@ import LandingNavbar from '@/components/LandingNavbar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobilePricing } from '@/components/mobile';
 
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { startTrial } from '@/hooks/useSubscription';
+import { toast } from 'sonner';
+
 const Pricing = () => {
     const isMobile = useIsMobile();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user } = useAuth();
+
+    const handleStartTrial = async () => {
+        if (!user) {
+            navigate('/register');
+            return;
+        }
+
+        try {
+            await startTrial(user.id);
+            toast.success("Welcome on the grid!", {
+                description: "Your 14-day free trial has started."
+            });
+            const from = (location.state as any)?.from || '/dashboard';
+            navigate(from);
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not start trial", {
+                description: "There was an error starting your trial. Please try again."
+            });
+        }
+    };
 
     if (isMobile) {
         return <MobilePricing />;
@@ -85,29 +114,29 @@ const Pricing = () => {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, delay: 0.1 }}
-                            className="bg-gradient-to-b from-gray-900 to-black border-2 border-red-600/50 p-8 flex flex-col relative shadow-[0_0_50px_rgba(220,38,38,0.05)] rounded-xl overflow-hidden opacity-75 grayscale-[0.5]"
+                            className="bg-gradient-to-b from-gray-900 to-black border-2 border-red-600 p-8 flex flex-col relative shadow-[0_0_50px_rgba(220,38,38,0.15)] rounded-xl overflow-hidden"
                         >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50" />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
                             <div className="absolute top-4 right-4">
-                                <span className="bg-zinc-800 text-zinc-400 text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
-                                    Coming Soon
+                                <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
+                                    14 Days Free
                                 </span>
                             </div>
 
                             <div className="mb-8">
-                                <h3 className="text-2xl font-bold uppercase mb-2 text-red-500/70 flex items-center gap-2">
-                                    Pro <span className="text-white/70 text-sm bg-red-600/10 px-2 py-0.5 rounded border border-red-600/20">All Access</span>
+                                <h3 className="text-2xl font-bold uppercase mb-2 text-red-500 flex items-center gap-2">
+                                    Pro <span className="text-white text-sm bg-red-600 px-2 py-0.5 rounded border border-red-500">All Access</span>
                                 </h3>
 
-                                <div className="flex items-baseline gap-1 mt-4 opacity-50">
-                                    <span className="text-5xl font-black tracking-tight">${currentPro.price}</span>
+                                <div className="flex items-baseline gap-1 mt-4">
+                                    <span className="text-5xl font-black tracking-tight text-white">${currentPro.price}</span>
                                     <span className="text-gray-400 font-mono text-lg">{currentPro.label}</span>
                                 </div>
                                 <p className="text-gray-400 font-mono mt-2 text-sm">Advanced tools for serious analysis.</p>
                             </div>
 
                             {/* Billing Cycle Selector */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8 opacity-50 pointer-events-none">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8 pointer-events-auto">
                                 {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
                                     <button
                                         key={cycle}
@@ -124,31 +153,34 @@ const Pricing = () => {
                                 ))}
                             </div>
 
-                            <ul className="space-y-4 mb-8 flex-grow font-mono text-sm text-gray-300 opacity-70">
+                            <ul className="space-y-4 mb-8 flex-grow font-mono text-sm text-gray-300">
                                 <li className="flex items-center gap-3">
-                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500/70" />
-                                    <span className="font-bold text-white/70">Advanced Telemetry</span>
+                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500" />
+                                    <span className="font-bold text-white">Advanced Telemetry</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500/70" />
-                                    <span>Session Replay</span>
+                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500" />
+                                    <span className="font-bold text-white">Session Replay Access</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500/70" />
+                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500" />
                                     <span>Time Synced Telemetry Data</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500/70" />
+                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500" />
                                     <span>Unlimited Historical Data</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500/70" />
+                                    <CheckmarkCircle02Icon className="w-5 h-5 text-red-500" />
                                     <span>Priority Support</span>
                                 </li>
                             </ul>
 
-                            <Button disabled className="w-full bg-zinc-800 border-2 border-zinc-800 text-zinc-400 font-bold uppercase rounded-lg py-6 tracking-wider cursor-not-allowed">
-                                Coming Soon
+                            <Button
+                                onClick={handleStartTrial}
+                                className="w-full bg-red-600 border-2 border-red-600 text-white font-bold uppercase rounded-lg py-6 tracking-wider hover:bg-red-700 transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                            >
+                                Start 14-Day Free Trial
                             </Button>
 
                             <p className="text-center text-xs text-gray-500 mt-4 font-mono opacity-50">

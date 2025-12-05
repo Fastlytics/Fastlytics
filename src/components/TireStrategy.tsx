@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchTireStrategy, DriverStrategy, fetchSpecificRaceResults, DetailedRaceResult } from '@/lib/api';
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircleIcon, Menu01Icon, Analytics01Icon, Flag01Icon } from 'hugeicons-react';
+import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StintAnalysisTable from './StintAnalysisTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -233,16 +233,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <Tabs defaultValue="overview" className="w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-gray-800 pb-4">
-          <div className="flex items-center gap-3">
-            <Flag01Icon className="w-8 h-8 text-red-600" />
-            <div>
-              <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white leading-none">
-                Strategy
-              </h3>
-              <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1">Tire Compound History</p>
-            </div>
-          </div>
+        <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-8">
           <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto">
             <TabsTrigger
               value="overview"

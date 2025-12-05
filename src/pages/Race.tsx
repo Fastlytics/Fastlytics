@@ -2,7 +2,10 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { SEO } from '@/components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon, GitCompareIcon } from 'hugeicons-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import SessionReplay from '@/components/replay/SessionReplay'; // Replaced with lazy for performance 
+const SessionReplay = React.lazy(() => import('@/components/replay/SessionReplay'));
+import { ArrowLeft01Icon, ChampionIcon, Flag01Icon, Analytics01Icon, Clock01Icon, FlashIcon, Calendar01Icon, Location01Icon, UserGroupIcon, Time01Icon, TradeUpIcon, MapsLocation01Icon, ChartLineData01Icon, GitCompareIcon, PlayCircle02Icon } from 'hugeicons-react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import RacingChart from '@/components/RacingChart';
 import PaceAnalysisChart from '@/components/PaceAnalysisChart';
@@ -34,9 +37,12 @@ import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumGuard } from '@/components/common/PremiumGuard';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
+import TireIcon from '@/components/mobile/tireicon';
 
 // --- Helper Functions ---
 
@@ -258,6 +264,7 @@ const NavItem = ({ id, label, icon: Icon, active, onClick }: { id: string, label
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
+  const { isPremium, limitations } = useSubscription();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
@@ -778,7 +785,7 @@ const Race = () => {
               <div className="sticky top-32 space-y-1">
                 <NavItem id="overview" label="Overview" icon={ChampionIcon} active={activeSection === 'overview'} onClick={() => handleSectionChange('overview')} />
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <NavItem id="strategy" label="Strategy" icon={Flag01Icon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
+                  <NavItem id="strategy" label="Strategy" icon={TireIcon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
                 )}
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
                   <NavItem id="positions" label="Positions" icon={ChartLineData01Icon} active={activeSection === 'positions'} onClick={() => handleSectionChange('positions')} />
@@ -786,6 +793,7 @@ const Race = () => {
                 <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
                 <NavItem id="dominance" label="Head to Head" icon={GitCompareIcon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
                 <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
+                <NavItem id="replay" label="Replay" icon={PlayCircle02Icon} active={activeSection === 'replay'} onClick={() => handleSectionChange('replay')} />
               </div>
             </aside>
 
@@ -856,49 +864,39 @@ const Race = () => {
               {/* 4. Lap Times Section */}
               {activeSection === 'laptimes' && (
                 <section id="laptimes" className="animate-in fade-in duration-500">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <SectionHeader title="Lap Time Analysis" icon={Time01Icon} />
-
-                    {/* Analysis Mode Toggle */}
-                    <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
-                      <button
-                        onClick={() => setLapAnalysisMode('history')}
-                        className={cn(
-                          "px-3 py-1 text-xs font-bold rounded transition-colors uppercase tracking-wider",
-                          lapAnalysisMode === 'history' ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-300"
-                        )}
-                      >
-                        Lap History
-                      </button>
-                      <button
-                        onClick={() => setLapAnalysisMode('pace')}
-                        className={cn(
-                          "px-3 py-1 text-xs font-bold rounded transition-colors uppercase tracking-wider",
-                          lapAnalysisMode === 'pace' ? "bg-red-600 text-white" : "text-gray-500 hover:text-gray-300"
-                        )}
-                      >
-                        Pace Distribution
-                      </button>
+                  <Tabs defaultValue="history" value={lapAnalysisMode} onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace')} className="w-full">
+                    <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
+                      <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+                        <TabsTrigger
+                          value="history"
+                          className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                        >
+                          Lap History
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="pace"
+                          className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                        >
+                          Pace Distribution
+                        </TabsTrigger>
+                      </TabsList>
                     </div>
-                  </div>
 
-                  {(() => {
-                    const favDriverCode = profile?.favorite_driver;
-                    let rivalDriverCode = null;
+                    <TabsContent value="history" className="mt-0 animate-in fade-in zoom-in-95 duration-300">
+                      {(() => {
+                        const favDriverCode = profile?.favorite_driver;
+                        let rivalDriverCode = null;
 
-                    if (favDriverCode && sessionResults) {
-                      const favResult = sessionResults.find(r => r.driverCode === favDriverCode || r.fullName.toLowerCase().includes(favDriverCode.toLowerCase()));
-                      if (favResult && favResult.position) {
-                        // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
-                        const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
-                        const rivalResult = sessionResults.find(r => r.position === rivalPos);
-                        if (rivalResult) rivalDriverCode = rivalResult.driverCode;
-                      }
-                    }
+                        if (favDriverCode && sessionResults) {
+                          const favResult = sessionResults.find(r => r.driverCode === favDriverCode || r.fullName.toLowerCase().includes(favDriverCode.toLowerCase()));
+                          if (favResult && favResult.position) {
+                            const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                            const rivalResult = sessionResults.find(r => r.position === rivalPos);
+                            if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                          }
+                        }
 
-                    return (
-                      <>
-                        {lapAnalysisMode === 'history' ? (
+                        return (
                           <RacingChart
                             year={year!}
                             event={eventName}
@@ -908,26 +906,44 @@ const Race = () => {
                             openF1Drivers={openF1Drivers}
                             favoriteDriver={favDriverCode}
                             rivalDriver={rivalDriverCode}
+                            maxDrivers={limitations.maxDrivers}
                           />
-                        ) : (
+                        );
+                      })()}
+                    </TabsContent>
+
+                    <TabsContent value="pace" className="mt-0 animate-in fade-in zoom-in-95 duration-300">
+                      {(() => {
+                        const favDriverCode = profile?.favorite_driver;
+                        let rivalDriverCode = null;
+
+                        if (favDriverCode && sessionResults) {
+                          const favResult = sessionResults.find(r => r.driverCode === favDriverCode || r.fullName.toLowerCase().includes(favDriverCode.toLowerCase()));
+                          if (favResult && favResult.position) {
+                            const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                            const rivalResult = sessionResults.find(r => r.position === rivalPos);
+                            if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                          }
+                        }
+                        return (
                           <PaceAnalysisChart
                             year={year!}
                             event={eventName}
                             session={selectedSession}
                             initialDrivers={favDriverCode ? [favDriverCode, rivalDriverCode].filter(Boolean) as string[] : []}
                             openF1Drivers={openF1Drivers}
+                            maxDrivers={limitations.maxDrivers}
                           />
-                        )}
-                      </>
-                    );
-                  })()}
+                        );
+                      })()}
+                    </TabsContent>
+                  </Tabs>
                 </section>
               )}
 
               {/* 5. Dominance Section */}
               {activeSection === 'dominance' && (
                 <section id="dominance" className="animate-in fade-in duration-500">
-                  <SectionHeader title="Head to Head" icon={GitCompareIcon} />
 
                   {(() => {
                     const favDriverCode = profile?.favorite_driver;
@@ -1007,6 +1023,26 @@ const Race = () => {
                     );
                   })()}
                 </section>
+              )}
+
+              {/* 7. Replay Section */}
+              {activeSection === 'replay' && year && eventSlug && selectedSession && (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                  <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
+                    <PremiumGuard>
+                      <React.Suspense fallback={
+                        <div className="h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                            <div className="text-xs text-gray-500 font-mono">LOADING REPLAY MODULE...</div>
+                          </div>
+                        </div>
+                      }>
+                        <SessionReplay year={year} event={eventSlug} session={selectedSession} className="h-full" />
+                      </React.Suspense>
+                    </PremiumGuard>
+                  </div>
+                </div>
               )}
 
             </div>

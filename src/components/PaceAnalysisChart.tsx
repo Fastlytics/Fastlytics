@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     ComposedChart,
+    BarChart,
     Bar,
     XAxis,
     YAxis,
@@ -9,9 +10,11 @@ import {
     Legend,
     ResponsiveContainer,
     Cell,
+    ScatterChart,
     Scatter,
     ReferenceLine
 } from 'recharts';
+import { PremiumLimitModal } from './common/PremiumLimitModal';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPaceDistribution, PaceDistributionData, SessionDriver, fetchSessionDrivers } from '../lib/api';
 import { motion } from 'framer-motion';
@@ -26,6 +29,7 @@ interface PaceAnalysisChartProps {
     initialDrivers?: string[];
     driverColors?: Record<string, string>;
     openF1Drivers?: any[]; // Using any for now to avoid import issues, or import OpenF1Driver
+    maxDrivers?: number;
 }
 
 const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
@@ -34,7 +38,8 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
     session,
     initialDrivers = [],
     driverColors = {},
-    openF1Drivers = []
+    openF1Drivers = [],
+    maxDrivers = 20
 }) => {
     const [selectedDrivers, setSelectedDrivers] = useState<string[]>(initialDrivers.length > 0 ? initialDrivers : []);
 
@@ -94,10 +99,12 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         setSelectedDrivers(prev => {
             if (prev.includes(driverCode)) {
                 return prev.filter(d => d !== driverCode);
-            } else {
-                if (prev.length >= 10) return prev; // Limit to 10 drivers
-                return [...prev, driverCode];
             }
+            if (prev.length >= maxDrivers) {
+                setShowPremiumModal(true);
+                return prev;
+            }
+            return [...prev, driverCode];
         });
     };
 
@@ -126,8 +133,17 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
     const maxPace = chartData.length > 0 ? Math.max(...chartData.map(d => d.max)) : 0;
     const domainPadding = (maxPace - minPace) * 0.1;
 
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+
     return (
-        <div className="w-full bg-black/40 rounded-xl border border-white/10 p-4">
+        <div className="w-full h-full p-4 relative">
+            <PremiumLimitModal
+                isOpen={showPremiumModal}
+                onClose={() => setShowPremiumModal(false)}
+                title="Driver Limit Reached"
+                description={`Free plan users can compare up to ${maxDrivers} drivers. Upgrade to Pro for unlimited comparisons.`}
+            />
+
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
                     Race Pace Distribution

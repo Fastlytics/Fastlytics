@@ -95,16 +95,9 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
     }
 
     return (
-        <div className="bg-black p-0 h-[600px] flex flex-col mt-12">
+        <div className="bg-black p-0 h-[600px] flex flex-col">
             <Tabs defaultValue="overview" className="w-full h-full flex flex-col" onValueChange={setActiveTab} value={activeTab}>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0 border-b border-gray-800 pb-4">
-                    <div className="flex items-center gap-3">
-                        <ChartLineData01Icon className="w-8 h-8 text-red-600" />
-                        <div>
-                            <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white leading-none">Position Tracker</h3>
-                            <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mt-1">Track Position Changes</p>
-                        </div>
-                    </div>
+                <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-6 shrink-0">
                     <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
                         <TabsTrigger
                             value="overview"

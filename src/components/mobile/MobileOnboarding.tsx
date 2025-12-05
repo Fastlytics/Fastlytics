@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useSubscription, startTrial } from '@/hooks/useSubscription';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
 import {
     CheckmarkCircle01Icon,
@@ -119,7 +120,7 @@ const MobileOnboarding: React.FC = () => {
         }
     };
 
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     return (
         <div className="h-[100dvh] bg-black text-white flex flex-col overflow-hidden">
@@ -132,7 +133,7 @@ const MobileOnboarding: React.FC = () => {
             {/* Progress Bars */}
             <div className="relative z-10 pt-12 pb-6 px-4">
                 <div className="flex items-center justify-center gap-1">
-                    {[0, 1, 2, 3].map((i) => (
+                    {[0, 1, 2, 3, 4].map((i) => (
                         <div
                             key={i}
                             className={cn(
@@ -351,8 +352,83 @@ const MobileOnboarding: React.FC = () => {
                         </motion.div>
                     )}
 
-                    {/* Step 3: Social Media */}
+                    {/* Step 3: Choose Plan */}
                     {step === 3 && (
+                        <motion.div
+                            key="plan"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -50 }}
+                            className="h-full flex flex-col px-4"
+                        >
+                            <div className="text-center py-4">
+                                <h2 className="text-xl font-black uppercase italic tracking-tighter">
+                                    Choose Your Plan
+                                </h2>
+                                <p className="text-sm text-gray-500">Unlock full potential</p>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto pb-4 space-y-4">
+                                {/* Free Plan */}
+                                <div className="p-4 border-2 border-zinc-800 bg-zinc-900/30 rounded-xl flex flex-col space-y-3">
+                                    <div>
+                                        <div className="text-lg font-black uppercase italic text-zinc-500">Standard</div>
+                                        <div className="text-3xl font-black text-white">$0<span className="text-sm font-bold text-zinc-600">/mo</span></div>
+                                    </div>
+                                    <ul className="text-xs text-zinc-400 space-y-1 font-mono">
+                                        <li>• Basic Telemetry</li>
+                                        <li>• Live Timing</li>
+                                        <li>• Limited Driver Comparison (Max 2)</li>
+                                        <li>• Current Season Only</li>
+                                    </ul>
+                                    <button
+                                        onClick={() => setStep(4)}
+                                        className="w-full bg-zinc-800 text-white hover:bg-zinc-700 font-bold uppercase tracking-wider py-3 text-sm"
+                                    >
+                                        Continue with Free
+                                    </button>
+                                </div>
+
+                                {/* Pro Plan */}
+                                <div className="p-4 border-2 border-red-600 bg-black rounded-xl flex flex-col space-y-3 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 uppercase rounded-bl-lg">
+                                        Recommended
+                                    </div>
+                                    <div>
+                                        <div className="text-lg font-black uppercase italic text-red-500">Pro Access</div>
+                                        <div className="text-3xl font-black text-white">$6.99<span className="text-sm font-bold text-zinc-600">/mo</span></div>
+                                    </div>
+                                    <ul className="text-xs text-zinc-300 space-y-1 font-mono">
+                                        <li>• Advanced Telemetry & Analytics</li>
+                                        <li>• Unlimited Historical Data</li>
+                                        <li>• Full Session Replays</li>
+                                        <li>• Priority Support</li>
+                                    </ul>
+                                    <button
+                                        onClick={async () => {
+                                            if (user) {
+                                                try {
+                                                    await startTrial(user.id);
+                                                    toast.success('14-Day Free Trial Activated!');
+                                                    setStep(4);
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    toast.error('Failed to start trial');
+                                                }
+                                            }
+                                        }}
+                                        className="w-full bg-red-600 text-white hover:bg-red-700 font-bold uppercase tracking-wider py-3 text-sm shadow-[0_0_15px_rgba(220,38,38,0.3)]"
+                                    >
+                                        Start 14-Day Free Trial
+                                    </button>
+                                    <p className="text-[10px] text-zinc-500 text-center">No credit card required today.</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Step 4: Social Media */}
+                    {step === 4 && (
                         <motion.div
                             key="socials"
                             initial={{ opacity: 0, x: 50 }}
@@ -411,17 +487,20 @@ const MobileOnboarding: React.FC = () => {
                 <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                        if (step === 3) {
+                        if (step === 4) {
                             handleComplete();
+                        } else if (step === 3) {
+                            // Handled by inner buttons, but keep for safety/fallback
+                            setStep(4);
                         } else {
                             setStep(step + 1);
                         }
                     }}
-                    disabled={(step === 1 && !selectedDriver) || (step === 2 && !selectedTeam) || isLoading}
+                    disabled={(step === 1 && !selectedDriver) || (step === 2 && !selectedTeam) || (step === 3) || isLoading}
                     className={cn(
                         "w-full py-4 font-black uppercase tracking-wider text-center transition-all border-2",
                         "disabled:opacity-50 disabled:cursor-not-allowed",
-                        step === 3
+                        step === 4
                             ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
                             : "bg-white text-black border-white hover:bg-gray-200"
                     )}
@@ -440,6 +519,9 @@ const MobileOnboarding: React.FC = () => {
                             </>
                         )}
                         {step === 3 && (
+                            <span className="text-gray-400">Select a Plan above</span>
+                        )}
+                        {step === 4 && (
                             <span>{isLoading ? 'Setting up...' : 'Finish Setup'}</span>
                         )}
                     </div>

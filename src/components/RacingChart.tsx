@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush, ReferenceLine
 } from 'recharts';
+import { PremiumLimitModal } from './common/PremiumLimitModal';
 import { cn } from "@/lib/utils";
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, fetchSessionDrivers, SessionDriver, LapTimeDataPoint } from '@/lib/api';
@@ -27,7 +28,7 @@ const formatLapTime = (totalSeconds: number | null): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const formattedSeconds = seconds.toFixed(3).padStart(6, '0');
-  return `${minutes}:${formattedSeconds}`;
+  return `${minutes}:${formattedSeconds} `;
 };
 
 interface RacingChartProps {
@@ -43,10 +44,11 @@ interface RacingChartProps {
   openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
   rivalDriver?: string | null;
+  maxDrivers?: number;
 }
 
 const MIN_DRIVERS = 2;
-const MAX_DRIVERS = 20;
+const DEFAULT_MAX_DRIVERS = 20;
 
 const RacingChart: React.FC<RacingChartProps> = ({
   className,
@@ -60,12 +62,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
   autoLoad = false,
   openF1Drivers = [],
   favoriteDriver,
-  rivalDriver
+  rivalDriver,
+  maxDrivers = DEFAULT_MAX_DRIVERS
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   // Determine initial drivers based on props
   const getInitialDrivers = () => {
@@ -118,17 +122,19 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const lapData = staticData || fetchedLapData;
 
   const toggleDriver = (driverCode: string) => {
-    if (selectedDrivers.includes(driverCode)) {
-      if (selectedDrivers.length > MIN_DRIVERS) {
-        setSelectedDrivers(prev => prev.filter(d => d !== driverCode));
-        // Auto-load: do not disable chart loading
+    setSelectedDrivers(prev => {
+      if (prev.includes(driverCode)) {
+        if (prev.length > MIN_DRIVERS) {
+          return prev.filter(d => d !== driverCode);
+        }
+        return prev; // Cannot remove if it would go below MIN_DRIVERS
       }
-    } else {
-      if (selectedDrivers.length < MAX_DRIVERS) {
-        setSelectedDrivers(prev => [...prev, driverCode]);
-        // Auto-load: do not disable chart loading
+      if (prev.length >= maxDrivers) {
+        setShowPremiumModal(true);
+        return prev;
       }
-    }
+      return [...prev, driverCode];
+    });
   };
 
   const isLoading = !staticData && (isLoadingLapTimes);
@@ -352,14 +358,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         {formatLapTime(stat.fastestTime)}
                       </TableCell>
                       <TableCell className="py-2 text-center font-mono text-gray-500 text-xs">
-                        {stat.lapNumber !== -1 ? `L${stat.lapNumber}` : '-'}
+                        {stat.lapNumber !== -1 ? `L${stat.lapNumber} ` : '-'}
                       </TableCell>
                       <TableCell className="py-2 text-right font-mono text-xs">
                         {index === 0 ? (
                           <span className="text-purple-400 font-bold">FASTEST</span>
                         ) : (
                           <span className="text-gray-500">
-                            {gap !== null ? `+${gap.toFixed(3)}s` : '-'}
+                            {gap !== null ? `+ ${gap.toFixed(3)} s` : '-'}
                           </span>
                         )}
                       </TableCell>
@@ -377,12 +383,17 @@ const RacingChart: React.FC<RacingChartProps> = ({
   return (
     <div
       ref={chartRef}
-      className={cn("space-y-6", className)}
-      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
+      className={cn("space-y-6 relative", className)}
+      style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
+      <PremiumLimitModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        title="Driver Limit Reached"
+        description={`Free plan users can compare up to ${maxDrivers} drivers. Upgrade to Pro for unlimited comparisons.`}
+      />
+
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
-
-
         {!staticData && availableDrivers && (
           <div className="flex flex-wrap gap-2">
             {availableDrivers.map((driver) => {

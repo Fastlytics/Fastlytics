@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useSubscription, cancelTrial } from '@/hooks/useSubscription';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
     UserIcon, SecurityCheckIcon, CreditCardIcon, Logout01Icon,
@@ -129,6 +130,7 @@ const driverImageMap: Record<string, string> = {
 const MobileAccount: React.FC = () => {
     const { user, profile, refreshProfile, signOut } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [isLoading, setIsLoading] = useState(false);
 
     // Sheet States
@@ -162,6 +164,7 @@ const MobileAccount: React.FC = () => {
     const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
     // Subscription State
+    const { isPremium, isTrialing, daysRemaining } = useSubscription();
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
 
     const proPrices = {
@@ -333,10 +336,28 @@ const MobileAccount: React.FC = () => {
     const handleSignOut = async () => {
         try {
             await signOut();
-            toast.success('Signed out');
-            navigate('/');
+            navigate('/auth');
+            toast.success('Signed out successfully');
         } catch (error) {
             toast.error('Error signing out');
+        }
+    };
+
+    const handleCancelTrial = async () => {
+        if (!user) return;
+
+        if (!confirm("Are you sure you want to cancel your free trial? You will lose access to premium features immediately.")) {
+            return;
+        }
+
+        try {
+            await cancelTrial(user.id);
+            // Refresh logic might be needed if not auto-updated by context/subscription hook
+            // Assuming hook updates on profile change which happens via real-time or manual refresh
+            window.location.reload(); // Simple refresh to ensure state updates or rely on AuthContext refreshProfile() if accessible
+        } catch (error: any) {
+            console.error(error);
+            toast.error("Error cancelling trial", { description: error.message });
         }
     };
 
@@ -431,22 +452,31 @@ const MobileAccount: React.FC = () => {
                     {/* Subscription Section */}
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
-                            Upgrade
+                            {isPremium ? 'Subscription' : 'Upgrade'}
                         </h3>
                         <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
-                            <button
-                                onClick={() => setShowSubscriptionSheet(true)}
-                                className="w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors bg-red-600 text-white group"
-                            >
-                                <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10 rounded-md">
-                                    <Rocket01Icon className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <div className="font-black uppercase tracking-wider">Upgrade to Pro</div>
-                                    <div className="text-xs font-bold opacity-75 font-mono">UNLOCK ALL FEATURES</div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-white/50 group-active:text-black" />
-                            </button>
+                            {isPremium ? (
+                                <MenuItem
+                                    icon={Rocket01Icon}
+                                    label="Pro Hub"
+                                    value={isTrialing ? `${daysRemaining} days left in trial` : 'Active'}
+                                    onClick={() => setShowSubscriptionSheet(true)}
+                                />
+                            ) : (
+                                <button
+                                    onClick={() => setShowSubscriptionSheet(true)}
+                                    className="w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors bg-red-600 text-white group"
+                                >
+                                    <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10 rounded-md">
+                                        <Rocket01Icon className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <div className="font-black uppercase tracking-wider">Upgrade to Pro</div>
+                                        <div className="text-xs font-bold opacity-75 font-mono">UNLOCK ALL FEATURES</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-white/50 group-active:text-black" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -821,71 +851,156 @@ const MobileAccount: React.FC = () => {
                 <BottomSheet
                     isOpen={showSubscriptionSheet}
                     onClose={() => setShowSubscriptionSheet(false)}
-                    title="Upgrade to Pro"
+                    title={isPremium ? "My Subscription" : "Upgrade to Pro"}
                 >
                     <div className="p-4 space-y-6">
-                        {/* Free Tier (Current) */}
-                        <div className="bg-zinc-900/30 border-2 border-white/10 p-5 relative overflow-hidden rounded-xl">
-                            <div className="absolute top-0 right-0 bg-zinc-800 text-[10px] font-black px-2 py-1 uppercase tracking-wider text-gray-400">Current</div>
-                            <h3 className="text-xl font-black uppercase italic text-white mb-1">Standard</h3>
-                            <div className="text-2xl font-black text-white mb-4 uppercase">Free</div>
-                            <ul className="space-y-2 mb-4">
-                                <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Standard Telemetry</li>
-                                <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Live Timing</li>
-                            </ul>
-                            <button disabled className="w-full bg-zinc-800 text-gray-500 font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg">Active</button>
-                        </div>
+                        {isPremium ? (
+                            // ACTIVE SUBSCRIPTION VIEW
+                            <div className="border-2 p-5 relative overflow-hidden rounded-xl bg-black border-red-600">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
 
-                        {/* Pro Tier */}
-                        <div className="bg-black border-2 border-red-600/50 p-5 relative overflow-hidden opacity-75 grayscale-[0.5] rounded-xl">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-red-600/50" />
-                            <div className="absolute top-3 right-3">
-                                <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black px-2 py-1 uppercase tracking-wider flex items-center gap-1">
-                                    Coming Soon
-                                </span>
-                            </div>
-
-                            <div className="mb-4">
-                                <h3 className="text-xl font-black uppercase italic text-red-500/70 mb-1 flex items-center gap-2">
-                                    Pro <span className="text-white/70 text-[10px] bg-red-600/10 px-1.5 py-0.5 border border-red-600/20 not-italic font-sans uppercase font-bold rounded-sm">All Access</span>
-                                </h3>
-                                <div className="flex items-baseline gap-1 opacity-50">
-                                    <span className="text-3xl font-black text-white">${currentPro.price}</span>
-                                    <span className="text-sm text-gray-500 font-bold uppercase">{currentPro.label}</span>
+                                <div className="mb-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <h3 className="text-xl font-black uppercase italic text-white">
+                                            Pro Plan
+                                        </h3>
+                                        <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 uppercase rounded-sm tracking-wider">
+                                            Active
+                                        </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <div className="text-3xl font-black text-white">
+                                            {isTrialing ? daysRemaining : '∞'}
+                                        </div>
+                                        <div className="text-xs text-red-500 font-bold uppercase tracking-wider">
+                                            {isTrialing ? 'Days Left' : 'Active'}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs font-mono text-gray-500 mt-2">
+                                        You have full access to all Fastlytics features.
+                                    </p>
                                 </div>
-                            </div>
 
-                            {/* Billing Cycle Selector */}
-                            <div className="grid grid-cols-2 gap-2 mb-6 opacity-50 pointer-events-none">
-                                {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
+                                <ul className="space-y-2 mb-6">
+                                    <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-600 mr-2" /> Session Replay</li>
+                                    <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-600 mr-2" /> Unlimited History</li>
+                                    <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-600 mr-2" /> Advanced Telemetry</li>
+                                </ul>
+
+                                {isTrialing ? (
                                     <button
-                                        key={cycle}
-                                        onClick={() => setBillingCycle(cycle)}
-                                        className={cn(
-                                            "px-1 py-2 text-[10px] font-black uppercase border-2 transition-all duration-200 rounded-lg",
-                                            billingCycle === cycle
-                                                ? "bg-red-600 border-red-600 text-white"
-                                                : "bg-transparent border-white/10 text-gray-400 hover:border-white/30"
-                                        )}
+                                        onClick={handleCancelTrial}
+                                        className="w-full bg-zinc-900 border-2 border-red-900 text-red-500 font-black uppercase tracking-wider py-3 text-sm rounded-lg hover:bg-red-950 hover:text-red-400 transition-colors"
                                     >
-                                        {proPrices[cycle].period}
+                                        Cancel Free Trial
                                     </button>
-                                ))}
-                            </div>
+                                ) : (
+                                    <button
+                                        onClick={() => window.open('https://paddle.net/', '_blank')}
+                                        className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        Manage Subscription
+                                    </button>
+                                )}
 
-                            <ul className="space-y-2 mb-6 opacity-70">
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Advanced Telemetry</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Session Replay</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Time Synced Data</li>
-                                <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500/70 mr-2" /> Unlimited History</li>
-                            </ul>
-                            <button disabled className="w-full bg-zinc-800 text-zinc-400 font-black uppercase tracking-wider py-3 text-sm border-2 border-zinc-800 cursor-not-allowed rounded-lg">
-                                Coming Soon
-                            </button>
-                            <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase opacity-50">
-                                Secure payment via Paddle.
-                            </p>
-                        </div>
+                                <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase opacity-50">
+                                    {isTrialing ? 'No payment method required.' : 'Managed via Paddle.'}
+                                </p>
+                            </div>
+                        ) : (
+                            // UPGRADE VIEW (Original)
+                            <>
+                                {/* Free Tier (Current) */}
+                                <div className="bg-zinc-900/30 border-2 border-white/10 p-5 relative overflow-hidden rounded-xl">
+                                    <div className="absolute top-0 right-0 bg-zinc-800 text-[10px] font-black px-2 py-1 uppercase tracking-wider text-gray-400">
+                                        {isPremium ? 'Included' : 'Current'}
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase italic text-white mb-1">Standard</h3>
+                                    <div className="text-2xl font-black text-white mb-4 uppercase">Free</div>
+                                    <ul className="space-y-2 mb-4">
+                                        <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Standard Telemetry</li>
+                                        <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Live Timing</li>
+                                        <li className="flex items-center text-gray-400 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-gray-500 mr-2" /> Max 2 Drivers</li>
+                                    </ul>
+                                    <button disabled className="w-full bg-zinc-800 text-gray-500 font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg">
+                                        {isPremium ? 'Included' : 'Active'}
+                                    </button>
+                                </div>
+
+                                {/* Pro Tier */}
+                                <div className={cn(
+                                    "border-2 p-5 relative overflow-hidden rounded-xl transition-all",
+                                    isPremium
+                                        ? "bg-black border-red-600 opacity-100"
+                                        : "bg-black border-red-600/50 opacity-100"
+                                )}>
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
+
+                                    {isPremium && (
+                                        <div className="absolute top-3 right-3">
+                                            <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 uppercase tracking-wider flex items-center gap-1 rounded-sm">
+                                                {isTrialing ? 'Trial Active' : 'Active'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="mb-4">
+                                        <h3 className="text-xl font-black uppercase italic text-red-500 mb-1 flex items-center gap-2">
+                                            Pro <span className="text-white text-[10px] bg-red-600 px-1.5 py-0.5 border border-red-500 not-italic font-sans uppercase font-bold rounded-sm">All Access</span>
+                                        </h3>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-black text-white">${currentPro.price}</span>
+                                            <span className="text-sm text-gray-500 font-bold uppercase">{currentPro.label}</span>
+                                        </div>
+                                        <p className="text-xs font-mono text-gray-500 mt-2">
+                                            {isTrialing ? `${daysRemaining} days remaining in trial.` : "Full access to advanced features."}
+                                        </p>
+                                    </div>
+
+                                    {/* Billing Cycle Selector */}
+                                    <div className="grid grid-cols-2 gap-2 mb-6">
+                                        {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
+                                            <button
+                                                key={cycle}
+                                                onClick={() => setBillingCycle(cycle)}
+                                                className={cn(
+                                                    "px-1 py-2 text-[10px] font-black uppercase border-2 transition-all duration-200 rounded-lg",
+                                                    billingCycle === cycle
+                                                        ? "bg-red-600 border-red-600 text-white"
+                                                        : "bg-transparent border-white/10 text-gray-400 hover:border-white/30"
+                                                )}
+                                            >
+                                                {proPrices[cycle].period}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <ul className="space-y-2 mb-6">
+                                        <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Advanced Telemetry</li>
+                                        <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Session Replay</li>
+                                        <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Time Synced Data</li>
+                                        <li className="flex items-center text-gray-300 text-sm font-mono uppercase"><CheckmarkCircle01Icon className="w-4 h-4 text-red-500 mr-2" /> Unlimited History</li>
+                                    </ul>
+
+                                    {isPremium ? (
+                                        <button className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg">
+                                            Manage Subscription
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => navigate('/pricing', { state: { from: location.pathname + location.search } })}
+                                            className="w-full bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-wider py-3 text-sm border-2 border-transparent rounded-lg"
+                                        >
+                                            Start 14-Day Free Trial
+                                        </button>
+                                    )}
+
+                                    <p className="text-center text-[10px] text-gray-500 mt-3 font-mono uppercase opacity-50">
+                                        Secure payment via Paddle.
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </BottomSheet>
 
