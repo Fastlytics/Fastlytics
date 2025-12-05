@@ -38,7 +38,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                    className="w-full max-w-md bg-black border-t-2 border-white/10 pb-24"
+                    className="w-full max-w-md bg-black border-t-2 border-white/10 pb-24 rounded-t-3xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center justify-between p-4 border-b-2 border-white/10">
@@ -55,7 +55,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({ isOpen, onClose, select
                                     onSelect(year);
                                     onClose();
                                 }}
-                                className={`w-full p-4 text-left border-2 transition-colors flex items-center justify-between mb-2 ${selectedYear === year
+                                className={`w-full p-4 text-left border-2 transition-colors flex items-center justify-between mb-2 rounded-xl ${selectedYear === year
                                     ? 'bg-red-600 text-white border-red-600'
                                     : 'bg-black hover:bg-zinc-900 text-gray-300 border-white/10'
                                     }`}
@@ -122,7 +122,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden bg-black border-2 border-yellow-600"
+            className="relative overflow-hidden bg-black border-2 border-yellow-600 rounded-xl"
         >
             {/* Crown Icon */}
             <div className="absolute -top-2 -right-2 text-yellow-600/20">
@@ -135,7 +135,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
             <div className="relative z-10 p-4">
                 {/* Champion Badge */}
                 <div className="text-center mb-3">
-                    <span className="inline-block px-3 py-1 bg-yellow-600 text-black font-black text-[10px] uppercase tracking-widest">
+                    <span className="inline-block px-3 py-1 bg-yellow-600 text-black font-black text-[10px] uppercase tracking-widest rounded-sm">
                         {championshipStatus === 'champion' ? "Constructors' Champion" : "Constructors' Leader"}
                     </span>
                 </div>
@@ -158,7 +158,7 @@ const LeaderCard: React.FC<{ team: TeamStanding; championshipStatus: 'leader' | 
                         ) : (
                             <div className={`w-20 h-12 bg-f1-${teamColor}/30 mx-auto`} />
                         )}
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-600 flex items-center justify-center text-black font-black text-sm border-2 border-black">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-yellow-600 flex items-center justify-center text-black font-black text-sm border-2 border-black rounded-md">
                             1
                         </div>
                     </div>
@@ -217,7 +217,7 @@ const TeamRow: React.FC<{
             transition={{ delay: index * 0.03 }}
             layout
             onClick={onToggle}
-            className="relative bg-black border-2 border-white/10 active:scale-[0.98] transition-transform cursor-pointer group hover:border-white/20"
+            className="relative bg-black border-2 border-white/10 active:scale-[0.98] transition-transform cursor-pointer group hover:border-white/20 rounded-xl"
         >
             {/* Team Color Bar */}
             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-f1-${teamColor}`} />
@@ -251,7 +251,7 @@ const TeamRow: React.FC<{
                                     <div className={`w-16 h-10 bg-f1-${teamColor}/30 mx-auto`} />
                                 )}
                                 <div className={cn(
-                                    "absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black",
+                                    "absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center text-xs font-black border-2 border-black rounded-md",
                                     team.rank === 2 ? "bg-gray-300 text-black" :
                                         team.rank === 3 ? "bg-amber-700 text-black" : "bg-zinc-800 text-white"
                                 )}>
@@ -390,7 +390,7 @@ const MobileTeamStandings: React.FC = () => {
                 <div className="px-4 py-3">
                     <button
                         onClick={() => setShowSeasonSelector(true)}
-                        className="flex items-center gap-2 bg-black border-2 border-white/10 rounded-none px-3 py-2 text-sm font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900"
+                        className="flex items-center gap-2 bg-black border-2 border-white/10 rounded-xl px-3 py-2 text-sm font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900"
                     >
                         <span>{selectedYear} Season</span>
                         <ArrowDown01Icon className="w-4 h-4 text-gray-400" />

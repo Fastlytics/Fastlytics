@@ -85,11 +85,11 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
     return (
         <div className="space-y-4">
             {/* Tab Selector - Brutalist Style */}
-            <div className="flex bg-black border-2 border-white/10 p-1">
+            <div className="flex bg-black border-2 border-white/10 p-1 rounded-xl">
                 <button
                     onClick={() => setActiveTab('drivers')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant",
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant rounded-lg",
                         activeTab === 'drivers'
                             ? "bg-red-600 text-white"
                             : "text-gray-500 hover:text-white"
@@ -101,7 +101,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 <button
                     onClick={() => setActiveTab('constructors')}
                     className={cn(
-                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant",
+                        "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-black uppercase italic tracking-wider transition-all clip-path-slant rounded-lg",
                         activeTab === 'constructors'
                             ? "bg-red-600 text-white"
                             : "text-gray-500 hover:text-white"
@@ -118,7 +118,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                 initial={{ opacity: 0, x: activeTab === 'drivers' ? -20 : 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-black border-2 border-white/10 overflow-hidden"
+                className="bg-black border-2 border-white/10 overflow-hidden rounded-xl"
             >
                 {/* Header */}
                 <div className="p-4 border-b-2 border-white/10 flex items-center justify-between bg-zinc-900/30">
@@ -157,7 +157,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                 >
                                     {/* Position */}
                                     <div className={cn(
-                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2",
+                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2 rounded-md",
                                         isLeader ? "bg-yellow-500 text-black border-yellow-500" : "bg-zinc-900 text-gray-400 border-white/10"
                                     )}>
                                         {index + 1}
@@ -165,14 +165,14 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
 
                                     {/* Avatar */}
                                     <Avatar className={cn(
-                                        "h-10 w-10 border-2 rounded-none",
+                                        "h-10 w-10 border-2 rounded-md",
                                         isFavorite ? "border-red-600" : "border-white/10"
                                     )}>
                                         <AvatarImage
                                             src={getDriverImage(driver.code, driver.name)}
                                             className="object-cover bg-zinc-900"
                                         />
-                                        <AvatarFallback className="bg-zinc-900 text-xs rounded-none font-bold">
+                                        <AvatarFallback className="bg-zinc-900 text-xs rounded-md font-bold">
                                             {driver.code}
                                         </AvatarFallback>
                                     </Avatar>
@@ -230,14 +230,14 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                 >
                                     {/* Position */}
                                     <div className={cn(
-                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2",
+                                        "w-8 h-8 flex items-center justify-center text-sm font-black border-2 rounded-md",
                                         isLeader ? "bg-yellow-500 text-black border-yellow-500" : "bg-zinc-900 text-gray-400 border-white/10"
                                     )}>
                                         {index + 1}
                                     </div>
 
                                     {/* Logo */}
-                                    <div className="h-10 w-10 flex items-center justify-center bg-transparent rounded-none border-2 border-white/10 p-1">
+                                    <div className="h-10 w-10 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-1">
                                         {getTeamLogo(team.team) ? (
                                             <img
                                                 src={getTeamLogo(team.team)!}
