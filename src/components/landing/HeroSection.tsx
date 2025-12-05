@@ -35,6 +35,20 @@ const HeroSection = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
                     >
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.5 }}
+                            className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full hidden md:flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:border-red-600/50 transition-colors cursor-default"
+                        >
+                            <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                            </span>
+                            <p className="font-mono text-sm text-gray-300">
+                                <span className="text-white font-bold">Fastlytics 2.0</span> <span className="mx-1 text-gray-600">|</span> New features & <span className="text-red-500">BOOSTED</span> performance!
+                            </p>
+                        </motion.div>
                         <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase italic tracking-tighter leading-none mb-6 relative">
                             <span className="relative z-10">Race</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-800 relative z-10" style={{ WebkitTextStroke: '2px red' }}>Data</span>
                             <br />

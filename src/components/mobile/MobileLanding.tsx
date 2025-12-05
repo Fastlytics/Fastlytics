@@ -69,6 +69,21 @@ const MobileLanding: React.FC = () => {
                     className="text-left"
                 >
                     {/* Main Heading */}
+                    <div className="mb-8 flex justify-start">
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="bg-zinc-900/80 backdrop-blur-md border border-white/20 pl-3 pr-4 py-1.5 rounded-full inline-flex items-center gap-2 shadow-lg"
+                        >
+                            <div className="bg-red-600 text-white text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm">
+                                NEW
+                            </div>
+                            <p className="text-xs font-mono text-gray-300">
+                                <span className="text-white font-bold">Fastlytics 2.0</span> is here
+                            </p>
+                        </motion.div>
+                    </div>
                     <h1 className="text-5xl font-black uppercase italic tracking-tighter leading-[0.85] mb-6">
                         Race Data<br />
                         <span className="text-red-600">Unleashed</span>
