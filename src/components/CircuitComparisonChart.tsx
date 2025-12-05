@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchSectorComparison, fetchDriverLapNumbers, SessionDriver, SectorComparisonData } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn } from "@/lib/utils";
-import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon, MapsLocation01Icon } from 'hugeicons-react';
+import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
 import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
@@ -376,7 +376,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     >
       <div className="flex flex-col gap-6 mb-6 border-b border-gray-800 pb-4">
         <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-2">
-          <MapsLocation01Icon className="w-6 h-6 text-red-600" />
           {title || "Track Dominance"}
         </h3>
 

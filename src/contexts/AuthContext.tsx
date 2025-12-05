@@ -12,6 +12,10 @@ export interface Profile {
   favorite_driver: string | null;
   favorite_team: string | null;
   onboarding_completed: boolean;
+  subscription_status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
+  trial_start_date?: string;
+  trial_end_date?: string;
+  tier?: 'free' | 'premium';
 }
 
 interface AuthContextType {
@@ -98,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // The listener will fire with the initial session when Supabase finishes initializing
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -131,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
+
         if (session?.user) {
           fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
         }
