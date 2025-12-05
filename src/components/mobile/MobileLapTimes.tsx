@@ -3,7 +3,7 @@ import { DetailedRaceResult, fetchLapTimes, fetchPaceDistribution, LapTimeDataPo
 import { OpenF1Driver } from '@/lib/openf1';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { Time01Icon, Analytics01Icon, Cancel01Icon, ArrowRight01Icon } from 'hugeicons-react';
+import { Time01Icon, Analytics01Icon, Cancel01Icon, ArrowRight01Icon, ChartLineData01Icon } from 'hugeicons-react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -51,7 +51,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
     openF1Drivers
 }) => {
     const { profile } = useAuth();
-    const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace'>('history');
+    const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
 
     // --- Driver Selection Logic ---
     const { favDriverCode, rivalDriverCode } = useMemo(() => {
@@ -91,11 +91,24 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
 
     // --- Data Fetching ---
 
-    // 1. Lap History Data
+    const leaderCode = useMemo(() => {
+        return raceResults?.find(r => r.position === 1)?.driverCode;
+    }, [raceResults]);
+
+    const driversToFetch = useMemo(() => {
+        const drivers = [driver1, driver2].filter(Boolean);
+        // If in gap mode, ensure we fetch the leader's times too
+        if (lapAnalysisMode === 'gap' && leaderCode && !drivers.includes(leaderCode)) {
+            drivers.push(leaderCode);
+        }
+        return drivers;
+    }, [driver1, driver2, lapAnalysisMode, leaderCode]);
+
+    // 1. Lap History / Gap Data
     const { data: lapData, isLoading: isLoadingLaps } = useQuery<LapTimeDataPoint[]>({
-        queryKey: ['lapTimes', year, event, session, driver1, driver2],
-        queryFn: () => fetchLapTimes(year, event, session, [driver1, driver2].filter(Boolean)),
-        enabled: lapAnalysisMode === 'history' && !!driver1,
+        queryKey: ['lapTimes', year, event, session, driversToFetch],
+        queryFn: () => fetchLapTimes(year, event, session, driversToFetch),
+        enabled: (lapAnalysisMode === 'history' || lapAnalysisMode === 'gap') && !!driver1 && driversToFetch.length > 0,
         staleTime: 1000 * 60 * 5,
     });
 
@@ -114,6 +127,48 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
         enabled: lapAnalysisMode === 'pace' && allDriverCodes.length > 0,
         staleTime: 1000 * 60 * 5,
     });
+
+    // --- Gap Calculation ---
+    const gapData = useMemo(() => {
+        if (!lapData || lapAnalysisMode !== 'gap' || !leaderCode) return [];
+
+        let cumulativeLeader = 0;
+        let cumulativeD1 = 0;
+        let cumulativeD2 = 0;
+
+        // Sort by LapNumber just in case
+        const sortedLaps = [...lapData].sort((a, b) => a.LapNumber - b.LapNumber);
+
+        return sortedLaps.map(lap => {
+            const lTime = lap[leaderCode];
+            const d1Time = lap[driver1];
+            const d2Time = driver2 ? lap[driver2] : null;
+
+            // If leader has no time for this lap (e.g. DNF), we can't calculate gap
+            if (lTime === undefined || lTime === null) return null;
+
+            cumulativeLeader += lTime;
+
+            let d1Gap = null;
+            if (d1Time !== undefined && d1Time !== null) {
+                cumulativeD1 += d1Time;
+                d1Gap = cumulativeD1 - cumulativeLeader;
+            }
+
+            let d2Gap = null;
+            if (d2Time !== undefined && d2Time !== null && driver2) {
+                cumulativeD2 += d2Time;
+                d2Gap = cumulativeD2 - cumulativeLeader;
+            }
+
+            return {
+                LapNumber: lap.LapNumber,
+                [driver1]: d1Gap,
+                ...(driver2 ? { [driver2]: d2Gap } : {})
+            };
+        }).filter(Boolean);
+    }, [lapData, lapAnalysisMode, leaderCode, driver1, driver2]);
+
 
     // --- Helper for Driver Images ---
     const getDriverImage = (code: string) => {
@@ -151,32 +206,44 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                     <button
                         onClick={() => setLapAnalysisMode('history')}
                         className={cn(
-                            "flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-2",
+                            "flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5",
                             lapAnalysisMode === 'history'
                                 ? "bg-white text-black shadow-sm"
                                 : "text-gray-500 hover:text-white"
                         )}
                     >
                         <Time01Icon className="w-3 h-3" />
-                        Lap History
+                        History
+                    </button>
+                    <button
+                        onClick={() => setLapAnalysisMode('gap')}
+                        className={cn(
+                            "flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5",
+                            lapAnalysisMode === 'gap'
+                                ? "bg-white text-black shadow-sm"
+                                : "text-gray-500 hover:text-white"
+                        )}
+                    >
+                        <ChartLineData01Icon className="w-3 h-3" />
+                        Gap
                     </button>
                     <button
                         onClick={() => setLapAnalysisMode('pace')}
                         className={cn(
-                            "flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-2",
+                            "flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5",
                             lapAnalysisMode === 'pace'
                                 ? "bg-white text-black shadow-sm"
                                 : "text-gray-500 hover:text-white"
                         )}
                     >
                         <Analytics01Icon className="w-3 h-3" />
-                        Pace Dist.
+                        Pace
                     </button>
                 </div>
             </div>
 
-            {/* --- LAP HISTORY VIEW --- */}
-            {lapAnalysisMode === 'history' && (
+            {/* --- LAP HISTORY / GAP VIEW --- */}
+            {(lapAnalysisMode === 'history' || lapAnalysisMode === 'gap') && (
                 <div className="space-y-4">
                     {/* Driver Selectors */}
                     <div className="grid grid-cols-2 gap-4">
@@ -238,26 +305,19 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                     <div className="w-full h-full flex items-center justify-center text-gray-500 animate-pulse">
                                         <div className="flex flex-col items-center gap-2">
                                             <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                                            <span className="text-xs font-mono uppercase">Loading Telemetry...</span>
+                                            <span className="text-xs font-mono uppercase">Loading Data...</span>
                                         </div>
                                     </div>
                                 ) : (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <LineChart
-                                            data={lapData}
+                                            data={lapAnalysisMode === 'gap' ? gapData : lapData}
                                             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-                                            onMouseMove={(e: any) => {
-                                                // Optional: enable hover support if desired, but for mobile touch/click is better
-                                            }}
                                             onTouchMove={(e: any) => {
-                                                if (e && e.activeLabel) {
-                                                    setSelectedLap(e.activeLabel);
-                                                }
+                                                if (e && e.activeLabel) setSelectedLap(e.activeLabel);
                                             }}
                                             onClick={(e: any) => {
-                                                if (e && e.activeLabel) {
-                                                    setSelectedLap(e.activeLabel);
-                                                }
+                                                if (e && e.activeLabel) setSelectedLap(e.activeLabel);
                                             }}
                                         >
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
@@ -272,10 +332,16 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                                             />
                                             <YAxis
                                                 hide
-                                                domain={['dataMin - 1', 'dataMax + 1']}
+                                                domain={['auto', 'auto']}
+                                                reversed={lapAnalysisMode === 'history'} // Reverse for lap times (lower is better), but not for gap (usually)
+                                            // Actually, for Gap: 0 is leader (top). +10s is below. So we should REVERSE Y-Axis for Gap too if we want Leader at TOP.
+                                            // Let's try reversed for both.
+                                            // Lap Times: Lower is better (Top).
+                                            // Gap: 0 is best (Top). +Gap is worse (Bottom).
+                                            // So yes, reversed for both.
                                             />
                                             <Tooltip
-                                                content={() => null} // Hide default tooltip, using overlay
+                                                content={() => null}
                                                 cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
                                             />
                                             <Line
@@ -310,13 +376,14 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                         {selectedLap !== null && (
                             <OverlayContent
                                 lapNumber={selectedLap}
-                                lapData={lapData}
+                                lapData={lapAnalysisMode === 'gap' ? gapData : lapData}
                                 driver1={driver1}
                                 driver2={driver2}
                                 onClose={() => setSelectedLap(null)}
                                 getDriverImage={getDriverImage}
                                 getDriverTeam={getDriverTeam}
                                 year={year}
+                                mode={lapAnalysisMode}
                             />
                         )}
                     </AnimatePresence>
@@ -436,13 +503,14 @@ export default MobileLapTimes;
 
 interface OverlayContentProps {
     lapNumber: number;
-    lapData: LapTimeDataPoint[] | undefined;
+    lapData: any[] | undefined;
     driver1: string;
     driver2: string;
     onClose: () => void;
     getDriverImage: (code: string) => string | undefined;
     getDriverTeam: (code: string) => string | undefined;
     year: number;
+    mode: 'history' | 'gap' | 'pace';
 }
 
 const OverlayContent: React.FC<OverlayContentProps> = ({
@@ -453,13 +521,20 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
     onClose,
     getDriverImage,
     getDriverTeam,
-    year
+    year,
+    mode
 }) => {
     const dataPoint = lapData?.find(d => d.LapNumber === lapNumber);
     if (!dataPoint) return null;
 
-    const d1Time = dataPoint[driver1];
-    const d2Time = driver2 ? dataPoint[driver2] : null;
+    const d1Value = dataPoint[driver1];
+    const d2Value = driver2 ? dataPoint[driver2] : null;
+
+    const formatValue = (val: number | null) => {
+        if (val === null || val === undefined) return '-';
+        if (mode === 'gap') return `${val > 0 ? '+' : ''}${val.toFixed(3)}s`;
+        return formatLapTime(val);
+    };
 
     return (
         <motion.div
@@ -495,7 +570,7 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
                         <span className="font-bold text-sm text-white">{driver1}</span>
                     </div>
                     <span className="font-mono font-bold text-lg text-white">
-                        {formatLapTime(d1Time)}
+                        {formatValue(d1Value)}
                     </span>
                 </div>
 
@@ -512,25 +587,25 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
                             <span className="font-bold text-sm text-white">{driver2}</span>
                         </div>
                         <span className="font-mono font-bold text-lg text-white">
-                            {formatLapTime(d2Time)}
+                            {formatValue(d2Value)}
                         </span>
                     </div>
                 )}
 
-                {/* Gap */}
-                {driver2 && d1Time !== null && d2Time !== null && (
+                {/* Gap Delta (Only for History mode, as Gap mode IS the gap) */}
+                {mode === 'history' && driver2 && d1Value !== null && d2Value !== null && (
                     <div className="mt-2 pt-2 flex justify-between items-center">
                         <span className="text-xs uppercase font-bold text-gray-500 tracking-wider">Gap Delta</span>
                         <div className="flex items-center gap-2">
                             <span className={cn(
                                 "font-mono font-black text-xl",
-                                d1Time < d2Time ? "text-green-500" : "text-red-500"
+                                d1Value < d2Value ? "text-green-500" : "text-red-500"
                             )}>
-                                {d1Time < d2Time ? '-' : '+'}{Math.abs(d1Time - d2Time).toFixed(3)}s
+                                {d1Value < d2Value ? '-' : '+'}{Math.abs(d1Value - d2Value).toFixed(3)}s
                             </span>
                             <ArrowRight01Icon className={cn(
                                 "w-4 h-4",
-                                d1Time < d2Time ? "text-green-500 -rotate-45" : "text-red-500 rotate-45"
+                                d1Value < d2Value ? "text-green-500 -rotate-45" : "text-red-500 rotate-45"
                             )} />
                         </div>
                     </div>

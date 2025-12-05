@@ -28,8 +28,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardSpeed02Icon, Settings01Icon, ArrowRight01Icon, ZapIcon, Cancel01Icon } from 'hugeicons-react';
 
 // --- Types ---
-type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gear';
-type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint;
+type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gear' | 'gap';
+type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint | { Distance: number, value: number };
 
 interface MobileTelemetryProps {
     year: number;
@@ -110,6 +110,75 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
     // Data Fetching
     const fetchTelemetry = async (tType: TelemetryType, drv: string) => {
         const lap = 'fastest';
+        if (tType === 'gap') {
+            // Gap to Leader Logic
+            const leader = raceResults?.find(r => r.position === 1);
+            if (!leader) return [];
+
+            // If selected driver is leader, gap is 0 (but we still fetch to show flat line)
+            const leaderCode = leader.driverCode;
+
+            // Fetch speed for both
+            const [driverSpeed, leaderSpeed] = await Promise.all([
+                fetchTelemetrySpeed(year, event, session, drv, lap),
+                fetchTelemetrySpeed(year, event, session, leaderCode, lap)
+            ]);
+
+            // Calculate Time vs Distance for both
+            const calculateTime = (speedData: SpeedDataPoint[]) => {
+                let time = 0;
+                return speedData.map((point, i) => {
+                    if (i === 0) return { ...point, time: 0 };
+                    const prev = speedData[i - 1];
+                    const distDelta = point.Distance - prev.Distance;
+                    const avgSpeed = (point.Speed + prev.Speed) / 2 / 3.6; // km/h to m/s
+                    const timeDelta = avgSpeed > 0 ? distDelta / avgSpeed : 0;
+                    time += timeDelta;
+                    return { ...point, time };
+                });
+            };
+
+            const driverTimeData = calculateTime(driverSpeed);
+            const leaderTimeData = calculateTime(leaderSpeed);
+
+            // Interpolate Leader Time to Driver Distances
+            return driverTimeData.map(dPoint => {
+                // Find leader point
+                const lPoint = leaderTimeData.find(l => Math.abs(l.Distance - dPoint.Distance) < 1); // Simple match
+
+                // Better interpolation
+                let lTime = 0;
+                const exactMatch = leaderTimeData.find(l => l.Distance === dPoint.Distance);
+                if (exactMatch) {
+                    lTime = exactMatch.time;
+                } else {
+                    // Find surrounding points
+                    const before = leaderTimeData.filter(l => l.Distance < dPoint.Distance).pop();
+                    const after = leaderTimeData.find(l => l.Distance > dPoint.Distance);
+
+                    if (before && after) {
+                        const ratio = (dPoint.Distance - before.Distance) / (after.Distance - before.Distance);
+                        lTime = before.time + ratio * (after.time - before.time);
+                    } else if (before) {
+                        lTime = before.time;
+                    } else if (after) {
+                        lTime = after.time;
+                    }
+                }
+
+                return {
+                    Distance: dPoint.Distance,
+                    Gap: lTime - dPoint.time // Positive if leader is slower (ahead in time? No wait). 
+                    // Gap to Leader: usually Leader Time - Driver Time? 
+                    // If Driver is behind, Driver Time is larger. So Leader - Driver = Negative.
+                    // Let's do: Driver Time - Leader Time. If Driver is slower, Time is higher, so Gap is Positive.
+                    // Wait, if they are at the SAME distance, the one who took LESS time is faster.
+                    // Gap = DriverTimeAtDistanceX - LeaderTimeAtDistanceX.
+                    // If Driver is slower, DriverTime > LeaderTime -> Gap > 0. Correct.
+                };
+            });
+        }
+
         switch (tType) {
             case 'throttle': return fetchTelemetryThrottle(year, event, session, drv, lap);
             case 'brake': return fetchTelemetryBrake(year, event, session, drv, lap);
@@ -130,7 +199,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
     // Data Processing
     const chartData = useMemo(() => {
         if (!telemetryData || telemetryType === 'gear') return [];
-        const data = telemetryData as TelemetryDataPoint[];
+        const data = telemetryData as any[];
 
         const getValueKey = (type: TelemetryType) => {
             switch (type) {
@@ -139,6 +208,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                 case 'rpm': return 'RPM';
                 case 'drs': return 'DRS';
                 case 'speed': return 'Speed';
+                case 'gap': return 'Gap';
                 default: return 'Speed';
             }
         };
@@ -151,7 +221,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
 
         return finalData.map(point => ({
             Distance: point.Distance,
-            [driver]: (point as any)[valueKey]
+            [driver]: point[valueKey]
         }));
 
     }, [telemetryData, driver, telemetryType]);
@@ -172,6 +242,15 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
         if (!chartData.length) return null;
         const values = chartData.map(d => d[driver] as number).filter(v => v !== null && v !== undefined);
         if (!values.length) return { max: 0, avg: 0 };
+
+        if (telemetryType === 'gap') {
+            // For gap, max might be the largest deficit
+            const max = Math.max(...values);
+            const min = Math.min(...values); // Could be negative if faster than leader in some sectors?
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            return { max, avg, min };
+        }
+
         const max = Math.max(...values);
         const avg = values.reduce((a, b) => a + b, 0) / values.length;
         return { max, avg };
@@ -186,6 +265,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
             case 'drs': return { color: '#3b82f6', domain: [-0.1, 1.1], unit: '', label: 'DRS' };
             case 'speed': return { color: '#3b82f6', domain: ['auto', 'auto'], unit: 'km/h', label: 'Speed' };
             case 'gear': return { color: '#ffffff', domain: [0, 8], unit: '', label: 'Gear Map' };
+            case 'gap': return { color: '#ef4444', domain: ['auto', 'auto'], unit: 's', label: 'Gap to Leader' };
         }
     };
     const config = getChartConfig();
@@ -246,7 +326,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
 
             {/* 2. Telemetry Navigation */}
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide px-1 snap-x">
-                {['speed', 'throttle', 'brake', 'rpm', 'drs', 'gear'].map((t) => (
+                {['speed', 'gap', 'throttle', 'brake', 'rpm', 'drs', 'gear'].map((t) => (
                     <button
                         key={t}
                         onClick={() => {
@@ -281,12 +361,12 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                     {/* Active Value or Max Stats */}
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">
-                            {activeDataPoint ? 'At Cursor' : (telemetryType === 'gear' ? 'Most Used' : 'Max Value')}
+                            {activeDataPoint ? 'At Cursor' : (telemetryType === 'gear' ? 'Most Used' : (telemetryType === 'gap' ? 'Max Gap' : 'Max Value'))}
                         </span>
                         <span className={cn("text-2xl font-mono font-bold leading-none", activeDataPoint ? "text-white" : "text-gray-400")} style={{ color: activeDataPoint ? undefined : dColor }}>
                             {activeDataPoint
-                                ? Math.round(activeDataPoint.value)
-                                : (stats ? Math.round(stats.max) : '-')}
+                                ? (telemetryType === 'gap' ? activeDataPoint.value.toFixed(3) : Math.round(activeDataPoint.value))
+                                : (stats ? (telemetryType === 'gap' ? stats.max.toFixed(3) : Math.round(stats.max)) : '-')}
                             <span className="text-xs ml-1 text-gray-600">{config.unit}</span>
                         </span>
                     </div>
@@ -434,6 +514,9 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                                                 cursor={{ stroke: '#fff', strokeWidth: 1, strokeDasharray: '4 4' }}
                                                 isAnimationActive={false}
                                             />
+                                            {telemetryType === 'gap' && (
+                                                <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                                            )}
                                             <Line
                                                 type="monotone"
                                                 dataKey={driver}
@@ -485,13 +568,13 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                     <div className="bg-zinc-900/50 border border-white/10 p-3 rounded-lg flex flex-col items-center justify-center">
                         <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">Session Max</span>
                         <span className="text-xl font-mono font-bold text-white">
-                            {Math.round(stats.max)}<span className="text-xs text-gray-500 ml-1">{config.unit}</span>
+                            {telemetryType === 'gap' ? stats.max.toFixed(3) : Math.round(stats.max)}<span className="text-xs text-gray-500 ml-1">{config.unit}</span>
                         </span>
                     </div>
                     <div className="bg-zinc-900/50 border border-white/10 p-3 rounded-lg flex flex-col items-center justify-center">
                         <span className="text-[10px] uppercase font-bold text-gray-500 mb-1">Session Avg</span>
                         <span className="text-xl font-mono font-bold text-white">
-                            {Math.round(stats.avg)}<span className="text-xs text-gray-500 ml-1">{config.unit}</span>
+                            {telemetryType === 'gap' ? stats.avg.toFixed(3) : Math.round(stats.avg)}<span className="text-xs text-gray-500 ml-1">{config.unit}</span>
                         </span>
                     </div>
                 </div>
@@ -506,6 +589,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                         stats={stats}
                         onClose={() => setSelectedDataPoint(null)}
                         driverColor={dColor}
+                        isGap={telemetryType === 'gap'}
                     />
                 )}
             </AnimatePresence>
@@ -521,13 +605,10 @@ interface TelemetryOverlayProps {
     stats: { max: number; avg: number } | null;
     onClose: () => void;
     driverColor: string;
+    isGap?: boolean;
 }
 
-const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({ data, config, stats, onClose, driverColor }) => {
-    // Calculate percentage for gauge
-    const maxVal = stats ? stats.max : 100;
-    const percentage = Math.min(100, Math.max(0, (data.value / maxVal) * 100));
-
+const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({ data, config, stats, onClose, driverColor, isGap }) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -553,7 +634,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({ data, config, stats
                 <div className="bg-black/40 p-3 rounded-lg border border-white/5">
                     <span className="text-[10px] uppercase font-bold text-gray-500 block mb-1">Value</span>
                     <span className="font-mono font-black text-3xl text-white leading-none">
-                        {Math.round(data.value)}<span className="text-sm text-gray-500 ml-1">{config.unit}</span>
+                        {isGap ? data.value.toFixed(3) : Math.round(data.value)}<span className="text-sm text-gray-500 ml-1">{config.unit}</span>
                     </span>
                 </div>
                 <div className="bg-black/40 p-3 rounded-lg border border-white/5">
@@ -563,9 +644,6 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({ data, config, stats
                     </span>
                 </div>
             </div>
-
-
         </motion.div>
     );
 };
-
