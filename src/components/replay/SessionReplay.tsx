@@ -741,6 +741,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return session === 'Race' || session === 'R';
     }, [session]);
 
+    const isQualifying = useMemo(() => {
+        const s = session.toUpperCase();
+        return s.includes('Q') || s.includes('QUALIFYING');
+    }, [session]);
+
     // --- Qualifying Countdown Timer ---
     const sessionTimeRemaining = useMemo(() => {
         if (!data || isRace) return null;
@@ -971,6 +976,19 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const trackColor = useMemo(() => {
         if (!data?.race_control_messages) return '#1f2937';
 
+        // Check for Qualifying End (Timer = 0) to prevent Red Track
+        // If it's qualifying and time is up, we don't want red track even if there is a 'red flag' or 'suspended' message 
+        // that happened EXACTLY at 0:00 (which sometimes happens as session end).
+        // BUT actually, user request was "dont make the track red after timer reaches zero".
+        // The red track logic below checks for "RED FLAG" message.
+        // Often Q sessions end with a Red Flag or just "Session Suspended" which triggers Red.
+
+        // If session is qualifying and time is up, force default color ?
+        // Or rather, if time is up, ignore "RED FLAG" status?
+        if (isQualifying && sessionTimeRemaining?.remaining === 0) {
+            return '#1f2937';
+        }
+
         // Iterate backwards from current time to find last status update
         for (let i = data.race_control_messages.length - 1; i >= 0; i--) {
             const msg = data.race_control_messages[i];
@@ -979,7 +997,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             const text = (msg.message + " " + (msg.flag || "")).toUpperCase();
 
             // Status Changes
-            if (text.includes("RED FLAG") || text.includes("SUSPENDED")) return "#ef4444"; // Red
+            if (text.includes("RED FLAG") || text.includes("SUSPENDED")) {
+                // Double check if we are in qualifying and time is up (redundant but safe)
+                if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1f2937';
+                return "#ef4444"; // Red
+            }
             if (text.includes("GREEN") || text.includes("CLEAR") || text.includes("RESUMED")) return "#1f2937"; // Back to Normal
 
             // Yellow / SC / VSC
@@ -995,7 +1017,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         }
 
         return '#1f2937'; // Default
-    }, [currentTime, data]);
+    }, [currentTime, data, isQualifying, sessionTimeRemaining]);
 
 
     // --- Helper for Time Display ---
@@ -1483,7 +1505,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                         <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
                         {isRace && replayMode !== 'ghost' ? (
                             <span className="text-white">LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span></span>
-                        ) : sessionTimeRemaining && replayMode !== 'ghost' ? (
+                        ) : sessionTimeRemaining && replayMode !== 'ghost' && !isQualifying ? (
                             <span className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}>
                                 TIME {sessionTimeRemaining.formatted}
                             </span>
