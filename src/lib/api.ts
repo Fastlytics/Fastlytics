@@ -874,6 +874,8 @@ export interface ReplayDriverData {
     rpm: number[];
     lap: number[];
     tyre: number[];
+    throttle: number[];
+    brake: number[];
 }
 
 export interface ReplayDriversMap {

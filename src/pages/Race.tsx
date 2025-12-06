@@ -997,13 +997,15 @@ const Race = () => {
                               <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="rpm" title="RPM" openF1Drivers={openF1Drivers} />
                               <DriverComparisonTelemetry year={year!} event={eventName} session={selectedSession} driver1={circuitDrivers.driver1} driver2={circuitDrivers.driver2} lap1={circuitDrivers.lap1} lap2={circuitDrivers.lap2} shouldLoadChart={true} telemetryType="drs" title="DRS" openF1Drivers={openF1Drivers} />
                             </div>
+
                           </div>
                         )}
                       </div>
                     );
                   })()}
                 </section>
-              )}
+              )
+              }
 
               {/* 6. Telemetry Section */}
               {activeSection === 'telemetry' && (

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchSessionReplay, SessionReplayData } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import ReplayLoader from './ReplayLoader';
-import { Play, Pause, FastForward, Rewind, Clock, X, Maximize, Minimize, Gauge } from 'lucide-react';
+import { Play, Pause, FastForward, Rewind, Clock, X, Maximize, Minimize, Gauge, Flag, AlertTriangle, AlertCircle, CheckCircle, Search, Zap, ZapOff, Info } from 'lucide-react';
 
 interface SessionReplayProps {
     year: number;
@@ -36,6 +36,45 @@ const DRIVER_IMAGE_MAP: Record<string, string> = {
     "COL": "/drivers/2025alpinefracol01right.avif", // Colapinto?
     "ALB": "/drivers/2025williamsalealb01right.avif",
     "SAI": "/drivers/2025williamscarsai01right.avif",
+};
+
+const getMessageConfig = (msg: { message: string, flag?: string }) => {
+    const text = (msg.message + " " + (msg.flag || "")).toUpperCase();
+
+    if (text.includes("RED FLAG") || text.includes("SUSPENDED")) {
+        return { type: 'red', icon: Flag, color: 'text-red-500', border: 'border-red-600', bg: 'bg-red-950/90', fill: true };
+    }
+    if (text.includes("GREEN") || text.includes("RESUMED") || text.includes("CLEAR")) {
+        return { type: 'green', icon: Flag, color: 'text-green-500', border: 'border-green-500', bg: 'bg-green-950/90', fill: true };
+    }
+    // Specific status messages (Prioritize over generic flags)
+    if (text.includes("PENALTY")) {
+        return { type: 'penalty', icon: AlertCircle, color: 'text-orange-500', border: 'border-orange-500', bg: 'bg-orange-950/90', fill: false };
+    }
+    if (text.includes("NO INVESTIGATION")) {
+        return { type: 'info', icon: CheckCircle, color: 'text-green-400', border: 'border-green-500', bg: 'bg-gray-900/90', fill: false };
+    }
+    if (text.includes("INVESTIGATION") || text.includes("NOTED") || text.includes("INCIDENT") || text.includes("INFRINGEMENT")) {
+        return { type: 'investigation', icon: Search, color: 'text-indigo-400', border: 'border-indigo-500', bg: 'bg-indigo-950/90', fill: false };
+    }
+    // Track Status Flags
+    if (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("SC") || text.includes("VSC")) {
+        return { type: 'yellow', icon: AlertTriangle, color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-950/90', fill: false };
+    }
+    if (text.includes("BLUE")) {
+        return { type: 'blue', icon: Flag, color: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-950/90', fill: true };
+    }
+    if (text.includes("DRS ENABLED")) {
+        return { type: 'drs', icon: Zap, color: 'text-green-400', border: 'border-green-500', bg: 'bg-gray-900/90', fill: true };
+    }
+    if (text.includes("DRS DISABLED")) {
+        return { type: 'drs', icon: ZapOff, color: 'text-red-400', border: 'border-red-500', bg: 'bg-gray-900/90', fill: false };
+    }
+    if (text.includes("CHEQUERED")) {
+        return { type: 'finish', icon: Flag, color: 'text-white', border: 'border-white', bg: 'bg-black/90', fill: false };
+    }
+
+    return { type: 'other', icon: Info, color: 'text-gray-400', border: 'border-gray-600', bg: 'bg-gray-900/90', fill: false };
 };
 
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
@@ -363,6 +402,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 rpm: d.rpm?.[safeIndex] ?? 0,
                 lap: d.lap?.[safeIndex] ?? 0,
                 tyre: d.tyre?.[safeIndex] ?? 0,
+                throttle: d.throttle?.[safeIndex] ?? 0,
+                brake: d.brake?.[safeIndex] ?? 0,
                 track_index: trackIdx
             }
         }
@@ -518,6 +559,70 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return session === 'Race' || session === 'R';
     }, [session]);
 
+    // --- Qualifying Countdown Timer ---
+    const sessionTimeRemaining = useMemo(() => {
+        if (!data || isRace) return null;
+
+        // 1. Determine Nominal Duration
+        let duration = 0;
+        const s = session.toUpperCase();
+        if (s === 'Q1') duration = 18 * 60;
+        else if (s === 'Q2') duration = 15 * 60;
+        else if (s === 'Q3') duration = 12 * 60;
+        else if (s === 'SQ1') duration = 12 * 60;
+        else if (s === 'SQ2') duration = 10 * 60;
+        else if (s === 'SQ3') duration = 8 * 60;
+        else return null; // Practice or Unknown
+
+        // 2. Adjust for Red Flags
+        // We need to calculate how much time was LOST due to red flags UP TO currentTime.
+        let lostTime = 0;
+        let isRedFlagActive = false;
+
+        // Ensure intervals are sorted
+        /* Track Status Codes via FastF1: 
+           '1': Green, '2': Yellow, '3': SC, '4': VSC, '5': Red, '6': Bat, '7': Null 
+           In API response, we get objects with { status, start_time, end_time }
+        */
+        const statuses = data.track_statuses || [];
+
+        for (const status of statuses) {
+            if (status.status === '5' || status.status === 'Red') {
+                const sStart = status.start_time;
+                const sEnd = status.end_time || 999999;
+
+                // Fix: Ignore Red Flags that happened entirely before the replay start (negative time)
+                // And clamp partially overlapping ones to 0.
+                if (sEnd <= 0) continue;
+
+                const clampedStart = Math.max(0, sStart);
+                const clampedEnd = Math.max(0, sEnd);
+
+                // If red flag hasn't started yet relative to replay time, ignore
+                if (clampedStart > currentTime) continue;
+
+                if (currentTime >= clampedEnd) {
+                    // This red flag is fully in the past (within our timeline).
+                    lostTime += (clampedEnd - clampedStart);
+                } else {
+                    // We are currently INSIDE this red flag
+                    lostTime += (currentTime - clampedStart);
+                    isRedFlagActive = true;
+                }
+            }
+        }
+
+        const effectiveElapsed = currentTime - lostTime;
+        const remaining = Math.max(0, duration - effectiveElapsed);
+
+        return {
+            remaining,
+            isRed: isRedFlagActive,
+            formatted: remaining === 0 ? '00:00' :
+                `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(Math.floor(remaining) % 60).toString().padStart(2, '0')}`
+        };
+    }, [isRace, session, data, currentTime]);
+
     // --- Timing Standings (for Qualy/Practice) ---
     const timingStandings = useMemo(() => {
         if (isRace || !data?.completed_laps) return null;
@@ -629,6 +734,44 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return map;
     }, [openF1Drivers]);
 
+    const driverNameMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        if (openF1Drivers) {
+            for (const d of openF1Drivers) {
+                if (d.name_acronym) map[d.name_acronym] = d.full_name;
+            }
+        }
+        return map;
+    }, [openF1Drivers]);
+
+    // Pre-calculate Lap Start Times for all drivers
+    const driverLapStartTimes = useMemo(() => {
+        if (!data) return {};
+        const map: Record<string, Record<number, number>> = {};
+
+        for (const [code, d] of Object.entries(data.drivers)) {
+            map[code] = {};
+            let currentLap = -1;
+
+            // Iterate through the lap array
+            // d.lap is array of lap numbers corresponding to data.time
+            if (d.lap && data.time) {
+                for (let i = 0; i < d.lap.length; i++) {
+                    const lap = d.lap[i];
+                    if (lap !== currentLap) {
+                        // Lap changed (or started)
+                        // Only record the *first* time we see a new lap number
+                        if (map[code][lap] === undefined) {
+                            map[code][lap] = data.time[i];
+                        }
+                        currentLap = lap;
+                    }
+                }
+            }
+        }
+        return map;
+    }, [data]);
+
     // Calculate Track Status Color
     const trackColor = useMemo(() => {
         if (!data?.race_control_messages) return '#1f2937';
@@ -640,9 +783,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
             const text = (msg.message + " " + (msg.flag || "")).toUpperCase();
 
-            if (text.includes("RED")) return "#ef4444"; // Red
+            // Status Changes
+            if (text.includes("RED FLAG") || text.includes("SUSPENDED")) return "#ef4444"; // Red
             if (text.includes("GREEN") || text.includes("CLEAR") || text.includes("RESUMED")) return "#1f2937"; // Back to Normal
-            if (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("VIRTUAL") || text.includes("SC")) return "#eab308"; // Yellow
+
+            // Yellow / SC / VSC
+            // Exclude "INFRINGEMENT", "PENALTY", "INCIDENT" to avoid false positives from race control NOTIFICATIONS
+            if (
+                (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("VIRTUAL") || text.includes("SC")) &&
+                !text.includes("INFRINGEMENT") &&
+                !text.includes("PENALTY") &&
+                !text.includes("INVESTIGATION")
+            ) {
+                return "#eab308"; // Yellow
+            }
         }
 
         return '#1f2937'; // Default
@@ -832,30 +986,45 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     {data.race_control_messages
                         .filter(m => {
                             const id = `${m.time}-${m.message}`;
-                            return m.time <= currentTime && m.time > currentTime - 30 && !dismissedMessages.has(id);
-                        }) // Show last 30s & not dismissed
+                            return m.time <= currentTime && m.time > currentTime - 5 && !dismissedMessages.has(id);
+                        }) // Show last 5s & not dismissed
                         .slice(-3) // Show max 3
                         .reverse() // Newest top
                         .map((msg, i) => {
                             const id = `${msg.time}-${msg.message}`;
+                            const config = getMessageConfig(msg);
+                            const Icon = config.icon;
+
                             return (
-                                <div key={id} className="bg-black/90 backdrop-blur border border-gray-700 p-2 pl-3 pr-2 rounded text-xs font-mono animate-in fade-in slide-in-from-top-2 pointer-events-auto flex items-start gap-3 shadow-lg max-w-md">
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500">[{formatTime(msg.time)}]</span>
-                                            <span className={msg.flag?.includes('YELLOW') ? 'text-yellow-400 font-bold' : msg.flag?.includes('RED') ? 'text-red-500 font-bold' : 'text-white font-semibold'}>
-                                                {msg.flag || 'INFO'}
+                                <div key={id} className={`
+                                    ${config.bg} ${config.border} ${config.color}
+                                    border-l-4 p-3 rounded-r shadow-lg max-w-xl w-full
+                                    animate-in fade-in slide-in-from-top-4 duration-300
+                                    pointer-events-auto flex items-center gap-4
+                                `}>
+                                    <div className="shrink-0 p-2 bg-black/20 rounded-full">
+                                        <Icon size={24} fill={config.fill ? "currentColor" : "none"} />
+                                    </div>
+
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <span className="font-bold text-sm tracking-wider uppercase opacity-90">
+                                                {msg.flag || config.type}
+                                            </span>
+                                            <span className="text-[10px] font-mono opacity-60">
+                                                {formatTime(msg.time)}
                                             </span>
                                         </div>
-                                        <span className="text-gray-300 leading-snug">
+                                        <span className="text-white font-medium text-sm leading-tight break-words">
                                             {msg.message}
                                         </span>
                                     </div>
+
                                     <button
                                         onClick={() => setDismissedMessages(prev => new Set(prev).add(id))}
-                                        className="text-gray-500 hover:text-white transition-colors p-1 -mt-1 -mr-1"
+                                        className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
                                     >
-                                        <X size={14} />
+                                        <X size={16} />
                                     </button>
                                 </div>
                             );
@@ -867,7 +1036,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
                     <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
                         <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
-                        {isRace && <span className="text-white">LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span></span>}
+                        {isRace ? (
+                            <span className="text-white">LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span></span>
+                        ) : sessionTimeRemaining ? (
+                            <span className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}>
+                                TIME {sessionTimeRemaining.formatted}
+                            </span>
+                        ) : null}
                     </div>
                     <div className="flex flex-col">
                         {leaderboard.map((driver, index) => {
@@ -979,11 +1154,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                 {/* 4. Selected Driver Telemetry Overlay */}
                 {selectedDriver && (
-                    <div className="absolute top-20 left-4 w-64 bg-black/90 border-l-4 p-4 rounded backdrop-blur z-20 shadow-2xl"
+                    <div className="absolute top-20 left-4 w-52 bg-black/90 border-l-4 p-3 rounded backdrop-blur z-20 shadow-2xl"
                         style={{ borderColor: data.driver_colors[selectedDriver] }}
                     >
-                        <div className="flex items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-                            <div className="w-16 h-16 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
+                        <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
+                            <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
                                 <img
                                     src={driverHeadshots[selectedDriver] || DRIVER_IMAGE_MAP[selectedDriver] || '/placeholder.svg'}
                                     alt={selectedDriver}
@@ -1001,42 +1176,85 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                 />
                             </div>
                             <div>
-                                <div className="text-3xl font-bold">{selectedDriver}</div>
+                                <div className="text-base font-bold leading-tight">{driverNameMap[selectedDriver] || selectedDriver}</div>
                             </div>
                         </div>
 
                         {(() => {
                             const driverData = currentFrameDrivers[selectedDriver];
                             if (!driverData) return null;
+
+                            // Calculate Lap Stats
+                            const driverLaps = data.completed_laps?.filter(l => l.driver === selectedDriver && l.timestamp <= currentTime) || [];
+
+                            const fastestLap = driverLaps.length > 0
+                                ? driverLaps.reduce((min, l) => l.seconds < min.seconds ? l : min, driverLaps[0])
+                                : null;
+
+                            const previousLap = driverLaps.length > 0 ? driverLaps[driverLaps.length - 1] : null;
+
+                            const currentLapNum = driverData.lap;
+                            const lapStartTime = driverLapStartTimes[selectedDriver]?.[currentLapNum] ?? 0;
+                            const liveLapTime = Math.max(0, currentTime - lapStartTime);
+
+                            const formatLapTime = (sec: number) => {
+                                const m = Math.floor(sec / 60);
+                                const s = (sec % 60).toFixed(3);
+                                return `${m}:${s.padStart(6, '0')}`;
+                            };
+
                             return (
-                                <div className="space-y-2 font-mono text-sm">
+                                <div className="space-y-1 font-mono text-xs">
                                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-xs">RPM</span>
-                                        <span className="text-white text-lg font-bold">{Math.round(driverData.rpm || 0)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-xs">Speed</span>
-                                        <span className="text-purple-400 text-lg font-bold">{Math.round(driverData.speed)} <span className="text-xs text-gray-500">kph</span></span>
+                                        <span className="text-gray-400 uppercase text-[10px]">Current</span>
+                                        <span className="text-yellow-400 text-base font-bold">{formatLapTime(liveLapTime)}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 w-1/2 uppercase text-xs">Gear</span>
-                                        <span className="text-yellow-400 text-lg font-bold">{driverData.gear}</span>
+                                        <span className="text-gray-400 uppercase text-[10px]">Last</span>
+                                        <span className="text-white text-base">{previousLap ? previousLap.time_str : '-'}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 w-1/2 uppercase text-xs">DRS</span>
-                                        <span className={`${driverData.drs >= 10 ? 'text-green-500 font-bold' : 'text-gray-600'} text-lg`}>{driverData.drs >= 10 ? 'OPEN' : 'CLOSED'}</span>
+                                        <span className="text-gray-400 uppercase text-[10px]">Best</span>
+                                        <span className="text-purple-400 text-base font-bold">{fastestLap ? fastestLap.time_str : '-'}</span>
+                                    </div>
+
+                                    {/* Throttle & Brake Bars */}
+                                    <div className="flex gap-1 h-16 my-2">
+                                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                                            <div
+                                                className="w-full bg-green-500 transition-all duration-75 ease-linear"
+                                                style={{ height: `${driverData.throttle || 0}%` }}
+                                            />
+                                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">THR</span>
+                                        </div>
+                                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                                            <div
+                                                className="w-full bg-red-500 transition-all duration-75 ease-linear"
+                                                style={{ height: `${driverData.brake > 1 ? driverData.brake : (driverData.brake * 100)}%` }}
+                                            />
+                                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">BRK</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 uppercase text-[10px]">RPM</span>
+                                        <span className="text-white text-base font-bold">{Math.round(driverData.rpm || 0)}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-xs">Lap</span>
-                                        <span className="text-white text-lg">{driverData.lap}</span>
+                                        <span className="text-gray-400 uppercase text-[10px]">Speed</span>
+                                        <span className="text-purple-400 text-base font-bold">{Math.round(driverData.speed)} <span className="text-[10px] text-gray-500">kph</span></span>
                                     </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1 opacity-50">
-                                        <span className="text-gray-500 uppercase text-[10px]">Dist</span>
-                                        <span className="text-gray-500 text-[10px] font-mono">{Math.round(driverData.dist)}m</span>
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">Gear</span>
+                                        <span className="text-yellow-400 text-base font-bold">{driverData.gear}</span>
                                     </div>
-                                    <div className="flex justify-between items-center opacity-50">
-                                        <span className="text-gray-500 uppercase text-[10px]">Score</span>
-                                        <span className="text-gray-500 text-[10px] font-mono">{Math.round(getDriverScore(driverData))}</span>
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">DRS</span>
+                                        <span className={`${driverData.drs >= 10 ? 'text-green-500 font-bold' : 'text-gray-600'} text-base`}>{driverData.drs >= 10 ? 'OPEN' : 'CLOSED'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 uppercase text-[10px]">Lap</span>
+                                        <span className="text-white text-base">{driverData.lap}</span>
                                     </div>
                                 </div>
                             );
