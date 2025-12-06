@@ -237,7 +237,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
 
                 <div className="grid gap-4 relative z-10">
                     {favoriteDriver && (
-                        <Link to={`/driver/${favoriteDriver.code}`} className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:bg-gray-900 transition-colors group/card">
+                        <div className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 transition-colors group/card">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-12 w-12 border-2 border-gray-700">
                                     <AvatarImage src={getDriverImage(favoriteDriver.name)} className="object-cover bg-gray-800" />
@@ -245,7 +245,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
                                 </Avatar>
                                 <div>
                                     <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-0.5">Favorite Driver</div>
-                                    <div className="font-black text-xl uppercase italic leading-none group-hover/card:text-red-500 transition-colors">
+                                    <div className="font-black text-xl uppercase italic leading-none transition-colors text-white">
                                         {favoriteDriver.name}
                                     </div>
                                     <div className="text-xs font-mono text-gray-500 mt-1">{favoriteDriver.team}</div>
@@ -255,7 +255,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({ profile, drivers, tea
                                 <div className="text-3xl font-black text-white">{favoriteDriver.rank}<span className="text-sm align-top text-gray-500 ml-1">POS</span></div>
                                 <div className="text-sm font-mono text-red-500 font-bold">{favoriteDriver.points} PTS</div>
                             </div>
-                        </Link>
+                        </div>
                     )}
 
                     {favoriteTeam && (

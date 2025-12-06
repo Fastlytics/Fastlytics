@@ -888,6 +888,10 @@ export interface SessionReplayData {
     track_statuses: { status: string; start_time: number; end_time: number | null; }[];
     race_control_messages: { time: number; category: string; message: string; flag?: string; sector?: number | null }[];
     circuit_layout: string;
+    circuit_points?: number[][];
+    circuit_distances?: number[];
+    pit_intervals?: Record<string, { start: number; end: number }[]>;
+    start_time?: number;
     session_info: { name: string; year: number; session: string; };
 }
 

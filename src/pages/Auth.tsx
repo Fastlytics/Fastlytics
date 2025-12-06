@@ -15,6 +15,7 @@ import posthog from 'posthog-js';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAuth } from '@/components/mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { oauthFlags } from '@/config/featureFlags';
 
 const Auth = () => {
     const [email, setEmail] = useState('');
@@ -209,33 +210,39 @@ const Auth = () => {
                                             transition={{ duration: 0.2 }}
                                         >
                                             <div className="space-y-4">
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('google')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign up with Google
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('github')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign up with GitHub
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('discord')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign up with Discord
-                                                </Button>
+                                                {oauthFlags.enableGoogle && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('google')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign up with Google
+                                                    </Button>
+                                                )}
+                                                {oauthFlags.enableGithub && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('github')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign up with GitHub
+                                                    </Button>
+                                                )}
+                                                {oauthFlags.enableDiscord && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('discord')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign up with Discord
+                                                    </Button>
+                                                )}
                                             </div>
 
                                             <p className="text-center text-sm text-zinc-500 mt-8">
@@ -252,33 +259,39 @@ const Auth = () => {
                                             transition={{ duration: 0.2 }}
                                         >
                                             <div className="space-y-3">
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('google')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign in with Google
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('github')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign in with GitHub
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                                                    onClick={() => handleSocialLogin('discord')}
-                                                    disabled={isLoading}
-                                                >
-                                                    <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
-                                                    Sign in with Discord
-                                                </Button>
+                                                {oauthFlags.enableGoogle && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('google')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faGoogle} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign in with Google
+                                                    </Button>
+                                                )}
+                                                {oauthFlags.enableGithub && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('github')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faGithub} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign in with GitHub
+                                                    </Button>
+                                                )}
+                                                {oauthFlags.enableDiscord && (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full h-12 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                                                        onClick={() => handleSocialLogin('discord')}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <FontAwesomeIcon icon={faDiscord} className="mr-3 text-zinc-400 group-hover:text-white transition-colors" />
+                                                        Sign in with Discord
+                                                    </Button>
+                                                )}
                                             </div>
 
                                             <div className="relative my-6">

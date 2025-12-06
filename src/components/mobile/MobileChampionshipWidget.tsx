@@ -147,11 +147,10 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                             const isChampion = isLeader && driverChampionshipStatus === 'champion';
 
                             return (
-                                <Link
+                                <div
                                     key={driver.code}
-                                    to={`/driver/${driver.code}`}
                                     className={cn(
-                                        "flex items-center gap-4 p-4 active:bg-zinc-900 transition-colors border-l-4",
+                                        "flex items-center gap-4 p-4 transition-colors border-l-4",
                                         isFavorite ? "bg-red-600/5 border-red-600" : "bg-black border-transparent"
                                     )}
                                 >
@@ -207,7 +206,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                                             {getGap(driver.points, topDrivers[0].points)}
                                         </div>
                                     </div>
-                                </Link>
+                                </div>
                             );
                         })
                     ) : (

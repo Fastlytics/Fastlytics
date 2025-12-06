@@ -261,7 +261,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
             <div className="space-y-3">
                 {/* Favorite Driver Card - Enhanced with Title Fight */}
                 {favoriteDriver && (
-                    <Link to={`/driver/${favoriteDriver.code}`}>
+                    <div className="bg-zinc-900 border-2 border-zinc-800 rounded-xl p-4 transition-colors">
                         <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -407,7 +407,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                                 )}
                             </div>
                         </motion.div>
-                    </Link>
+                    </div>
                 )}
 
                 {/* Favorite Team Card */}

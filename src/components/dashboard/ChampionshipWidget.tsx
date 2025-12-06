@@ -101,7 +101,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                                 <span className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}>
                                     {index + 1}
                                 </span>
-                                <Link to={`/driver/${driver.code}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                                <div className="flex items-center gap-3">
                                     <Avatar className="h-10 w-10 border-2 border-gray-700">
                                         <AvatarImage src={getDriverImage(driver.code, driver.name)} className="object-cover bg-gray-800" />
                                         <AvatarFallback>{driver.code}</AvatarFallback>
@@ -115,7 +115,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
                                         </div>
                                         <div className="text-xs text-gray-500 font-mono">{driver.team}</div>
                                     </div>
-                                </Link>
+                                </div>
                             </div>
                             <div className="text-right">
                                 <div className="font-black text-xl">{driver.points}</div>

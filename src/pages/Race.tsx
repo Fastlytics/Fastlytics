@@ -784,6 +784,7 @@ const Race = () => {
             <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-32 space-y-1">
                 <NavItem id="overview" label="Overview" icon={ChampionIcon} active={activeSection === 'overview'} onClick={() => handleSectionChange('overview')} />
+                <NavItem id="replay" label="Replay" icon={PlayCircle02Icon} active={activeSection === 'replay'} onClick={() => handleSectionChange('replay')} />
                 {(selectedSession === 'R' || selectedSession === 'Sprint') && (
                   <NavItem id="strategy" label="Strategy" icon={TireIcon} active={activeSection === 'strategy'} onClick={() => handleSectionChange('strategy')} />
                 )}
@@ -793,7 +794,6 @@ const Race = () => {
                 <NavItem id="laptimes" label="Lap Times" icon={Time01Icon} active={activeSection === 'laptimes'} onClick={() => handleSectionChange('laptimes')} />
                 <NavItem id="dominance" label="Head to Head" icon={GitCompareIcon} active={activeSection === 'dominance'} onClick={() => handleSectionChange('dominance')} />
                 <NavItem id="telemetry" label="Telemetry" icon={Analytics01Icon} active={activeSection === 'telemetry'} onClick={() => handleSectionChange('telemetry')} />
-                <NavItem id="replay" label="Replay" icon={PlayCircle02Icon} active={activeSection === 'replay'} onClick={() => handleSectionChange('replay')} />
               </div>
             </aside>
 
