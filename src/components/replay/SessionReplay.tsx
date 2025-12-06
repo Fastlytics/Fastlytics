@@ -1613,14 +1613,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                         {/* Ghost Mode: Show both overlays fixed */}
                         {ghostConfig.d1 && renderTelemetryOverlay(
                             ghostConfig.d1 + "_GHOST",
-                            { top: 400, left: 24 }, // Left (Below config)
+                            { top: isFullscreen ? 400 : 180, left: 24 }, // Left (Below config)
                             'ghost1',
                             ghostPos1,
                             setGhostPos1
                         )}
                         {ghostConfig.d2 && renderTelemetryOverlay(
                             ghostConfig.d2 + "_GHOST",
-                            { top: 400, right: 280 }, // Right (offset from leaderboard)
+                            { top: isFullscreen ? 400 : 180, right: isFullscreen ? 280 : 24 }, // Right (offset from leaderboard)
                             'ghost2',
                             ghostPos2,
                             setGhostPos2
@@ -1630,7 +1630,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     // Standard Mode: Show selected driver draggable
                     selectedDriver && renderTelemetryOverlay(
                         selectedDriver,
-                        { left: 24, top: 320 },
+                        { left: 24, top: isFullscreen ? 320 : 180 },
                         'main',
                         overlayPos,
                         setOverlayPos
