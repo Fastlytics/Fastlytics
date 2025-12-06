@@ -3,7 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchSessionReplay, SessionReplayData } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import ReplayLoader from './ReplayLoader';
-import { Play, Pause, FastForward, Rewind, Clock, X, Maximize, Minimize, Gauge, Flag, AlertTriangle, AlertCircle, CheckCircle, Search, Zap, ZapOff, Info } from 'lucide-react';
+import { Play, Pause, FastForward, Rewind, Clock, X, Maximize, Minimize, Gauge, Flag, AlertTriangle, AlertCircle, CheckCircle, Search, Zap, ZapOff, Info, Swords, Split, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface SessionReplayProps {
     year: number;
@@ -92,6 +97,22 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
     const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
+    // --- Ghost Mode State ---
+    const [replayMode, setReplayMode] = useState<'session' | 'ghost'>('session');
+    const [ghostConfig, setGhostConfig] = useState<{
+        d1: string | null; l1: number | null;
+        d2: string | null; l2: number | null;
+    }>({ d1: null, l1: null, d2: null, l2: null });
+
+    // Draggable Overlay State
+    const [overlayPos, setOverlayPos] = useState<{ x: number, y: number } | null>(null);
+    const [ghostPos1, setGhostPos1] = useState<{ x: number, y: number } | null>(null);
+    const [ghostPos2, setGhostPos2] = useState<{ x: number, y: number } | null>(null);
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const dragOffsetRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
+    const [isGhostConfigOpen, setIsGhostConfigOpen] = useState(true);
+
+    // --- Refs ---
     const requestRef = useRef<number | null>(null);
     const previousTimeRef = useRef<number | null>(null);
 
@@ -114,6 +135,24 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
         return { totalDuration: maxTime, totalLaps: maxLap };
     }, [data]);
+
+    // --- Ghost Mode Duration ---
+    const ghostDuration = useMemo(() => {
+        if (!data || !ghostConfig.d1 || !ghostConfig.l1 || !ghostConfig.d2 || !ghostConfig.l2) return 0;
+
+        // Helper to get lap duration
+        const getLapDuration = (d: string, l: number) => {
+            const lap = data.completed_laps.find(cL => cL.driver === d && cL.lap === l);
+            return lap ? lap.seconds : 0;
+        };
+
+        const t1 = getLapDuration(ghostConfig.d1, ghostConfig.l1);
+        const t2 = getLapDuration(ghostConfig.d2, ghostConfig.l2);
+        return Math.max(t1, t2);
+    }, [data, ghostConfig]);
+
+    // Effective Max Duration based on Mode
+    const activeTotalDuration = replayMode === 'session' ? totalDuration : ghostDuration;
 
     // --- Zoom & Pan State ---
     const [viewState, setViewState] = useState({ scale: 1, x: 0, y: 0 });
@@ -158,6 +197,33 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
+    // --- Drag Logic for Overlay ---
+    useEffect(() => {
+        if (activeDragId) {
+            const handleGlobalMove = (e: MouseEvent) => {
+                const newPos = {
+                    x: e.clientX - dragOffsetRef.current.x,
+                    y: e.clientY - dragOffsetRef.current.y
+                };
+                if (activeDragId === 'main') setOverlayPos(newPos);
+                else if (activeDragId === 'ghost1') setGhostPos1(newPos);
+                else if (activeDragId === 'ghost2') setGhostPos2(newPos);
+            };
+
+            const handleGlobalUp = () => {
+                setActiveDragId(null);
+            };
+
+            window.addEventListener('mousemove', handleGlobalMove);
+            window.addEventListener('mouseup', handleGlobalUp);
+
+            return () => {
+                window.removeEventListener('mousemove', handleGlobalMove);
+                window.removeEventListener('mouseup', handleGlobalUp);
+            };
+        }
+    }, [activeDragId]);
+
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -197,7 +263,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [totalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
+    }, [activeTotalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0) return; // Only left click
@@ -228,9 +294,9 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             if (isPlaying) {
                 setCurrentTime(prevTime => {
                     const newTime = prevTime + (deltaTime * playbackSpeed);
-                    if (newTime >= totalDuration) {
+                    if (newTime >= activeTotalDuration) {
                         setIsPlaying(false);
-                        return totalDuration;
+                        return activeTotalDuration;
                     }
                     return newTime;
                 });
@@ -245,7 +311,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return () => {
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
-    }, [isPlaying, playbackSpeed, totalDuration]);
+    }, [isPlaying, playbackSpeed, activeTotalDuration]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -311,6 +377,30 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     // Optimization: Cache last known path index for each driver to speed up search
     const lastTrackIndices = useRef<Record<string, number>>({});
 
+    // --- Ghost Mode: Pre-calculate Lap Start Indices ---
+    const driverLapStartIndices = useMemo(() => {
+        if (!data) return {};
+        const map: Record<string, Record<number, number>> = {};
+
+        for (const [code, d] of Object.entries(data.drivers)) {
+            map[code] = {};
+            if (d.lap) {
+                let currentLap = -1000;
+                // Find start index of each lap
+                for (let i = 0; i < d.lap.length; i++) {
+                    const l = d.lap[i];
+                    if (l !== currentLap) {
+                        if (map[code][l] === undefined) {
+                            map[code][l] = i;
+                        }
+                        currentLap = l;
+                    }
+                }
+            }
+        }
+        return map;
+    }, [data]);
+
     // Helper: Find nearest point index on the circuit path
     const getTrackIndex = (code: string, x: number, y: number, points: number[][]) => {
         if (!points || points.length === 0) return 0;
@@ -364,6 +454,77 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return bestIdx;
     };
 
+    // --- Ghost Mode: Frame Reconstruction ---
+    const ghostFrameDrivers = useMemo(() => {
+        if (replayMode !== 'ghost' || !data) return {};
+        const { d1, l1, d2, l2 } = ghostConfig;
+        if (!d1 || !l1 || !d2 || !l2) return {};
+
+        const drivers: Record<string, any> = {};
+        const pathPoints = data.circuit_points || [];
+        const pathDists = data.circuit_distances || [];
+
+        // Helper to extract driver state at time t relative to lap start
+        const extractState = (dCode: string, lapNum: number, label: string) => {
+            const startIdx = driverLapStartIndices[dCode]?.[lapNum];
+            if (startIdx === undefined) return null;
+
+            // Current frame index relative to lap start
+            const offset = Math.floor(currentTime * FPS);
+            const absIdx = startIdx + offset;
+
+            // Check if we are still within THIS lap (or reasonable bound)
+            // Simple check: if valid index
+            const dData = data.drivers[dCode];
+            if (!dData || absIdx >= dData.x.length) return null;
+
+            // Verify lap number hasn't changed (driver finished lap)
+            if (dData.lap[absIdx] !== lapNum) return null; // Finished lap
+
+            const x = dData.x[absIdx];
+            const y = dData.y[absIdx];
+
+            // Recalculate track index for smooth visual (mostly for consistency)
+            const trackIdx = getTrackIndex(label, x, y, pathPoints); // Use label (e.g. VER_GHOST) for cache key
+
+            let refDist = 0;
+            if (pathDists.length > 0 && trackIdx < pathDists.length) {
+                refDist = pathDists[trackIdx];
+            } else {
+                refDist = dData.dist?.[absIdx] ?? 0;
+            }
+
+            return {
+                code: label, // We rename them to display logic 'VER (L5)'? Or just keep code unique like 'VER_L5'
+                originalCode: dCode, // Keep ref
+                x,
+                y,
+                ref_dist: refDist, // NEW: Required for interval calc
+                speed: dData.speed?.[absIdx] ?? 0,
+                rpm: dData.rpm?.[absIdx] ?? 0,
+                gear: dData.gear?.[absIdx] ?? 0,
+                throttle: dData.throttle?.[absIdx] ?? 0,
+                brake: dData.brake?.[absIdx] ?? 0,
+                drs: dData.drs?.[absIdx] ?? 0,
+                lap: lapNum,
+                // Visuals
+                color: data.driver_colors[dCode] || '#ffffff', // Use Team Color
+            };
+        };
+
+        const c1 = extractState(d1, l1, d1); // Keep code as driver name for image lookup
+        const c2 = extractState(d2, l2, d2);
+
+        if (c1 && c2 && c1.color === c2.color) {
+            c2.color = '#ffffff'; // Force second driver to white if same team
+        }
+
+        if (c1) drivers[d1 + "_GHOST"] = { ...c1, isGhost: true }; // Append suffix to avoid key collision if comparing same driver
+        if (c2) drivers[d2 + "_GHOST"] = { ...c2, isGhost: true };
+
+        return drivers;
+    }, [replayMode, ghostConfig, currentTime, data, driverLapStartIndices]);
+
     // Reconstruct "Frame" view from Columnar data for easier rendering
     const currentFrameDrivers = useMemo(() => {
         if (!data) return {};
@@ -410,9 +571,12 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return drivers;
     }, [data, safeIndex]);
 
+    // --- Active Drivers Source ---
+    const activeDrivers = replayMode === 'ghost' ? ghostFrameDrivers : currentFrameDrivers;
+
     // --- Following Logic ---
     useEffect(() => {
-        if (!isFollowing || !containerRef.current || !data || Object.keys(currentFrameDrivers).length === 0) {
+        if (!isFollowing || !containerRef.current || !data || Object.keys(activeDrivers).length === 0) {
             return;
         }
 
@@ -420,12 +584,18 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         const { width, height } = container.getBoundingClientRect();
 
         let targetDriverCode = selectedDriverRef.current;
+
+        // Ghost Mode Logic: Auto-select first ghost driver if nothing selected
+        if (replayMode === 'ghost' && !targetDriverCode && ghostConfig.d1) {
+            targetDriverCode = ghostConfig.d1 + "_GHOST";
+        }
+
         if (!targetDriverCode && leaderboardOrderRef.current.length > 0) {
             targetDriverCode = leaderboardOrderRef.current[0]; // Follow leader if no driver selected
         }
 
         if (targetDriverCode) {
-            const driver = currentFrameDrivers[targetDriverCode];
+            const driver = activeDrivers[targetDriverCode];
             if (driver) {
                 // Calculate correct transform considering SVG Aspect Ratio (xMidYMid meet)
                 const VIEWBOX_WIDTH = 1000;
@@ -468,7 +638,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 });
             }
         }
-    }, [isFollowing, currentTime, selectedDriver, currentFrameDrivers, data, leaderboardOrder]); // currentTime to trigger updates, selectedDriver/leaderboardOrder for target change
+    }, [isFollowing, currentTime, selectedDriver, activeDrivers, data, leaderboardOrder, replayMode, ghostConfig]); // currentTime to trigger updates, selectedDriver/leaderboardOrder for target change
 
     // Helper: Calculate a sorting score (Lap takes precedence, then Visual Path Index)
     const getDriverScore = (d: any) => {
@@ -498,9 +668,21 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     useEffect(() => {
         if (!data) return;
 
+        // Ghost Mode: Simple ordering (Driver 1 then Driver 2)
+        if (replayMode === 'ghost') {
+            const keys = Object.keys(activeDrivers);
+            // Sort by our config order d1, d2
+            const sorted = keys.sort((a, b) => {
+                if (a.includes(ghostConfig.d1 || '')) return -1;
+                return 1;
+            });
+            setLeaderboardOrder(sorted);
+            return;
+        }
+
         // If not playing (Seeking/Paused) or first load, do a Hard Sort
         if (!isPlaying || leaderboardOrder.length === 0) {
-            const newOrder = getSortedOrder(currentFrameDrivers);
+            const newOrder = getSortedOrder(activeDrivers);
             if (JSON.stringify(newOrder) !== JSON.stringify(leaderboardOrder)) {
                 setLeaderboardOrder(newOrder);
             }
@@ -519,8 +701,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             const driverA = newOrder[i];     // Currently Ahead
             const driverB = newOrder[i + 1];   // Currently Behind
 
-            const dA = currentFrameDrivers[driverA];
-            const dB = currentFrameDrivers[driverB];
+            const dA = activeDrivers[driverA];
+            const dB = activeDrivers[driverB];
 
             if (!dA || !dB) continue;
 
@@ -552,7 +734,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             setLeaderboardOrder(newOrder);
         }
 
-    }, [currentFrameDrivers, isPlaying, data]);
+    }, [activeDrivers, isPlaying, data, replayMode, ghostConfig]);
 
     // --- Session Logic (Race vs Qualy) ---
     const isRace = useMemo(() => {
@@ -661,7 +843,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     // --- Leaderboard Calculation ---
     const leaderboard = useMemo(() => {
         if (!data) return [];
-        const drivers = currentFrameDrivers;
+        const drivers = activeDrivers;
+
+        // Ghost Mode - Return simplified interaction
+        if (replayMode === 'ghost') {
+            return Object.entries(drivers)
+                .sort(([, a], [, b]) => (b.ref_dist || 0) - (a.ref_dist || 0)) // Sort by distance descending
+                .map(([k, d], i) => ({
+                    pos: i + 1,
+                    ...d,
+                    code: k, // Key is the ghost ID (e.g. VER_GHOST)
+                    grid: 0,
+                    color: d.color
+                }));
+        }
 
         const items = Object.entries(drivers).map(([code, d]) => ({
             code,
@@ -678,7 +873,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             if (!leaderboardOrder.length) return []; // Should not happen if data is present
 
             const raceItems = leaderboardOrder.map((code, index) => {
-                const d = currentFrameDrivers[code];
+                const d = activeDrivers[code];
                 if (!d) return null;
                 return {
                     pos: index + 1,
@@ -715,7 +910,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         }
 
         return []; // Fallback if no data or timingStandings not ready
-    }, [currentFrameDrivers, data, isRace, timingStandings, leaderboardOrder]);
+    }, [activeDrivers, data, isRace, timingStandings, leaderboardOrder, replayMode]);
 
     // --- OpenF1 Driver Details (Headshots) ---
     const { data: openF1Drivers } = useQuery<OpenF1Driver[]>({
@@ -872,6 +1067,133 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     if (error) return <div className="p-12 text-center text-red-500">Error loading replay data.</div>;
     if (!data) return null;
 
+    // Helper: Render Telemetry Overlay
+    const renderTelemetryOverlay = (
+        driverCode: string,
+        style: React.CSSProperties,
+        dragId: string,
+        currentPos: { x: number, y: number } | null,
+        setPos: (pos: { x: number, y: number }) => void
+    ) => {
+        const driverData = activeDrivers[driverCode];
+        if (!driverData) return null;
+
+        const lookupCode = driverCode.replace('_GHOST', '');
+
+        // Calculate Lap Stats (Same logic as before)
+        const driverLaps = data.completed_laps?.filter(l => l.driver === lookupCode && l.timestamp <= currentTime) || [];
+        const fastestLap = driverLaps.length > 0
+            ? driverLaps.reduce((min, l) => l.seconds < min.seconds ? l : min, driverLaps[0])
+            : null;
+        const previousLap = driverLaps.length > 0 ? driverLaps[driverLaps.length - 1] : null;
+
+        const currentLapNum = driverData.lap;
+        const lapStartTime = driverLapStartTimes[lookupCode]?.[currentLapNum] ?? 0;
+        const liveLapTime = replayMode === 'ghost' ? currentTime : Math.max(0, currentTime - lapStartTime);
+
+        const formatLapTime = (sec: number) => {
+            const m = Math.floor(sec / 60);
+            const s = (sec % 60).toFixed(3);
+            return `${m}:${s.padStart(6, '0')}`;
+        };
+
+        const isBeingDragged = activeDragId === dragId;
+
+        return (
+            <div
+                key={driverCode}
+                className={`absolute w-52 bg-black/90 border-l-4 p-3 rounded backdrop-blur shadow-2xl select-none ${isFullscreen ? 'cursor-move' : ''} ${isBeingDragged ? 'scale-[1.02] shadow-white/10' : ''} z-[60]`}
+                style={{
+                    borderColor: activeDrivers[driverCode]?.color || data.driver_colors[driverCode] || '#fff',
+                    ...style,
+                    left: currentPos ? currentPos.x : style.left,
+                    top: currentPos ? currentPos.y : style.top,
+                    right: currentPos ? 'auto' : style.right
+                }}
+                onMouseDown={(e) => {
+                    if (!isFullscreen) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    dragOffsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                    if (!currentPos) setPos({ x: rect.left, y: rect.top });
+                    setActiveDragId(dragId);
+                }}
+            >
+                <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
+                    <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
+                        <img
+                            src={driverHeadshots[lookupCode] || DRIVER_IMAGE_MAP[lookupCode] || '/placeholder.svg'}
+                            alt={lookupCode}
+                            className="w-full h-full object-cover object-top transform scale-110"
+                            onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                const localSrc = DRIVER_IMAGE_MAP[lookupCode];
+                                if (localSrc && !img.src.includes(localSrc)) img.src = localSrc;
+                                else img.src = '/placeholder.svg';
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <div className="text-base font-bold leading-tight">
+                            {driverNameMap[lookupCode] || lookupCode}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-1 font-mono text-xs">
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 uppercase text-[10px]">Current</span>
+                        <span className="text-yellow-400 text-base font-bold">{formatLapTime(liveLapTime)}</span>
+                    </div>
+                    {replayMode !== 'ghost' && (
+                        <>
+                            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                <span className="text-gray-400 uppercase text-[10px]">Last</span>
+                                <span className="text-white text-base">{previousLap ? previousLap.time_str : '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                <span className="text-gray-400 uppercase text-[10px]">Best</span>
+                                <span className="text-purple-400 text-base font-bold">{fastestLap ? fastestLap.time_str : '-'}</span>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Throttle & Brake Bars */}
+                    <div className="flex gap-1 h-16 my-2">
+                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                            <div className="w-full bg-green-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.throttle || 0}%` }} />
+                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">THR</span>
+                        </div>
+                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                            <div className="w-full bg-red-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.brake > 1 ? driverData.brake : (driverData.brake * 100)}%` }} />
+                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">BRK</span>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 uppercase text-[10px]">RPM</span>
+                        <span className="text-white text-base font-bold">{Math.round(driverData.rpm || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 uppercase text-[10px]">Speed</span>
+                        <span className="text-purple-400 text-base font-bold">{Math.round(driverData.speed)} <span className="text-[10px] text-gray-500">kph</span></span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">Gear</span>
+                        <span className="text-yellow-400 text-base font-bold">{driverData.gear}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">DRS</span>
+                        <span className={`${driverData.drs >= 10 ? 'text-green-500 font-bold' : 'text-gray-600'} text-base`}>{driverData.drs >= 10 ? 'OPEN' : 'CLOSED'}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span className="text-gray-400 uppercase text-[10px]">Lap</span>
+                        <span className="text-white text-base">{driverData.lap}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full aspect-[4/3]'} ${className}`}>
 
@@ -887,13 +1209,133 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
                 >
-                    {/* Branding Logo */}
+
+                    {/* Branding Logo - Fullscreen Only */}
                     {isFullscreen && (
                         <div className="absolute top-6 left-6 flex items-center gap-2 z-50 pointer-events-none select-none">
                             <Gauge className="text-red-500" size={28} />
                             <span className="text-xl font-bold tracking-tighter">Fastlytics</span>
                         </div>
                     )}
+
+                    {/* --- Top-Left Mode Controller (Shifted Down in Fullscreen) --- */}
+                    <div
+                        className={`absolute left-6 z-50 flex flex-col gap-2 transition-all duration-300 ${isFullscreen ? 'top-24' : 'top-6'}`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
+                        {/* Segmented Control */}
+                        <div className="flex bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl relative isolate">
+                            <button
+                                onClick={() => setReplayMode('session')}
+                                className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${replayMode === 'session' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                            >
+                                {replayMode === 'session' && (
+                                    <motion.div
+                                        layoutId="mode-highlight"
+                                        className="absolute inset-0 bg-white/10 border border-white/5 rounded-lg -z-10 shadow-sm"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                Session
+                            </button>
+                            <button
+                                onClick={() => setReplayMode('ghost')}
+                                className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-2 ${replayMode === 'ghost' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                            >
+                                {replayMode === 'ghost' && (
+                                    <motion.div
+                                        layoutId="mode-highlight"
+                                        className="absolute inset-0 bg-white/10 border border-white/5 rounded-lg -z-10 shadow-sm"
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+                                <Swords size={14} />
+                                Head 2 Head
+                            </button>
+                        </div>
+
+                        {/* Ghost Configuration Panel (Attached below) */}
+                        {/* Ghost Configuration Panel (Attached below) */}
+                        {replayMode === 'ghost' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl w-80 mt-2 overflow-hidden"
+                            >
+                                {/* Header / Toggle */}
+                                <div
+                                    className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                                    onClick={() => setIsGhostConfigOpen(!isGhostConfigOpen)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Matchup Settings</span>
+                                        {!isGhostConfigOpen && (
+                                            <span className="text-xs text-white font-bold ml-2">
+                                                {ghostConfig.d1 || '?'} vs {ghostConfig.d2 || '?'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button className="text-gray-400 hover:text-white transition-colors">
+                                        {isGhostConfigOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    </button>
+                                </div>
+
+                                {/* Collapsible Content */}
+                                <AnimatePresence initial={false}>
+                                    {isGhostConfigOpen && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        >
+                                            <div className="px-4 pb-4 space-y-4 pt-1">
+                                                {/* Helper Component for Custom Driver Select */}
+                                                <CustomDriverSelect
+                                                    label="Red Corner"
+                                                    subLab="Driver 1"
+                                                    color="text-red-500"
+                                                    driverCode={ghostConfig.d1}
+                                                    lapNum={ghostConfig.l1}
+                                                    drivers={data.drivers}
+                                                    driverColors={data.driver_colors}
+                                                    headshots={driverHeadshots}
+                                                    onSelectDriver={(d) => setGhostConfig(prev => ({ ...prev, d1: d, l1: null }))}
+                                                    onSelectLap={(l) => setGhostConfig(prev => ({ ...prev, l1: l }))}
+                                                    container={rootRef.current}
+                                                />
+
+                                                <div className="flex items-center gap-3 opacity-50">
+                                                    <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent flex-1"></div>
+                                                    <div className="bg-black/40 rounded-full p-1.5 border border-white/10">
+                                                        <Swords size={12} className="text-white/60" />
+                                                    </div>
+                                                    <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent flex-1"></div>
+                                                </div>
+
+                                                {/* Helper Component for Driver 2 */}
+                                                <CustomDriverSelect
+                                                    label="Blue Corner"
+                                                    subLab="Driver 2"
+                                                    color="text-blue-500"
+                                                    driverCode={ghostConfig.d2}
+                                                    lapNum={ghostConfig.l2}
+                                                    drivers={data.drivers}
+                                                    driverColors={data.driver_colors}
+                                                    headshots={driverHeadshots}
+                                                    onSelectDriver={(d) => setGhostConfig(prev => ({ ...prev, d2: d, l2: null }))}
+                                                    onSelectLap={(l) => setGhostConfig(prev => ({ ...prev, l2: l }))}
+                                                    container={rootRef.current}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        )}
+                    </div>
 
                     <div
                         className="w-full h-full origin-top-left will-change-transform"
@@ -924,12 +1366,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                             />
 
                             {/* Cars Layer */}
-                            {Object.entries(currentFrameDrivers).map(([code, car]) => {
+                            {Object.entries(activeDrivers).map(([code, car]) => {
                                 // Check Visibility
-                                if (driverVisuals.visibility[code] === 'hidden') return null;
+                                if (driverVisuals.visibility[code] === 'hidden' && replayMode !== 'ghost') return null;
 
                                 // car.x/y are already normalized to the SVG viewbox by backend
-                                const color = data.driver_colors[code] || 'white';
+                                // Prioritize car.color (Ghost Mode) over static map
+                                const color = car.color || data.driver_colors[code] || 'white';
                                 const isSelected = selectedDriver === code;
 
                                 // Dim if OUT but not hidden yet
@@ -961,7 +1404,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                         {/* Label */}
                                         {isSelected && (
                                             <text y={-15} textAnchor="middle" fill={color} fontSize={12} fontWeight="bold" className="drop-shadow-md select-none" style={{ fontSize: `${12 / Math.sqrt(viewState.scale)}px` }}>
-                                                {code}
+                                                {car.originalCode || code.replace('_GHOST', '')}
                                             </text>
                                         )}
                                     </g>
@@ -982,63 +1425,65 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 )}
 
                 {/* 2. Messages Overlay (Top Center) */}
-                <div className="absolute top-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-50">
-                    {data.race_control_messages
-                        .filter(m => {
-                            const id = `${m.time}-${m.message}`;
-                            return m.time <= currentTime && m.time > currentTime - 5 && !dismissedMessages.has(id);
-                        }) // Show last 5s & not dismissed
-                        .slice(-3) // Show max 3
-                        .reverse() // Newest top
-                        .map((msg, i) => {
-                            const id = `${msg.time}-${msg.message}`;
-                            const config = getMessageConfig(msg);
-                            const Icon = config.icon;
+                {replayMode !== 'ghost' && (
+                    <div className="absolute top-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-50">
+                        {data.race_control_messages
+                            .filter(m => {
+                                const id = `${m.time}-${m.message}`;
+                                return m.time <= currentTime && m.time > currentTime - 5 && !dismissedMessages.has(id);
+                            }) // Show last 5s & not dismissed
+                            .slice(-3) // Show max 3
+                            .reverse() // Newest top
+                            .map((msg, i) => {
+                                const id = `${msg.time}-${msg.message}`;
+                                const config = getMessageConfig(msg);
+                                const Icon = config.icon;
 
-                            return (
-                                <div key={id} className={`
+                                return (
+                                    <div key={id} className={`
                                     ${config.bg} ${config.border} ${config.color}
                                     border-l-4 p-3 rounded-r shadow-lg max-w-xl w-full
                                     animate-in fade-in slide-in-from-top-4 duration-300
                                     pointer-events-auto flex items-center gap-4
                                 `}>
-                                    <div className="shrink-0 p-2 bg-black/20 rounded-full">
-                                        <Icon size={24} fill={config.fill ? "currentColor" : "none"} />
-                                    </div>
+                                        <div className="shrink-0 p-2 bg-black/20 rounded-full">
+                                            <Icon size={24} fill={config.fill ? "currentColor" : "none"} />
+                                        </div>
 
-                                    <div className="flex flex-col flex-1 min-w-0">
-                                        <div className="flex items-center justify-between mb-0.5">
-                                            <span className="font-bold text-sm tracking-wider uppercase opacity-90">
-                                                {msg.flag || config.type}
-                                            </span>
-                                            <span className="text-[10px] font-mono opacity-60">
-                                                {formatTime(msg.time)}
+                                        <div className="flex flex-col flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-0.5">
+                                                <span className="font-bold text-sm tracking-wider uppercase opacity-90">
+                                                    {msg.flag || config.type}
+                                                </span>
+                                                <span className="text-[10px] font-mono opacity-60">
+                                                    {formatTime(msg.time)}
+                                                </span>
+                                            </div>
+                                            <span className="text-white font-medium text-sm leading-tight break-words">
+                                                {msg.message}
                                             </span>
                                         </div>
-                                        <span className="text-white font-medium text-sm leading-tight break-words">
-                                            {msg.message}
-                                        </span>
-                                    </div>
 
-                                    <button
-                                        onClick={() => setDismissedMessages(prev => new Set(prev).add(id))}
-                                        className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            );
-                        })
-                    }
-                </div>
+                                        <button
+                                            onClick={() => setDismissedMessages(prev => new Set(prev).add(id))}
+                                            className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        }
+                    </div>
+                )}
 
                 {/* 3. Leaderboard Sidebar (Right) */}
                 <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
                     <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
                         <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
-                        {isRace ? (
+                        {isRace && replayMode !== 'ghost' ? (
                             <span className="text-white">LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span></span>
-                        ) : sessionTimeRemaining ? (
+                        ) : sessionTimeRemaining && replayMode !== 'ghost' ? (
                             <span className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}>
                                 TIME {sessionTimeRemaining.formatted}
                             </span>
@@ -1069,8 +1514,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                     if (index > 0) {
                                         const leader = leaderboard[index - 1];
                                         const circuitLength = data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000;
-                                        const distA = (leader.lap * circuitLength) + (leader.ref_dist || 0);
-                                        const distB = (driver.lap * circuitLength) + (driver.ref_dist || 0);
+
+                                        // GHOST MODE FIX: Ignore absolute lap difference, compare relative distance only
+                                        const lapA = replayMode === 'ghost' ? 0 : leader.lap;
+                                        const lapB = replayMode === 'ghost' ? 0 : driver.lap;
+
+                                        const distA = (lapA * circuitLength) + (leader.ref_dist || 0);
+                                        const distB = (lapB * circuitLength) + (driver.ref_dist || 0);
+
                                         const deltaMeters = Math.max(0, distA - distB);
                                         const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
                                         intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
@@ -1106,24 +1557,29 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                                     {/* Driver Image with Fallback */}
                                     <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded-full overflow-hidden border border-gray-700 shrink-0">
-                                        <img
-                                            src={driverHeadshots[driver.code] || DRIVER_IMAGE_MAP[driver.code] || '/placeholder.svg'}
-                                            alt={driver.code}
-                                            className="w-full h-full object-cover object-top transform scale-110"
-                                            onError={(e) => {
-                                                const img = e.target as HTMLImageElement;
-                                                const localSrc = DRIVER_IMAGE_MAP[driver.code];
-                                                if (localSrc && !img.src.includes(localSrc)) {
-                                                    img.src = localSrc;
-                                                } else {
-                                                    img.src = '/placeholder.svg';
-                                                    img.onerror = null;
-                                                }
-                                            }}
-                                        />
+                                        {(() => {
+                                            const lookupCode = driver.code.replace('_GHOST', '');
+                                            return (
+                                                <img
+                                                    src={driverHeadshots[lookupCode] || DRIVER_IMAGE_MAP[lookupCode] || '/placeholder.svg'}
+                                                    alt={driver.code}
+                                                    className="w-full h-full object-cover object-top transform scale-110"
+                                                    onError={(e) => {
+                                                        const img = e.target as HTMLImageElement;
+                                                        const localSrc = DRIVER_IMAGE_MAP[lookupCode];
+                                                        if (localSrc && !img.src.includes(localSrc)) {
+                                                            img.src = localSrc;
+                                                        } else {
+                                                            img.src = '/placeholder.svg';
+                                                            img.onerror = null;
+                                                        }
+                                                    }}
+                                                />
+                                            );
+                                        })()}
                                     </div>
                                     <div className="w-1 h-5 mx-1" style={{ backgroundColor: driver.color }}></div>
-                                    <span className="font-bold text-xs min-w-[3ch]">{driver.code}</span>
+                                    <span className="font-bold text-xs min-w-[3ch]">{driver.originalCode || driver.code.replace('_GHOST', '')}</span>
 
                                     {/* Tyre Icon */}
                                     <div className="w-5 flex justify-center ml-auto">
@@ -1152,114 +1608,33 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     </div>
                 </div>
 
-                {/* 4. Selected Driver Telemetry Overlay */}
-                {selectedDriver && (
-                    <div className="absolute top-20 left-4 w-52 bg-black/90 border-l-4 p-3 rounded backdrop-blur z-20 shadow-2xl"
-                        style={{ borderColor: data.driver_colors[selectedDriver] }}
-                    >
-                        <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
-                            <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
-                                <img
-                                    src={driverHeadshots[selectedDriver] || DRIVER_IMAGE_MAP[selectedDriver] || '/placeholder.svg'}
-                                    alt={selectedDriver}
-                                    className="w-full h-full object-cover object-top transform scale-110"
-                                    onError={(e) => {
-                                        const img = e.target as HTMLImageElement;
-                                        const localSrc = DRIVER_IMAGE_MAP[selectedDriver];
-                                        if (localSrc && !img.src.includes(localSrc)) {
-                                            img.src = localSrc;
-                                        } else {
-                                            img.src = '/placeholder.svg';
-                                            img.onerror = null;
-                                        }
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <div className="text-base font-bold leading-tight">{driverNameMap[selectedDriver] || selectedDriver}</div>
-                            </div>
-                        </div>
-
-                        {(() => {
-                            const driverData = currentFrameDrivers[selectedDriver];
-                            if (!driverData) return null;
-
-                            // Calculate Lap Stats
-                            const driverLaps = data.completed_laps?.filter(l => l.driver === selectedDriver && l.timestamp <= currentTime) || [];
-
-                            const fastestLap = driverLaps.length > 0
-                                ? driverLaps.reduce((min, l) => l.seconds < min.seconds ? l : min, driverLaps[0])
-                                : null;
-
-                            const previousLap = driverLaps.length > 0 ? driverLaps[driverLaps.length - 1] : null;
-
-                            const currentLapNum = driverData.lap;
-                            const lapStartTime = driverLapStartTimes[selectedDriver]?.[currentLapNum] ?? 0;
-                            const liveLapTime = Math.max(0, currentTime - lapStartTime);
-
-                            const formatLapTime = (sec: number) => {
-                                const m = Math.floor(sec / 60);
-                                const s = (sec % 60).toFixed(3);
-                                return `${m}:${s.padStart(6, '0')}`;
-                            };
-
-                            return (
-                                <div className="space-y-1 font-mono text-xs">
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">Current</span>
-                                        <span className="text-yellow-400 text-base font-bold">{formatLapTime(liveLapTime)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">Last</span>
-                                        <span className="text-white text-base">{previousLap ? previousLap.time_str : '-'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">Best</span>
-                                        <span className="text-purple-400 text-base font-bold">{fastestLap ? fastestLap.time_str : '-'}</span>
-                                    </div>
-
-                                    {/* Throttle & Brake Bars */}
-                                    <div className="flex gap-1 h-16 my-2">
-                                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                                            <div
-                                                className="w-full bg-green-500 transition-all duration-75 ease-linear"
-                                                style={{ height: `${driverData.throttle || 0}%` }}
-                                            />
-                                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">THR</span>
-                                        </div>
-                                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                                            <div
-                                                className="w-full bg-red-500 transition-all duration-75 ease-linear"
-                                                style={{ height: `${driverData.brake > 1 ? driverData.brake : (driverData.brake * 100)}%` }}
-                                            />
-                                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">BRK</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">RPM</span>
-                                        <span className="text-white text-base font-bold">{Math.round(driverData.rpm || 0)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">Speed</span>
-                                        <span className="text-purple-400 text-base font-bold">{Math.round(driverData.speed)} <span className="text-[10px] text-gray-500">kph</span></span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">Gear</span>
-                                        <span className="text-yellow-400 text-base font-bold">{driverData.gear}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 w-1/2 uppercase text-[10px]">DRS</span>
-                                        <span className={`${driverData.drs >= 10 ? 'text-green-500 font-bold' : 'text-gray-600'} text-base`}>{driverData.drs >= 10 ? 'OPEN' : 'CLOSED'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400 uppercase text-[10px]">Lap</span>
-                                        <span className="text-white text-base">{driverData.lap}</span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-                    </div>
+                {replayMode === 'ghost' ? (
+                    <>
+                        {/* Ghost Mode: Show both overlays fixed */}
+                        {ghostConfig.d1 && renderTelemetryOverlay(
+                            ghostConfig.d1 + "_GHOST",
+                            { top: 400, left: 24 }, // Left (Below config)
+                            'ghost1',
+                            ghostPos1,
+                            setGhostPos1
+                        )}
+                        {ghostConfig.d2 && renderTelemetryOverlay(
+                            ghostConfig.d2 + "_GHOST",
+                            { top: 400, right: 280 }, // Right (offset from leaderboard)
+                            'ghost2',
+                            ghostPos2,
+                            setGhostPos2
+                        )}
+                    </>
+                ) : (
+                    // Standard Mode: Show selected driver draggable
+                    selectedDriver && renderTelemetryOverlay(
+                        selectedDriver,
+                        { left: 24, top: 320 },
+                        'main',
+                        overlayPos,
+                        setOverlayPos
+                    )
                 )}
             </div>
 
@@ -1271,11 +1646,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                         <input
                             type="range"
                             min={0}
-                            max={totalDuration}
+                            max={activeTotalDuration}
                             step={0.1}
                             value={currentTime}
                             onChange={(e) => {
+                                setIsPlaying(false);
                                 setCurrentTime(parseFloat(e.target.value));
+                                // Reset index refs if needed
+                                driverLapStartIndices.current = {};
                             }}
                             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
                         />
@@ -1287,35 +1665,31 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                     {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                                 </button>
 
-                                <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                                    <Clock size={16} className="text-gray-400" />
-                                    <span className="font-mono text-sm">{formatTime(currentTime)}</span>
-                                </div>
+                                <span className="font-mono text-xl font-bold tabular-nums min-w-[5ch]">
+                                    {/* Display Active Time based on mode */}
+                                    {/* Note: This logic assumes currentTime logic is handled elsewhere or is simple enough */}
+                                    {Math.floor(currentTime)}s
+                                </span>
                             </div>
 
-                            {/* Center Info */}
-                            <div className="hidden md:block text-center">
-                                <h2 className="font-bold text-sm tracking-widest text-gray-400">{event.toUpperCase()} - {session}</h2>
-                            </div>
 
-                            {/* Right Controls */}
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => setPlaybackSpeed(s => Math.max(0.25, s / 2))} className="p-1 hover:text-white text-gray-400 disabled:opacity-50" disabled={playbackSpeed <= 0.25}>
-                                        <Rewind size={20} />
-                                    </button>
-                                    <span className="font-mono text-xs w-8 text-center">{playbackSpeed}x</span>
-                                    <button onClick={() => setPlaybackSpeed(s => Math.min(8, s * 2))} className="p-1 hover:text-white text-gray-400 disabled:opacity-50" disabled={playbackSpeed >= 8}>
-                                        <FastForward size={20} />
-                                    </button>
-                                </div>
 
-                                <div className="w-px h-6 bg-gray-700 mx-2"></div>
+                            {/* Right - Speed & Fullscreen */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const speeds = [1, 2, 5, 10, 20];
+                                        const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+                                        setPlaybackSpeed(speeds[nextIdx]);
+                                    }}
+                                    className="font-mono text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3ch] text-center"
+                                >
+                                    {playbackSpeed}x
+                                </button>
 
                                 <button
                                     onClick={toggleFullscreen}
-                                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
-                                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
                                 >
                                     {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
                                 </button>
@@ -1328,4 +1702,93 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     );
 };
 
+// Helper Component Definitions must be outside the main component
+const CustomDriverSelect = ({
+    label, subLab, color, driverCode, lapNum, drivers, driverColors, headshots, onSelectDriver, onSelectLap, container
+}: {
+    label: string, subLab: string, color: string, driverCode: string | null, lapNum: number | null,
+    drivers: Record<string, any>, driverColors: Record<string, string>, headshots: Record<string, string>,
+    onSelectDriver: (d: string) => void, onSelectLap: (l: number) => void, container?: HTMLElement | null
+}) => {
+    const sortedDrivers = Object.keys(drivers).sort();
+    const laps = driverCode && drivers[driverCode]?.lap ? [...new Set(drivers[driverCode].lap)].sort((a: any, b: any) => a - b) : [];
+
+    return (
+        <div className="space-y-1">
+            <div className="flex justify-between items-baseline mb-1">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${color}`}>{label}</span>
+                <span className="text-[10px] text-gray-500 font-medium">{subLab}</span>
+            </div>
+
+            <div className="flex gap-2">
+                {/* Driver Selector */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <button className={`flex-1 flex items-center gap-2 bg-gray-900 border border-gray-700 hover:border-gray-500 rounded p-1 px-2 text-left transition-colors min-w-0 ${!driverCode ? 'text-gray-400' : 'text-white'}`}>
+                            {driverCode ? (
+                                <>
+                                    <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800 shrink-0 border border-gray-600">
+                                        <img src={headshots[driverCode] || DRIVER_IMAGE_MAP[driverCode] || '/placeholder.svg'} className="w-full h-full object-cover object-top" />
+                                    </div>
+                                    <span className="font-bold text-xs truncate">{driverCode}</span>
+                                </>
+                            ) : (
+                                <span className="text-xs">Select Driver</span>
+                            )}
+                            <ChevronDown size={12} className="ml-auto opacity-50" />
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-0 bg-gray-900 border-gray-700 text-white" align="start" container={container}>
+                        <ScrollArea className="h-64">
+                            <div className="p-1">
+                                {sortedDrivers.map(d => (
+                                    <button
+                                        key={d}
+                                        onClick={() => onSelectDriver(d)}
+                                        className="w-full flex items-center gap-3 p-2 hover:bg-white/10 rounded transition-colors text-left"
+                                    >
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 border" style={{ borderColor: driverColors[d] }}>
+                                            <img src={headshots[d] || DRIVER_IMAGE_MAP[d] || '/placeholder.svg'} className="w-full h-full object-cover object-top" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-sm tracking-wide">{d}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+
+                {/* Lap Selector */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <button
+                            disabled={!driverCode}
+                            className={`w-16 flex items-center justify-center gap-1 bg-gray-900 border border-gray-700 hover:border-gray-500 rounded p-1 transition-colors ${!lapNum ? 'text-gray-400' : 'text-white font-mono font-bold'}`}
+                        >
+                            <span className="text-xs">{lapNum ? `L${lapNum}` : 'Lap'}</span>
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2 bg-gray-900 border-gray-700 text-white" align="end" container={container}>
+                        <div className="mb-2 text-[10px] text-gray-400 uppercase font-bold tracking-wider px-1">Select Lap</div>
+                        <ScrollArea className="h-48">
+                            <div className="grid grid-cols-4 gap-1">
+                                {laps.map((l: any) => (
+                                    <button
+                                        key={l}
+                                        onClick={() => onSelectLap(l)}
+                                        className={`p-1.5 rounded text-xs font-mono text-center transition-colors ${lapNum === l ? 'bg-white text-black font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}`}
+                                    >
+                                        {l}
+                                    </button>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+            </div>
+        </div>
+    );
+};
 export default SessionReplay;
