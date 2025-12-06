@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
 import {
     ChartLineData01Icon,
     ChampionIcon,
@@ -40,19 +39,23 @@ const QuickLinksWidget = () => {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
             {links.map((link, index) => (
-                <Link
+                <div
                     key={index}
-                    to={link.path}
-                    className="bg-black border-2 border-gray-800 p-6 flex flex-col justify-between group hover:border-red-600/50 transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"
+                    className="bg-black border-2 border-gray-800 p-6 flex flex-col justify-between relative overflow-hidden opacity-80 cursor-not-allowed group"
                 >
                     {/* Background decoration */}
 
 
                     <div className="relative z-10">
-                        <div className="mb-4 bg-gray-900/50 w-fit p-3 rounded-lg border border-gray-800 group-hover:border-gray-700 transition-colors">
-                            {link.icon}
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-gray-900/50 w-fit p-3 rounded-lg border border-gray-800 transition-colors grayscale">
+                                {link.icon}
+                            </div>
+                            <span className="bg-yellow-500/10 text-yellow-500 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500/20 uppercase tracking-widest">
+                                Cooking
+                            </span>
                         </div>
-                        <h3 className="text-lg font-black uppercase italic tracking-tighter text-white mb-1 group-hover:text-red-500 transition-colors">
+                        <h3 className="text-lg font-black uppercase italic tracking-tighter text-gray-400 mb-1">
                             {link.title}
                         </h3>
                         <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">
@@ -60,10 +63,10 @@ const QuickLinksWidget = () => {
                         </p>
                     </div>
 
-                    <div className="mt-6 flex items-center text-xs font-bold uppercase tracking-widest text-gray-600 group-hover:text-white transition-colors">
-                        View <ArrowRight01Icon className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    <div className="mt-6 flex items-center text-xs font-bold uppercase tracking-widest text-gray-700">
+                        Coming Soon
                     </div>
-                </Link>
+                </div>
             ))}
         </div>
     );
