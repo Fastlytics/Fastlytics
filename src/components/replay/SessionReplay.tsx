@@ -57,9 +57,23 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const previousTimeRef = useRef<number | null>(null);
 
     // Find absolute bounds for slider
-    const totalDuration = useMemo(() => {
-        if (!data?.time?.length) return 0;
-        return data.time[data.time.length - 1];
+    const { totalDuration, totalLaps } = useMemo(() => {
+        if (!data?.time?.length) return { totalDuration: 0, totalLaps: 0 };
+
+        const maxTime = data.time[data.time.length - 1];
+
+        // Calculate Total Laps from data
+        let maxLap = 0;
+        if (data.drivers) {
+            for (const d of Object.values(data.drivers)) {
+                if (d.lap) {
+                    const localMax = Math.max(...d.lap);
+                    if (localMax > maxLap) maxLap = localMax;
+                }
+            }
+        }
+
+        return { totalDuration: maxTime, totalLaps: maxLap };
     }, [data]);
 
     // --- Zoom & Pan State ---
@@ -104,6 +118,47 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if active element is an input (e.g. slider, though slider usually handles arrows natively, we might want custom seek)
+            // But for the range slider, let's let it handle arrows if focused? 
+            // Actually, global hotkeys usually override unless focusing a text input.
+            // Our slider is type="range".
+
+            if (e.target instanceof HTMLInputElement && e.target.type === 'text') return; // Ignore text inputs
+            if (e.target instanceof HTMLTextAreaElement) return;
+
+            switch (e.key) {
+                case ' ':
+                case 'k': // YouTube style
+                case 'K':
+                    e.preventDefault(); // Prevent scroll
+                    setIsPlaying(prev => !prev);
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case 'ArrowLeft':
+                case 'j': // YouTube style (10s usually, but uniform 5s here)
+                case 'J':
+                    e.preventDefault();
+                    setCurrentTime(prev => Math.max(0, prev - 5));
+                    break;
+                case 'ArrowRight':
+                case 'l': // YouTube style
+                case 'L':
+                    e.preventDefault();
+                    setCurrentTime(prev => Math.min(totalDuration, prev + 5));
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [totalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (e.button !== 0) return; // Only left click
@@ -354,8 +409,15 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     // Center = Translate + (VisualPos * ZoomScale)
                     // Translate = Center - (VisualPos * ZoomScale)
 
-                    const newX = (width / 2) - (visualDriverX * prev.scale);
-                    const newY = (height / 2) - (visualDriverY * prev.scale);
+                    // Account for Leaderboard Overlay (w-64 = 256px) on Desktop (md: 768px)
+                    // We want to center in the *visible* area.
+                    // If desktop, visible width is (width - 256). Center is (width - 256) / 2.
+                    const leaderboardOffset = window.innerWidth >= 768 ? 256 : 0;
+                    const centerX = (width - leaderboardOffset) / 2;
+                    const centerY = height / 2;
+
+                    const newX = centerX - (visualDriverX * prev.scale);
+                    const newY = centerY - (visualDriverY * prev.scale);
 
                     return {
                         ...prev,
@@ -451,29 +513,110 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     }, [currentFrameDrivers, isPlaying, data]);
 
-    // Build final leaderboard array from order
+    // --- Session Logic (Race vs Qualy) ---
+    const isRace = useMemo(() => {
+        return session === 'Race' || session === 'R';
+    }, [session]);
+
+    // --- Timing Standings (for Qualy/Practice) ---
+    const timingStandings = useMemo(() => {
+        if (isRace || !data?.completed_laps) return null;
+
+        // 1. Filter laps completed so far
+        const lapsSoFar = data.completed_laps.filter(l => l.timestamp <= currentTime);
+
+        // 2. Find Best Lap per Driver
+        const bestLaps: Record<string, typeof data.completed_laps[0]> = {};
+        for (const lap of lapsSoFar) {
+            if (!bestLaps[lap.driver] || lap.seconds < bestLaps[lap.driver].seconds) {
+                bestLaps[lap.driver] = lap;
+            }
+        }
+
+        // 3. Sort Drivers
+        // Get all drivers from data.drivers to ensure we show everyone even if no lap
+        const allDrivers = Object.keys(data.drivers || {});
+
+        // Sort: Drivers with time < Drivers without time
+        // Then by time ASC
+        const sorted = allDrivers.sort((a, b) => {
+            const lapA = bestLaps[a];
+            const lapB = bestLaps[b];
+
+            if (lapA && lapB) return lapA.seconds - lapB.seconds;
+            if (lapA) return -1; // A has time, comes first
+            if (lapB) return 1;  // B has time, comes first
+            return a.localeCompare(b); // Alphabetical tie-break
+        });
+
+        return { sorted, bestLaps };
+
+    }, [data, currentTime, isRace]);
+
+    // --- Leaderboard Calculation ---
     const leaderboard = useMemo(() => {
-        if (!leaderboardOrder.length || !data) return [];
-        return leaderboardOrder.map((code, index) => {
-            const d = currentFrameDrivers[code];
-            if (!d) return null;
-            return {
-                pos: index + 1,
-                code,
-                ...d,
-                grid: data.driver_grid_positions?.[code] || 0,
-                color: data.driver_colors[code] || '#fff',
-                tyre: d.tyre
-            };
-        }).filter(d => d !== null);
-    }, [leaderboardOrder, currentFrameDrivers, data]);
+        if (!data) return [];
+        const drivers = currentFrameDrivers;
+
+        const items = Object.entries(drivers).map(([code, d]) => ({
+            code,
+            ...d,
+            pos: 0, // calc below
+            grid: data.driver_grid_positions?.[code] || 0,
+            color: data.driver_colors[code] || 'white'
+        }));
+
+        if (isRace) {
+            // --- RACE MODE: Sort by Track Position ---
+            // Sort by Lap (desc) then specific RefDist/Dist (desc)
+            // Use leaderboardOrder from hysteresis for race mode
+            if (!leaderboardOrder.length) return []; // Should not happen if data is present
+
+            const raceItems = leaderboardOrder.map((code, index) => {
+                const d = currentFrameDrivers[code];
+                if (!d) return null;
+                return {
+                    pos: index + 1,
+                    code,
+                    ...d,
+                    grid: data.driver_grid_positions?.[code] || 0,
+                    color: data.driver_colors[code] || '#fff',
+                    tyre: d.tyre
+                };
+            }).filter(d => d !== null);
+            return raceItems;
+
+        } else {
+            // --- QUALY/PRACTICE MODE: Sort by Timing ---
+            if (timingStandings) {
+                const { sorted, bestLaps } = timingStandings;
+                // Re-order items array to match 'sorted' list
+                // Create lookup for efficiency
+                const driverMap = new Map(items.map(i => [i.code, i]));
+
+                // Clear items and rebuild from sorted list
+                const newItems: typeof items = [];
+                sorted.forEach(code => {
+                    const d = driverMap.get(code);
+                    if (d) {
+                        // Attach timing info for render
+                        (d as any).bestLap = bestLaps[code];
+                        newItems.push(d);
+                    }
+                });
+
+                return newItems.map((d, i) => ({ ...d, pos: i + 1 }));
+            }
+        }
+
+        return []; // Fallback if no data or timingStandings not ready
+    }, [currentFrameDrivers, data, isRace, timingStandings, leaderboardOrder]);
 
     // --- OpenF1 Driver Details (Headshots) ---
     const { data: openF1Drivers } = useQuery<OpenF1Driver[]>({
         queryKey: ['openf1', 'drivers', 'latest'],
         queryFn: () => fetchAllOpenF1Drivers('latest'),
         staleTime: 1000 * 60 * 60 * 24, // 24h
-        gcTime: 1000 * 60 * 60 * 24,
     });
 
     const driverHeadshots = useMemo(() => {
@@ -505,11 +648,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return '#1f2937'; // Default
     }, [currentTime, data]);
 
-    if (isLoading) {
-        return <ReplayLoader year={year} event={event} session={session} />;
-    }
-    if (error) return <div className="p-12 text-center text-red-500">Error loading replay data.</div>;
-    if (!data) return null;
 
     // --- Helper for Time Display ---
     const formatTime = (seconds: number) => {
@@ -574,8 +712,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return { outStatus, visibility };
     }, [leaderboardOrder, currentTime, data]);
 
+    if (isLoading) {
+        return <ReplayLoader year={year} event={event} session={session} />;
+    }
+    if (error) return <div className="p-12 text-center text-red-500">Error loading replay data.</div>;
+    if (!data) return null;
+
     return (
-        <div ref={rootRef} className={`flex flex-col h-full bg-black text-white overflow-hidden ${className}`}>
+        <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full aspect-[4/3]'} ${className}`}>
 
             {/* Main Content Area */}
             <div className="flex flex-1 relative overflow-hidden">
@@ -721,7 +865,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                 {/* 3. Leaderboard Sidebar (Right) */}
                 <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
-                    <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase">Leaderboard</div>
+                    <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
+                        <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
+                        {isRace && <span className="text-white">LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span></span>}
+                    </div>
                     <div className="flex flex-col">
                         {leaderboard.map((driver, index) => {
                             const isOut = driverVisuals.outStatus?.[driver.code];
@@ -741,14 +888,34 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                 intervalText = 'OUT';
                             } else if (isPitting) {
                                 intervalText = 'PIT';
-                            } else if (index > 0) {
-                                const leader = leaderboard[index - 1];
-                                const circuitLength = data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000;
-                                const distA = (leader.lap * circuitLength) + (leader.ref_dist || 0);
-                                const distB = (driver.lap * circuitLength) + (driver.ref_dist || 0);
-                                const deltaMeters = Math.max(0, distA - distB);
-                                const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
-                                intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
+                            } else {
+                                if (isRace) {
+                                    // --- RACE INTERVALS ---
+                                    if (index > 0) {
+                                        const leader = leaderboard[index - 1];
+                                        const circuitLength = data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000;
+                                        const distA = (leader.lap * circuitLength) + (leader.ref_dist || 0);
+                                        const distB = (driver.lap * circuitLength) + (driver.ref_dist || 0);
+                                        const deltaMeters = Math.max(0, distA - distB);
+                                        const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
+                                        intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
+                                    }
+                                } else {
+                                    // --- QUALY INTERVALS (Gap to P1) ---
+                                    const bestLap = (driver as any).bestLap;
+                                    const p1Best = (leaderboard[0] as any).bestLap;
+
+                                    if (index === 0) {
+                                        intervalText = bestLap?.time_str || 'NO TIME';
+                                    } else {
+                                        if (bestLap && p1Best) {
+                                            const diff = bestLap.seconds - p1Best.seconds;
+                                            intervalText = `+${diff.toFixed(3)}s`;
+                                        } else {
+                                            intervalText = 'NO TIME';
+                                        }
+                                    }
+                                }
                             }
 
                             return (
@@ -879,7 +1046,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             </div>
 
             {/* 5. Playback Controls (Auto-Hide Bottom Overlay) */}
-            <div className="absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none hover:pointer-events-auto">
+            <div className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-opacity duration-300 ${isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`}>
                 <div className="w-full bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 pointer-events-auto">
                     <div className="max-w-7xl mx-auto flex flex-col gap-4">
                         {/* Slider */}
