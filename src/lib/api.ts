@@ -891,6 +891,7 @@ export interface SessionReplayData {
     circuit_points?: number[][];
     circuit_distances?: number[];
     pit_intervals?: Record<string, { start: number; end: number }[]>;
+    driver_end_times?: Record<string, number>;
     start_time?: number;
     session_info: { name: string; year: number; session: string; };
 }

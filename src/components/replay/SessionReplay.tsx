@@ -519,6 +519,61 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    // --- DNF / OUT Visual State Logic ---
+    const driverOutTimes = useRef<Record<string, number>>({});
+
+    const driverVisuals = useMemo(() => {
+        if (!data || leaderboardOrder.length === 0) return { outStatus: {}, visibility: {} };
+
+        const outStatus: Record<string, boolean> = {};
+
+        // Determine "OUT" status (Stopped + Bottom of Active Pack)
+        // Check from bottom (last place) up.
+        let allBelowStopped = true;
+        // leaderboard is sorted by position 1..N
+        // We iterate N..1
+        for (let i = leaderboardOrder.length - 1; i >= 0; i--) {
+            const code = leaderboardOrder[i];
+            const isStopped = data.driver_end_times?.[code] && currentTime > (data.driver_end_times[code] + 1);
+
+            if (isStopped && allBelowStopped) {
+                outStatus[code] = true;
+            } else {
+                outStatus[code] = false;
+                if (!isStopped) allBelowStopped = false;
+            }
+        }
+
+        const visibility: Record<string, 'visible' | 'out-dimmed' | 'hidden'> = {};
+        const now = currentTime;
+
+        // Determine Visibility based on 5s delay
+        leaderboardOrder.forEach(code => {
+            const isOut = outStatus[code];
+
+            if (isOut) {
+                if (driverOutTimes.current[code] === undefined) {
+                    driverOutTimes.current[code] = now;
+                }
+                // Check 5s duration (allow 5s of "ghosting" before hiding)
+                if (now > driverOutTimes.current[code] + 5) {
+                    visibility[code] = 'hidden';
+                } else {
+                    visibility[code] = 'out-dimmed';
+                }
+            } else {
+                if (driverOutTimes.current[code] !== undefined) {
+                    delete driverOutTimes.current[code]; // Reset if back in race (rewind)
+                }
+                visibility[code] = 'visible';
+            }
+        });
+
+        // Ensure all currentFrameDrivers have a status (default visible)
+        // (Wait, leaderboardOrder contains all drivers, so we are good)
+        return { outStatus, visibility };
+    }, [leaderboardOrder, currentTime, data]);
+
     return (
         <div ref={rootRef} className={`flex flex-col h-full bg-black text-white overflow-hidden ${className}`}>
 
@@ -572,14 +627,21 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                             {/* Cars Layer */}
                             {Object.entries(currentFrameDrivers).map(([code, car]) => {
+                                // Check Visibility
+                                if (driverVisuals.visibility[code] === 'hidden') return null;
+
                                 // car.x/y are already normalized to the SVG viewbox by backend
                                 const color = data.driver_colors[code] || 'white';
                                 const isSelected = selectedDriver === code;
 
+                                // Dim if OUT but not hidden yet
+                                const isDimmed = driverVisuals.visibility[code] === 'out-dimmed';
+                                const opacityClass = isDimmed ? 'opacity-50 grayscale' : '';
+
                                 return (
                                     <g key={code}
                                         transform={`translate(${car.x}, ${car.y})`}
-                                        className="transition-transform duration-75 ease-linear cursor-pointer pointer-events-auto"
+                                        className={`transition-transform duration-75 ease-linear cursor-pointer pointer-events-auto ${opacityClass}`}
                                         onMouseDown={(e) => e.stopPropagation()}
                                         onClick={(e) => {
                                             if (!isDragging) {
@@ -662,6 +724,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase">Leaderboard</div>
                     <div className="flex flex-col">
                         {leaderboard.map((driver, index) => {
+                            const isOut = driverVisuals.outStatus?.[driver.code];
+
                             // Interval Calculation
                             let intervalText = 'LEADER';
                             let isPitting = false;
@@ -673,7 +737,9 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                 );
                             }
 
-                            if (isPitting) {
+                            if (isOut) {
+                                intervalText = 'OUT';
+                            } else if (isPitting) {
                                 intervalText = 'PIT';
                             } else if (index > 0) {
                                 const leader = leaderboard[index - 1];
@@ -692,7 +758,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                         setSelectedDriver(driver.code === selectedDriver ? null : driver.code);
                                         setIsFollowing(true); // Enable follow
                                     }}
-                                    className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 cursor-pointer hover:bg-white/5 transition-colors ${selectedDriver === driver.code ? 'bg-white/10' : ''}`}
+                                    className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 cursor-pointer hover:bg-white/5 transition-colors ${selectedDriver === driver.code ? 'bg-white/10' : ''} ${isOut ? 'opacity-40 grayscale' : ''}`}
                                 >
                                     <span className="w-4 text-center text-gray-500 font-mono text-[10px]">{driver.pos}</span>
 
@@ -732,7 +798,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                     </div>
 
                                     {/* Interval */}
-                                    <span className={`text-[10px] font-mono w-10 text-right ${intervalText === 'PIT' ? 'text-orange-500 font-bold animate-pulse' : 'text-gray-400'}`}>
+                                    <span className={`text-[10px] font-mono w-10 text-right ${intervalText === 'PIT' ? 'text-orange-500 font-bold animate-pulse' :
+                                        intervalText === 'OUT' ? 'text-gray-500 font-bold' :
+                                            'text-gray-400'
+                                        }`}>
                                         {intervalText}
                                     </span>
                                 </div>
