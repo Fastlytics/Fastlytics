@@ -122,7 +122,7 @@ const TelemetryChartWrapper = <T,>({
         }
 
         return (
-            <div className="flex flex-col gap-4 animate-in fade-in duration-500">
+            <div className="flex flex-col gap-4 animate-in fade-in duration-500 w-full min-w-0">
                 {renderChart(data, "#ef4444", selectedDriver)}
                 {renderStats && renderStats(data)}
             </div>

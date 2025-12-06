@@ -179,7 +179,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, drivers }) => {
                     </div>
                 </div>
             );
-            onClick = () => navigate(`/driver/${driverId}`);
+            onClick = () => { }; // Disabled driver details
             break;
 
         case 'team_profile_view':

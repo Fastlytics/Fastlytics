@@ -22,7 +22,6 @@ BEGIN
     new.id, 
     new.raw_user_meta_data->>'full_name', 
     new.raw_user_meta_data->>'avatar_url',
-    new.raw_user_meta_data->>'avatar_url',
     'free',
     null,
     null,

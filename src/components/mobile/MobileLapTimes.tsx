@@ -336,7 +336,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                             </span>
                         </div>
                         <div className="w-full overflow-x-auto pb-2 touch-pan-x scrollbar-hide">
-                            <div style={{ width: Math.max(window.innerWidth - 48, (lapData?.length || 0) * 30), height: 350 }}>
+                            <div style={{ width: Math.max(window.innerWidth - 48, (lapData?.length || 0) * 30), height: 350, minWidth: '100%' }}>
                                 {isLoadingLaps ? (
                                     <div className="w-full h-full flex items-center justify-center text-gray-500 animate-pulse">
                                         <div className="flex flex-col items-center gap-2">

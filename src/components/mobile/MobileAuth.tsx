@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import posthog from 'posthog-js';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { oauthFlags } from '@/config/featureFlags';
 
 const MobileAuth: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'signup' | 'signin'>('signup');
@@ -73,9 +74,9 @@ const MobileAuth: React.FC = () => {
     };
 
     const socialProviders = [
-        { id: 'google' as const, icon: faGoogle, label: 'Google', bgColor: 'bg-gray-900' },
-        { id: 'github' as const, icon: faGithub, label: 'GitHub', bgColor: 'bg-gray-900' },
-        { id: 'discord' as const, icon: faDiscord, label: 'Discord', bgColor: 'bg-gray-900' },
+        ...(oauthFlags.enableGoogle ? [{ id: 'google' as const, icon: faGoogle, label: 'Google', bgColor: 'bg-gray-900' }] : []),
+        ...(oauthFlags.enableGithub ? [{ id: 'github' as const, icon: faGithub, label: 'GitHub', bgColor: 'bg-gray-900' }] : []),
+        ...(oauthFlags.enableDiscord ? [{ id: 'discord' as const, icon: faDiscord, label: 'Discord', bgColor: 'bg-gray-900' }] : []),
     ];
 
     return (

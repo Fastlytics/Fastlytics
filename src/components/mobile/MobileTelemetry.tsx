@@ -446,7 +446,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                         ) : (
                             // --- LINE CHART ---
                             chartData.length > 0 ? (
-                                <div className="h-[400px] w-full relative">
+                                <div className="h-[400px] w-full min-w-0 relative">
                                     {/* Grid Background */}
                                     <div className="absolute inset-0 pointer-events-none opacity-10"
                                         style={{
