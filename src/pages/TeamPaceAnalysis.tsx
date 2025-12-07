@@ -190,7 +190,8 @@ const TeamPaceAnalysis = () => {
 
     const getTeamColorHex = (colorName: string) => {
         const colors: Record<string, string> = {
-            'redbull': '#3671C6',
+            'redbull': '#4781D7',
+            'redbullracing': '#4781D7', // Add full name match
             'mercedes': '#6CD3BF',
             'ferrari': '#F91536',
             'mclaren': '#F58020',

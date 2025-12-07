@@ -143,7 +143,7 @@ const seasonalDriverColorMap: { [year: string]: { [driverCode: string]: string }
     // 2025 placeholder
     '2025': { // Based on known 2025 lineup
         // Red Bull Racing
-        'VER': '#1E41FF', 'TSU': '#1E41FF', // Assuming RB colors similar to 2022/23
+        'VER': '#4781D7', 'TSU': '#4781D7', // Assuming RB colors similar to 2022/23
         // Mercedes
         'RUS': '#6CD3BF', 'ANT': '#6CD3BF', // Antonelli
         // Ferrari
