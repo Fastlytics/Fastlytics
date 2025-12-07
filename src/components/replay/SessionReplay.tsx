@@ -98,11 +98,29 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     // Playback State (Moved Up)
     const [isPlaying, setIsPlaying] = useState(false);
+    const [hasStarted, setHasStarted] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [currentTime, setCurrentTime] = useState(0);
     const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
     const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
     const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
+
+    // Seekbar Hover State
+    const [hoverTime, setHoverTime] = useState<number | null>(null);
+    const [hoverPos, setHoverPos] = useState<number | null>(null);
+
+    // Reset State on Session Change
+    useEffect(() => {
+        setIsPlaying(false);
+        setHasStarted(false);
+        setCurrentTime(0);
+        setReplayData(null);
+        setLoadedChunks(new Set());
+        setTotalChunks(0);
+        setSelectedDriver(null);
+        setLeaderboardOrder([]);
+        setDismissedMessages(new Set());
+    }, [year, event, session]);
 
     // Initial Data Construction from Metadata
     useEffect(() => {
@@ -1296,33 +1314,45 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                 <div className="space-y-1 font-mono text-xs">
                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                        <span className="text-gray-400 uppercase text-[10px]">Current</span>
-                        <span className="text-yellow-400 text-base font-bold">{formatLapTime(liveLapTime)}</span>
+                        <span className="text-gray-400 uppercase text-[10px]">Position</span>
+                        <span className="text-white text-base font-bold">{leaderboard.find(d => d.code === driverCode)?.pos || '-'}</span>
                     </div>
-                    {replayMode !== 'ghost' && (
+                    {isFullscreen ? (
                         <>
                             <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                <span className="text-gray-400 uppercase text-[10px]">Last</span>
-                                <span className="text-white text-base">{previousLap ? previousLap.time_str : '-'}</span>
+                                <span className="text-gray-400 uppercase text-[10px]">Current</span>
+                                <span className="text-yellow-400 text-base font-bold">{formatLapTime(liveLapTime)}</span>
                             </div>
-                            <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                <span className="text-gray-400 uppercase text-[10px]">Best</span>
-                                <span className="text-purple-400 text-base font-bold">{fastestLap ? fastestLap.time_str : '-'}</span>
+                            {replayMode !== 'ghost' && (
+                                <>
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 uppercase text-[10px]">Last</span>
+                                        <span className="text-white text-base">{previousLap ? previousLap.time_str : '-'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                                        <span className="text-gray-400 uppercase text-[10px]">Best</span>
+                                        <span className="text-purple-400 text-base font-bold">{fastestLap ? fastestLap.time_str : '-'}</span>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Throttle & Brake Bars */}
+                            <div className="flex gap-1 h-16 my-2">
+                                <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                                    <div className="w-full bg-green-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.throttle || 0}%` }} />
+                                    <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">THR</span>
+                                </div>
+                                <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
+                                    <div className="w-full bg-red-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.brake > 1 ? driverData.brake : (driverData.brake * 100)}%` }} />
+                                    <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">BRK</span>
+                                </div>
                             </div>
                         </>
+                    ) : (
+                        <div className="py-4 px-2 text-center border-b border-gray-800">
+                            <span className="text-xs text-gray-500 italic block leading-relaxed">Go to fullscreen for more detailed telemetry</span>
+                        </div>
                     )}
-
-                    {/* Throttle & Brake Bars */}
-                    <div className="flex gap-1 h-16 my-2">
-                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                            <div className="w-full bg-green-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.throttle || 0}%` }} />
-                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">THR</span>
-                        </div>
-                        <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                            <div className="w-full bg-red-500 transition-all duration-75 ease-linear" style={{ height: `${driverData.brake > 1 ? driverData.brake : (driverData.brake * 100)}%` }} />
-                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">BRK</span>
-                        </div>
-                    </div>
 
                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
                         <span className="text-gray-400 uppercase text-[10px]">RPM</span>
@@ -1350,7 +1380,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
 
     return (
-        <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full aspect-[4/3]'} ${className}`}>
+        <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full max-w-4xl mx-auto aspect-video max-h-[80vh] rounded-xl shadow-2xl'} ${className}`}>
 
             {/* Main Content Area */}
             <div className="flex flex-1 relative overflow-hidden">
@@ -1703,10 +1733,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                                 <div
                                     key={driver.code}
                                     onClick={() => {
+                                        if (isOut) return;
                                         setSelectedDriver(driver.code === selectedDriver ? null : driver.code);
                                         setIsFollowing(true); // Enable follow
                                     }}
-                                    className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 cursor-pointer hover:bg-white/5 transition-colors ${selectedDriver === driver.code ? 'bg-white/10' : ''} ${isOut ? 'opacity-40 grayscale' : ''}`}
+                                    className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 transition-colors ${isOut ? 'opacity-40 grayscale cursor-default' : 'cursor-pointer hover:bg-white/5'} ${selectedDriver === driver.code ? 'bg-white/10' : ''}`}
                                 >
                                     <span className="w-4 text-center text-gray-500 font-mono text-[10px]">{driver.pos}</span>
 
@@ -1785,7 +1816,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     // Standard Mode: Show selected driver draggable
                     selectedDriver && renderTelemetryOverlay(
                         selectedDriver,
-                        { left: 24, top: isFullscreen ? 320 : 180 },
+                        { left: 24, top: isFullscreen ? 320 : 80 },
                         'main',
                         overlayPos,
                         setOverlayPos
@@ -1793,25 +1824,67 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 )}
             </div>
 
+            {/* Central Play Button Overlay (Initial State) */}
+            {!hasStarted && !isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-500">
+                    <button
+                        onClick={() => {
+                            setHasStarted(true);
+                            setIsPlaying(true);
+                        }}
+                        className="group relative flex items-center justify-center w-24 h-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
+                    >
+                        <Play size={48} className="text-white fill-white ml-2" />
+                        <div className="absolute inset-0 rounded-full ring-4 ring-white/20 group-hover:ring-white/40 animate-pulse"></div>
+                    </button>
+
+                    <div className="absolute bottom-20 text-center">
+                        <p className="text-white font-bold text-lg tracking-widest uppercase drop-shadow-md">Start Replay</p>
+                    </div>
+                </div>
+            )}
+
             {/* 5. Playback Controls (Auto-Hide Bottom Overlay) */}
-            <div className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-opacity duration-300 ${isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto'}`}>
+            <div className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-all duration-500 ${hasStarted ? (isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto') : 'translate-y-full opacity-0'}`}>
                 <div className="w-full bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 pointer-events-auto">
                     <div className="max-w-7xl mx-auto flex flex-col gap-4">
-                        {/* Slider */}
-                        <input
-                            type="range"
-                            min={0}
-                            max={activeTotalDuration}
-                            step={0.1}
-                            value={currentTime}
-                            onChange={(e) => {
-                                setIsPlaying(false);
-                                setCurrentTime(parseFloat(e.target.value));
-                                // Reset index refs if needed
-                                driverLapStartIndices.current = {};
-                            }}
-                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
-                        />
+                        {/* Slider Container with Tooltip */}
+                        <div className="relative group/slider w-full">
+                            {hoverTime !== null && hoverPos !== null && (
+                                <div
+                                    className="absolute bottom-4 -translate-x-1/2 bg-black/90 text-white text-xs font-mono font-bold py-1 px-2 rounded border border-gray-700 pointer-events-none z-50 whitespace-nowrap"
+                                    style={{ left: `${hoverPos}px` }}
+                                >
+                                    {formatTime(hoverTime)}
+                                </div>
+                            )}
+                            <input
+                                type="range"
+                                min={0}
+                                max={activeTotalDuration}
+                                step={0.1}
+                                value={currentTime}
+                                onChange={(e) => {
+                                    setCurrentTime(parseFloat(e.target.value));
+                                    // Reset index refs if needed
+                                    driverLapStartIndices.current = {};
+                                }}
+                                onMouseMove={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const width = rect.width;
+                                    const pct = Math.max(0, Math.min(1, x / width));
+                                    const time = pct * activeTotalDuration;
+                                    setHoverTime(time);
+                                    setHoverPos(x);
+                                }}
+                                onMouseLeave={() => {
+                                    setHoverTime(null);
+                                    setHoverPos(null);
+                                }}
+                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 block"
+                            />
+                        </div>
 
                         <div className="flex items-center justify-between">
                             {/* Left Controls */}
@@ -1822,8 +1895,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
                                 <span className="font-mono text-xl font-bold tabular-nums min-w-[5ch]">
                                     {/* Display Active Time based on mode */}
-                                    {/* Note: This logic assumes currentTime logic is handled elsewhere or is simple enough */}
-                                    {Math.floor(currentTime)}s
+                                    {formatTime(currentTime)}
                                 </span>
                             </div>
 
