@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSessionReplay, SessionReplayData } from '@/lib/api';
+import { fetchSessionReplayMetadata, fetchSessionReplayChunk, SessionReplayData, ReplayChunk } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import ReplayLoader from './ReplayLoader';
 import { Play, Pause, FastForward, Rewind, Clock, X, Maximize, Minimize, Gauge, Flag, AlertTriangle, AlertCircle, CheckCircle, Search, Zap, ZapOff, Info, Swords, Split, ChevronDown, ChevronUp } from 'lucide-react';
@@ -83,19 +83,152 @@ const getMessageConfig = (msg: { message: string, flag?: string }) => {
 };
 
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
-    const { data, isLoading, error } = useQuery<SessionReplayData>({
-        queryKey: ['sessionReplay', year, event, session],
-        queryFn: () => fetchSessionReplay(year, event, session),
+    // --- Progressive Loading State ---
+    const { data: metadata, isLoading: isMetaLoading, error: metaError } = useQuery<SessionReplayData>({
+        queryKey: ['sessionReplayMetadata', year, event, session],
+        queryFn: () => fetchSessionReplayMetadata(year, event, session),
         staleTime: Infinity,
         gcTime: 1000 * 60 * 60,
     });
 
+    const [replayData, setReplayData] = useState<SessionReplayData | null>(null);
+    const [loadedChunks, setLoadedChunks] = useState<Set<number>>(new Set());
+    const [totalChunks, setTotalChunks] = useState(0);
+    const [isBuffering, setIsBuffering] = useState(false);
+
+    // Playback State (Moved Up)
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [currentTime, setCurrentTime] = useState(0);
     const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
     const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
     const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
+
+    // Initial Data Construction from Metadata
+    useEffect(() => {
+        if (metadata) {
+            const initDrivers: any = {};
+            // Initialize empty arrays for all drivers found in colors map
+            // We use driver_colors keys as source of truth for driver list
+            if (metadata.driver_colors) {
+                Object.keys(metadata.driver_colors).forEach(d => {
+                    initDrivers[d] = {
+                        x: [], y: [], dist: [], rel_dist: [], speed: [], gear: [],
+                        drs: [], rpm: [], lap: [], tyre: [], throttle: [], brake: []
+                    };
+                });
+            }
+
+            // Construct initial base (metadata + empty arrays)
+            // We must cast because metadata doesn't have 'time' or 'drivers' technically if fetched from new endpoint
+            const baseValues: SessionReplayData = {
+                ...metadata,
+                time: [],
+                drivers: initDrivers
+            };
+
+            setReplayData(baseValues);
+
+            // Check manifest
+            const manifest = (metadata as any).chunk_manifest || [];
+            setTotalChunks(manifest.length);
+            setLoadedChunks(new Set());
+        }
+    }, [metadata]);
+
+    // Chunk Fetching Loop
+    useEffect(() => {
+        if (!metadata || !replayData || totalChunks === 0) return;
+
+        const fetchNextChunk = async () => {
+            const nextChunkId = loadedChunks.size;
+            if (nextChunkId >= totalChunks) return;
+
+            // Don't fetch if already fetching? 
+            // Pure useEffect dependency chain works but better to have a ref to prevent double-fetch?
+            // Actually, useEffect runs when loadedChunks changes.
+
+            try {
+                const chunk = await fetchSessionReplayChunk(year, event, session, nextChunkId);
+
+                setReplayData(prev => {
+                    if (!prev) return null;
+
+                    // MERGE Logic
+                    const newTime = prev.time.concat(chunk.time);
+                    const newDrivers = { ...prev.drivers };
+
+                    for (const [dCode, dData] of Object.entries(chunk.drivers)) {
+                        if (!newDrivers[dCode]) {
+                            // Should be initialized, but just in case
+                            newDrivers[dCode] = { ...dData } as any;
+                        } else {
+                            // Append arrays
+                            const curr = newDrivers[dCode];
+                            newDrivers[dCode] = {
+                                x: curr.x.concat(dData.x),
+                                y: curr.y.concat(dData.y),
+                                dist: curr.dist.concat(dData.dist),
+                                rel_dist: curr.rel_dist.concat(dData.rel_dist),
+                                speed: curr.speed.concat(dData.speed),
+                                gear: curr.gear.concat(dData.gear),
+                                drs: curr.drs.concat(dData.drs),
+                                rpm: curr.rpm.concat(dData.rpm),
+                                lap: curr.lap.concat(dData.lap),
+                                tyre: curr.tyre.concat(dData.tyre),
+                                throttle: curr.throttle.concat(dData.throttle),
+                                brake: curr.brake.concat(dData.brake)
+                            };
+                        }
+                    }
+
+                    return {
+                        ...prev,
+                        time: newTime,
+                        drivers: newDrivers
+                    };
+                });
+
+                setLoadedChunks(prev => {
+                    const next = new Set(prev);
+                    next.add(nextChunkId);
+                    return next;
+                });
+
+            } catch (e) {
+                console.error(`Error loading chunk ${nextChunkId}`, e);
+                // Retry logic? For now just stop or retry after delay?
+                // Simple: just return, creates a stall.
+            }
+        };
+
+        // Fetch strictly sequential
+        fetchNextChunk();
+
+    }, [metadata, totalChunks, loadedChunks.size]); // Depend on size to trigger next
+
+    // Derived State for UI
+    const data = replayData;
+    const isLoading = isMetaLoading || !replayData || loadedChunks.size === 0; // Wait for at least chunk 0
+    const error = metaError;
+
+    // Buffering Check
+    useEffect(() => {
+        if (!data || isLoading) return;
+        // If current time is close to end of data AND we are not fully loaded...
+        const bufferWindow = 10; // 10 seconds ahead
+        // We know the total duration from metadata (hopefully)
+        // If metadata has total_duration use it, else fallback
+        const totalDur = (metadata as any).total_duration || 9999;
+        const loadedDur = data.time[data.time.length - 1] || 0;
+
+        if (isPlaying && currentTime + bufferWindow > loadedDur && loadedChunks.size < totalChunks) {
+            setIsBuffering(true);
+            setIsPlaying(false); // Auto-pause
+        } else {
+            setIsBuffering(false);
+        }
+    }, [currentTime, data, isPlaying, loadedChunks.size, totalChunks]);
 
     // --- Ghost Mode State ---
     const [replayMode, setReplayMode] = useState<'session' | 'ghost'>('session');

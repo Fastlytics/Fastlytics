@@ -1017,3 +1017,48 @@ export const fetchSessionReplay = async (year: number, event: string, session: s
         return data;
     } catch (error) { console.error("Error fetching session replay:", error); throw error; }
 };
+
+/** Fetches session replay metadata. */
+export const fetchSessionReplayMetadata = async (year: number, event: string, session: string): Promise<SessionReplayData> => {
+    const params = new URLSearchParams({ year: year.toString(), event, session });
+    const url = `${API_BASE_URL}/api/replay/metadata?${params.toString()}`;
+    console.log(`Fetching session metadata from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: SessionReplayData = await response.json();
+        console.log(`Successfully fetched session metadata.`);
+        return data;
+    } catch (error) { console.error("Error fetching session metadata:", error); throw error; }
+};
+
+export interface ReplayChunk {
+    chunk_id: number;
+    start_time: number;
+    end_time: number;
+    time: number[];
+    drivers: ReplayDriversMap;
+}
+
+/** Fetches a session replay chunk. */
+export const fetchSessionReplayChunk = async (year: number, event: string, session: string, chunkId: number): Promise<ReplayChunk> => {
+    const params = new URLSearchParams({ year: year.toString(), event, session, chunk_id: chunkId.toString() });
+    const url = `${API_BASE_URL}/api/replay/chunk?${params.toString()}`;
+    // console.log(`Fetching chunk ${chunkId} from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: ReplayChunk = await response.json();
+        return data;
+    } catch (error) { console.error(`Error fetching chunk ${chunkId}:`, error); throw error; }
+};
