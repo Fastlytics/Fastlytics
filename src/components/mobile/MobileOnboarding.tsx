@@ -192,7 +192,7 @@ const MobileOnboarding: React.FC = () => {
                                 className="space-y-3 w-full max-w-xs mb-8"
                             >
                                 {[
-                                    'Live telemetry & timing',
+                                    'Telemetry & timing',
                                     'Driver & team standings',
                                     'Race calendar & results',
                                 ].map((feature, i) => (

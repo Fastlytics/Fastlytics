@@ -54,7 +54,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSes
                     >
                         <div className="flex items-center gap-2 px-2 py-0.5 bg-red-600/10 border border-red-600/20 rounded text-red-500">
                             <Activity01Icon className="w-3 h-3 animate-pulse" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">Live Telemetry</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Telemetry</span>
                         </div>
                         <span className="text-xs font-mono text-gray-500 uppercase tracking-wider">
                             Season {selectedYear}

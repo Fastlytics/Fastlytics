@@ -133,9 +133,9 @@ const Dashboard = () => {
       <MobileLayout>
         <div className="min-h-screen bg-black text-white font-sans">
           <SEO
-            title="F1 Dashboard - Live Telemetry & Standings"
-            description="Real-time F1 dashboard with live telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
-            keywords={['f1 dashboard', 'live telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+            title="F1 Dashboard - Telemetry & Standings"
+            description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
+            keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
           />
 
           <main className="pt-4 pb-6 px-4 space-y-6">
@@ -176,9 +176,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
       <SEO
-        title="F1 Dashboard - Live Telemetry & Standings"
-        description="Real-time F1 dashboard with live telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
-        keywords={['f1 dashboard', 'live telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+        title="F1 Dashboard - Telemetry & Standings"
+        description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
+        keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
       />
       <DashboardNavbar />
 
