@@ -13,6 +13,8 @@ import Race from "./pages/Race";
 import TeamStandings from "./pages/TeamStandings";
 import DriverStandings from "./pages/DriverStandings";
 import Calendar from "./pages/Calendar";
+import ChampionshipProgression from "./pages/ChampionshipProgression";
+import TeamPaceAnalysis from "./pages/TeamPaceAnalysis";
 
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -96,6 +98,8 @@ const App = () => (
               <Route path="/calendar" element={<DashboardLayout><Calendar /></DashboardLayout>} />
               <Route path="/standings/teams" element={<DashboardLayout><TeamStandings /></DashboardLayout>} />
               <Route path="/standings/drivers" element={<DashboardLayout><DriverStandings /></DashboardLayout>} />
+              <Route path="/standings/progression" element={<DashboardLayout><ChampionshipProgression /></DashboardLayout>} />
+              <Route path="/team-pace" element={<DashboardLayout><TeamPaceAnalysis /></DashboardLayout>} />
 
               <Route path="/replay/:year/:event/:session" element={<SessionReplayPage />} />
 
