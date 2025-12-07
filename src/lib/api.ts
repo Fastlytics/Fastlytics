@@ -179,6 +179,23 @@ export interface DriverEvolutionData {
     rollingAverageLaps: RollingLapDataPoint[];
 }
 
+export interface ChampionshipProgressionRound {
+    round: number;
+    event: string;
+    country: string;
+}
+
+export interface ChampionshipProgressionDriver {
+    name: string;
+    team: string;
+    points_history: number[];
+}
+
+export interface ChampionshipProgressionData {
+    rounds: ChampionshipProgressionRound[];
+    drivers: { [key: string]: ChampionshipProgressionDriver };
+}
+
 export interface TrackTemperatureDataPoint {
     lap: number;
     temp: number | null; // Track temperature in Celsius
@@ -211,11 +228,38 @@ export interface SectorComparisonData {
     circuitLayout: string; // SVG path data for the main track outline
 }
 
+
 export interface SessionIncident {
     type: 'SC/VSC' | 'RedFlag'; // Grouped SC/VSC for simplicity
     startLap: number;
     endLap: number;
 }
+
+// --- Team Pace Analysis Interfaces ---
+export interface TeamPaceSession {
+    teamName: string;
+    medianTime: number;
+    averageTime: number;
+    fastestLapTime: number;
+    stdDev: number;
+    lapCount: number;
+    teamColor: string;
+    rank: number;
+}
+
+export interface TeamPaceEvent {
+    year: number;
+    round: number;
+    eventName: string;
+    sessions: Record<string, TeamPaceSession[]>;
+}
+
+export interface TeamPaceSummary {
+    round: number;
+    eventName: string;
+    bestRacePaceTeam: string;
+}
+
 
 // --- API Fetch Functions ---
 
@@ -529,6 +573,26 @@ export const fetchTrackEvolution = async (year: number, event: string, session: 
     } catch (error) { console.error("Error fetching track evolution data:", error); throw error; }
 };
 
+/** Fetches championship progression data for a given year. */
+export const fetchChampionshipProgression = async (year: number): Promise<ChampionshipProgressionData> => {
+    const params = new URLSearchParams({ year: year.toString() });
+    const url = `${API_BASE_URL}/api/standings/progression?${params.toString()}`;
+    console.log(`Fetching championship progression from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: ChampionshipProgressionData = await response.json();
+        console.log(`Successfully fetched championship progression data.`);
+        return data;
+    } catch (error) { console.error("Error fetching championship progression data:", error); throw error; }
+};
+
+
 /** Fetches the event schedule for a given year. */
 export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
     const url = `${API_BASE_URL}/api/schedule/${year}`;
@@ -548,6 +612,42 @@ export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
         console.error(`Error fetching schedule for ${year}:`, error);
         throw error;
     }
+};
+
+/** Fetches team pace summary for a given year. */
+export const fetchTeamPaceSummary = async (year: number): Promise<TeamPaceSummary[]> => {
+    const params = new URLSearchParams({ year: year.toString() });
+    const url = `${API_BASE_URL}/api/team-pace/summary?${params.toString()}`;
+    console.log(`Fetching team pace summary from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: TeamPaceSummary[] = await response.json();
+        return data;
+    } catch (error) { console.error("Error fetching team pace summary:", error); throw error; }
+};
+
+/** Fetches detailed team pace data for a specific event. */
+export const fetchTeamPaceEvent = async (year: number, eventSlug: string): Promise<TeamPaceEvent> => {
+    const params = new URLSearchParams({ year: year.toString(), event_slug: eventSlug });
+    const url = `${API_BASE_URL}/api/team-pace/event?${params.toString()}`;
+    console.log(`Fetching team pace event from: ${url}`);
+    try {
+        const response = await fetch(url, { headers: getHeaders() });
+        if (!response.ok) {
+            let errorDetail = `HTTP error! status: ${response.status}`;
+            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
+            console.error(`API Error: ${errorDetail}`);
+            throw new Error(errorDetail);
+        }
+        const data: TeamPaceEvent = await response.json();
+        return data;
+    } catch (error) { console.error("Error fetching team pace event:", error); throw error; }
 };
 
 /** Fetches lap-by-lap position data for a race session. */

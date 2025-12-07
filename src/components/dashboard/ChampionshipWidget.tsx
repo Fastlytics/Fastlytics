@@ -1,15 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
+import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult, fetchDriverStandings } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
 import { Profile } from '@/contexts/AuthContext';
 import { ChampionIcon, UserGroupIcon, ArrowRight01Icon } from 'hugeicons-react';
-import { Link } from 'react-router-dom';
+import { TrendingUp } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { Button } from "@/components/ui/button";
+import { useQuery } from '@tanstack/react-query'; // Added useQuery
 
 interface ChampionshipWidgetProps {
     drivers: DriverStanding[];
@@ -30,6 +33,13 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
     const topDrivers = drivers.slice(0, 3);
     const topTeams = teams.slice(0, 3);
     const { selectedYear } = useSeason();
+    const navigate = useNavigate();
+
+    // 1. Fetch Current Driver Points
+    const { data: driverStandings, isLoading: isLoadingDrivers } = useQuery<DriverStanding[]>({
+        queryKey: ['driverStandings', selectedYear],
+        queryFn: () => fetchDriverStandings(selectedYear),
+    });
     const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
     useEffect(() => {
@@ -76,8 +86,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
         <div className="grid md:grid-cols-2 gap-8">
             {/* Drivers Championship */}
             <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col">
-
-
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
                     <span className="w-1 h-8 bg-red-600 block"></span>
                     Drivers <span className="text-gray-500">Title</span>
