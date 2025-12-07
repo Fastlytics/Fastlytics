@@ -63,7 +63,7 @@ const PricingSection = () => {
                             </li>
                             <li className="flex items-center gap-3">
                                 <Tick01Icon className="w-5 h-5 text-red-600/70" />
-                                <span>Live Telemetry</span>
+                                <span>Telemetry</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <Tick01Icon className="w-5 h-5 text-red-600/70" />

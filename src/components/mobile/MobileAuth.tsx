@@ -174,7 +174,7 @@ const MobileAuth: React.FC = () => {
                                     </div>
                                     <div className="space-y-2">
                                         {[
-                                            'Live telemetry & timing data',
+                                            'Telemetry & timing data',
                                             'Driver & team standings',
                                             'Race calendar & results',
                                         ].map((feature, i) => (
