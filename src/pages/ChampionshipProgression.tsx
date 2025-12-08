@@ -61,6 +61,11 @@ const ChampionshipProgression = () => {
         loadOpenF1Data();
     }, []);
 
+    // Reset selected drivers when year changes
+    useEffect(() => {
+        setSelectedDrivers([]);
+    }, [selectedYear]);
+
     // Fetch Data
     const { data, isLoading, isError, error } = useQuery<ChampionshipProgressionData>({
         queryKey: ['championshipProgression', selectedYear],
@@ -426,19 +431,23 @@ const ChampionshipProgression = () => {
                                 />
                                 <Tooltip content={<CustomTooltip />} />
                                 <Legend content={<CustomLegend />} verticalAlign="bottom" />
-                                {selectedDrivers.map((code) => (
-                                    <Line
-                                        key={code}
-                                        type="monotone"
-                                        dataKey={code}
-                                        stroke={driverColor(code, selectedYear)}
-                                        strokeWidth={2}
-                                        dot={{ r: 3, fill: driverColor(code, selectedYear), strokeWidth: 0 }}
-                                        activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
-                                        animationDuration={1500}
-                                        name={data!.drivers[code].name}
-                                    />
-                                ))}
+                                {selectedDrivers.map((code) => {
+                                    const driverData = data?.drivers[code];
+                                    if (!driverData) return null;
+                                    return (
+                                        <Line
+                                            key={code}
+                                            type="monotone"
+                                            dataKey={code}
+                                            stroke={driverColor(code, selectedYear)}
+                                            strokeWidth={2}
+                                            dot={{ r: 3, fill: driverColor(code, selectedYear), strokeWidth: 0 }}
+                                            activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                                            animationDuration={1500}
+                                            name={driverData.name}
+                                        />
+                                    );
+                                })}
                             </LineChart>
                         </ResponsiveContainer>
                     )}

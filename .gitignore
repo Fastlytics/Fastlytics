@@ -75,3 +75,7 @@ SECURITY.md
 building-fastlytics.md
 JIRA_SETUP.md
 .env.local
+
+# Garage Server Guide
+GARAGE_SERVER_SETUP.md
+CAR_HARDWARE_SPECS.md
