@@ -268,6 +268,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const previousTimeRef = useRef<number | null>(null);
 
     // Find absolute bounds for slider
+    // Find absolute bounds for slider
     const { totalDuration, totalLaps } = useMemo(() => {
         if (!data?.time?.length) return { totalDuration: 0, totalLaps: 0 };
 
@@ -277,13 +278,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         let maxLap = 0;
         if (data.drivers) {
             for (const d of Object.values(data.drivers)) {
-                if (d.lap) {
-                    const localMax = Math.max(...d.lap);
-                    if (localMax > maxLap) maxLap = localMax;
+                if (d.lap && d.lap.length > 0) {
+                    // Arrays can be very large causing stack overflow with Math.max(...)
+                    // Since lap data is monotonic (increasing), just check the last element
+                    const lastLap = d.lap[d.lap.length - 1];
+                    if (lastLap > maxLap) maxLap = lastLap;
                 }
             }
         }
-
         return { totalDuration: maxTime, totalLaps: maxLap };
     }, [data]);
 
@@ -605,6 +607,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         return bestIdx;
     };
 
+    // --- Ghost Mode: Frame Reconstruction ---
+    // --- Ghost Mode: Frame Reconstruction ---
     // --- Ghost Mode: Frame Reconstruction ---
     const ghostFrameDrivers = useMemo(() => {
         if (replayMode !== 'ghost' || !data) return {};
@@ -1380,7 +1384,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
 
     return (
-        <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full max-w-4xl mx-auto aspect-video max-h-[80vh] rounded-xl shadow-2xl'} ${className}`}>
+        <div ref={rootRef} className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl shadow-2xl'} ${className}`}>
 
             {/* Main Content Area */}
             <div className="flex flex-1 relative overflow-hidden">
