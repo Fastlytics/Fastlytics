@@ -19,6 +19,24 @@ export const useSubscription = (): SubscriptionState => {
     const { profile, loading } = useAuth();
 
     return useMemo(() => {
+        const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
+        const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
+
+        if (!isSubscriptionsEnabled) {
+            return {
+                isPremium: true,
+                isTrialing: false,
+                daysRemaining: null,
+                tier: 'premium',
+                status: 'active',
+                limitations: {
+                    maxDrivers: 20,
+                    allowReplay: true,
+                    allowHistoricalData: true,
+                }
+            };
+        }
+
         if (loading || !profile) {
             return {
                 isPremium: false,

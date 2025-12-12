@@ -19,7 +19,12 @@ const Pricing = () => {
     const location = useLocation();
     const { user } = useAuth();
 
+    const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
+    const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
+
     const handleStartTrial = async () => {
+        if (!isSubscriptionsEnabled) return;
+
         if (!user) {
             navigate('/register');
             return;
@@ -67,13 +72,33 @@ const Pricing = () => {
                         </p>
                     </div>
 
-                    <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-start">
+                    <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-start relative">
+                        {/* OVERLAY FOR COMING SOON - Only if disabled */}
+                        {!isSubscriptionsEnabled && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
+                                <div className="bg-black border-2 border-red-600 p-8 rounded-xl shadow-[0_0_50px_rgba(220,38,38,0.5)] transform -rotate-3 text-center">
+                                    <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white mb-2">
+                                        Coming <span className="text-red-600">Soon</span>
+                                    </h2>
+                                    <p className="text-gray-400 font-mono uppercase tracking-widest text-sm">
+                                        Subscriptions are currently disabled
+                                    </p>
+                                    <p className="text-gray-500 font-mono text-xs mt-4 max-w-xs mx-auto">
+                                        All premium features are currently free for everyone during our beta period.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Free Plan */}
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="bg-gray-900/50 border-2 border-gray-800 p-8 flex flex-col relative group hover:border-gray-600 transition-all duration-300 rounded-xl overflow-hidden"
+                            className={cn(
+                                "bg-gray-900/50 border-2 border-gray-800 p-8 flex flex-col relative group hover:border-gray-600 transition-all duration-300 rounded-xl overflow-hidden",
+                                !isSubscriptionsEnabled && "opacity-50 grayscale pointer-events-none"
+                            )}
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 group-hover:bg-gray-600 transition-colors" />
 
@@ -114,7 +139,10 @@ const Pricing = () => {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, delay: 0.1 }}
-                            className="bg-gradient-to-b from-gray-900 to-black border-2 border-red-600 p-8 flex flex-col relative shadow-[0_0_50px_rgba(220,38,38,0.15)] rounded-xl overflow-hidden"
+                            className={cn(
+                                "bg-gradient-to-b from-gray-900 to-black border-2 border-red-600 p-8 flex flex-col relative shadow-[0_0_50px_rgba(220,38,38,0.15)] rounded-xl overflow-hidden",
+                                !isSubscriptionsEnabled && "opacity-50 grayscale pointer-events-none"
+                            )}
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
                             <div className="absolute top-4 right-4">
