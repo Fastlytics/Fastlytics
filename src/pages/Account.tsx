@@ -81,6 +81,8 @@ const Account = () => {
 
     // Subscription State
     const { isPremium, isTrialing, daysRemaining, tier } = useSubscription(); // Add hook
+    const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
+    const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
 
     const proPrices = {
@@ -371,22 +373,24 @@ const Account = () => {
                             <NavItem id="security" label="Security" icon={SecurityCheckIcon} active={activeSection === 'security'} onClick={() => setActiveSection('security')} />
                             <NavItem id="history" label="History" icon={Analytics01Icon} active={activeSection === 'history'} onClick={() => setActiveSection('history')} />
 
-                            <button
-                                onClick={() => setActiveSection('subscription')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left mt-4 rounded-r-md shadow-lg",
-                                    activeSection === 'subscription'
-                                        ? isPremium
-                                            ? "border-red-500 bg-red-600/10 text-white shadow-red-900/20"
-                                            : "border-yellow-500 bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-yellow-900/20"
-                                        : isPremium
-                                            ? "border-transparent text-zinc-400 hover:text-white hover:bg-zinc-900"
-                                            : "border-transparent bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 hover:shadow-yellow-500/20"
-                                )}
-                            >
-                                <Rocket01Icon className={cn("w-5 h-5", activeSection === 'subscription' ? "text-white" : isPremium ? "text-zinc-400" : "text-black")} />
-                                {isPremium ? 'My Subscription' : 'Upgrade'}
-                            </button>
+                            {isSubscriptionsEnabled && (
+                                <button
+                                    onClick={() => setActiveSection('subscription')}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left mt-4 rounded-r-md shadow-lg",
+                                        activeSection === 'subscription'
+                                            ? isPremium
+                                                ? "border-red-500 bg-red-600/10 text-white shadow-red-900/20"
+                                                : "border-yellow-500 bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-yellow-900/20"
+                                            : isPremium
+                                                ? "border-transparent text-zinc-400 hover:text-white hover:bg-zinc-900"
+                                                : "border-transparent bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 hover:shadow-yellow-500/20"
+                                    )}
+                                >
+                                    <Rocket01Icon className={cn("w-5 h-5", activeSection === 'subscription' ? "text-white" : isPremium ? "text-zinc-400" : "text-black")} />
+                                    {isPremium ? 'My Subscription' : 'Upgrade'}
+                                </button>
+                            )}
                         </div>
                     </aside>
 
@@ -680,7 +684,7 @@ const Account = () => {
 
 
                         {/* 4. Subscription Section */}
-                        {activeSection === 'subscription' && (
+                        {activeSection === 'subscription' && isSubscriptionsEnabled && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <SectionHeader title={isPremium ? "My Subscription" : "Upgrade"} icon={Rocket01Icon} />
 

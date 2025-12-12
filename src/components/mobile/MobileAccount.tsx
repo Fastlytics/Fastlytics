@@ -165,6 +165,8 @@ const MobileAccount: React.FC = () => {
 
     // Subscription State
     const { isPremium, isTrialing, daysRemaining } = useSubscription();
+    const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
+    const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>('monthly');
 
     const proPrices = {
@@ -450,35 +452,37 @@ const MobileAccount: React.FC = () => {
                     </div>
 
                     {/* Subscription Section */}
-                    <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
-                            {isPremium ? 'Subscription' : 'Upgrade'}
-                        </h3>
-                        <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
-                            {isPremium ? (
-                                <MenuItem
-                                    icon={Rocket01Icon}
-                                    label="Pro Hub"
-                                    value={isTrialing ? `${daysRemaining} days left in trial` : 'Active'}
-                                    onClick={() => setShowSubscriptionSheet(true)}
-                                />
-                            ) : (
-                                <button
-                                    onClick={() => setShowSubscriptionSheet(true)}
-                                    className="w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors bg-red-600 text-white group"
-                                >
-                                    <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10 rounded-md">
-                                        <Rocket01Icon className="w-5 h-5 text-white" />
-                                    </div>
-                                    <div className="flex-1 text-left">
-                                        <div className="font-black uppercase tracking-wider">Upgrade to Pro</div>
-                                        <div className="text-xs font-bold opacity-75 font-mono">UNLOCK ALL FEATURES</div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-white/50 group-active:text-black" />
-                                </button>
-                            )}
+                    {isSubscriptionsEnabled && (
+                        <div>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
+                                {isPremium ? 'Subscription' : 'Upgrade'}
+                            </h3>
+                            <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
+                                {isPremium ? (
+                                    <MenuItem
+                                        icon={Rocket01Icon}
+                                        label="Pro Hub"
+                                        value={isTrialing ? `${daysRemaining} days left in trial` : 'Active'}
+                                        onClick={() => setShowSubscriptionSheet(true)}
+                                    />
+                                ) : (
+                                    <button
+                                        onClick={() => setShowSubscriptionSheet(true)}
+                                        className="w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors bg-red-600 text-white group"
+                                    >
+                                        <div className="w-10 h-10 flex items-center justify-center bg-black/20 border border-black/10 rounded-md">
+                                            <Rocket01Icon className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                            <div className="font-black uppercase tracking-wider">Upgrade to Pro</div>
+                                            <div className="text-xs font-bold opacity-75 font-mono">UNLOCK ALL FEATURES</div>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-white/50 group-active:text-black" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Sign Out */}
                     <div className="pt-4">

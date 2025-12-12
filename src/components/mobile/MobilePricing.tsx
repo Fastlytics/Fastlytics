@@ -16,7 +16,12 @@ const MobilePricing: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
+    const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
+
     const handleStartTrial = async () => {
+        if (!isSubscriptionsEnabled) return;
+
         if (!user) {
             navigate('/register');
             return;
@@ -65,7 +70,27 @@ const MobilePricing: React.FC = () => {
                 </div>
             </header>
 
-            <main className="px-4 pt-12 pb-20">
+            <main className="px-4 pt-12 pb-20 relative">
+
+                {/* OVERLAY FOR MOBILE COMING SOON */}
+                {!isSubscriptionsEnabled && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 max-w-sm z-50">
+                            <div className="bg-black/95 border-2 border-red-600 p-6 rounded-xl shadow-[0_0_50px_rgba(220,38,38,0.5)] transform -rotate-3 text-center backdrop-blur-md">
+                                <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-2">
+                                    Coming <span className="text-red-600">Soon</span>
+                                </h2>
+                                <p className="text-gray-400 font-mono uppercase tracking-widest text-[10px]">
+                                    Subscriptions are currently disabled
+                                </p>
+                                <p className="text-gray-500 font-mono text-[10px] mt-4 max-w-xs mx-auto">
+                                    All premium features are currently free for everyone during our beta period.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -80,7 +105,7 @@ const MobilePricing: React.FC = () => {
                     </p>
                 </motion.div>
 
-                <div className="space-y-8">
+                <div className={cn("space-y-8", !isSubscriptionsEnabled && "opacity-30 grayscale pointer-events-none")}>
                     {/* Free Plan */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -165,7 +190,7 @@ const MobilePricing: React.FC = () => {
                             </li>
                             <li className="flex items-center gap-3">
                                 <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
-                                <span className="font-bold text-white">Session Replay</span>
+                                <span className="font-bold text-white">Session Replay Access</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <CheckmarkCircle02Icon className="w-4 h-4 text-red-600" />
