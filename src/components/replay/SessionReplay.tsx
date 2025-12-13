@@ -63,7 +63,7 @@ const getMessageConfig = (msg: { message: string, flag?: string }) => {
         return { type: 'investigation', icon: Search, color: 'text-indigo-400', border: 'border-indigo-500', bg: 'bg-indigo-950/90', fill: false };
     }
     // Track Status Flags
-    if (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("SC") || text.includes("VSC")) {
+    if (text.includes("YELLOW") || text.includes("SAFETY CAR") || /\bSC\b/.test(text) || text.includes("VSC")) {
         return { type: 'yellow', icon: AlertTriangle, color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-950/90', fill: false };
     }
     if (text.includes("BLUE")) {
@@ -1162,10 +1162,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             // Yellow / SC / VSC
             // Exclude "INFRINGEMENT", "PENALTY", "INCIDENT" to avoid false positives from race control NOTIFICATIONS
             if (
-                (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("VIRTUAL") || text.includes("SC")) &&
+                (text.includes("YELLOW") || text.includes("SAFETY CAR") || text.includes("VIRTUAL") || /\bSC\b/.test(text)) &&
                 !text.includes("INFRINGEMENT") &&
                 !text.includes("PENALTY") &&
-                !text.includes("INVESTIGATION")
+                !text.includes("INVESTIGATION") &&
+                !text.includes("BLUE")
             ) {
                 return "#eab308"; // Yellow
             }
