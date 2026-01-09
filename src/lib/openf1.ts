@@ -36,10 +36,13 @@ export const fetchOpenF1Driver = async (driverNumber: number, sessionKey: string
     }
 };
 
-export const fetchAllOpenF1Drivers = async (sessionKey: string | number = 'latest'): Promise<OpenF1Driver[]> => {
+export const fetchAllOpenF1Drivers = async (sessionKey: string | number = 'latest', year?: number): Promise<OpenF1Driver[]> => {
     // Use local backend to leverage caching
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const url = `${API_BASE_URL}/api/openf1/drivers?session_key=${sessionKey}`;
+    let url = `${API_BASE_URL}/api/openf1/drivers?session_key=${sessionKey}`;
+    if (year) {
+        url += `&year=${year}`;
+    }
     console.log(`Fetching all OpenF1 drivers from: ${url}`);
     try {
         const response = await fetch(url);
