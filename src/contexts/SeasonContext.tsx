@@ -6,10 +6,23 @@ interface SeasonContextType {
   availableYears: number[];
 }
 
-const currentYear = new Date().getFullYear();
+const now = new Date();
+const currentYearNum = now.getFullYear();
+
+// Specific start dates for seasons
+const seasonStartDates: { [key: number]: Date } = {
+  2026: new Date('2026-03-06T00:00:00'), // Australian GP FP1 2026
+};
+
+// Default to March 1st if not specified for the current year
+const startDate = seasonStartDates[currentYearNum] || new Date(currentYearNum, 2, 1);
+
+// If we are before the start date, the new season hasn't started yet.
+const currentYear = now < startDate ? currentYearNum - 1 : currentYearNum;
+
 const startYear = 2019;
 const defaultAvailableYears = Array.from(
-  { length: currentYear - startYear + 1 }, 
+  { length: currentYear - startYear + 1 },
   (_, i) => currentYear - i
 );
 

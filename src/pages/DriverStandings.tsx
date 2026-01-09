@@ -121,11 +121,12 @@ const DriverStandings = () => {
 
   useEffect(() => {
     const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
+      // Pass the selected year to fetch relevant headshots
+      const drivers = await fetchAllOpenF1Drivers('latest', selectedYear);
       setOpenF1Drivers(drivers);
     };
     loadOpenF1Data();
-  }, []);
+  }, [selectedYear]);
 
   const getDriverImage = (driverCode: string, driverName: string) => {
     const driver = openF1Drivers.find(d => d.name_acronym === driverCode || d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || ''));
