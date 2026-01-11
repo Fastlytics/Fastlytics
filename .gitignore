@@ -15,6 +15,12 @@
 /.vite
 *.local
 
+# Generated Documentation (re-generate with `npm run typedoc` / `mkdocs build`)
+/docs/frontend/
+/backend-api/site/
+/.vite
+*.local
+
 # TypeScript
 *.tsbuildinfo
 
