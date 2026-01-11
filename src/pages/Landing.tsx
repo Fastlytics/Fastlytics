@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import LandingNavbar from '@/components/LandingNavbar';
 import LandingFooter from '@/components/LandingFooter';
@@ -10,9 +11,19 @@ import SpeedTraceSection from '@/components/landing/SpeedTraceSection';
 import PricingSection from '@/components/landing/PricingSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLanding } from '@/components/mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Landing: React.FC = () => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   // Mobile Landing
   if (isMobile) {
@@ -21,7 +32,14 @@ const Landing: React.FC = () => {
         <SEO
           title="Fastlytics - F1 Telemetry & Data Analysis"
           description="The ultimate F1 data analysis platform. Visualize track dominance, compare telemetry, analyze race strategies, and more with Fastlytics."
-          keywords={['f1 analytics', 'f1 telemetry', 'track dominance', 'race strategy', 'f1 data', 'motorsport data analysis']}
+          keywords={[
+            'f1 analytics',
+            'f1 telemetry',
+            'track dominance',
+            'race strategy',
+            'f1 data',
+            'motorsport data analysis',
+          ]}
         />
         <MobileLanding />
       </>
@@ -33,7 +51,14 @@ const Landing: React.FC = () => {
       <SEO
         title="Fastlytics - F1 Telemetry & Data Analysis"
         description="The ultimate F1 data analysis platform. Visualize track dominance, compare telemetry, analyze race strategies, and more with Fastlytics."
-        keywords={['f1 analytics', 'f1 telemetry', 'track dominance', 'race strategy', 'f1 data', 'motorsport data analysis']}
+        keywords={[
+          'f1 analytics',
+          'f1 telemetry',
+          'track dominance',
+          'race strategy',
+          'f1 data',
+          'motorsport data analysis',
+        ]}
       />
       <LandingNavbar />
 
