@@ -2,13 +2,11 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
 import LandingNavbar from '@/components/LandingNavbar';
-import LandingFooter from '@/components/LandingFooter';
 import HeroSection from '@/components/landing/HeroSection';
 import TrackDominance from '@/components/landing/TrackDominance';
 import StrategySection from '@/components/landing/StrategySection';
 import LapTimeSection from '@/components/landing/LapTimeSection';
 import SpeedTraceSection from '@/components/landing/SpeedTraceSection';
-import PricingSection from '@/components/landing/PricingSection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLanding } from '@/components/mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +22,15 @@ const Landing: React.FC = () => {
       navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
+
+  // Show minimal loading screen while checking auth to prevent flash of landing page
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Mobile Landing
   if (isMobile) {
