@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { Gauge } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,10 +20,11 @@ const LandingNavbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${scrolled
-        ? 'bg-black/90 backdrop-blur-md border-red-600 py-4'
-        : 'bg-transparent border-transparent py-6'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${
+        scrolled
+          ? 'bg-black/90 backdrop-blur-md border-red-600 py-4'
+          : 'bg-transparent border-transparent py-6'
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
@@ -40,14 +41,23 @@ const LandingNavbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="/#features" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Features</a>
-            <Link to="/pricing" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">Pricing</Link>
-            <Link to="/about" className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors">About</Link>
+            <a
+              href="/#features"
+              className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors"
+            >
+              Features
+            </a>
+            <Link
+              to="/about"
+              className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors"
+            >
+              About
+            </Link>
             <Link to="/dashboard">
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 hover:border-red-500 rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all duration-300"
-              >
-                <span className="skew-x-[10deg] group-hover:skew-x-0">{user ? 'Dashboard' : 'Sign Up'}</span>
+              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 hover:border-red-500 rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all duration-300">
+                <span className="skew-x-[10deg] group-hover:skew-x-0">
+                  {user ? 'Dashboard' : 'Sign Up'}
+                </span>
               </Button>
             </Link>
           </div>
@@ -57,9 +67,15 @@ const LandingNavbar = () => {
             className="md:hidden flex flex-col gap-1.5 p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            <span className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-            <span className={`block w-8 h-0.5 bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-            <span className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            <span
+              className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}
+            />
+            <span
+              className={`block w-8 h-0.5 bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}
+            />
+            <span
+              className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}
+            />
           </button>
         </div>
       </div>
