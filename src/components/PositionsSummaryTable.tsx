@@ -1,5 +1,12 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { DetailedRaceResult } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ArrowDown01Icon, ArrowUp01Icon, MinusSignIcon } from 'hugeicons-react';
@@ -18,7 +25,7 @@ const getTeamColorClass = (teamName: string | undefined): string => {
   if (simpleName.includes('sauber')) return 'alfaromeo';
   if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
   return 'gray';
-}
+};
 
 const rookiesByYear: { [year: string]: string[] } = {
   '2025': ['ANT', 'BOR', 'DOO', 'BEA', 'HAD', 'LAW', 'COL'],
@@ -27,7 +34,7 @@ const rookiesByYear: { [year: string]: string[] } = {
   '2022': ['ZHO'],
   '2021': ['MSC', 'MAZ', 'TSU'],
   '2020': ['LAT'],
-  '2019': ['NOR', 'RUS', 'ALB']
+  '2019': ['NOR', 'RUS', 'ALB'],
 };
 
 const isRookie = (driverCode: string, year: number): boolean => {
@@ -49,13 +56,15 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
         const minutes = totalMinutes % 60;
         return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
       }
-    } catch (e) { return timeStr; }
+    } catch (e) {
+      return timeStr;
+    }
     return timeStr;
   }
 
   if (timeStr.match(/^[A-Za-z]/)) return timeStr;
 
-  let processedTime = timeStr.startsWith('+') ? timeStr.substring(1) : timeStr;
+  const processedTime = timeStr.startsWith('+') ? timeStr.substring(1) : timeStr;
   try {
     const parts = processedTime.split(/[:.]/);
     if (parts.length === 3) {
@@ -75,7 +84,9 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
       if (seconds >= 60) {
         const displayMinutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
-        const milliseconds = Math.round((seconds % 1) * 1000).toString().padStart(3, '0');
+        const milliseconds = Math.round((seconds % 1) * 1000)
+          .toString()
+          .padStart(3, '0');
         return `+${displayMinutes}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds}`;
       } else {
         return `+${processedTime}`;
@@ -97,70 +108,118 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
     return null;
   }
 
-  const calculatedResults = sessionResults.map(result => {
-    let placesChanged: number | null = null;
-    if (typeof result.gridPosition === 'number' && typeof result.position === 'number' && result.gridPosition !== 0) {
-      placesChanged = result.gridPosition - result.position;
-    } else if (result.gridPosition === 0 && typeof result.position === 'number') {
-      const effectiveGrid = sessionResults.length > 0 ? sessionResults.length : 20;
-      placesChanged = effectiveGrid - result.position;
-    }
-    return { ...result, placesChanged };
-  }).sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
+  const calculatedResults = sessionResults
+    .map((result) => {
+      let placesChanged: number | null = null;
+      if (
+        typeof result.gridPosition === 'number' &&
+        typeof result.position === 'number' &&
+        result.gridPosition !== 0
+      ) {
+        placesChanged = result.gridPosition - result.position;
+      } else if (result.gridPosition === 0 && typeof result.position === 'number') {
+        const effectiveGrid = sessionResults.length > 0 ? sessionResults.length : 20;
+        placesChanged = effectiveGrid - result.position;
+      }
+      return { ...result, placesChanged };
+    })
+    .sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
 
   const renderPlacesChanged = (change: number | null, gridPos: number | undefined) => {
     if (gridPos === 0) return <span className="text-gray-500 text-xs italic">PIT</span>;
     if (change === null || change === 0) {
-      return <span className="text-gray-600 flex items-center justify-center font-mono"><MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0</span>;
+      return (
+        <span className="text-gray-600 flex items-center justify-center font-mono">
+          <MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0
+        </span>
+      );
     } else if (change > 0) {
-      return <span className="text-green-500 flex items-center justify-center font-mono font-bold"><ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}</span>;
+      return (
+        <span className="text-green-500 flex items-center justify-center font-mono font-bold">
+          <ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}
+        </span>
+      );
     } else {
-      return <span className="text-red-500 flex items-center justify-center font-mono font-bold"><ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}</span>;
+      return (
+        <span className="text-red-500 flex items-center justify-center font-mono font-bold">
+          <ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}
+        </span>
+      );
     }
   };
 
   return (
     <div className="bg-black border border-gray-800">
       <div className="p-4 border-b border-gray-800">
-        <h4 className="text-sm font-bold uppercase tracking-wider text-white">Places Gained/Lost</h4>
+        <h4 className="text-sm font-bold uppercase tracking-wider text-white">
+          Places Gained/Lost
+        </h4>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-gray-900/50 border-b border-gray-800">
             <TableRow className="border-gray-800 hover:bg-transparent">
-              <TableHead className="w-[50px] text-center text-gray-500 font-bold uppercase text-xs">Pos</TableHead>
+              <TableHead className="w-[50px] text-center text-gray-500 font-bold uppercase text-xs">
+                Pos
+              </TableHead>
               <TableHead className="text-gray-500 font-bold uppercase text-xs">Driver</TableHead>
               <TableHead className="text-gray-500 font-bold uppercase text-xs">Team</TableHead>
-              <TableHead className="w-[90px] text-center text-gray-500 font-bold uppercase text-xs">Change</TableHead>
-              <TableHead className="w-[120px] text-right text-gray-500 font-bold uppercase text-xs">Time</TableHead>
-              <TableHead className="w-[60px] text-center text-gray-500 font-bold uppercase text-xs">Laps</TableHead>
-              <TableHead className="w-[70px] text-center text-gray-500 font-bold uppercase text-xs">Grid</TableHead>
+              <TableHead className="w-[90px] text-center text-gray-500 font-bold uppercase text-xs">
+                Change
+              </TableHead>
+              <TableHead className="w-[120px] text-right text-gray-500 font-bold uppercase text-xs">
+                Time
+              </TableHead>
+              <TableHead className="w-[60px] text-center text-gray-500 font-bold uppercase text-xs">
+                Laps
+              </TableHead>
+              <TableHead className="w-[70px] text-center text-gray-500 font-bold uppercase text-xs">
+                Grid
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {calculatedResults.map((res) => (
-              <TableRow key={res.driverCode} className="border-gray-800/50 hover:bg-gray-900/50 transition-colors group">
-                <TableCell className="text-center font-mono font-bold text-gray-400 group-hover:text-white">{res.position ?? '-'}</TableCell>
+              <TableRow
+                key={res.driverCode}
+                className="border-gray-800/50 hover:bg-gray-900/50 transition-colors group"
+              >
+                <TableCell className="text-center font-mono font-bold text-gray-400 group-hover:text-white">
+                  {res.position ?? '-'}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white">{res.fullName}</span>
                     {isRookie(res.driverCode, year) && (
-                      <span className="text-[10px] px-1 py-0.5 bg-blue-900/50 text-blue-300 rounded border border-blue-800 font-mono">R</span>
+                      <span className="text-[10px] px-1 py-0.5 bg-blue-900/50 text-blue-300 rounded border border-blue-800 font-mono">
+                        R
+                      </span>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <span className="flex items-center gap-2">
-                    <span className={cn("w-1.5 h-1.5 rounded-full", `bg-f1-${getTeamColorClass(res.team)}`)}></span>
+                    <span
+                      className={cn(
+                        'w-1.5 h-1.5 rounded-full',
+                        `bg-f1-${getTeamColorClass(res.team)}`
+                      )}
+                    ></span>
                     <span className="text-xs text-gray-400 uppercase">{res.team}</span>
                   </span>
                 </TableCell>
                 <TableCell className="text-center text-xs">
                   {renderPlacesChanged(res.placesChanged, res.gridPosition)}
                 </TableCell>
-                <TableCell className="text-right text-sm font-mono text-gray-500">{formatRaceTime(res.time, res.position === 1)}</TableCell>
-                <TableCell className="text-center font-mono text-gray-500">{res.laps ?? '-'}</TableCell>
-                <TableCell className="text-center font-mono text-gray-500">{res.gridPosition === 0 ? 'PL' : res.gridPosition ?? '-'}</TableCell>
+                <TableCell className="text-right text-sm font-mono text-gray-500">
+                  {formatRaceTime(res.time, res.position === 1)}
+                </TableCell>
+                <TableCell className="text-center font-mono text-gray-500">
+                  {res.laps ?? '-'}
+                </TableCell>
+                <TableCell className="text-center font-mono text-gray-500">
+                  {res.gridPosition === 0 ? 'PL' : (res.gridPosition ?? '-')}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

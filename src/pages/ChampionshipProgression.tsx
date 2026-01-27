@@ -93,7 +93,7 @@ const ChampionshipProgression = () => {
   }, [data]);
 
   // Determine drivers to show by default (Title Contenders going into final race)
-  useMemo(() => {
+  useEffect(() => {
     if (data && selectedDrivers.length === 0) {
       const roundsReceived = data.rounds.length;
       const checkIndex = roundsReceived > 1 ? roundsReceived - 2 : 0; // Index of the penultimate round (state before last race)
@@ -127,6 +127,7 @@ const ChampionshipProgression = () => {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]); // Run only when data loads initially
 
   const handleDriverToggle = (code: string) => {

@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useRef,
+  useCallback,
+} from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import posthog from 'posthog-js';
+import { logger } from '@/lib/logger';
 
 export interface Profile {
   id: string;
@@ -32,8 +41,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
-  signOut: async () => { },
-  refreshProfile: async () => { },
+  signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 interface AuthProviderProps {
@@ -48,60 +57,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isFetchingProfile = useRef(false);
 
-  const fetchProfile = useCallback(async (userId: string, userEmail?: string, userMeta?: any) => {
-    if (isFetchingProfile.current) {
-      return;
-    }
+  const fetchProfile = useCallback(
+    async (
+      userId: string,
+      userEmail?: string,
+      userMeta?: { full_name?: string; avatar_url?: string }
+    ) => {
+      if (isFetchingProfile.current) {
+        return;
+      }
 
-    isFetchingProfile.current = true;
+      isFetchingProfile.current = true;
 
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') { // Row not found
-          // Create new profile
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: userId,
-                full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'User',
-                avatar_url: userMeta?.avatar_url,
-                onboarding_completed: false
-              }
-            ])
-            .select()
-            .single();
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Row not found
+            // Create new profile
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: userId,
+                  full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'User',
+                  avatar_url: userMeta?.avatar_url,
+                  onboarding_completed: false,
+                },
+              ])
+              .select()
+              .single();
 
-          if (createError) {
-            console.error('Error creating profile:', createError);
+            if (createError) {
+              logger.error('Error creating profile:', createError);
+            } else {
+              setProfile(newProfile);
+            }
           } else {
-            setProfile(newProfile);
+            logger.error('Error fetching profile:', error);
           }
         } else {
-          console.error('Error fetching profile:', error);
+          setProfile(data);
         }
-      } else {
-        setProfile(data);
+      } catch (error) {
+        logger.error('Unexpected error fetching profile:', error);
+        setProfile(null);
+      } finally {
+        isFetchingProfile.current = false;
       }
-    } catch (error) {
-      console.error('Unexpected error fetching profile:', error);
-      setProfile(null);
-    } finally {
-      isFetchingProfile.current = false;
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
     // Set up auth state listener FIRST - this is the recommended approach by Supabase
     // The listener will fire with the initial session when Supabase finishes initializing
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      logger.debug('Auth state changed:', event);
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -129,21 +148,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Also call getSession for the initial state (but don't block on it)
     // This handles cases where onAuthStateChange might not fire immediately
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // Only update if we haven't received an auth state change yet
-      if (loading) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        // Only update if we haven't received an auth state change yet
+        if (loading) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
 
-        if (session?.user) {
-          fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+          if (session?.user) {
+            fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+          }
         }
-      }
-    }).catch((error) => {
-      console.error('Error getting session:', error);
-      setLoading(false);
-    });
+      })
+      .catch((error) => {
+        logger.error('Error getting session:', error);
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -168,11 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

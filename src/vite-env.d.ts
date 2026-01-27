@@ -11,6 +11,6 @@ interface ImportMeta {
 
 interface Window {
   umami: {
-    track: (eventName: string, data?: Record<string, any>) => void;
+    track: (eventName: string, data?: Record<string, unknown>) => void;
   };
 }

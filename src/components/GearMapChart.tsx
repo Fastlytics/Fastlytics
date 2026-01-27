@@ -1,5 +1,4 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { fetchGearShiftMap, GearShiftMapData } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { OpenF1Driver } from '@/lib/openf1';
@@ -13,7 +12,7 @@ const gearColors = [
   '#ee3377', // 5th Gear (Magenta)
   '#0077bb', // 6th Gear (Blue)
   '#aacc00', // 7th Gear (Lime Green)
-  '#ffdd55'  // 8th Gear (Yellow)
+  '#ffdd55', // 8th Gear (Yellow)
 ];
 
 const getGearColor = (gear: number): string => {
@@ -38,13 +37,13 @@ interface GearMapChartProps {
 const GearMapChart: React.FC<GearMapChartProps> = ({
   className,
   delay = 0,
-  title = "Gear Shifts",
+  title = 'Gear Shifts',
   year,
   event,
   session,
   initialDriver = '',
   lap = 'fastest',
-  openF1Drivers = []
+  openF1Drivers = [],
 }) => {
   const [hoveredGear, setHoveredGear] = React.useState<number | null>(null);
 
@@ -59,16 +58,9 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       initialDriver={initialDriver}
       lap={lap}
       openF1Drivers={openF1Drivers}
-      onLoadData={(driver, lapVal) => {
-        return useQuery<GearShiftMapData>({
-          queryKey: ['gearMap', year, event, session, driver, lapVal],
-          queryFn: () => fetchGearShiftMap(year, event, session, driver, lapVal),
-          staleTime: 1000 * 60 * 10,
-          gcTime: 1000 * 60 * 30,
-          retry: 1,
-          enabled: !!year && !!event && !!session && !!driver && !!lapVal,
-        });
-      }}
+      queryKey={(driver, lapVal) => ['gearMap', year, event, session, driver, lapVal]}
+      queryFn={(driver, lapVal) => fetchGearShiftMap(year, event, session, driver, lapVal)}
+      queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
       renderChart={(data, color, selectedDriver) => {
         return (
           <div className="relative w-full h-[350px] flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800/50 overflow-hidden">
@@ -92,7 +84,11 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
               })}
             </div>
 
-            <svg viewBox="0 0 1000 500" className="w-full h-full p-4" preserveAspectRatio="xMidYMid meet">
+            <svg
+              viewBox="0 0 1000 500"
+              className="w-full h-full p-4"
+              preserveAspectRatio="xMidYMid meet"
+            >
               {/* Base Track */}
               <path
                 d={data.circuitLayout}
@@ -110,11 +106,13 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                   d={segment.path}
                   fill="none"
                   stroke={getGearColor(segment.gear)}
-                  strokeWidth={hoveredGear === segment.gear ? "14" : "8"}
+                  strokeWidth={hoveredGear === segment.gear ? '14' : '8'}
                   strokeLinecap="butt"
                   strokeLinejoin="round"
                   className="transition-all duration-200 cursor-pointer hover:opacity-100"
-                  style={{ opacity: hoveredGear !== null && hoveredGear !== segment.gear ? 0.3 : 1 }}
+                  style={{
+                    opacity: hoveredGear !== null && hoveredGear !== segment.gear ? 0.3 : 1,
+                  }}
                   onMouseEnter={() => setHoveredGear(segment.gear)}
                   onMouseLeave={() => setHoveredGear(null)}
                 />
@@ -124,7 +122,13 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
             {/* Tooltip for Hovered Gear */}
             {hoveredGear && (
               <div className="absolute bottom-4 left-4 bg-black/80 border border-gray-700 p-2 rounded backdrop-blur text-xs font-mono text-white pointer-events-none transition-all duration-200">
-                Current Gear: <span style={{ color: getGearColor(hoveredGear) }} className="font-bold text-lg ml-1">{hoveredGear}</span>
+                Current Gear:{' '}
+                <span
+                  style={{ color: getGearColor(hoveredGear) }}
+                  className="font-bold text-lg ml-1"
+                >
+                  {hoveredGear}
+                </span>
               </div>
             )}
           </div>
@@ -133,12 +137,18 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       renderStats={(data) => {
         return (
           <div className="border-t border-gray-800 pt-4">
-
             <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">Most Used</span>
-                  <span className="text-lg font-bold text-white font-mono" style={{ color: getGearColor(data.stats.mostUsedGear) }}>{data.stats.mostUsedGear}</span>
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                    Most Used
+                  </span>
+                  <span
+                    className="text-lg font-bold text-white font-mono"
+                    style={{ color: getGearColor(data.stats.mostUsedGear) }}
+                  >
+                    {data.stats.mostUsedGear}
+                  </span>
                 </div>
               </div>
             </div>

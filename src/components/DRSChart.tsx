@@ -9,7 +9,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { useQuery } from '@tanstack/react-query';
 import { fetchTelemetryDRS, DRSDataPoint } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
@@ -106,16 +105,9 @@ const DRSChart: React.FC<DRSChartProps> = ({
       initialDriver={initialDriver}
       lap={lap}
       openF1Drivers={openF1Drivers}
-      onLoadData={(driver, lapVal) => {
-        return useQuery<DRSDataPoint[]>({
-          queryKey: ['drsTrace', year, event, session, driver, lapVal],
-          queryFn: () => fetchTelemetryDRS(year, event, session, driver, lapVal),
-          staleTime: 1000 * 60 * 10,
-          gcTime: 1000 * 60 * 30,
-          retry: 1,
-          enabled: !!year && !!event && !!session && !!driver && !!lapVal,
-        });
-      }}
+      queryKey={(driver, lapVal) => ['drsTrace', year, event, session, driver, lapVal]}
+      queryFn={(driver, lapVal) => fetchTelemetryDRS(year, event, session, driver, lapVal)}
+      queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
       renderChart={(data, color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart

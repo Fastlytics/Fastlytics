@@ -148,12 +148,19 @@ const TeamPaceAnalysis = () => {
   const getEvolutionData = () => {
     if (!eventData) return [];
 
+    interface EvolutionDataPoint {
+      name: string;
+      [teamName: string]: string | number;
+    }
+
     const sessionsOrder = ['FP1', 'FP2', 'FP3', 'Q', 'Sprint', 'R'];
-    const data: any[] = [];
+    const data: EvolutionDataPoint[] = [];
 
     sessionsOrder.forEach((session) => {
       if (eventData.sessions[session]) {
-        const sessionPoint: any = { name: session };
+        const sessionPoint: EvolutionDataPoint = {
+          name: session,
+        };
         eventData.sessions[session].forEach((team) => {
           sessionPoint[team.teamName] = team.rank;
         });
@@ -395,20 +402,27 @@ const TeamPaceAnalysis = () => {
                       dataKey="name"
                       axisLine={{ stroke: '#333' }}
                       tickLine={false}
-                      tick={({ x, y, payload }) => (
-                        <text
-                          x={x}
-                          y={y + 15}
-                          textAnchor="middle"
-                          fill="#666"
-                          fontSize={12}
-                          fontWeight="bold"
-                          fontFamily="monospace"
-                          style={{ textTransform: 'uppercase' }}
-                        >
-                          {payload.value}
-                        </text>
-                      )}
+                      tick={(props) => {
+                        const { x, y, payload } = props as {
+                          x: number;
+                          y: number;
+                          payload: { value: string };
+                        };
+                        return (
+                          <text
+                            x={x}
+                            y={y + 15}
+                            textAnchor="middle"
+                            fill="#666"
+                            fontSize={12}
+                            fontWeight="bold"
+                            fontFamily="monospace"
+                            style={{ textTransform: 'uppercase' }}
+                          >
+                            {payload.value}
+                          </text>
+                        );
+                      }}
                       height={40}
                     />
                     <YAxis

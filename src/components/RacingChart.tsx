@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -100,7 +100,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
   };
 
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
-  const driversToDisplay = staticData ? initialDrivers || [] : selectedDrivers;
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
@@ -110,20 +109,20 @@ const RacingChart: React.FC<RacingChartProps> = ({
     enabled: !staticData && !!year && !!event && !!session,
   });
 
-  // Fill in remaining drivers if needed once availableDrivers are loaded
-  useEffect(() => {
-    if (availableDrivers && selectedDrivers.length < MIN_DRIVERS && !staticData) {
-      const needed = MIN_DRIVERS - selectedDrivers.length;
-      const candidates = availableDrivers
-        .filter((d) => !selectedDrivers.includes(d.code))
-        .slice(0, needed)
-        .map((d) => d.code);
+  const effectiveDrivers = useMemo(() => {
+    if (staticData) return selectedDrivers;
+    if (selectedDrivers.length >= MIN_DRIVERS) return selectedDrivers;
+    if (!availableDrivers) return selectedDrivers;
 
-      if (candidates.length > 0) {
-        setSelectedDrivers((prev) => [...prev, ...candidates]);
-      }
-    }
-  }, [availableDrivers, selectedDrivers.length, staticData]);
+    const needed = MIN_DRIVERS - selectedDrivers.length;
+    const candidates = availableDrivers
+      .filter((d) => !selectedDrivers.includes(d.code))
+      .slice(0, needed)
+      .map((d) => d.code);
+    return [...selectedDrivers, ...candidates];
+  }, [selectedDrivers, availableDrivers, staticData]);
+
+  const driversToDisplay = staticData ? initialDrivers || [] : effectiveDrivers;
 
   const {
     data: fetchedLapData,
@@ -131,8 +130,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
     error,
     isError,
   } = useQuery<LapTimeDataPoint[]>({
-    queryKey: ['lapTimes', year, event, session, ...selectedDrivers.sort()],
-    queryFn: () => fetchLapTimes(year, event, session, selectedDrivers),
+    queryKey: ['lapTimes', year, event, session, ...effectiveDrivers.sort()],
+    queryFn: () => fetchLapTimes(year, event, session, effectiveDrivers),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15,
     retry: 1,
@@ -141,7 +140,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
       !!year &&
       !!event &&
       !!session &&
-      selectedDrivers.length >= MIN_DRIVERS &&
+      effectiveDrivers.length >= MIN_DRIVERS &&
       shouldLoadChart,
   });
 
