@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { cn, formatTime } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchTelemetryThrottle,
@@ -203,7 +204,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
   };
 
   const handleClick = (e: ClickEvent) => {
-    console.log('Chart clicked:', e.value);
+    logger.debug('Chart clicked:', e.value);
     if (!activePayload || activePayload.length === 0) {
       return;
     }

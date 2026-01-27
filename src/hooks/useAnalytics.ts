@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 export const useAnalytics = () => {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ export const useAnalytics = () => {
         try {
           window.umami.track(eventName, data);
         } catch (error) {
-          console.warn('Umami tracking failed:', error);
+          logger.warn('Umami tracking failed:', error);
         }
       }
 
@@ -26,10 +27,10 @@ export const useAnalytics = () => {
           });
 
           if (error) {
-            console.error('Supabase analytics tracking failed:', error);
+            logger.error('Supabase analytics tracking failed:', error);
           }
         } catch (error) {
-          console.error('Unexpected error tracking in Supabase:', error);
+          logger.error('Unexpected error tracking in Supabase:', error);
         }
       }
     },
