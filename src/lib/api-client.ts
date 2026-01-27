@@ -9,6 +9,8 @@ export class APIError extends Error {
   }
 }
 
+import { logger } from './logger';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const API_KEY = import.meta.env.VITE_FASTLYTICS_API_KEY;
 const API_KEY_HEADER = 'X-API-Key';
@@ -30,7 +32,7 @@ export const request = async <T>(endpoint: string, options?: RequestInit): Promi
   // Remove leading slash if present in endpoint to avoid double slashes if base url has one?
   // Usually standardizing on no trailing slash in base, leading slash in endpoint.
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`Fetching: ${url}`);
+  logger.debug(`Fetching: ${url}`);
 
   try {
     const response = await fetch(url, {
@@ -49,14 +51,14 @@ export const request = async <T>(endpoint: string, options?: RequestInit): Promi
       } catch {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new APIError(response.status, errorDetail);
     }
 
     return await response.json();
   } catch (error) {
     if (error instanceof APIError) throw error;
-    console.error(`Network or Parsing Error:`, error);
+    logger.error(`Network or Parsing Error:`, error);
     throw error;
   }
 };

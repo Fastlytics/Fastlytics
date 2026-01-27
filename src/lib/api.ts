@@ -1,4 +1,5 @@
 import { request } from './api-client';
+import { logger } from './logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'; // Keep for constructing URLs not using request() yet?
 // Ideally we move everything to use request() which handles base URL.
@@ -341,7 +342,7 @@ export const fetchSessionDrivers = async (
 ): Promise<SessionDriver[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/session/drivers?${params.toString()}`;
-  console.log(`Fetching session drivers from: ${url}`);
+  logger.debug(`Fetching session drivers from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -352,14 +353,14 @@ export const fetchSessionDrivers = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: SessionDriver[] = await response.json();
-    console.log(`Successfully fetched ${data.length} session drivers.`);
+    logger.debug(`Successfully fetched ${data.length} session drivers.`);
     return data;
   } catch (error) {
-    console.error('Error fetching session drivers:', error);
+    logger.error('Error fetching session drivers:', error);
     throw error;
   }
 };
@@ -377,7 +378,7 @@ export const fetchLapTimes = async (
   params.append('session', session);
   drivers.forEach((driver) => params.append('drivers', driver));
   const url = `${API_BASE_URL}/api/laptimes?${params.toString()}`;
-  console.log(`Fetching lap times from: ${url}`);
+  logger.debug(`Fetching lap times from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -388,14 +389,14 @@ export const fetchLapTimes = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: LapTimeDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} lap time records for ${drivers.join(', ')}.`);
+    logger.debug(`Successfully fetched ${data.length} lap time records for ${drivers.join(', ')}.`);
     return data;
   } catch (error) {
-    console.error('Error fetching lap times:', error);
+    logger.error('Error fetching lap times:', error);
     throw error;
   }
 };
@@ -416,7 +417,7 @@ export const fetchTelemetrySpeed = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/speed?${params.toString()}`;
-  console.log(`Fetching speed telemetry from: ${url}`);
+  logger.debug(`Fetching speed telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -427,14 +428,14 @@ export const fetchTelemetrySpeed = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: SpeedDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} speed telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} speed telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching speed telemetry:', error);
+    logger.error('Error fetching speed telemetry:', error);
     throw error;
   }
 };
@@ -455,7 +456,7 @@ export const fetchTelemetryGear = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/gear?${params.toString()}`;
-  console.log(`Fetching gear telemetry from: ${url}`);
+  logger.debug(`Fetching gear telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -466,14 +467,14 @@ export const fetchTelemetryGear = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: GearMapDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} gear telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} gear telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching gear telemetry:', error);
+    logger.error('Error fetching gear telemetry:', error);
     throw error;
   }
 };
@@ -494,7 +495,7 @@ export const fetchGearShiftMap = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/gear-map?${params.toString()}`;
-  console.log(`Fetching gear map from: ${url}`);
+  logger.debug(`Fetching gear map from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -505,14 +506,14 @@ export const fetchGearShiftMap = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: GearShiftMapData = await response.json();
-    console.log(`Successfully fetched gear map with ${data.segments.length} segments.`);
+    logger.debug(`Successfully fetched gear map with ${data.segments.length} segments.`);
     return data;
   } catch (error) {
-    console.error('Error fetching gear map:', error);
+    logger.error('Error fetching gear map:', error);
     throw error;
   }
 };
@@ -533,7 +534,7 @@ export const fetchTelemetryThrottle = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/throttle?${params.toString()}`;
-  console.log(`Fetching throttle telemetry from: ${url}`);
+  logger.debug(`Fetching throttle telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -544,14 +545,14 @@ export const fetchTelemetryThrottle = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: ThrottleDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} throttle telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} throttle telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching throttle telemetry:', error);
+    logger.error('Error fetching throttle telemetry:', error);
     throw error;
   }
 };
@@ -572,7 +573,7 @@ export const fetchTelemetryBrake = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/brake?${params.toString()}`;
-  console.log(`Fetching brake telemetry from: ${url}`);
+  logger.debug(`Fetching brake telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -583,14 +584,14 @@ export const fetchTelemetryBrake = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: BrakeDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} brake telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} brake telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching brake telemetry:', error);
+    logger.error('Error fetching brake telemetry:', error);
     throw error;
   }
 };
@@ -611,7 +612,7 @@ export const fetchTelemetryRPM = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/rpm?${params.toString()}`;
-  console.log(`Fetching RPM telemetry from: ${url}`);
+  logger.debug(`Fetching RPM telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -622,14 +623,14 @@ export const fetchTelemetryRPM = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: RPMDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} RPM telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} RPM telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching RPM telemetry:', error);
+    logger.error('Error fetching RPM telemetry:', error);
     throw error;
   }
 };
@@ -650,7 +651,7 @@ export const fetchTelemetryDRS = async (
     lap: String(lap),
   });
   const url = `${API_BASE_URL}/api/telemetry/drs?${params.toString()}`;
-  console.log(`Fetching DRS telemetry from: ${url}`);
+  logger.debug(`Fetching DRS telemetry from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -661,14 +662,14 @@ export const fetchTelemetryDRS = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: DRSDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} DRS telemetry records.`);
+    logger.debug(`Successfully fetched ${data.length} DRS telemetry records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching DRS telemetry:', error);
+    logger.error('Error fetching DRS telemetry:', error);
     throw error;
   }
 };
@@ -681,7 +682,7 @@ export const fetchTireStrategy = async (
 ): Promise<DriverStrategy[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/strategy?${params.toString()}`;
-  console.log(`Fetching tire strategy from: ${url}`);
+  logger.debug(`Fetching tire strategy from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -692,14 +693,14 @@ export const fetchTireStrategy = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: DriverStrategy[] = await response.json();
-    console.log(`Successfully fetched strategy for ${data.length} drivers.`);
+    logger.debug(`Successfully fetched strategy for ${data.length} drivers.`);
     return data;
   } catch (error) {
-    console.error('Error fetching tire strategy:', error);
+    logger.error('Error fetching tire strategy:', error);
     throw error;
   }
 };
@@ -708,7 +709,7 @@ export const fetchTireStrategy = async (
 export const fetchDriverStandings = async (year: number): Promise<DriverStanding[]> => {
   const params = new URLSearchParams({ year: year.toString() });
   const url = `${API_BASE_URL}/api/standings/drivers?${params.toString()}`;
-  console.log(`Fetching driver standings from: ${url}`);
+  logger.debug(`Fetching driver standings from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -719,14 +720,14 @@ export const fetchDriverStandings = async (year: number): Promise<DriverStanding
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: DriverStanding[] = await response.json();
-    console.log(`Successfully fetched driver standings for ${year}.`);
+    logger.debug(`Successfully fetched driver standings for ${year}.`);
     return data;
   } catch (error) {
-    console.error(`Error fetching driver standings for ${year}:`, error);
+    logger.error(`Error fetching driver standings for ${year}:`, error);
     throw error;
   }
 };
@@ -735,7 +736,7 @@ export const fetchDriverStandings = async (year: number): Promise<DriverStanding
 export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> => {
   const params = new URLSearchParams({ year: year.toString() });
   const url = `${API_BASE_URL}/api/standings/teams?${params.toString()}`;
-  console.log(`Fetching team standings from: ${url}`);
+  logger.debug(`Fetching team standings from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -746,14 +747,14 @@ export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> 
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: TeamStanding[] = await response.json();
-    console.log(`Successfully fetched team standings for ${year}.`);
+    logger.debug(`Successfully fetched team standings for ${year}.`);
     return data;
   } catch (error) {
-    console.error(`Error fetching team standings for ${year}:`, error);
+    logger.error(`Error fetching team standings for ${year}:`, error);
     throw error;
   }
 };
@@ -762,7 +763,7 @@ export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> 
 export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
   const params = new URLSearchParams({ year: year.toString() });
   const url = `${API_BASE_URL}/api/results/races?${params.toString()}`;
-  console.log(`Fetching race results summary from: ${url}`);
+  logger.debug(`Fetching race results summary from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -773,14 +774,14 @@ export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: RaceResult[] = await response.json();
-    console.log(`Successfully fetched ${data.length} race results summary for ${year}.`);
+    logger.debug(`Successfully fetched ${data.length} race results summary for ${year}.`);
     return data;
   } catch (error) {
-    console.error(`Error fetching race results for ${year}:`, error);
+    logger.error(`Error fetching race results for ${year}:`, error);
     throw error;
   }
 };
@@ -794,7 +795,7 @@ export const fetchSpecificRaceResults = async (
   // Add the session as a query parameter
   const params = new URLSearchParams({ session });
   const url = `${API_BASE_URL}/api/results/race/${year}/${eventSlug}?${params.toString()}`;
-  console.log(`Fetching detailed race results from: ${url}`); // Log includes session now
+  logger.debug(`Fetching detailed race results from: ${url}`); // Log includes session now
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -805,16 +806,16 @@ export const fetchSpecificRaceResults = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: DetailedRaceResult[] = await response.json();
-    console.log(
+    logger.debug(
       `Successfully fetched detailed results for ${year} ${eventSlug} session ${session}.`
     );
     return data;
   } catch (error) {
-    console.error(
+    logger.error(
       `Error fetching detailed race results for ${year} ${eventSlug} session ${session}:`,
       error
     );
@@ -830,7 +831,7 @@ export const fetchTrackEvolution = async (
 ): Promise<TrackEvolutionResponse> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/track-evolution?${params.toString()}`;
-  console.log(`Fetching track evolution from: ${url}`);
+  logger.debug(`Fetching track evolution from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -841,14 +842,14 @@ export const fetchTrackEvolution = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: TrackEvolutionResponse = await response.json();
-    console.log(`Successfully fetched track evolution data.`);
+    logger.debug(`Successfully fetched track evolution data.`);
     return data;
   } catch (error) {
-    console.error('Error fetching track evolution data:', error);
+    logger.error('Error fetching track evolution data:', error);
     throw error;
   }
 };
@@ -859,7 +860,7 @@ export const fetchChampionshipProgression = async (
 ): Promise<ChampionshipProgressionData> => {
   const params = new URLSearchParams({ year: year.toString() });
   const url = `${API_BASE_URL}/api/standings/progression?${params.toString()}`;
-  console.log(`Fetching championship progression from: ${url}`);
+  logger.debug(`Fetching championship progression from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -870,14 +871,14 @@ export const fetchChampionshipProgression = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: ChampionshipProgressionData = await response.json();
-    console.log(`Successfully fetched championship progression data.`);
+    logger.debug(`Successfully fetched championship progression data.`);
     return data;
   } catch (error) {
-    console.error('Error fetching championship progression data:', error);
+    logger.error('Error fetching championship progression data:', error);
     throw error;
   }
 };
@@ -885,7 +886,7 @@ export const fetchChampionshipProgression = async (
 /** Fetches the event schedule for a given year. */
 export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
   const url = `${API_BASE_URL}/api/schedule/${year}`;
-  console.log(`Fetching schedule from: ${url}`);
+  logger.debug(`Fetching schedule from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -896,14 +897,14 @@ export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error fetching schedule for ${year}: ${errorDetail}`);
+      logger.error(`API Error fetching schedule for ${year}: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: ScheduleEvent[] = await response.json();
-    console.log(`Successfully fetched schedule for ${year} with ${data.length} events.`);
+    logger.debug(`Successfully fetched schedule for ${year} with ${data.length} events.`);
     return data;
   } catch (error) {
-    console.error(`Error fetching schedule for ${year}:`, error);
+    logger.error(`Error fetching schedule for ${year}:`, error);
     throw error;
   }
 };
@@ -912,7 +913,7 @@ export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
 export const fetchTeamPaceSummary = async (year: number): Promise<TeamPaceSummary[]> => {
   const params = new URLSearchParams({ year: year.toString() });
   const url = `${API_BASE_URL}/api/team-pace/summary?${params.toString()}`;
-  console.log(`Fetching team pace summary from: ${url}`);
+  logger.debug(`Fetching team pace summary from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -923,13 +924,13 @@ export const fetchTeamPaceSummary = async (year: number): Promise<TeamPaceSummar
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: TeamPaceSummary[] = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching team pace summary:', error);
+    logger.error('Error fetching team pace summary:', error);
     throw error;
   }
 };
@@ -941,7 +942,7 @@ export const fetchTeamPaceEvent = async (
 ): Promise<TeamPaceEvent> => {
   const params = new URLSearchParams({ year: year.toString(), event_slug: eventSlug });
   const url = `${API_BASE_URL}/api/team-pace/event?${params.toString()}`;
-  console.log(`Fetching team pace event from: ${url}`);
+  logger.debug(`Fetching team pace event from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -952,13 +953,13 @@ export const fetchTeamPaceEvent = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: TeamPaceEvent = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching team pace event:', error);
+    logger.error('Error fetching team pace event:', error);
     throw error;
   }
 };
@@ -971,7 +972,7 @@ export const fetchLapPositions = async (
 ): Promise<LapPositionDataPoint[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/lapdata/positions?${params.toString()}`;
-  console.log(`Fetching lap positions from: ${url}`);
+  logger.debug(`Fetching lap positions from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -982,14 +983,14 @@ export const fetchLapPositions = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: LapPositionDataPoint[] = await response.json();
-    console.log(`Successfully fetched ${data.length} lap position records.`);
+    logger.debug(`Successfully fetched ${data.length} lap position records.`);
     return data;
   } catch (error) {
-    console.error('Error fetching lap positions:', error);
+    logger.error('Error fetching lap positions:', error);
     throw error;
   }
 };
@@ -999,7 +1000,7 @@ import { fetchOpenF1Driver } from './openf1';
 
 export const getDriverDetails = async (driverId: string): Promise<DriverDetails> => {
   const url = `${API_BASE_URL}/api/driver/${driverId}`;
-  console.log(`Fetching driver details from: ${url}`);
+  logger.debug(`Fetching driver details from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1010,11 +1011,11 @@ export const getDriverDetails = async (driverId: string): Promise<DriverDetails>
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error fetching driver ${driverId}: ${errorDetail}`);
+      logger.error(`API Error fetching driver ${driverId}: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: DriverDetails = await response.json();
-    console.log(`Successfully fetched details for driver ${driverId}.`);
+    logger.debug(`Successfully fetched details for driver ${driverId}.`);
 
     // Fetch additional data from OpenF1
     // We need to map driverId (e.g., 'VER') to driver number if possible, or fetch all and find match
@@ -1026,7 +1027,7 @@ export const getDriverDetails = async (driverId: string): Promise<DriverDetails>
       );
 
       if (openF1Driver) {
-        console.log(`Found OpenF1 data for ${driverId}`);
+        logger.debug(`Found OpenF1 data for ${driverId}`);
         data.headshot_url = openF1Driver.headshot_url;
         data.team_colour = openF1Driver.team_colour;
         data.team_name = openF1Driver.team_name;
@@ -1036,12 +1037,12 @@ export const getDriverDetails = async (driverId: string): Promise<DriverDetails>
         }
       }
     } catch (openF1Error) {
-      console.warn('Failed to enrich driver details with OpenF1 data:', openF1Error);
+      logger.warn('Failed to enrich driver details with OpenF1 data:', openF1Error);
     }
 
     return data;
   } catch (error) {
-    console.error(`Error fetching driver details for ${driverId}:`, error);
+    logger.error(`Error fetching driver details for ${driverId}:`, error);
     throw error;
   }
 };
@@ -1051,7 +1052,7 @@ export const getTeamDetails = async (teamId: string): Promise<TeamDetails> => {
   // Team ID might contain spaces or special chars, ensure it's encoded for the URL path part
   const encodedTeamId = encodeURIComponent(teamId);
   const url = `${API_BASE_URL}/api/team/${encodedTeamId}`;
-  console.log(`Fetching team details from: ${url}`);
+  logger.debug(`Fetching team details from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1062,15 +1063,15 @@ export const getTeamDetails = async (teamId: string): Promise<TeamDetails> => {
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error fetching team ${teamId}: ${errorDetail}`);
+      logger.error(`API Error fetching team ${teamId}: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: TeamDetails = await response.json();
-    console.log(`Successfully fetched details for team ${teamId}.`);
+    logger.debug(`Successfully fetched details for team ${teamId}.`);
     // TODO: Potentially add mock data here if API returns 404 during development
     return data;
   } catch (error) {
-    console.error(`Error fetching team details for ${teamId}:`, error);
+    logger.error(`Error fetching team details for ${teamId}:`, error);
     // TODO: Potentially return mock data on error during development
     throw error;
   }
@@ -1082,7 +1083,7 @@ export const fetchEventSessionSchedule = async (
   event: string
 ): Promise<EventSessionSchedule> => {
   const url = `${API_BASE_URL}/api/schedule/${year}/${event}/sessions`;
-  console.log(`Fetching event session schedule from: ${url}`);
+  logger.debug(`Fetching event session schedule from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1093,14 +1094,14 @@ export const fetchEventSessionSchedule = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: EventSessionSchedule = await response.json();
-    console.log(`Successfully fetched session schedule for ${year} ${event}.`);
+    logger.debug(`Successfully fetched session schedule for ${year} ${event}.`);
     return data;
   } catch (error) {
-    console.error(`Error fetching session schedule for ${year} ${event}:`, error);
+    logger.error(`Error fetching session schedule for ${year} ${event}:`, error);
     throw error;
   }
 };
@@ -1118,7 +1119,7 @@ export const fetchDriverLapNumbers = async (
   }
   const params = new URLSearchParams({ year: year.toString(), event, session, driver });
   const url = `${API_BASE_URL}/api/laps/driver?${params.toString()}`;
-  console.log(`Fetching lap numbers from: ${url}`);
+  logger.debug(`Fetching lap numbers from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1129,14 +1130,14 @@ export const fetchDriverLapNumbers = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error fetching lap numbers for ${driver}: ${errorDetail}`);
+      logger.error(`API Error fetching lap numbers for ${driver}: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: { laps: number[] } = await response.json();
-    console.log(`Successfully fetched ${data.laps.length} lap numbers for ${driver}.`);
+    logger.debug(`Successfully fetched ${data.laps.length} lap numbers for ${driver}.`);
     return data.laps || []; // Ensure we return an array
   } catch (error) {
-    console.error(`Error fetching lap numbers for ${driver}:`, error);
+    logger.error(`Error fetching lap numbers for ${driver}:`, error);
     throw error;
   }
 };
@@ -1167,7 +1168,7 @@ export const fetchSectorComparison = async (
 
   // Correct endpoint and all parameters as query params
   const url = `${API_BASE_URL}/api/comparison/sectors?${params.toString()}`;
-  console.log(`Fetching sector comparison from: ${url}`); // Log includes laps now
+  logger.debug(`Fetching sector comparison from: ${url}`); // Log includes laps now
 
   try {
     const response = await fetch(url, { headers: getHeaders() });
@@ -1179,16 +1180,16 @@ export const fetchSectorComparison = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: SectorComparisonData = await response.json();
-    console.log(
+    logger.debug(
       `Successfully fetched sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}) in ${year} ${event} ${session}`
     );
     return data;
   } catch (error) {
-    console.error(
+    logger.error(
       `Error fetching sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}):`,
       error
     );
@@ -1254,7 +1255,7 @@ export const fetchStintAnalysis = async (
 ): Promise<StintAnalysisData[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/stint-analysis?${params.toString()}`;
-  console.log(`Fetching stint analysis from: ${url}`);
+  logger.debug(`Fetching stint analysis from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1265,14 +1266,14 @@ export const fetchStintAnalysis = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: StintAnalysisData[] = await response.json();
-    console.log(`Successfully fetched ${data.length} stint records for analysis.`);
+    logger.debug(`Successfully fetched ${data.length} stint records for analysis.`);
     return data;
   } catch (error) {
-    console.error('Error fetching stint analysis:', error);
+    logger.error('Error fetching stint analysis:', error);
     throw error;
   }
 };
@@ -1285,7 +1286,7 @@ export const fetchSessionIncidents = async (
 ): Promise<SessionIncident[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/incidents?${params.toString()}`;
-  console.log(`Fetching session incidents from: ${url}`);
+  logger.debug(`Fetching session incidents from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1296,16 +1297,16 @@ export const fetchSessionIncidents = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error fetching incidents: ${errorDetail}`);
+      logger.error(`API Error fetching incidents: ${errorDetail}`);
       // Return empty array on error to prevent breaking UI that expects an array
       return [];
       // Alternatively, throw new Error(errorDetail); if you want query hook to handle error state
     }
     const data: SessionIncident[] = await response.json();
-    console.log(`Successfully fetched ${data.length} incidents.`);
+    logger.debug(`Successfully fetched ${data.length} incidents.`);
     return data;
   } catch (error) {
-    console.error('Error fetching incidents:', error);
+    logger.error('Error fetching incidents:', error);
     throw error;
   }
 };
@@ -1330,7 +1331,7 @@ export const fetchPaceDistribution = async (
   const params = new URLSearchParams({ year: year.toString(), event, session });
   params.append('drivers', drivers.join(','));
   const url = `${API_BASE_URL}/api/telemetry/pace-distribution?${params.toString()}`;
-  console.log(`Fetching pace distribution from: ${url}`);
+  logger.debug(`Fetching pace distribution from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1341,14 +1342,14 @@ export const fetchPaceDistribution = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: PaceDistributionData[] = await response.json();
-    console.log(`Successfully fetched pace distribution for ${data.length} drivers.`);
+    logger.debug(`Successfully fetched pace distribution for ${data.length} drivers.`);
     return data;
   } catch (error) {
-    console.error('Error fetching pace distribution:', error);
+    logger.error('Error fetching pace distribution:', error);
     throw error;
   }
 };
@@ -1412,7 +1413,7 @@ export const fetchSessionReplay = async (
 ): Promise<SessionReplayData> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/replay/session?${params.toString()}`;
-  console.log(`Fetching session replay from: ${url}`);
+  logger.debug(`Fetching session replay from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1423,14 +1424,14 @@ export const fetchSessionReplay = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: SessionReplayData = await response.json();
-    console.log(`Successfully fetched session replay with ${data.time.length} frames.`);
+    logger.debug(`Successfully fetched session replay with ${data.time.length} frames.`);
     return data;
   } catch (error) {
-    console.error('Error fetching session replay:', error);
+    logger.error('Error fetching session replay:', error);
     throw error;
   }
 };
@@ -1443,7 +1444,7 @@ export const fetchSessionReplayMetadata = async (
 ): Promise<SessionReplayData> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   const url = `${API_BASE_URL}/api/replay/metadata?${params.toString()}`;
-  console.log(`Fetching session metadata from: ${url}`);
+  logger.debug(`Fetching session metadata from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1454,14 +1455,14 @@ export const fetchSessionReplayMetadata = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: SessionReplayData = await response.json();
-    console.log(`Successfully fetched session metadata.`);
+    logger.debug(`Successfully fetched session metadata.`);
     return data;
   } catch (error) {
-    console.error('Error fetching session metadata:', error);
+    logger.error('Error fetching session metadata:', error);
     throw error;
   }
 };
@@ -1488,7 +1489,7 @@ export const fetchSessionReplayChunk = async (
     chunk_id: chunkId.toString(),
   });
   const url = `${API_BASE_URL}/api/replay/chunk?${params.toString()}`;
-  // console.log(`Fetching chunk ${chunkId} from: ${url}`);
+  // logger.debug(`Fetching chunk ${chunkId} from: ${url}`);
   try {
     const response = await fetch(url, { headers: getHeaders() });
     if (!response.ok) {
@@ -1499,13 +1500,13 @@ export const fetchSessionReplayChunk = async (
       } catch (e) {
         /* Ignore */
       }
-      console.error(`API Error: ${errorDetail}`);
+      logger.error(`API Error: ${errorDetail}`);
       throw new Error(errorDetail);
     }
     const data: ReplayChunk = await response.json();
     return data;
   } catch (error) {
-    console.error(`Error fetching chunk ${chunkId}:`, error);
+    logger.error(`Error fetching chunk ${chunkId}:`, error);
     throw error;
   }
 };
