@@ -124,4 +124,5 @@ const StrategySection = () => {
     );
 };
 
+export { StrategySection };
 export default StrategySection;

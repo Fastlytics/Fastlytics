@@ -190,4 +190,5 @@ const DRSChart: React.FC<DRSChartProps> = ({
   );
 };
 
+export { DRSChart };
 export default DRSChart;

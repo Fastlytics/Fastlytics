@@ -192,4 +192,5 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   );
 };
 
+export { BrakeChart };
 export default BrakeChart;

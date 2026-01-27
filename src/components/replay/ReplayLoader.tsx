@@ -98,4 +98,5 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
     );
 };
 
+export { ReplayLoader };
 export default ReplayLoader;

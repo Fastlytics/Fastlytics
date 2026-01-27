@@ -322,4 +322,5 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
   );
 };
 
+export { MobileTelemetry };
 export default MobileTelemetry;

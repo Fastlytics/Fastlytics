@@ -54,4 +54,5 @@ const LazyLoadComponent: React.FC<LazyLoadComponentProps> = ({
     );
 };
 
+export { LazyLoadComponent };
 export default LazyLoadComponent;

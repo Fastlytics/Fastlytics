@@ -202,4 +202,5 @@ const RPMChart: React.FC<RPMChartProps> = ({
   );
 };
 
+export { RPMChart };
 export default RPMChart;

@@ -364,4 +364,5 @@ const PositionChart: React.FC<PositionChartProps> = ({
   );
 };
 
+export { PositionChart };
 export default PositionChart;

@@ -107,4 +107,5 @@ const MobileBottomNav: React.FC = () => {
     );
 };
 
+export { MobileBottomNav };
 export default MobileBottomNav;

@@ -139,4 +139,5 @@ const RaceCard: React.FC<RaceCardProps> = ({
     );
 };
 
+export { RaceCard };
 export default RaceCard;

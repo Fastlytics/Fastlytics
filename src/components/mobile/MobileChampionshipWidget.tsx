@@ -293,4 +293,5 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
     );
 };
 
+export { MobileChampionshipWidget };
 export default MobileChampionshipWidget;

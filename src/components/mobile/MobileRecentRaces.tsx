@@ -109,4 +109,5 @@ const MobileRecentRaces: React.FC<MobileRecentRacesProps> = ({ recentRaces }) =>
     );
 };
 
+export { MobileRecentRaces };
 export default MobileRecentRaces;

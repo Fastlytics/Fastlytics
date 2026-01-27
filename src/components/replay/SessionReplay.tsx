@@ -304,28 +304,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           const newTime = prev.time.concat(chunk.time);
           const newDrivers = { ...prev.drivers };
 
-            for (const [dCode, dData] of Object.entries(chunk.drivers)) {
-                if (!newDrivers[dCode]) {
-                    // Should be initialized, but just in case
-                    newDrivers[dCode] = { ...dData };
-                } else {
-                    // Append arrays
-                    const curr = newDrivers[dCode];
-                    newDrivers[dCode] = {
-                        x: curr.x.concat(dData.x),
-                        y: curr.y.concat(dData.y),
-                        dist: curr.dist.concat(dData.dist),
-                        rel_dist: curr.rel_dist.concat(dData.rel_dist),
-                        speed: curr.speed.concat(dData.speed),
-                        gear: curr.gear.concat(dData.gear),
-                        drs: curr.drs.concat(dData.drs),
-                        rpm: curr.rpm.concat(dData.rpm),
-                        lap: curr.lap.concat(dData.lap),
-                        tyre: curr.tyre.concat(dData.tyre),
-                        throttle: curr.throttle.concat(dData.throttle),
-                        brake: curr.brake.concat(dData.brake)
-                    };
-                }
+          for (const [dCode, dData] of Object.entries(chunk.drivers)) {
+            if (!newDrivers[dCode]) {
+              // Should be initialized, but just in case
+              newDrivers[dCode] = { ...dData };
             } else {
               // Append arrays
               const curr = newDrivers[dCode];
@@ -2342,4 +2324,5 @@ const CustomDriverSelect = ({
     </div>
   );
 };
+export { SessionReplay };
 export default SessionReplay;

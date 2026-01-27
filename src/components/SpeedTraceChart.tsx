@@ -202,4 +202,5 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   );
 };
 
+export { SpeedTraceChart };
 export default SpeedTraceChart;

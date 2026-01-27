@@ -382,4 +382,5 @@ const MobileLanding: React.FC = () => {
   );
 };
 
+export { MobileLanding };
 export default MobileLanding;

@@ -220,4 +220,5 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
   );
 };
 
+export { TrackEvolutionChart };
 export default TrackEvolutionChart;

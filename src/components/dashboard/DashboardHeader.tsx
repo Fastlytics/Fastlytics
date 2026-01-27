@@ -148,4 +148,5 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ selectedYear, nextSes
     );
 };
 
+export { DashboardHeader };
 export default DashboardHeader;

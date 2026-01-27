@@ -501,4 +501,5 @@ const DriverStandings = () => {
   );
 };
 
+export { DriverStandings };
 export default DriverStandings;

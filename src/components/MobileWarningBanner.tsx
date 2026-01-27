@@ -99,4 +99,5 @@ const MobileWarningBanner: React.FC<MobileWarningBannerProps> = ({
   );
 };
 
+export { MobileWarningBanner };
 export default MobileWarningBanner; 

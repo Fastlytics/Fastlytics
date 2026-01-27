@@ -230,4 +230,5 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
     );
 };
 
+export { PaceAnalysisChart };
 export default PaceAnalysisChart;

@@ -183,4 +183,5 @@ const MobileAbout: React.FC = () => {
     );
 };
 
+export { MobileAbout };
 export default MobileAbout;

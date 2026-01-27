@@ -589,4 +589,5 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
     return Infinity;
 };
 
+export { MobileHeadToHead };
 export default MobileHeadToHead;

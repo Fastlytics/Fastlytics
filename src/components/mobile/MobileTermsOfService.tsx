@@ -86,4 +86,5 @@ const MobileTermsOfService: React.FC = () => {
     );
 };
 
+export { MobileTermsOfService };
 export default MobileTermsOfService;

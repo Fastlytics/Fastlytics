@@ -1142,4 +1142,5 @@ const MobileAccount: React.FC = () => {
   );
 };
 
+export { MobileAccount };
 export default MobileAccount;

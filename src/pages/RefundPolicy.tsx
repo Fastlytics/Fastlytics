@@ -39,4 +39,5 @@ const RefundPolicy = () => {
     );
 };
 
+export { RefundPolicy };
 export default RefundPolicy;

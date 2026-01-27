@@ -57,4 +57,5 @@ const DiscordCommunityBanner: React.FC<DiscordCommunityBannerProps> = ({
   );
 };
 
+export { DiscordCommunityBanner };
 export default DiscordCommunityBanner; 

@@ -513,4 +513,5 @@ const MobileDriverStandings: React.FC = () => {
     );
 };
 
+export { MobileDriverStandings };
 export default MobileDriverStandings;

@@ -530,4 +530,5 @@ const MobileCalendar: React.FC = () => {
     );
 };
 
+export { MobileCalendar };
 export default MobileCalendar;

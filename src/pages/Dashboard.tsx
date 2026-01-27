@@ -273,4 +273,5 @@ const Dashboard = () => {
   );
 };
 
+export { Dashboard };
 export default Dashboard;

@@ -164,4 +164,5 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
   );
 };
 
+export { FloatingNavbar };
 export default FloatingNavbar; 

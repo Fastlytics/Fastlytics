@@ -53,4 +53,5 @@ const LandingFooter = () => {
   );
 };
 
+export { LandingFooter };
 export default LandingFooter;

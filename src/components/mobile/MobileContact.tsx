@@ -86,4 +86,5 @@ const MobileContact: React.FC = () => {
     );
 };
 
+export { MobileContact };
 export default MobileContact;

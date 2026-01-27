@@ -201,4 +201,5 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({ drivers, teams,
     );
 };
 
+export { ChampionshipWidget };
 export default ChampionshipWidget;

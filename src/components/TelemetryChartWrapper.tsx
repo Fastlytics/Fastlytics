@@ -232,4 +232,5 @@ const TelemetryChartWrapper = <T,>({
     );
 };
 
+export { TelemetryChartWrapper };
 export default TelemetryChartWrapper;

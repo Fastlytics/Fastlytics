@@ -63,4 +63,5 @@ const TrackProgress = ({
   );
 };
 
+export { TrackProgress };
 export default TrackProgress;

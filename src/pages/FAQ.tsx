@@ -76,4 +76,5 @@ const FAQ = () => {
   );
 };
 
+export { FAQ };
 export default FAQ;

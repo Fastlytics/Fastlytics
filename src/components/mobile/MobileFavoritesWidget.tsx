@@ -512,4 +512,5 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
   );
 };
 
+export { MobileFavoritesWidget };
 export default MobileFavoritesWidget;

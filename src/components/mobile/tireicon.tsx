@@ -11,4 +11,5 @@ const TireIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export { TireIcon };
 export default TireIcon;

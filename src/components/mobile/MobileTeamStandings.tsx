@@ -453,4 +453,5 @@ const MobileTeamStandings: React.FC = () => {
     );
 };
 
+export { MobileTeamStandings };
 export default MobileTeamStandings;

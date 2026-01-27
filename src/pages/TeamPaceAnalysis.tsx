@@ -655,4 +655,5 @@ const TeamPaceAnalysis = () => {
   );
 };
 
+export { TeamPaceAnalysis };
 export default TeamPaceAnalysis;

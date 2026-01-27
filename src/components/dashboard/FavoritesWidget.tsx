@@ -442,4 +442,5 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   );
 };
 
+export { FavoritesWidget };
 export default FavoritesWidget;

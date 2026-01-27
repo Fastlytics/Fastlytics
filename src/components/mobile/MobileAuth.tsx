@@ -340,4 +340,5 @@ const MobileAuth: React.FC = () => {
   );
 };
 
+export { MobileAuth };
 export default MobileAuth;
