@@ -93,4 +93,5 @@ const MobilePrivacyPolicy: React.FC = () => {
     );
 };
 
+export { MobilePrivacyPolicy };
 export default MobilePrivacyPolicy;

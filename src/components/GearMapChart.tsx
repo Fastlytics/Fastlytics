@@ -149,4 +149,5 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
   );
 };
 
+export { GearMapChart };
 export default GearMapChart;

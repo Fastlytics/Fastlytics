@@ -284,9 +284,6 @@ const Account = () => {
     if (!oldPassword) {
       toast.error('Please enter your old password');
       return;
-      toast.error('Passwords do not match');
-      setIsLoading(false);
-      return;
     }
 
     try {
@@ -1129,4 +1126,5 @@ const Account = () => {
   );
 };
 
+export { Account };
 export default Account;

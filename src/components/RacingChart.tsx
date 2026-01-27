@@ -541,4 +541,5 @@ const RacingChart: React.FC<RacingChartProps> = ({
   );
 };
 
+export { RacingChart };
 export default RacingChart;

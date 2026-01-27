@@ -1563,4 +1563,5 @@ const Race = () => {
   );
 };
 
+export { Race };
 export default Race;

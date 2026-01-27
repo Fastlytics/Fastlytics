@@ -139,4 +139,5 @@ const TrackDominance = () => {
     );
 };
 
+export { TrackDominance };
 export default TrackDominance;

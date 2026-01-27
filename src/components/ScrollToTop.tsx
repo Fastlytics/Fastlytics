@@ -11,4 +11,5 @@ const ScrollToTop = () => {
   return null; // This component doesn't render anything
 };
 
+export { ScrollToTop };
 export default ScrollToTop; 

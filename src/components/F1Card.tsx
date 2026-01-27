@@ -1,12 +1,23 @@
 import React from 'react';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import { ArrowUp01Icon, ArrowDown01Icon, MinusSignCircleIcon } from 'hugeicons-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface F1CardProps {
   title: string;
   value: string | number;
-  team: 'ferrari' | 'mercedes' | 'mclaren' | 'redbull' | 'astonmartin' | 'alpine' | 'williams' | 'haas' | 'alfaromeo' | 'alphatauri' | 'gray';
+  team:
+    | 'ferrari'
+    | 'mercedes'
+    | 'mclaren'
+    | 'redbull'
+    | 'astonmartin'
+    | 'alpine'
+    | 'williams'
+    | 'haas'
+    | 'alfaromeo'
+    | 'alphatauri'
+    | 'gray';
   icon?: React.ReactNode;
   points_change?: number;
   subValue?: string | null;
@@ -16,8 +27,18 @@ interface F1CardProps {
   imageUrl?: string;
 }
 
-const F1Card = ({ title, value, team, icon, points_change, subValue, className, style, isRookie, imageUrl }: F1CardProps) => {
-
+const F1Card = ({
+  title,
+  value,
+  team,
+  icon,
+  points_change,
+  subValue,
+  className,
+  style,
+  isRookie,
+  imageUrl,
+}: F1CardProps) => {
   const getChangeIndicator = (change: number | undefined) => {
     if (change === undefined) {
       return null;
@@ -36,14 +57,19 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
   return (
     <div
       className={cn(
-        "bg-black border-2 p-6 relative overflow-hidden group transition-all duration-300 hover:border-red-600",
+        'bg-black border-2 p-6 relative overflow-hidden group transition-all duration-300 hover:border-red-600',
         `border-f1-${team}`,
         className
       )}
       style={style}
     >
       {/* Background accent */}
-      <div className={cn("absolute top-0 right-0 w-32 h-32 opacity-10 -mr-10 -mt-10 rounded-full blur-3xl", `bg-f1-${team}`)} />
+      <div
+        className={cn(
+          'absolute top-0 right-0 w-32 h-32 opacity-10 -mr-10 -mt-10 rounded-full blur-3xl',
+          `bg-f1-${team}`
+        )}
+      />
 
       <div className="flex justify-between items-start relative z-10">
         <div>
@@ -55,14 +81,20 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
               </span>
             )}
           </div>
-          <div className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">{value}</div>
+          <div className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">
+            {value}
+          </div>
 
-          {subValue && (
-            <div className="text-sm text-red-500 font-mono font-bold">{subValue}</div>
-          )}
+          {subValue && <div className="text-sm text-red-500 font-mono font-bold">{subValue}</div>}
 
           {indicator && (
-            <div className={cn("text-xs mt-2 flex items-center gap-1 font-bold uppercase tracking-wider", indicator.color)} title="Points Change">
+            <div
+              className={cn(
+                'text-xs mt-2 flex items-center gap-1 font-bold uppercase tracking-wider',
+                indicator.color
+              )}
+              title="Points Change"
+            >
               {indicator.icon}
               <span>{points_change !== 0 ? Math.abs(points_change ?? 0) : '-'}</span>
             </div>
@@ -70,18 +102,20 @@ const F1Card = ({ title, value, team, icon, points_change, subValue, className, 
         </div>
 
         {imageUrl ? (
-            <Avatar className="h-16 w-16 border-2 border-gray-700">
-                <AvatarImage src={imageUrl} className="object-cover bg-gray-800" />
-                <AvatarFallback>{String(value).substring(0, 2)}</AvatarFallback>
-            </Avatar>
+          <Avatar className="h-16 w-16 border-2 border-gray-700">
+            <AvatarImage src={imageUrl} className="object-cover bg-gray-800" />
+            <AvatarFallback>{String(value).substring(0, 2)}</AvatarFallback>
+          </Avatar>
         ) : (
-            icon && (
-                React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6" })
-            )
+          icon &&
+          React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+            className: 'w-6 h-6',
+          })
         )}
       </div>
     </div>
   );
 };
 
+export { F1Card };
 export default F1Card;

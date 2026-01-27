@@ -419,4 +419,5 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, drivers }) => {
   );
 };
 
+export { ActivityItem };
 export default ActivityItem;

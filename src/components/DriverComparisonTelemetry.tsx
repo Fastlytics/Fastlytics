@@ -414,4 +414,5 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   );
 };
 
+export { DriverComparisonTelemetry };
 export default DriverComparisonTelemetry;

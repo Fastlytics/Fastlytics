@@ -75,4 +75,5 @@ const MobileRefundPolicy: React.FC = () => {
     );
 };
 
+export { MobileRefundPolicy };
 export default MobileRefundPolicy;

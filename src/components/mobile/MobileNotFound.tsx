@@ -100,4 +100,5 @@ const MobileNotFound: React.FC = () => {
     );
 };
 
+export { MobileNotFound };
 export default MobileNotFound;

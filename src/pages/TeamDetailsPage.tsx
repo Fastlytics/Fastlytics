@@ -126,4 +126,5 @@ const TeamDetailsPage: React.FC = () => {
   );
 };
 
+export { TeamDetailsPage };
 export default TeamDetailsPage;

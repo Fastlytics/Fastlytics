@@ -35,4 +35,5 @@ const MobileFooter: React.FC = () => {
     );
 };
 
+export { MobileFooter };
 export default MobileFooter;

@@ -29,4 +29,5 @@ const MobileLayout: React.FC<MobileLayoutProps> = ({ children, showBottomNav = t
     );
 };
 
+export { MobileLayout };
 export default MobileLayout;

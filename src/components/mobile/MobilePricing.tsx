@@ -228,4 +228,5 @@ const MobilePricing: React.FC = () => {
     );
 };
 
+export { MobilePricing };
 export default MobilePricing;

@@ -1175,4 +1175,5 @@ const MobileRace: React.FC = () => {
     );
 };
 
+export { MobileRace };
 export default MobileRace;

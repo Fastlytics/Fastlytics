@@ -479,4 +479,5 @@ const MobileOnboarding: React.FC = () => {
   );
 };
 
+export { MobileOnboarding };
 export default MobileOnboarding;

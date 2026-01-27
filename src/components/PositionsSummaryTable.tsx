@@ -170,4 +170,5 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
   );
 };
 
+export { PositionsSummaryTable };
 export default PositionsSummaryTable;

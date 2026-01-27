@@ -398,4 +398,5 @@ const Onboarding = () => {
   );
 };
 
+export { Onboarding };
 export default Onboarding;

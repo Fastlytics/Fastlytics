@@ -431,4 +431,5 @@ const Auth = () => {
   );
 };
 
+export { Auth };
 export default Auth;

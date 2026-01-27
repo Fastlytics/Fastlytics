@@ -70,4 +70,5 @@ const DriverComparison: React.FC<DriverComparisonProps> = ({
   );
 };
 
+export { DriverComparison };
 export default DriverComparison;

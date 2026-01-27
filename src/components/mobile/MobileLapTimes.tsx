@@ -535,6 +535,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
     );
 };
 
+export { MobileLapTimes };
 export default MobileLapTimes;
 
 interface OverlayContentProps {

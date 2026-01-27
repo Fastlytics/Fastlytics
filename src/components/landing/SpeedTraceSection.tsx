@@ -82,4 +82,5 @@ const SpeedTraceSection = () => {
     );
 };
 
+export { SpeedTraceSection };
 export default SpeedTraceSection;

@@ -86,4 +86,5 @@ const QuickLinksWidget = () => {
     );
 };
 
+export { QuickLinksWidget };
 export default QuickLinksWidget;

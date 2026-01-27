@@ -120,4 +120,5 @@ const MobileNextSessionCard: React.FC<MobileNextSessionCardProps> = ({ nextSessi
     );
 };
 
+export { MobileNextSessionCard };
 export default MobileNextSessionCard;

@@ -1,12 +1,17 @@
 import React, { useMemo } from 'react';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchTireStrategy, DriverStrategy, fetchSpecificRaceResults, DetailedRaceResult } from '@/lib/api';
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  fetchTireStrategy,
+  DriverStrategy,
+  fetchSpecificRaceResults,
+  DetailedRaceResult,
+} from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import StintAnalysisTable from './StintAnalysisTable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TireStrategyProps {
   className?: string;
@@ -36,12 +41,12 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   year,
   event,
   session,
-  favoriteDriver
+  favoriteDriver,
 }) => {
   const [focusedDriver, setFocusedDriver] = React.useState<string | null>(null);
 
   const toggleDriverFocus = (driver: string) => {
-    setFocusedDriver(prev => prev === driver ? null : driver);
+    setFocusedDriver((prev) => (prev === driver ? null : driver));
   };
 
   const { data: raceResults } = useQuery<DetailedRaceResult[]>({
@@ -56,7 +61,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   const driverPositionMap = useMemo(() => {
     if (!raceResults) return new Map<string, number>();
     const positionMap = new Map<string, number>();
-    raceResults.forEach(result => {
+    raceResults.forEach((result) => {
       if (result.position !== undefined && result.position !== null && isFinite(result.position)) {
         positionMap.set(result.driverCode, result.position);
       }
@@ -64,7 +69,12 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     return positionMap;
   }, [raceResults]);
 
-  const { data: strategyData, isLoading: isLoadingStrategy, error: errorStrategy, isError: isErrorStrategy } = useQuery<DriverStrategy[]>({
+  const {
+    data: strategyData,
+    isLoading: isLoadingStrategy,
+    error: errorStrategy,
+    isError: isErrorStrategy,
+  } = useQuery<DriverStrategy[]>({
     queryKey: ['tireStrategy', year, event, session],
     queryFn: () => fetchTireStrategy(year, event, session),
     staleTime: 1000 * 60 * 10,
@@ -86,7 +96,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
 
   const maxLaps = useMemo(() => {
     if (!strategyData || strategyData.length === 0) return 1;
-    return Math.max(...strategyData.flatMap(d => d.stints.map(s => s.endLap)), 1);
+    return Math.max(...strategyData.flatMap((d) => d.stints.map((s) => s.endLap)), 1);
   }, [strategyData]);
 
   const renderStrategyOverview = () => {
@@ -107,7 +117,9 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
         <div className="w-full min-h-[200px] bg-red-900/10 border border-red-600/50 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
           <AlertCircleIcon className="w-8 h-8 mb-2" />
           <p className="font-bold uppercase tracking-wider">Error loading strategy</p>
-          <p className="text-xs text-red-400 mt-1 font-mono">{(errorStrategy as Error)?.message || 'Could not fetch data.'}</p>
+          <p className="text-xs text-red-400 mt-1 font-mono">
+            {(errorStrategy as Error)?.message || 'Could not fetch data.'}
+          </p>
         </div>
       );
     }
@@ -124,14 +136,22 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
         <div className="pt-6">
           {/* Legend */}
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-800 pb-6">
-            {Object.entries(tireCompoundColors).map(([compound, colorClass]) => (
-              compound !== 'UNKNOWN' && (
-                <div key={compound} className="flex items-center gap-3">
-                  <span className={cn("w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]", colorClass)}></span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{compound}</span>
-                </div>
-              )
-            ))}
+            {Object.entries(tireCompoundColors).map(
+              ([compound, colorClass]) =>
+                compound !== 'UNKNOWN' && (
+                  <div key={compound} className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        'w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]',
+                        colorClass
+                      )}
+                    ></span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                      {compound}
+                    </span>
+                  </div>
+                )
+            )}
           </div>
 
           {/* Chart */}
@@ -139,7 +159,11 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             {/* Grid Lines */}
             <div className="absolute inset-0 flex pointer-events-none ml-20">
               {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
-                <div key={tick} className="h-full border-l border-gray-800/30 absolute" style={{ left: `${tick * 100}%` }}>
+                <div
+                  key={tick}
+                  className="h-full border-l border-gray-800/30 absolute"
+                  style={{ left: `${tick * 100}%` }}
+                >
                   <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-mono text-gray-600">
                     L{Math.round(tick * maxLaps)}
                   </span>
@@ -150,23 +174,35 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             {strategyData.map((driverData) => {
               const isRaceSession = session === 'R' || session === 'Sprint';
               const position = isRaceSession ? driverPositionMap.get(driverData.driver) : undefined;
-              const positionText = position !== undefined && isFinite(position) ? `P${position}` : '';
+              const positionText =
+                position !== undefined && isFinite(position) ? `P${position}` : '';
 
               return (
                 <div
                   key={driverData.driver}
                   className={cn(
-                    "flex items-center gap-4 group relative z-10 transition-all duration-300 cursor-pointer p-2 rounded-lg",
-                    focusedDriver && focusedDriver !== driverData.driver ? "opacity-20" : "opacity-100",
-                    favoriteDriver && (driverData.driver === favoriteDriver || driverData.driver.includes(favoriteDriver)) && !focusedDriver ? "bg-red-900/20 border border-red-600/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]" : "hover:bg-gray-900/50"
+                    'flex items-center gap-4 group relative z-10 transition-all duration-300 cursor-pointer p-2 rounded-lg',
+                    focusedDriver && focusedDriver !== driverData.driver
+                      ? 'opacity-20'
+                      : 'opacity-100',
+                    favoriteDriver &&
+                      (driverData.driver === favoriteDriver ||
+                        driverData.driver.includes(favoriteDriver)) &&
+                      !focusedDriver
+                      ? 'bg-red-900/20 border border-red-600/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
+                      : 'hover:bg-gray-900/50'
                   )}
                   onClick={() => toggleDriverFocus(driverData.driver)}
                 >
                   <div className="w-16 flex flex-col items-end shrink-0">
-                    <span className={cn(
-                      "text-sm font-black font-mono transition-colors",
-                      focusedDriver === driverData.driver ? "text-red-500" : "text-white group-hover:text-red-500"
-                    )}>
+                    <span
+                      className={cn(
+                        'text-sm font-black font-mono transition-colors',
+                        focusedDriver === driverData.driver
+                          ? 'text-red-500'
+                          : 'text-white group-hover:text-red-500'
+                      )}
+                    >
                       {driverData.driver}
                     </span>
                     {positionText && (
@@ -181,14 +217,17 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                       const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
                       const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
                       const bgColorClass = getTireColorClass(stint.compound);
-                      const isNew = stint.compound === 'SOFT' || stint.compound === 'MEDIUM' || stint.compound === 'HARD'; // Simplified logic, ideally backend provides 'isNew'
+                      const isNew =
+                        stint.compound === 'SOFT' ||
+                        stint.compound === 'MEDIUM' ||
+                        stint.compound === 'HARD'; // Simplified logic, ideally backend provides 'isNew'
 
                       return (
                         <Tooltip key={index}>
                           <TooltipTrigger asChild>
                             <div
                               className={cn(
-                                "h-full absolute transition-all hover:brightness-110 hover:z-20 border-r border-black/40 cursor-help",
+                                'h-full absolute transition-all hover:brightness-110 hover:z-20 border-r border-black/40 cursor-help',
                                 bgColorClass
                               )}
                               style={{
@@ -203,12 +242,16 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-2">
-                                <span className={cn("w-2 h-2 rounded-full", bgColorClass)}></span>
-                                <span className="font-bold uppercase tracking-wider text-sm">{stint.compound}</span>
+                                <span className={cn('w-2 h-2 rounded-full', bgColorClass)}></span>
+                                <span className="font-bold uppercase tracking-wider text-sm">
+                                  {stint.compound}
+                                </span>
                               </div>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-gray-300">
                                 <span>Laps:</span>
-                                <span className="text-white text-right">{stint.startLap} - {stint.endLap}</span>
+                                <span className="text-white text-right">
+                                  {stint.startLap} - {stint.endLap}
+                                </span>
                                 <span>Duration:</span>
                                 <span className="text-white text-right">{stint.lapCount} laps</span>
                               </div>
@@ -229,7 +272,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
 
   return (
     <div
-      className={cn("bg-black p-0", className)}
+      className={cn('bg-black p-0', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <Tabs defaultValue="overview" className="w-full">
@@ -250,10 +293,16 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
           </TabsList>
         </div>
 
-        <TabsContent value="overview" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <TabsContent
+          value="overview"
+          className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500"
+        >
           {renderStrategyOverview()}
         </TabsContent>
-        <TabsContent value="analysis" className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <TabsContent
+          value="analysis"
+          className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500"
+        >
           <StintAnalysisTable year={year} event={event} session={session} />
         </TabsContent>
       </Tabs>
@@ -261,4 +310,5 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   );
 };
 
+export { TireStrategy };
 export default TireStrategy;

@@ -47,4 +47,5 @@ const SessionReplayPage: React.FC = () => {
     );
 };
 
+export { SessionReplayPage };
 export default SessionReplayPage;

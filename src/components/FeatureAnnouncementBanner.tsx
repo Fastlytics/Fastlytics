@@ -89,4 +89,5 @@ const FeatureAnnouncementBanner: React.FC<FeatureAnnouncementBannerProps> = ({
   );
 };
 
+export { FeatureAnnouncementBanner };
 export default FeatureAnnouncementBanner; 

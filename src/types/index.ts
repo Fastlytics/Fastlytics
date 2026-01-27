@@ -11,4 +11,5 @@ export type {
   SparklineDataPoint,
 } from './chart.types';
 export type { LocationState } from './router.types';
-export type { ErrorWithMessage, isErrorWithMessage, getErrorMessage } from './error.types';
+export type { ErrorWithMessage } from './error.types';
+export { isErrorWithMessage, getErrorMessage } from './error.types';

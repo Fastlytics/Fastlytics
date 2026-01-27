@@ -192,4 +192,5 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
   );
 };
 
+export { ThrottleChart };
 export default ThrottleChart;

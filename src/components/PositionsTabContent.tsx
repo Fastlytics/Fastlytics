@@ -138,4 +138,5 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({ year, event, 
     );
 };
 
+export { PositionsTabContent };
 export default PositionsTabContent;

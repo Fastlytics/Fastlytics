@@ -361,5 +361,6 @@ const TeamStandings = () => {
   );
 };
 
+export { TeamStandings };
 export default TeamStandings;
 

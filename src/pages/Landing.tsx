@@ -117,4 +117,5 @@ const Landing: React.FC = () => {
   );
 };
 
+export { Landing };
 export default Landing;

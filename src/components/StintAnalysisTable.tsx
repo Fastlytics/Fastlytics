@@ -382,4 +382,5 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
   );
 };
 
+export { StintAnalysisTable };
 export default StintAnalysisTable; 

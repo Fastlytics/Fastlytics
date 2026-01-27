@@ -44,4 +44,5 @@ const MobilePageHeader: React.FC<MobilePageHeaderProps> = ({ title, showBack }) 
     );
 };
 
+export { MobilePageHeader };
 export default MobilePageHeader;

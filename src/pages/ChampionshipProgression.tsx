@@ -73,7 +73,7 @@ const ChampionshipProgression = () => {
     if (!data || !data.rounds) return [];
 
     return data.rounds.map((round, index) => {
-       const point: {
+      const point: Record<string, string | number> = {
         name: round.event,
         uniqueId: `${round.round}_${round.event}`, // Unique identifier for X-Axis
         shortName: round.country || `R${round.round}`,
@@ -502,4 +502,5 @@ const ChampionshipProgression = () => {
   );
 };
 
+export { ChampionshipProgression };
 export default ChampionshipProgression;

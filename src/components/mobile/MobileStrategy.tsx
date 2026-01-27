@@ -313,4 +313,5 @@ const MobileStrategy: React.FC<MobileStrategyProps> = ({ year, event, session, r
     );
 };
 
+export { MobileStrategy };
 export default MobileStrategy;

@@ -114,4 +114,5 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
     );
 };
 
+export { KeyMomentsHighlight };
 export default KeyMomentsHighlight;

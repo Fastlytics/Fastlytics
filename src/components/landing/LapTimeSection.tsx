@@ -109,4 +109,5 @@ const LapTimeSection = () => {
     );
 };
 
+export { LapTimeSection };
 export default LapTimeSection;

@@ -584,4 +584,5 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   );
 };
 
+export { CircuitComparisonChart };
 export default CircuitComparisonChart;
