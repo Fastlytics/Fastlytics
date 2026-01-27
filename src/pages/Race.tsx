@@ -407,10 +407,6 @@ const Race = () => {
   const { isPremium, limitations } = useSubscription();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>(() => {
-    // Initial empty state - will be updated by query result via effect
-    return [];
-  });
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
@@ -509,7 +505,7 @@ const Race = () => {
   }, [year, eventName]);
 
   // Queries
-  const { data: fetchedAvailableSessions, isLoading: isLoadingSessions } = useQuery<
+  const { data: availableSessions = [], isLoading: isLoadingSessions } = useQuery<
     AvailableSession[]
   >({
     queryKey: ['availableSessions', year, eventName],
@@ -524,32 +520,23 @@ const Race = () => {
       !!year &&
       !!eventSlug &&
       !isLoadingSessions &&
-      (!fetchedAvailableSessions || !fetchedAvailableSessions.some((s) => s.type === 'R')),
+      (!availableSessions || !availableSessions.some((s) => s.type === 'R')),
   });
 
   const { data: sessionResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['sessionResult', year, eventSlug, selectedSession],
     queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
-    enabled:
-      !!year &&
-      !!eventSlug &&
-      !!selectedSession &&
-      fetchedAvailableSessions &&
-      fetchedAvailableSessions.length > 0,
+    enabled: !!year && !!eventSlug && !!selectedSession && availableSessions.length > 0,
   });
 
   // Only set default session if not already in params
   useEffect(() => {
-    if (
-      fetchedAvailableSessions &&
-      fetchedAvailableSessions.length > 0 &&
-      !searchParams.get('session')
-    ) {
+    if (availableSessions.length > 0 && !searchParams.get('session')) {
       let defaultSession = '';
-      if (fetchedAvailableSessions.some((s) => s.type === 'R')) {
+      if (availableSessions.some((s) => s.type === 'R')) {
         defaultSession = 'R';
       } else {
-        defaultSession = fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type;
+        defaultSession = availableSessions[availableSessions.length - 1].type;
       }
 
       // Update params without pushing to history for initial load
@@ -562,7 +549,7 @@ const Race = () => {
         { replace: true }
       );
     }
-  }, [fetchedAvailableSessions]);
+  }, [availableSessions]);
 
   // Derived Data
   const raceWinner = useMemo(
