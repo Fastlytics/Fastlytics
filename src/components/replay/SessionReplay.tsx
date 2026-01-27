@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -5,6 +6,8 @@ import {
   fetchSessionReplayChunk,
   SessionReplayData,
   ReplayChunk,
+  ReplayDriverData,
+  ReplayDriversMap,
 } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import ReplayLoader from './ReplayLoader';
@@ -42,6 +45,43 @@ interface SessionReplayProps {
   event: string;
   session: string;
   className?: string;
+}
+
+interface SessionReplayMetadata extends SessionReplayData {
+  chunk_manifest?: { id: number; start: number; end: number }[];
+  total_duration?: number;
+}
+
+interface DriverFrameState {
+  code?: string;
+  originalCode?: string;
+  x: number;
+  y: number;
+  dist?: number;
+  ref_dist: number;
+  rel_dist?: number;
+  speed: number;
+  gear: number;
+  drs: number;
+  rpm: number;
+  lap: number;
+  tyre?: number;
+  throttle: number;
+  brake: number;
+  track_index?: number;
+  pos?: number;
+  bestLap?: CompletedLapInfo;
+  isGhost?: boolean;
+  color?: string;
+}
+
+interface CompletedLapInfo {
+  driver: string;
+  lap: number;
+  time_str: string;
+  seconds: number;
+  timestamp: number;
+  compound: string;
 }
 
 const FPS = 25;
@@ -243,7 +283,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   // Initial Data Construction from Metadata
   useEffect(() => {
     if (metadata) {
-      const initDrivers: Record<string, DriverTelemetryArrays> = {};
+      const initDrivers: Record<string, ReplayDriverData> = {};
       // Initialize empty arrays for all drivers found in colors map
       // We use driver_colors keys as source of truth for driver list
       if (metadata.driver_colors) {
@@ -276,7 +316,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       setReplayData(baseValues);
 
       // Check manifest
-      const manifest = (metadata as any).chunk_manifest || [];
+      const metadataExt = metadata as SessionReplayMetadata;
+      const manifest = metadataExt.chunk_manifest || [];
       setTotalChunks(manifest.length);
       setLoadedChunks(new Set());
     }
@@ -363,7 +404,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const bufferWindow = 10; // 10 seconds ahead
     // We know the total duration from metadata (hopefully)
     // If metadata has total_duration use it, else fallback
-    const totalDur = (metadata as any).total_duration || 9999;
+    const metadataExt = metadata as SessionReplayMetadata | undefined;
+    const totalDur = metadataExt?.total_duration || 9999;
     const loadedDur = data.time[data.time.length - 1] || 0;
 
     if (isPlaying && currentTime + bufferWindow > loadedDur && loadedChunks.size < totalChunks) {
@@ -695,7 +737,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     if (!points || points.length === 0) return 0;
 
     // Start search from last known index or 0
-    let startIdx = lastTrackIndices.current[code] || 0;
+    const startIdx = lastTrackIndices.current[code] || 0;
     const searchWindow = 500; // Look ahead/behind window (optimize for 60fps)
 
     let bestIdx = startIdx;
@@ -752,7 +794,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const { d1, l1, d2, l2 } = ghostConfig;
     if (!d1 || !l1 || !d2 || !l2) return {};
 
-    const drivers: Record<string, any> = {};
+    const drivers: Record<string, DriverFrameState> = {};
     const pathPoints = data.circuit_points || [];
     const pathDists = data.circuit_distances || [];
 
@@ -820,7 +862,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   // Reconstruct "Frame" view from Columnar data for easier rendering
   const currentFrameDrivers = useMemo(() => {
     if (!data) return {};
-    const drivers: Record<string, any> = {};
+    const drivers: Record<string, DriverFrameState> = {};
 
     const pathPoints = data.circuit_points || [];
     const pathDists = data.circuit_distances || [];
@@ -942,7 +984,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   ]); // currentTime to trigger updates, selectedDriver/leaderboardOrder for target change
 
   // Helper: Calculate a sorting score (Lap takes precedence, then Visual Path Index)
-  const getDriverScore = (d: any) => {
+  const getDriverScore = (d: DriverFrameState | null | undefined) => {
     if (!d) return -1;
     // visual sorting: Lap * totalPoints + trackIndex
     // data.circuit_points might not be available in closure if not passed, but we can assume nice range.
@@ -951,13 +993,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   };
 
   // Sort function for "Hard Sort" (Absolute distance)
-  const getSortedOrder = (currentDrivers: Record<string, any>) => {
+  const getSortedOrder = (currentDrivers: Record<string, DriverFrameState>) => {
     return Object.entries(currentDrivers)
       .sort(([, a], [, b]) => {
         // START FIX: Grid Position for < 200m
-        if (a.dist < 200 && b.dist < 200) {
-          const gA = data?.driver_grid_positions?.[a.code] ?? 99;
-          const gB = data?.driver_grid_positions?.[b.code] ?? 99;
+        if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
+          const gA = data?.driver_grid_positions?.[a.code ?? ''] ?? 99;
+          const gB = data?.driver_grid_positions?.[b.code ?? ''] ?? 99;
           return gA - gB;
         }
         return getDriverScore(b) - getDriverScore(a);
@@ -994,7 +1036,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     // While playing, we only swap if overtake is clearer (> 0.5m equivalent score)
     const OVERTAKE_THRESHOLD = 0.5; // meters
 
-    let newOrder = [...leaderboardOrder];
+    const newOrder = [...leaderboardOrder];
     let swapped = false;
 
     // Bubble sort pass
@@ -1210,7 +1252,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           const d = driverMap.get(code);
           if (d) {
             // Attach timing info for render
-            (d as any).bestLap = bestLaps[code];
+            d.bestLap = bestLaps[code];
             newItems.push(d);
           }
         });
@@ -1947,8 +1989,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                   }
                 } else {
                   // --- QUALY INTERVALS (Gap to P1) ---
-                  const bestLap = (driver as any).bestLap;
-                  const p1Best = (leaderboard[0] as any).bestLap;
+                  const bestLap = driver.bestLap;
+                  const p1Best = leaderboard[0]?.bestLap;
 
                   if (index === 0) {
                     intervalText = bestLap?.time_str || 'NO TIME';
@@ -2127,8 +2169,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 value={currentTime}
                 onChange={(e) => {
                   setCurrentTime(parseFloat(e.target.value));
-                  // Reset index refs if needed
-                  driverLapStartIndices.current = {};
                 }}
                 onMouseMove={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -2210,7 +2250,7 @@ const CustomDriverSelect = ({
   color: string;
   driverCode: string | null;
   lapNum: number | null;
-  drivers: Record<string, any>;
+  drivers: ReplayDriversMap;
   driverColors: Record<string, string>;
   headshots: Record<string, string>;
   onSelectDriver: (d: string) => void;
@@ -2220,7 +2260,7 @@ const CustomDriverSelect = ({
   const sortedDrivers = Object.keys(drivers).sort();
   const laps =
     driverCode && drivers[driverCode]?.lap
-      ? [...new Set(drivers[driverCode].lap)].sort((a: any, b: any) => a - b)
+      ? [...new Set(drivers[driverCode].lap)].sort((a, b) => a - b)
       : [];
 
   return (
@@ -2307,7 +2347,7 @@ const CustomDriverSelect = ({
             </div>
             <ScrollArea className="h-48">
               <div className="grid grid-cols-4 gap-1">
-                {laps.map((l: any) => (
+                {laps.map((l) => (
                   <button
                     key={l}
                     onClick={() => onSelectLap(l)}

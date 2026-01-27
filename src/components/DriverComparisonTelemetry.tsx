@@ -1,6 +1,14 @@
 import React, { useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ReferenceLine,
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,14 +21,39 @@ import {
   BrakeDataPoint,
   RPMDataPoint,
   DRSDataPoint,
-  SpeedDataPoint
+  SpeedDataPoint,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { OpenF1Driver } from '@/lib/openf1';
-import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
+import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
-type TelemetryDataPoint = ThrottleDataPoint | BrakeDataPoint | RPMDataPoint | DRSDataPoint | SpeedDataPoint;
+type TelemetryDataPoint =
+  | ThrottleDataPoint
+  | BrakeDataPoint
+  | RPMDataPoint
+  | DRSDataPoint
+  | SpeedDataPoint;
+
+type TelemetryKey = 'Speed' | 'Throttle' | 'Brake' | 'RPM' | 'DRS';
+
+function getTelemetryValue(
+  point: TelemetryDataPoint,
+  key: TelemetryKey
+): number | null | undefined {
+  if (key === 'Speed' && 'Speed' in point) return (point as SpeedDataPoint).Speed;
+  if (key === 'Throttle' && 'Throttle' in point) return (point as ThrottleDataPoint).Throttle;
+  if (key === 'Brake' && 'Brake' in point) return (point as BrakeDataPoint).Brake;
+  if (key === 'RPM' && 'RPM' in point) return (point as RPMDataPoint).RPM;
+  if (key === 'DRS' && 'DRS' in point) return (point as DRSDataPoint).DRS;
+  return null;
+}
+
+interface TooltipPayloadEntry {
+  name?: string;
+  value?: number | string | null;
+  color?: string;
+}
 
 interface DriverComparisonTelemetryProps {
   year: number;
@@ -47,20 +80,25 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   shouldLoadChart,
   telemetryType,
   title,
-  openF1Drivers = []
+  openF1Drivers = [],
 }) => {
-
   const fetchTelemetry = async (driver: string, lap: string | number) => {
     // For 'gap', we need speed data to calculate time
     const typeToFetch = telemetryType === 'gap' ? 'speed' : telemetryType;
 
     switch (typeToFetch) {
-      case 'throttle': return fetchTelemetryThrottle(year, event, session, driver, lap);
-      case 'brake': return fetchTelemetryBrake(year, event, session, driver, lap);
-      case 'rpm': return fetchTelemetryRPM(year, event, session, driver, lap);
-      case 'drs': return fetchTelemetryDRS(year, event, session, driver, lap);
-      case 'speed': return fetchTelemetrySpeed(year, event, session, driver, lap);
-      default: return fetchTelemetrySpeed(year, event, session, driver, lap);
+      case 'throttle':
+        return fetchTelemetryThrottle(year, event, session, driver, lap);
+      case 'brake':
+        return fetchTelemetryBrake(year, event, session, driver, lap);
+      case 'rpm':
+        return fetchTelemetryRPM(year, event, session, driver, lap);
+      case 'drs':
+        return fetchTelemetryDRS(year, event, session, driver, lap);
+      case 'speed':
+        return fetchTelemetrySpeed(year, event, session, driver, lap);
+      default:
+        return fetchTelemetrySpeed(year, event, session, driver, lap);
     }
   };
 
@@ -108,15 +146,15 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       // If Driver 1 is slower, Time is higher -> Gap > 0
       // If Driver 1 is faster, Time is lower -> Gap < 0
 
-      return timeData1.map(d1 => {
+      return timeData1.map((d1) => {
         // Find corresponding time for d2 at d1.Distance
         let t2 = 0;
-        const exactMatch = timeData2.find(d => d.Distance === d1.Distance);
+        const exactMatch = timeData2.find((d) => d.Distance === d1.Distance);
         if (exactMatch) {
           t2 = exactMatch.time;
         } else {
-          const before = timeData2.filter(d => d.Distance < d1.Distance).pop();
-          const after = timeData2.find(d => d.Distance > d1.Distance);
+          const before = timeData2.filter((d) => d.Distance < d1.Distance).pop();
+          const after = timeData2.find((d) => d.Distance > d1.Distance);
 
           if (before && after) {
             const ratio = (d1.Distance - before.Distance) / (after.Distance - before.Distance);
@@ -131,7 +169,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         return {
           Distance: d1.Distance,
           Gap: d1.time - t2, // Gap of Driver 1 relative to Driver 2
-          Baseline: 0 // Driver 2 is baseline
+          Baseline: 0, // Driver 2 is baseline
         };
       });
     }
@@ -151,42 +189,64 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       return { beforePoint, afterPoint };
     };
 
-    const getDataKey = (type: string) => {
+    const getDataKey = (type: string): TelemetryKey => {
       switch (type) {
-        case 'throttle': return 'Throttle';
-        case 'brake': return 'Brake';
-        case 'rpm': return 'RPM';
-        case 'drs': return 'DRS';
-        case 'speed': return 'Speed';
-        default: return type.charAt(0).toUpperCase() + type.slice(1);
+        case 'throttle':
+          return 'Throttle';
+        case 'brake':
+          return 'Brake';
+        case 'rpm':
+          return 'RPM';
+        case 'drs':
+          return 'DRS';
+        case 'speed':
+        default:
+          return 'Speed';
       }
     };
 
     const dataKey = getDataKey(telemetryType);
 
-    const interpolateTelemetry = (distance: number, data: TelemetryDataPoint[], key: string) => {
+    const interpolateTelemetry = (
+      distance: number,
+      data: TelemetryDataPoint[],
+      key: TelemetryKey
+    ): number | null => {
       if (!data.length) return null;
-      const exactMatch = data.find(point => point.Distance === distance);
-      if (exactMatch) return (exactMatch as any)[key];
+      const exactMatch = data.find((point) => point.Distance === distance);
+      if (exactMatch) {
+        const val = getTelemetryValue(exactMatch, key);
+        return val !== undefined ? val : null;
+      }
       const { beforePoint, afterPoint } = findInterpolationPoints(distance, data);
-      if (!beforePoint) return afterPoint ? (afterPoint as any)[key] || null : null;
-      if (!afterPoint) return beforePoint ? (beforePoint as any)[key] || null : null;
-      const beforeValue = (beforePoint as any)[key];
-      const afterValue = (afterPoint as any)[key];
-      if (beforeValue === null || beforeValue === undefined) return afterValue;
+      if (!beforePoint) {
+        if (!afterPoint) return null;
+        const val = getTelemetryValue(afterPoint, key);
+        return val !== undefined ? val : null;
+      }
+      if (!afterPoint) {
+        const val = getTelemetryValue(beforePoint, key);
+        return val !== undefined ? val : null;
+      }
+      const beforeValue = getTelemetryValue(beforePoint, key);
+      const afterValue = getTelemetryValue(afterPoint, key);
+      if (beforeValue === null || beforeValue === undefined) return afterValue ?? null;
       if (afterValue === null || afterValue === undefined) return beforeValue;
-      const distRatio = (distance - beforePoint.Distance) / (afterPoint.Distance - beforePoint.Distance);
+      const distRatio =
+        (distance - beforePoint.Distance) / (afterPoint.Distance - beforePoint.Distance);
       return beforeValue + distRatio * (afterValue - beforeValue);
     };
 
     // Use the dataset with more points as the base for distance
-    const baseData = telemetryData1.length > telemetryData2.length ? telemetryData1 : telemetryData2;
-    const otherData = telemetryData1.length > telemetryData2.length ? telemetryData2 : telemetryData1;
+    const baseData =
+      telemetryData1.length > telemetryData2.length ? telemetryData1 : telemetryData2;
+    const otherData =
+      telemetryData1.length > telemetryData2.length ? telemetryData2 : telemetryData1;
     const isDriver1Base = telemetryData1.length > telemetryData2.length;
 
-    return baseData.map(point => {
+    return baseData.map((point) => {
       const distance = point.Distance;
-      const baseValue = (point as any)[dataKey];
+      const baseValue = getTelemetryValue(point, dataKey);
       const otherValue = interpolateTelemetry(distance, otherData, dataKey);
 
       return {
@@ -209,7 +269,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           tooltipUnit: '%',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
       case 'brake':
         return {
@@ -221,7 +281,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           tooltipUnit: '%',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
       case 'rpm':
         return {
@@ -233,19 +293,19 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           tooltipUnit: ' RPM',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
       case 'drs':
         return {
           dataKey: 'DRS',
-          yAxisFormatter: (value: number) => value === 1 ? 'ON' : 'OFF',
+          yAxisFormatter: (value: number) => (value === 1 ? 'ON' : 'OFF'),
           color1: '#3b82f6',
           color2: '#3b82f6',
           domain: [-0.1, 1.1] as [number, number],
           tooltipUnit: '',
           type: 'stepAfter' as const,
           showYAxisTicks: false,
-          showActiveDot: false
+          showActiveDot: false,
         };
       case 'speed':
         return {
@@ -253,11 +313,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           yAxisFormatter: (value: number) => `${Math.round(value)}`,
           color1: '#3b82f6',
           color2: '#3b82f6',
-          domain: ['auto', 'auto'] as [any, any],
+          domain: ['auto', 'auto'] as [
+            number | 'auto' | 'dataMin' | 'dataMax',
+            number | 'auto' | 'dataMin' | 'dataMax',
+          ],
           tooltipUnit: ' km/h',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
       case 'gap':
         return {
@@ -265,11 +328,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           yAxisFormatter: (value: number) => `${value.toFixed(2)}s`,
           color1: '#ef4444', // Driver 1 Gap Color
           color2: '#666666', // Baseline Color
-          domain: ['auto', 'auto'] as [any, any],
+          domain: ['auto', 'auto'] as [
+            number | 'auto' | 'dataMin' | 'dataMax',
+            number | 'auto' | 'dataMin' | 'dataMax',
+          ],
           tooltipUnit: 's',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
       default:
         return {
@@ -277,11 +343,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           yAxisFormatter: (value: number) => `${value}`,
           color1: '#8884d8',
           color2: '#82ca9d',
-          domain: ['auto', 'auto'] as [any, any],
+          domain: ['auto', 'auto'] as [
+            number | 'auto' | 'dataMin' | 'dataMax',
+            number | 'auto' | 'dataMin' | 'dataMax',
+          ],
           tooltipUnit: '',
           type: 'monotone' as const,
           showYAxisTicks: true,
-          showActiveDot: true
+          showActiveDot: true,
         };
     }
   };
@@ -296,7 +365,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     <div className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">{title}</h3>
+          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
+            {title}
+          </h3>
         </div>
         {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="w-4 h-4" />}
       </div>
@@ -329,34 +400,45 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                       <div className="text-gray-400 text-xs font-mono mb-2 border-b border-gray-800 pb-1">
                         {Math.round(Number(label))}m
                       </div>
-                      {payload.map((entry: any, index: number) => {
+                      {payload.map((entry: TooltipPayloadEntry, index: number) => {
                         const isGap = telemetryType === 'gap';
                         const name = entry.name;
                         const value = entry.value;
                         const color = entry.color;
 
-                        // For Gap, we handle names differently
                         if (isGap) {
-                          if (name === 'Gap') {
+                          if (name === 'Gap' && typeof value === 'number') {
                             return (
                               <div key={index} className="flex items-center gap-2 mb-1">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color1 }}></div>
-                                <span className="text-xs font-bold text-white font-mono">{driver1} vs {driver2}:</span>
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: color1 }}
+                                ></div>
+                                <span className="text-xs font-bold text-white font-mono">
+                                  {driver1} vs {driver2}:
+                                </span>
                                 <span className="text-xs font-mono text-gray-300">
-                                  {value > 0 ? '+' : ''}{value.toFixed(3)}s
+                                  {value > 0 ? '+' : ''}
+                                  {value.toFixed(3)}s
                                 </span>
                               </div>
                             );
                           }
-                          return null; // Don't show baseline in tooltip
+                          return null;
                         }
 
                         return (
                           <div key={index} className="flex items-center gap-2 mb-1">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></div>
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: color }}
+                            ></div>
                             <span className="text-xs font-bold text-white font-mono">{name}:</span>
                             <span className="text-xs font-mono text-gray-300">
-                              {typeof value === 'number' ? value.toFixed(telemetryType === 'rpm' ? 0 : 2) : value}{props.tooltipUnit}
+                              {typeof value === 'number'
+                                ? value.toFixed(telemetryType === 'rpm' ? 0 : 2)
+                                : value}
+                              {props.tooltipUnit}
                             </span>
                           </div>
                         );
@@ -368,7 +450,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               }}
               cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-            <Legend wrapperStyle={{ paddingTop: '10px', fontFamily: 'monospace', fontSize: '10px' }} />
+            <Legend
+              wrapperStyle={{ paddingTop: '10px', fontFamily: 'monospace', fontSize: '10px' }}
+            />
 
             {telemetryType === 'gap' ? (
               <>

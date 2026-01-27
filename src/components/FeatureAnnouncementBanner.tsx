@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SparklesIcon, Cancel01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -20,34 +20,29 @@ const FeatureAnnouncementBanner: React.FC<FeatureAnnouncementBannerProps> = ({
   linkText,
   linkHref,
   expiresInDays = 7,
-  className
+  className,
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(() => {
+    const dismissedAnnouncements = JSON.parse(
+      localStorage.getItem('dismissedAnnouncements') || '{}'
+    );
 
-  useEffect(() => {
-    // Check if this announcement has been dismissed
-    const dismissedAnnouncements = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '{}');
-
-    // If there's an expiry date stored, check if it's passed
     if (dismissedAnnouncements[id]) {
       const expiryDate = new Date(dismissedAnnouncements[id]);
       if (new Date() > expiryDate) {
-        // Expired, show again
         delete dismissedAnnouncements[id];
         localStorage.setItem('dismissedAnnouncements', JSON.stringify(dismissedAnnouncements));
-        setIsVisible(true);
-      } else {
-        // Not expired, keep hidden
-        setIsVisible(false);
+        return true;
       }
-    } else {
-      // Never dismissed, show it
-      setIsVisible(true);
+      return false;
     }
-  }, [id, expiresInDays]);
+    return true;
+  });
 
   const dismissAnnouncement = () => {
-    const dismissedAnnouncements = JSON.parse(localStorage.getItem('dismissedAnnouncements') || '{}');
+    const dismissedAnnouncements = JSON.parse(
+      localStorage.getItem('dismissedAnnouncements') || '{}'
+    );
 
     // Set expiry date
     const expiryDate = new Date();
@@ -62,7 +57,12 @@ const FeatureAnnouncementBanner: React.FC<FeatureAnnouncementBannerProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className={cn("bg-gradient-to-r from-purple-900/70 via-indigo-800/70 to-blue-900/70 text-white py-3 px-4 rounded-lg shadow-lg border border-purple-500/30 mb-6 relative backdrop-blur-sm", className)}>
+    <div
+      className={cn(
+        'bg-gradient-to-r from-purple-900/70 via-indigo-800/70 to-blue-900/70 text-white py-3 px-4 rounded-lg shadow-lg border border-purple-500/30 mb-6 relative backdrop-blur-sm',
+        className
+      )}
+    >
       <div className="flex items-start">
         <SparklesIcon className="h-5 w-5 text-purple-300 mr-3 mt-0.5 flex-shrink-0" />
         <div className="flex-1">
@@ -90,4 +90,4 @@ const FeatureAnnouncementBanner: React.FC<FeatureAnnouncementBannerProps> = ({
 };
 
 export { FeatureAnnouncementBanner };
-export default FeatureAnnouncementBanner; 
+export default FeatureAnnouncementBanner;

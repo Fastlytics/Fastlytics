@@ -39,7 +39,6 @@ import { F1Card } from '@/components/F1Card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Alert02Icon } from 'hugeicons-react';
-import type { TeamName } from '@/types';
 import {
   fetchSpecificRaceResults,
   fetchAvailableSessions,
@@ -75,7 +74,20 @@ import TireIcon from '@/components/mobile/tireicon';
 
 // --- Helper Functions ---
 
-const getTeamColorClass = (teamName: string | undefined): string => {
+type TeamColorClass =
+  | 'ferrari'
+  | 'mercedes'
+  | 'mclaren'
+  | 'redbull'
+  | 'astonmartin'
+  | 'alpine'
+  | 'williams'
+  | 'haas'
+  | 'alfaromeo'
+  | 'alphatauri'
+  | 'gray';
+
+const getTeamColorClass = (teamName: string | undefined): TeamColorClass => {
   if (!teamName) return 'gray';
   const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (simpleName.includes('mclaren')) return 'mclaren';
@@ -126,7 +138,7 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
   }
   if (timeStr.match(/^[A-Za-z]/)) return timeStr;
 
-  let processedTime = timeStr.startsWith('+') ? timeStr.substring(1) : timeStr;
+  const processedTime = timeStr.startsWith('+') ? timeStr.substring(1) : timeStr;
   try {
     const parts = processedTime.split(/[:.]/);
     if (parts.length === 3) {
@@ -349,7 +361,13 @@ const SessionResultsTable: React.FC<{
   );
 };
 
-const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: any }) => (
+const SectionHeader = ({
+  title,
+  icon: Icon,
+}: {
+  title: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) => (
   <div className="flex items-center gap-3 mb-6 border-b border-gray-800 pb-4">
     {Icon && <Icon className="w-6 h-6 text-red-600" />}
     <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">{title}</h2>
@@ -365,7 +383,7 @@ const NavItem = ({
 }: {
   id: string;
   label: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   onClick: () => void;
 }) => (
@@ -389,7 +407,10 @@ const Race = () => {
   const { isPremium, limitations } = useSubscription();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
+  const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>(() => {
+    // Initial empty state - will be updated by query result via effect
+    return [];
+  });
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
@@ -460,6 +481,7 @@ const Race = () => {
   }>({ driver1: '', driver2: '', lap1: 'fastest', lap2: 'fastest', shouldLoadChart: false });
 
   // Parse ID
+
   const { year, eventSlug, eventName } = useMemo(() => {
     if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
     const parts = raceId.split('-');
@@ -516,31 +538,29 @@ const Race = () => {
       fetchedAvailableSessions.length > 0,
   });
 
+  // Only set default session if not already in params
   useEffect(() => {
-    if (fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
-      setAvailableSessions(fetchedAvailableSessions);
-
-      // Only set default session if not already in params
-      if (!searchParams.get('session')) {
-        let defaultSession = '';
-        if (fetchedAvailableSessions.some((s) => s.type === 'R')) {
-          defaultSession = 'R';
-        } else {
-          defaultSession = fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type;
-        }
-
-        // Update params without pushing to history for initial load
-        setSearchParams(
-          (prev) => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('session', defaultSession);
-            return newParams;
-          },
-          { replace: true }
-        );
+    if (
+      fetchedAvailableSessions &&
+      fetchedAvailableSessions.length > 0 &&
+      !searchParams.get('session')
+    ) {
+      let defaultSession = '';
+      if (fetchedAvailableSessions.some((s) => s.type === 'R')) {
+        defaultSession = 'R';
+      } else {
+        defaultSession = fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type;
       }
-    } else if (fetchedAvailableSessions) {
-      setAvailableSessions([]);
+
+      // Update params without pushing to history for initial load
+      setSearchParams(
+        (prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('session', defaultSession);
+          return newParams;
+        },
+        { replace: true }
+      );
     }
   }, [fetchedAvailableSessions]);
 
@@ -650,6 +670,7 @@ const Race = () => {
         });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent is stable, intentionally excluded
     []
   );
 
@@ -1132,7 +1153,7 @@ const Race = () => {
                               title="WINNER"
                               value={raceWinner.fullName}
                               subValue={formatRaceTime(raceWinner.time, true)}
-                              team={getTeamColorClass(raceWinner.team) as any}
+                              team={getTeamColorClass(raceWinner.team)}
                               icon={<ChampionIcon />}
                               imageUrl={getDriverImage(raceWinner.fullName)}
                             />
@@ -1142,7 +1163,7 @@ const Race = () => {
                               title="POLE POSITION"
                               value={poleSitter.fullName}
                               subValue={poleSitter.poleLapTimeValue}
-                              team={getTeamColorClass(poleSitter.team) as any}
+                              team={getTeamColorClass(poleSitter.team)}
                               icon={<FlashIcon />}
                               imageUrl={getDriverImage(poleSitter.fullName)}
                             />
@@ -1152,7 +1173,7 @@ const Race = () => {
                               title="FASTEST LAP"
                               value={fastestLapHolder.fullName}
                               subValue={fastestLapHolder.driverFastestLapTime}
-                              team={getTeamColorClass(fastestLapHolder.team) as any}
+                              team={getTeamColorClass(fastestLapHolder.team)}
                               icon={<Clock01Icon />}
                               imageUrl={getDriverImage(fastestLapHolder.fullName)}
                             />
@@ -1165,7 +1186,7 @@ const Race = () => {
                             title={`P${i + 1}`}
                             value={p.fullName}
                             subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''}
-                            team={getTeamColorClass(p.team) as any}
+                            team={getTeamColorClass(p.team)}
                             icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />}
                             imageUrl={getDriverImage(p.fullName)}
                           />
