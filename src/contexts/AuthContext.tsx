@@ -21,10 +21,6 @@ export interface Profile {
   favorite_driver: string | null;
   favorite_team: string | null;
   onboarding_completed: boolean;
-  subscription_status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
-  trial_start_date?: string;
-  trial_end_date?: string;
-  tier?: 'free' | 'premium';
 }
 
 interface AuthContextType {

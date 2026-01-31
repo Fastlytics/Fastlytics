@@ -98,13 +98,6 @@ const LandingNavbar = () => {
                 Features
               </a>
               <Link
-                to="/pricing"
-                className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </Link>
-              <Link
                 to="/about"
                 className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
                 onClick={() => setMobileMenuOpen(false)}

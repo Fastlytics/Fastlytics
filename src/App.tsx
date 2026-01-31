@@ -1,36 +1,35 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import Landing from "./pages/Landing"; // Updated import
-import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
-import Account from "./pages/Account";
-import AboutUs from "./pages/AboutUs";
-import Race from "./pages/Race";
-import TeamStandings from "./pages/TeamStandings";
-import DriverStandings from "./pages/DriverStandings";
-import Calendar from "./pages/Calendar";
-import ChampionshipProgression from "./pages/ChampionshipProgression";
-import TeamPaceAnalysis from "./pages/TeamPaceAnalysis";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Dashboard from './pages/Dashboard';
+import Landing from './pages/Landing'; // Updated import
+import Auth from './pages/Auth';
+import Onboarding from './pages/Onboarding';
+import Account from './pages/Account';
+import AboutUs from './pages/AboutUs';
+import Race from './pages/Race';
+import TeamStandings from './pages/TeamStandings';
+import DriverStandings from './pages/DriverStandings';
+import Calendar from './pages/Calendar';
+import ChampionshipProgression from './pages/ChampionshipProgression';
+import TeamPaceAnalysis from './pages/TeamPaceAnalysis';
 
-import NotFound from "./pages/NotFound";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import SessionReplayPage from "./pages/SessionReplayPage";
-import TermsOfService from "./pages/TermsOfService";
-import FAQ from "./pages/FAQ";
-import RefundPolicy from "./pages/RefundPolicy";
-import Contact from "./pages/Contact";
-import Pricing from "./pages/Pricing";
-import LandingFooter from "./components/LandingFooter";
-import { SeasonProvider } from "./contexts/SeasonContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import ScrollToTop from "@/components/ScrollToTop";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { useIsMobile } from "@/hooks/use-mobile";
-import ConsentBanner from "@/components/ConsentBanner";
+import NotFound from './pages/NotFound';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import SessionReplayPage from './pages/SessionReplayPage';
+import TermsOfService from './pages/TermsOfService';
+import FAQ from './pages/FAQ';
+import RefundPolicy from './pages/RefundPolicy';
+import Contact from './pages/Contact';
+import LandingFooter from './components/LandingFooter';
+import { SeasonProvider } from './contexts/SeasonContext';
+import { AuthProvider } from './contexts/AuthContext';
+import ScrollToTop from '@/components/ScrollToTop';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useIsMobile } from '@/hooks/use-mobile';
+import ConsentBanner from '@/components/ConsentBanner';
 
 const queryClient = new QueryClient();
 
@@ -58,9 +57,7 @@ const LandingLayout = ({ children }: { children: React.ReactNode }) => {
 
 // Dashboard layout without footer
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen flex flex-col">
-    {children}
-  </div>
+  <div className="min-h-screen flex flex-col">{children}</div>
 );
 
 const App = () => (
@@ -75,31 +72,135 @@ const App = () => (
             <ScrollToTop />
             <Routes>
               {/* Landing Page Route (with LandingFooter) */}
-              <Route path="/" element={<LandingLayout><Landing /></LandingLayout>} />
-              <Route path="/about" element={<MainLayout><AboutUs /></MainLayout>} />
+              <Route
+                path="/"
+                element={
+                  <LandingLayout>
+                    <Landing />
+                  </LandingLayout>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <MainLayout>
+                    <AboutUs />
+                  </MainLayout>
+                }
+              />
 
               {/* Public Info Pages */}
-              <Route path="/privacy-policy" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
-              <Route path="/terms-of-service" element={<MainLayout><TermsOfService /></MainLayout>} />
-              <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
-              <Route path="/refund-policy" element={<MainLayout><RefundPolicy /></MainLayout>} />
-              <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
-              <Route path="/pricing" element={<MainLayout><Pricing /></MainLayout>} />
+              <Route
+                path="/privacy-policy"
+                element={
+                  <MainLayout>
+                    <PrivacyPolicy />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/terms-of-service"
+                element={
+                  <MainLayout>
+                    <TermsOfService />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/faq"
+                element={
+                  <MainLayout>
+                    <FAQ />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/refund-policy"
+                element={
+                  <MainLayout>
+                    <RefundPolicy />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <MainLayout>
+                    <Contact />
+                  </MainLayout>
+                }
+              />
 
               {/* All routes are now public */}
               <Route path="/auth" element={<Auth />} />
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-                <Route path="/account" element={<DashboardLayout><Account /></DashboardLayout>} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/account"
+                  element={
+                    <DashboardLayout>
+                      <Account />
+                    </DashboardLayout>
+                  }
+                />
               </Route>
-              <Route path="/race/:raceId" element={<DashboardLayout><Race /></DashboardLayout>} />
-              <Route path="/calendar" element={<DashboardLayout><Calendar /></DashboardLayout>} />
-              <Route path="/standings/teams" element={<DashboardLayout><TeamStandings /></DashboardLayout>} />
-              <Route path="/standings/drivers" element={<DashboardLayout><DriverStandings /></DashboardLayout>} />
-              <Route path="/standings/progression" element={<DashboardLayout><ChampionshipProgression /></DashboardLayout>} />
-              <Route path="/team-pace" element={<DashboardLayout><TeamPaceAnalysis /></DashboardLayout>} />
+              <Route
+                path="/race/:raceId"
+                element={
+                  <DashboardLayout>
+                    <Race />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <DashboardLayout>
+                    <Calendar />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/teams"
+                element={
+                  <DashboardLayout>
+                    <TeamStandings />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/drivers"
+                element={
+                  <DashboardLayout>
+                    <DriverStandings />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/progression"
+                element={
+                  <DashboardLayout>
+                    <ChampionshipProgression />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/team-pace"
+                element={
+                  <DashboardLayout>
+                    <TeamPaceAnalysis />
+                  </DashboardLayout>
+                }
+              />
 
               <Route path="/replay/:year/:event/:session" element={<SessionReplayPage />} />
 

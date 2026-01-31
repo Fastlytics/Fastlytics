@@ -85,3 +85,7 @@ JIRA_SETUP.md
 # Garage Server Guide
 GARAGE_SERVER_SETUP.md
 CAR_HARDWARE_SPECS.md
+SECURITY_AUDIT_REPORT.md
+FIX_PLAN.sh
+
+.sisyphus

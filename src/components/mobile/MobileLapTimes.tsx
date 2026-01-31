@@ -10,7 +10,6 @@ import {
 } from '@/lib/api';
 import { OpenF1Driver } from '@/lib/openf1';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -96,12 +95,6 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   const location = useLocation();
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
 
-  const { isPremium, limitations } = useSubscription();
-  const { allowHistoricalData } = limitations;
-  const currentYear = 2025; // Assuming 2025 is current season
-  const isHistorical = year < currentYear;
-  const isLocked = isHistorical && !allowHistoricalData;
-
   // --- Driver Selection Logic ---
   const { favDriverCode, rivalDriverCode } = useMemo(() => {
     const favCode = profile?.favorite_driver;
@@ -141,21 +134,19 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   }, [raceResults]);
 
   const driversToFetch = useMemo(() => {
-    if (isLocked) return []; // Don't fetch if locked
     const drivers = [driver1, driver2].filter(Boolean);
     // If in gap mode, ensure we fetch the leader's times too
     if (lapAnalysisMode === 'gap' && leaderCode && !drivers.includes(leaderCode)) {
       drivers.push(leaderCode);
     }
     return drivers;
-  }, [driver1, driver2, lapAnalysisMode, leaderCode, isLocked]);
+  }, [driver1, driver2, lapAnalysisMode, leaderCode]);
 
   // 1. Lap History / Gap Data
   const { data: lapData, isLoading: isLoadingLaps } = useQuery<LapTimeDataPoint[]>({
     queryKey: ['lapTimes', year, event, session, driversToFetch],
     queryFn: () => fetchLapTimes(year, event, session, driversToFetch),
     enabled:
-      !isLocked &&
       (lapAnalysisMode === 'history' || lapAnalysisMode === 'gap') &&
       !!driver1 &&
       driversToFetch.length > 0,
@@ -167,7 +158,6 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
     queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
     staleTime: Infinity,
-    enabled: !isLocked,
   });
 
   const allDriverCodes = useMemo(() => sessionDrivers?.map((d) => d.code) || [], [sessionDrivers]);
@@ -175,13 +165,13 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   const { data: paceData, isLoading: isLoadingPace } = useQuery<PaceDistributionData[]>({
     queryKey: ['paceDistribution', year, event, session, 'all'], // 'all' as key
     queryFn: () => fetchPaceDistribution(year, event, session, allDriverCodes),
-    enabled: !isLocked && lapAnalysisMode === 'pace' && allDriverCodes.length > 0,
+    enabled: lapAnalysisMode === 'pace' && allDriverCodes.length > 0,
     staleTime: 1000 * 60 * 5,
   });
 
   // --- Gap Calculation ---
   const gapData = useMemo(() => {
-    if (!lapData || lapAnalysisMode !== 'gap' || !leaderCode || isLocked) return [];
+    if (!lapData || lapAnalysisMode !== 'gap' || !leaderCode) return [];
 
     let cumulativeLeader = 0;
     let cumulativeD1 = 0;
@@ -220,7 +210,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
         };
       })
       .filter(Boolean);
-  }, [lapData, lapAnalysisMode, leaderCode, driver1, driver2, isLocked]);
+  }, [lapData, lapAnalysisMode, leaderCode, driver1, driver2]);
 
   // --- Helper for Driver Images ---
   const getDriverImage = (code: string) => {
@@ -248,37 +238,6 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
     });
     return { globalMinPace: min, globalMaxPace: max };
   }, [paceData]);
-
-  // --- Premium Lockdown UI ---
-  if (isLocked) {
-    return (
-      <div className="relative w-full h-[400px] flex flex-col items-center justify-center bg-zinc-900/30 border border-white/10 rounded-xl overflow-hidden p-6 text-center space-y-6">
-        {/* Blurred Background Mockup */}
-        <div
-          className="absolute inset-0 opacity-20 blur-sm pointer-events-none bg-[url('/path/to/placeholder-chart-bg.png')] bg-cover bg-center"
-          style={{ backgroundImage: 'linear-gradient(45deg, #111 0%, #222 100%)' }}
-        />
-
-        <div className="relative z-10 bg-black/80 backdrop-blur-md p-6 rounded-2xl border border-red-500/30 shadow-[0_0_50px_rgba(220,38,38,0.1)] max-w-sm">
-          <div className="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-600/50">
-            <CheckmarkCircle02Icon className="w-6 h-6 text-red-500" />
-          </div>
-          <h3 className="text-xl font-black uppercase italic text-white mb-2">Historical Data</h3>
-          <p className="text-gray-400 font-mono text-sm mb-6">
-            Access to historical seasons (pre-2025) is available exclusively to Pro members.
-          </p>
-          <button
-            onClick={() =>
-              navigate('/pricing', { state: { from: location.pathname + location.search } })
-            }
-            className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-3 text-sm rounded-lg hover:bg-red-700 transition-colors shadow-lg shadow-red-900/20"
-          >
-            Start 14-Day Free Trial
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
