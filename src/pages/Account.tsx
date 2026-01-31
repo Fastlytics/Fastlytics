@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription, cancelTrial } from '@/hooks/useSubscription';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,6 @@ import {
   Cancel01Icon,
   LinkSquare01Icon,
   Analytics01Icon,
-  Rocket01Icon,
 } from 'hugeicons-react';
 import ActivityItem, { ActivityItemProps } from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
@@ -101,23 +100,6 @@ const Account = () => {
   // Activity History State
   const [userActivity, setUserActivity] = useState<ActivityItemProps['activity'][]>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
-
-  // Subscription State
-  const { isPremium, isTrialing, daysRemaining, tier } = useSubscription(); // Add hook
-  const featureFlag = import.meta.env.VITE_ENABLE_SUBSCRIPTIONS;
-  const isSubscriptionsEnabled = featureFlag === undefined || featureFlag === 'true';
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'biannual' | 'yearly'>(
-    'monthly'
-  );
-
-  const proPrices = {
-    monthly: { price: 6.99, label: '/mo', period: 'Monthly' },
-    quarterly: { price: 19.99, label: '/3 mo', period: 'Quarterly' },
-    biannual: { price: 32.99, label: '/6 mo', period: 'Semi-Annual' },
-    yearly: { price: 59.99, label: '/yr', period: 'Yearly' },
-  };
-
-  const currentPro = proPrices[billingCycle];
 
   useEffect(() => {
     if (user) {
@@ -300,32 +282,6 @@ const Account = () => {
     }
   };
 
-  const handleCancelTrial = async () => {
-    if (!user) return;
-
-    if (
-      !confirm(
-        'Are you sure you want to cancel your free trial? You will lose access to premium features properly.'
-      )
-    ) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await cancelTrial(user.id);
-      await refreshProfile();
-      toast.success('Trial cancelled', {
-        description: 'Your free trial has been cancelled.',
-      });
-    } catch (error: unknown) {
-      console.error(error);
-      toast.error('Error cancelling trial', { description: (error as Error).message });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleConnectSocial = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);
     try {
@@ -386,7 +342,7 @@ const Account = () => {
               My Account
             </h1>
             <p className="text-zinc-400 font-mono text-sm">
-              Manage your profile, security, and subscription settings.
+              Manage your profile and security settings.
             </p>
           </div>
           <Button
@@ -430,34 +386,6 @@ const Account = () => {
                 active={activeSection === 'history'}
                 onClick={() => setActiveSection('history')}
               />
-
-              {isSubscriptionsEnabled && (
-                <button
-                  onClick={() => setActiveSection('subscription')}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left mt-4 rounded-r-md shadow-lg',
-                    activeSection === 'subscription'
-                      ? isPremium
-                        ? 'border-red-500 bg-red-600/10 text-white shadow-red-900/20'
-                        : 'border-yellow-500 bg-gradient-to-r from-yellow-600 to-amber-600 text-white shadow-yellow-900/20'
-                      : isPremium
-                        ? 'border-transparent text-zinc-400 hover:text-white hover:bg-zinc-900'
-                        : 'border-transparent bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 hover:shadow-yellow-500/20'
-                  )}
-                >
-                  <Rocket01Icon
-                    className={cn(
-                      'w-5 h-5',
-                      activeSection === 'subscription'
-                        ? 'text-white'
-                        : isPremium
-                          ? 'text-zinc-400'
-                          : 'text-black'
-                    )}
-                  />
-                  {isPremium ? 'My Subscription' : 'Upgrade'}
-                </button>
-              )}
             </div>
           </aside>
 
@@ -838,254 +766,6 @@ const Account = () => {
               </div>
             )}
 
-            {/* 4. Subscription Section */}
-            {activeSection === 'subscription' && isSubscriptionsEnabled && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <SectionHeader
-                  title={isPremium ? 'My Subscription' : 'Upgrade'}
-                  icon={Rocket01Icon}
-                />
-
-                {isPremium ? (
-                  // ACTIVE SUBSCRIPTION VIEW
-                  <div className="border border-red-600/50 p-8 rounded-lg relative overflow-hidden bg-gradient-to-b from-red-900/10 to-black">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
-
-                    <div className="flex items-start justify-between mb-8">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-3xl font-black uppercase italic text-white leading-none">
-                            Pro Plan
-                          </h3>
-                          <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase rounded-sm border border-red-500 tracking-wider">
-                            Active
-                          </span>
-                        </div>
-                        <p className="text-zinc-400 font-mono text-sm max-w-md">
-                          You have full access to all Fastlytics features.
-                        </p>
-                      </div>
-
-                      {isTrialing && (
-                        <div className="text-right">
-                          <div className="text-4xl font-black text-white leading-none mb-1">
-                            {daysRemaining}
-                          </div>
-                          <div className="text-xs text-red-500 font-bold uppercase tracking-wider">
-                            Days Left in Trial
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-t border-b border-zinc-800 py-8">
-                      <div>
-                        <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
-                          Included Features
-                        </h4>
-                        <ul className="space-y-3">
-                          <li className="flex items-center text-zinc-300 text-sm">
-                            <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" />{' '}
-                            <span className="font-bold text-white">Session Replay</span>
-                          </li>
-                          <li className="flex items-center text-zinc-300 text-sm">
-                            <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" />{' '}
-                            <span className="font-bold text-white">Unlimited Comparisons</span>
-                          </li>
-                          <li className="flex items-center text-zinc-300 text-sm">
-                            <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" />{' '}
-                            <span className="font-bold text-white">Full Historical Data</span>
-                          </li>
-                          <li className="flex items-center text-zinc-300 text-sm">
-                            <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" />{' '}
-                            <span className="font-bold text-white">Advanced Telemetry</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
-                          Plan Details
-                        </h4>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="text-xs text-zinc-500 uppercase font-mono mb-1">
-                              Status
-                            </div>
-                            <div className="text-white font-bold">
-                              {isTrialing ? 'Free Trial' : 'Active Subscription'}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-zinc-500 uppercase font-mono mb-1">
-                              Billing
-                            </div>
-                            <div className="text-white font-bold">
-                              {isTrialing ? 'N/A' : 'Managed via Paddle'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      {isTrialing ? (
-                        <Button
-                          variant="destructive"
-                          className="bg-zinc-900 border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-400 font-bold uppercase tracking-wider"
-                          onClick={handleCancelTrial}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? 'Cancelling...' : 'Cancel Free Trial'}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="border-zinc-700 text-white hover:bg-zinc-800 font-bold uppercase tracking-wider"
-                          onClick={() => window.open('https://paddle.net/', '_blank')}
-                        >
-                          Manage Subscription
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  // UPGRADE VIEW (Original)
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Free Tier */}
-                    <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg relative overflow-hidden flex flex-col">
-                      <div className="absolute top-0 right-0 bg-zinc-800 text-xs font-bold px-3 py-1 uppercase tracking-wider">
-                        {isPremium ? 'Included' : 'Current Plan'}
-                      </div>
-                      <div className="mb-6">
-                        <h3 className="text-2xl font-black uppercase italic text-white mb-2">
-                          Standard
-                        </h3>
-                        <div className="text-3xl font-bold text-white">Free</div>
-                        <p className="text-zinc-500 font-mono mt-2 text-sm">
-                          Essential telemetry for casual analysis.
-                        </p>
-                      </div>
-                      <ul className="space-y-3 mb-8 flex-grow">
-                        <li className="flex items-center text-zinc-400">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Standard
-                          Telemetry Data
-                        </li>
-                        <li className="flex items-center text-zinc-400">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Race
-                          Results & Standings
-                        </li>
-                        <li className="flex items-center text-zinc-400">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-zinc-500 mr-3" /> Max 2
-                          Drivers Comparison
-                        </li>
-                      </ul>
-                      <Button
-                        disabled
-                        className="w-full bg-zinc-800 text-zinc-400 font-bold uppercase tracking-wider"
-                      >
-                        {isPremium ? 'Included' : 'Active'}
-                      </Button>
-                    </div>
-
-                    {/* Pro Tier */}
-                    <div
-                      className={cn(
-                        'border p-8 rounded-lg relative overflow-hidden flex flex-col transition-all duration-300',
-                        isPremium
-                          ? 'bg-gradient-to-b from-red-900/20 to-black border-red-600 shadow-[0_0_30px_rgba(220,38,38,0.1)]'
-                          : 'bg-gradient-to-b from-zinc-900 to-black border-red-600/50 shadow-[0_0_30px_rgba(220,38,38,0.05)] opacity-100'
-                      )}
-                    >
-                      <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
-
-                      {isPremium && (
-                        <div className="absolute top-4 right-4">
-                          <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 uppercase rounded-full tracking-wider flex items-center gap-1">
-                            {isTrialing ? 'Trial Active' : 'Active'}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mb-6">
-                        <h3 className="text-2xl font-black uppercase italic text-red-500 mb-2 flex items-center gap-2">
-                          Pro{' '}
-                          <span className="text-white text-xs bg-red-600 px-2 py-0.5 rounded border border-red-500 not-italic font-sans">
-                            All Access
-                          </span>
-                        </h3>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold text-white">${currentPro.price}</span>
-                          <span className="text-lg text-zinc-500 font-normal">
-                            {currentPro.label}
-                          </span>
-                        </div>
-                        <p className="text-zinc-400 font-mono mt-2 text-sm">
-                          {isTrialing
-                            ? `${daysRemaining} days remaining in your free trial.`
-                            : 'Advanced tools for serious analysis.'}
-                        </p>
-                      </div>
-
-                      {/* Billing Cycle Selector */}
-                      <div className="grid grid-cols-2 gap-2 mb-6 pointer-events-auto">
-                        {(Object.keys(proPrices) as Array<keyof typeof proPrices>).map((cycle) => (
-                          <button
-                            key={cycle}
-                            onClick={() => setBillingCycle(cycle)}
-                            className={cn(
-                              'px-2 py-2 text-[10px] font-bold uppercase rounded border transition-all duration-200',
-                              billingCycle === cycle
-                                ? 'bg-red-600 border-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]'
-                                : 'bg-transparent border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white'
-                            )}
-                          >
-                            {proPrices[cycle].period}
-                          </button>
-                        ))}
-                      </div>
-
-                      <ul className="space-y-3 mb-8 flex-grow">
-                        <li className="flex items-center text-zinc-300">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" />{' '}
-                          <span className="font-bold text-white">Session Replay Access</span>
-                        </li>
-                        <li className="flex items-center text-zinc-300">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Unlimited
-                          Comparisons
-                        </li>
-                        <li className="flex items-center text-zinc-300">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Full
-                          Historical Data
-                        </li>
-                        <li className="flex items-center text-zinc-300">
-                          <CheckmarkCircle01Icon className="w-5 h-5 text-red-500 mr-3" /> Priority
-                          Support
-                        </li>
-                      </ul>
-
-                      {isPremium ? (
-                        <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider">
-                          Manage Subscription
-                        </Button>
-                      ) : (
-                        <Button
-                          className="w-full bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
-                          onClick={() => navigate('/pricing')}
-                        >
-                          Start 14-Day Free Trial
-                        </Button>
-                      )}
-
-                      <p className="text-center text-[10px] text-zinc-500 mt-3 font-mono">
-                        Secure payment via Paddle. Cancel anytime.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 5. History Section */}
             {activeSection === 'history' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <SectionHeader title="Activity History" icon={Analytics01Icon} />

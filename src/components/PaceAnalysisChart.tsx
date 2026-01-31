@@ -14,7 +14,6 @@ import {
   Scatter,
   ReferenceLine,
 } from 'recharts';
-import { PremiumLimitModal } from './common/PremiumLimitModal';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchPaceDistribution,
@@ -168,10 +167,6 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
       if (prev.includes(driverCode)) {
         return prev.filter((d) => d !== driverCode);
       }
-      if (prev.length >= maxDrivers) {
-        setShowPremiumModal(true);
-        return prev;
-      }
       return [...prev, driverCode];
     });
   };
@@ -181,17 +176,8 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   const maxPace = chartData.length > 0 ? Math.max(...chartData.map((d) => d.max)) : 0;
   const domainPadding = (maxPace - minPace) * 0.1;
 
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-
   return (
     <div className="w-full h-full p-4 relative">
-      <PremiumLimitModal
-        isOpen={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        title="Driver Limit Reached"
-        description={`Free plan users can compare up to ${maxDrivers} drivers. Upgrade to Pro for unlimited comparisons.`}
-      />
-
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
           Race Pace Distribution

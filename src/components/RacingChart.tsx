@@ -11,7 +11,6 @@ import {
   Brush,
   ReferenceLine,
 } from 'recharts';
-import { PremiumLimitModal } from './common/PremiumLimitModal';
 import { cn } from '@/lib/utils';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 import { useQuery } from '@tanstack/react-query';
@@ -85,7 +84,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   // Determine initial drivers based on props
   const getInitialDrivers = () => {
@@ -153,10 +151,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
           return prev.filter((d) => d !== driverCode);
         }
         return prev; // Cannot remove if it would go below MIN_DRIVERS
-      }
-      if (prev.length >= maxDrivers) {
-        setShowPremiumModal(true);
-        return prev;
       }
       return [...prev, driverCode];
     });
@@ -476,13 +470,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
-      <PremiumLimitModal
-        isOpen={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        title="Driver Limit Reached"
-        description={`Free plan users can compare up to ${maxDrivers} drivers. Upgrade to Pro for unlimited comparisons.`}
-      />
-
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
         {!staticData && availableDrivers && (
           <div className="flex flex-wrap gap-2">

@@ -65,8 +65,6 @@ import DRSChart from '@/components/DRSChart';
 import PositionsTabContent from '@/components/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
-import { PremiumGuard } from '@/components/common/PremiumGuard';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
@@ -404,7 +402,6 @@ const NavItem = ({
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
-  const { isPremium, limitations } = useSubscription();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1296,7 +1293,6 @@ const Race = () => {
                             openF1Drivers={openF1Drivers}
                             favoriteDriver={favDriverCode}
                             rivalDriver={rivalDriverCode}
-                            maxDrivers={limitations.maxDrivers}
                           />
                         );
                       })()}
@@ -1333,7 +1329,6 @@ const Race = () => {
                                 : []
                             }
                             openF1Drivers={openF1Drivers}
-                            maxDrivers={limitations.maxDrivers}
                           />
                         );
                       })()}
@@ -1539,27 +1534,25 @@ const Race = () => {
               {activeSection === 'replay' && year && eventSlug && selectedSession && (
                 <div className="space-y-6 animate-in fade-in duration-500">
                   <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
-                    <PremiumGuard>
-                      <React.Suspense
-                        fallback={
-                          <div className="h-full flex items-center justify-center">
-                            <div className="text-center">
-                              <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
-                              <div className="text-xs text-gray-500 font-mono">
-                                LOADING REPLAY MODULE...
-                              </div>
+                    <React.Suspense
+                      fallback={
+                        <div className="h-full flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                            <div className="text-xs text-gray-500 font-mono">
+                              LOADING REPLAY MODULE...
                             </div>
                           </div>
-                        }
-                      >
-                        <SessionReplay
-                          year={year}
-                          event={eventSlug}
-                          session={selectedSession}
-                          className="h-full"
-                        />
-                      </React.Suspense>
-                    </PremiumGuard>
+                        </div>
+                      }
+                    >
+                      <SessionReplay
+                        year={year}
+                        event={eventSlug}
+                        session={selectedSession}
+                        className="h-full"
+                      />
+                    </React.Suspense>
                   </div>
                 </div>
               )}

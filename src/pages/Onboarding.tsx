@@ -16,7 +16,6 @@ import { MobileOnboarding } from '@/components/mobile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
-import { startTrial } from '@/hooks/useSubscription';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 const Onboarding = () => {

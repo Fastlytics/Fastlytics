@@ -19,5 +19,4 @@ export { default as MobilePrivacyPolicy } from './MobilePrivacyPolicy';
 export { default as MobileTermsOfService } from './MobileTermsOfService';
 export { default as MobileRefundPolicy } from './MobileRefundPolicy';
 export { default as MobileContact } from './MobileContact';
-export { default as MobilePricing } from './MobilePricing';
 export { default as MobileFooter } from './MobileFooter';
