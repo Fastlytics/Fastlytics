@@ -21,6 +21,11 @@
 /.vite
 *.local
 
+# Cloudflare Workers
+workers/.wrangler/
+workers/dist/
+workers/node_modules
+
 # TypeScript
 *.tsbuildinfo
 
