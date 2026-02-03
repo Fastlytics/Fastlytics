@@ -1,0 +1,19 @@
+{
+  "name": "fastlytics-api-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker proxy for Fastlytics API",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "typescript": "^5.0.0",
+    "wrangler": "^4.62.0"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0"
+  }
+}
