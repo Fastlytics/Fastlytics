@@ -1,7 +1,8 @@
 name = "fastlytics-api-proxy"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
-nodejs_compat = true
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [vars]
 BACKEND_API_URL = "https://data.fastlytics.app"
