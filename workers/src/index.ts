@@ -3,8 +3,21 @@ export interface Env {
   BACKEND_API_URL: string;
 }
 
+const ALLOWED_ORIGINS = [
+  'https://fastlytics.app',
+  'https://beta.fastlytics.app',
+  'https://www.fastlytics.app',
+];
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some(
+    (allowed) => origin === allowed || origin.endsWith('.fastlytics.app')
+  );
+}
+
 const corsHeaders = (origin: string | null) => ({
-  'Access-Control-Allow-Origin': origin || '*',
+  'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin! : ALLOWED_ORIGINS[0],
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
   'Access-Control-Max-Age': '86400',
@@ -14,11 +27,23 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin');
+    const referer = request.headers.get('Referer');
 
     if (request.method === 'OPTIONS') {
+      if (!isAllowedOrigin(origin)) {
+        return new Response('Forbidden', { status: 403 });
+      }
       return new Response(null, {
         status: 204,
         headers: corsHeaders(origin),
+      });
+    }
+
+    const refererOrigin = referer ? new URL(referer).origin : null;
+    if (!isAllowedOrigin(origin) && !isAllowedOrigin(refererOrigin)) {
+      return new Response(JSON.stringify({ detail: 'Forbidden: Invalid origin' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
