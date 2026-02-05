@@ -39,6 +39,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 
 // Bottom Sheet Component
 interface BottomSheetProps {
@@ -134,29 +135,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
 );
 
 // Driver Image Map for 2025
-const driverImageMap: Record<string, string> = {
-  ALB: '/drivers/2025williamsalealb01right.avif',
-  ALO: '/drivers/2025astonmartinferalo01right.avif',
-  BEA: '/drivers/2025haasf1teamolibea01right.avif',
-  BOR: '/drivers/2025kicksaubergabbor01right.avif',
-  COL: '/drivers/2025alpinefracol01right.avif',
-  GAS: '/drivers/2025alpinepiegas01right.avif',
-  HAD: '/drivers/2025racingbullsisahad01right.avif',
-  HAM: '/drivers/2025ferrarilewham01right.avif',
-  HUL: '/drivers/2025kicksaubernichul01right.avif',
-  LAW: '/drivers/2025racingbullslialaw01right.avif',
-  LEC: '/drivers/2025ferrarichalec01right.avif',
-  NOR: '/drivers/2025mclarenlannor01right.avif',
-  OCO: '/drivers/2025haasf1teamestoco01right.avif',
-  PIA: '/drivers/2025mclarenoscpia01right.avif',
-  RUS: '/drivers/2025mercedesgeorus01right.avif',
-  SAI: '/drivers/2025williamscarsai01right.avif',
-  STR: '/drivers/2025astonmartinlanstr01right.avif',
-  TSU: '/drivers/2025redbullracingyuktsu01right.avif',
-  VER: '/drivers/2025redbullracingmaxver01right.avif',
-  ANT: '/drivers/2025mercedesandant01right.avif',
-};
-
+// Removed hardcoded map
 const MobileAccount: React.FC = () => {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
@@ -210,7 +189,7 @@ const MobileAccount: React.FC = () => {
         const [driversData, teamsData, openF1Data] = await Promise.all([
           fetchDriverStandings(currentYear),
           fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers(),
+          fetchAllOpenF1Drivers('latest', currentYear),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
@@ -248,16 +227,13 @@ const MobileAccount: React.FC = () => {
     }
   }, [user, showHistorySheet]);
 
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    if (driverImageMap[driverCode]) {
-      return driverImageMap[driverCode];
-    }
+  const getDriverImg = (driverCode: string, driverName: string) => {
     const driver = openF1Drivers.find(
       (d) =>
         d.name_acronym === driverCode ||
         d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
     );
-    return driver?.headshot_url;
+    return getDriverImage(driverCode, getCurrentSeasonYear(), driver?.headshot_url);
   };
 
   const handleUpdateFavorites = async () => {
@@ -583,7 +559,7 @@ const MobileAccount: React.FC = () => {
                   <>
                     <Avatar className="h-10 w-10 border border-white/20 rounded-md">
                       <AvatarImage
-                        src={getDriverImage(favoriteDriver, getFavoriteDriverName())}
+                        src={getDriverImg(favoriteDriver, getFavoriteDriverName())}
                         className="object-cover object-top"
                       />
                       <AvatarFallback className="rounded-md">{favoriteDriver}</AvatarFallback>
@@ -677,7 +653,7 @@ const MobileAccount: React.FC = () => {
                     >
                       <Avatar className="h-12 w-12 border border-white/20 rounded-md">
                         <AvatarImage
-                          src={getDriverImage(driver.code, driver.name)}
+                          src={getDriverImg(driver.code, driver.name)}
                           className="object-cover object-top"
                         />
                         <AvatarFallback className="rounded-md">{driver.code}</AvatarFallback>

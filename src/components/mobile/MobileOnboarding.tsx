@@ -22,30 +22,7 @@ import { cn } from '@/lib/utils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
-
-// Driver Image Map for 2025
-const driverImageMap: Record<string, string> = {
-  ALB: '/drivers/2025williamsalealb01right.avif',
-  ALO: '/drivers/2025astonmartinferalo01right.avif',
-  BEA: '/drivers/2025haasf1teamolibea01right.avif',
-  BOR: '/drivers/2025kicksaubergabbor01right.avif',
-  COL: '/drivers/2025alpinefracol01right.avif',
-  GAS: '/drivers/2025alpinepiegas01right.avif',
-  HAD: '/drivers/2025racingbullsisahad01right.avif',
-  HAM: '/drivers/2025ferrarilewham01right.avif',
-  HUL: '/drivers/2025kicksaubernichul01right.avif',
-  LAW: '/drivers/2025racingbullslialaw01right.avif',
-  LEC: '/drivers/2025ferrarichalec01right.avif',
-  NOR: '/drivers/2025mclarenlannor01right.avif',
-  OCO: '/drivers/2025haasf1teamestoco01right.avif',
-  PIA: '/drivers/2025mclarenoscpia01right.avif',
-  RUS: '/drivers/2025mercedesgeorus01right.avif',
-  SAI: '/drivers/2025williamscarsai01right.avif',
-  STR: '/drivers/2025astonmartinlanstr01right.avif',
-  TSU: '/drivers/2025redbullracingyuktsu01right.avif',
-  VER: '/drivers/2025redbullracingmaxver01right.avif',
-  ANT: '/drivers/2025mercedesandant01right.avif',
-};
+import { getDriverImage } from '@/utils/imageMapping';
 
 const MobileOnboarding: React.FC = () => {
   const { user, refreshProfile } = useAuth();
@@ -65,7 +42,7 @@ const MobileOnboarding: React.FC = () => {
         const [driversData, teamsData, openF1Data] = await Promise.all([
           fetchDriverStandings(currentYear),
           fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers(),
+          fetchAllOpenF1Drivers('latest', currentYear),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
@@ -78,16 +55,13 @@ const MobileOnboarding: React.FC = () => {
     loadData();
   }, []);
 
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    if (driverImageMap[driverCode]) {
-      return driverImageMap[driverCode];
-    }
+  const getDriverImg = (driverCode: string, driverName: string) => {
     const driver = openF1Drivers.find(
       (d) =>
         d.name_acronym === driverCode ||
         d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
     );
-    return driver?.headshot_url;
+    return getDriverImage(driverCode, getCurrentSeasonYear(), driver?.headshot_url);
   };
 
   const handleComplete = async () => {
@@ -231,8 +205,7 @@ const MobileOnboarding: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   {drivers.map((driver) => {
                     const isSelected = selectedDriver === driver.code;
-                    const driverImg = getDriverImage(driver.code, driver.name);
-                    const has2025Img = driverImageMap[driver.code];
+                    const driverImg = getDriverImg(driver.code, driver.name);
 
                     return (
                       <motion.button
@@ -252,10 +225,7 @@ const MobileOnboarding: React.FC = () => {
                             <img
                               src={driverImg}
                               alt={driver.name}
-                              className={cn(
-                                'w-full h-full',
-                                has2025Img ? 'object-cover object-top' : 'object-cover object-top'
-                              )}
+                              className={cn('w-full h-full', 'object-cover object-top')}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

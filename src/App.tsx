@@ -131,9 +131,10 @@ const App = () => (
                 }
               />
 
-              {/* All routes are now public */}
+              {/* Auth route - public */}
               <Route path="/auth" element={<Auth />} />
-              {/* Protected Routes */}
+
+              {/* Protected Routes - require login */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route
@@ -152,57 +153,56 @@ const App = () => (
                     </DashboardLayout>
                   }
                 />
+                <Route
+                  path="/race/:raceId"
+                  element={
+                    <DashboardLayout>
+                      <Race />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <DashboardLayout>
+                      <Calendar />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/standings/teams"
+                  element={
+                    <DashboardLayout>
+                      <TeamStandings />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/standings/drivers"
+                  element={
+                    <DashboardLayout>
+                      <DriverStandings />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/standings/progression"
+                  element={
+                    <DashboardLayout>
+                      <ChampionshipProgression />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/team-pace"
+                  element={
+                    <DashboardLayout>
+                      <TeamPaceAnalysis />
+                    </DashboardLayout>
+                  }
+                />
+                <Route path="/replay/:year/:event/:session" element={<SessionReplayPage />} />
               </Route>
-              <Route
-                path="/race/:raceId"
-                element={
-                  <DashboardLayout>
-                    <Race />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/calendar"
-                element={
-                  <DashboardLayout>
-                    <Calendar />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/standings/teams"
-                element={
-                  <DashboardLayout>
-                    <TeamStandings />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/standings/drivers"
-                element={
-                  <DashboardLayout>
-                    <DriverStandings />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/standings/progression"
-                element={
-                  <DashboardLayout>
-                    <ChampionshipProgression />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/team-pace"
-                element={
-                  <DashboardLayout>
-                    <TeamPaceAnalysis />
-                  </DashboardLayout>
-                }
-              />
-
-              <Route path="/replay/:year/:event/:session" element={<SessionReplayPage />} />
 
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />
