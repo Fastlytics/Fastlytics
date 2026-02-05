@@ -69,6 +69,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
 import TireIcon from '@/components/mobile/tireicon';
+import { GatedRoute } from '@/components/common/GatedRoute';
 
 // --- Helper Functions ---
 
@@ -401,7 +402,7 @@ const NavItem = ({
 
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1212,184 +1213,193 @@ const Race = () => {
               {/* 3. Strategy Section (Race Only) */}
               {activeSection === 'strategy' &&
                 (selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
-                    <TireStrategy
-                      year={year!}
-                      event={eventName}
-                      session={selectedSession}
-                      favoriteDriver={profile?.favorite_driver}
-                    />
-                  </section>
+                  <GatedRoute
+                    featureName="Tire Strategy"
+                    description="Advanced tire strategy analysis including pit stop patterns and compound selection strategies"
+                  >
+                    <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
+                      <TireStrategy
+                        year={year!}
+                        event={eventName}
+                        session={selectedSession}
+                        favoriteDriver={profile?.favorite_driver}
+                      />
+                    </section>
+                  </GatedRoute>
                 )}
 
               {/* 3.5 Positions Section (Race Only) */}
               {activeSection === 'positions' &&
                 (selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <section id="positions" className="animate-in fade-in duration-500">
-                    <PositionsTabContent
-                      year={year!}
-                      event={eventName}
-                      session={selectedSession}
-                      openF1Drivers={openF1Drivers}
-                      favoriteDriver={profile?.favorite_driver}
-                    />
-                  </section>
+                  <GatedRoute
+                    featureName="Position Tracking"
+                    description="Real-time position changes and overtaking opportunities throughout the race"
+                  >
+                    <section id="positions" className="animate-in fade-in duration-500">
+                      <PositionsTabContent
+                        year={year!}
+                        event={eventName}
+                        session={selectedSession}
+                        openF1Drivers={openF1Drivers}
+                        favoriteDriver={profile?.favorite_driver}
+                      />
+                    </section>
+                  </GatedRoute>
                 )}
 
               {/* 4. Lap Times Section */}
               {activeSection === 'laptimes' && (
-                <section id="laptimes" className="animate-in fade-in duration-500">
-                  <Tabs
-                    defaultValue="history"
-                    value={lapAnalysisMode}
-                    onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace')}
-                    className="w-full"
-                  >
-                    <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
-                      <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
-                        <TabsTrigger
-                          value="history"
-                          className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-                        >
-                          Lap History
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="pace"
-                          className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-                        >
-                          Pace Distribution
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-
-                    <TabsContent
-                      value="history"
-                      className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                <GatedRoute
+                  featureName="Lap Times Analysis"
+                  description="Detailed lap-by-lap timing data with pace distribution analysis and comparison charts"
+                >
+                  <section id="laptimes" className="animate-in fade-in duration-500">
+                    <Tabs
+                      defaultValue="history"
+                      value={lapAnalysisMode}
+                      onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace')}
+                      className="w-full"
                     >
-                      {(() => {
-                        const favDriverCode = profile?.favorite_driver;
-                        let rivalDriverCode = null;
+                      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
+                        <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+                          <TabsTrigger
+                            value="history"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                          >
+                            Lap History
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="pace"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                          >
+                            Pace Distribution
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
 
-                        if (favDriverCode && sessionResults) {
-                          const favResult = sessionResults.find(
-                            (r) =>
-                              r.driverCode === favDriverCode ||
-                              r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
-                          );
-                          if (favResult && favResult.position) {
-                            const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
-                            const rivalResult = sessionResults.find((r) => r.position === rivalPos);
-                            if (rivalResult) rivalDriverCode = rivalResult.driverCode;
-                          }
-                        }
+                      <TabsContent
+                        value="history"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
 
-                        return (
-                          <RacingChart
-                            year={year!}
-                            event={eventName}
-                            session={selectedSession}
-                            title="Lap Time Comparison"
-                            autoLoad={true}
-                            openF1Drivers={openF1Drivers}
-                            favoriteDriver={favDriverCode}
-                            rivalDriver={rivalDriverCode}
-                          />
-                        );
-                      })()}
-                    </TabsContent>
-
-                    <TabsContent
-                      value="pace"
-                      className="mt-0 animate-in fade-in zoom-in-95 duration-300"
-                    >
-                      {(() => {
-                        const favDriverCode = profile?.favorite_driver;
-                        let rivalDriverCode = null;
-
-                        if (favDriverCode && sessionResults) {
-                          const favResult = sessionResults.find(
-                            (r) =>
-                              r.driverCode === favDriverCode ||
-                              r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
-                          );
-                          if (favResult && favResult.position) {
-                            const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
-                            const rivalResult = sessionResults.find((r) => r.position === rivalPos);
-                            if (rivalResult) rivalDriverCode = rivalResult.driverCode;
-                          }
-                        }
-                        return (
-                          <PaceAnalysisChart
-                            year={year!}
-                            event={eventName}
-                            session={selectedSession}
-                            initialDrivers={
-                              favDriverCode
-                                ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
-                                : []
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
                             }
-                            openF1Drivers={openF1Drivers}
-                          />
-                        );
-                      })()}
-                    </TabsContent>
-                  </Tabs>
-                </section>
+                          }
+
+                          return (
+                            <RacingChart
+                              year={year!}
+                              event={eventName}
+                              session={selectedSession}
+                              title="Lap Time Comparison"
+                              autoLoad={true}
+                              openF1Drivers={openF1Drivers}
+                              favoriteDriver={favDriverCode}
+                              rivalDriver={rivalDriverCode}
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+
+                      <TabsContent
+                        value="pace"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
+
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                            }
+                          }
+                          return (
+                            <PaceAnalysisChart
+                              year={year!}
+                              event={eventName}
+                              session={selectedSession}
+                              initialDrivers={
+                                favDriverCode
+                                  ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
+                                  : []
+                              }
+                              openF1Drivers={openF1Drivers}
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+                    </Tabs>
+                  </section>
+                </GatedRoute>
               )}
 
               {/* 5. Dominance Section */}
               {activeSection === 'dominance' && (
-                <section id="dominance" className="animate-in fade-in duration-500">
-                  {(() => {
-                    const favDriverCode = profile?.favorite_driver;
-                    let rivalDriverCode = null;
+                <GatedRoute
+                  featureName="Head to Head Analysis"
+                  description="Driver comparison and dominance analysis with detailed telemetry overlays including speed, throttle, brake, and DRS patterns"
+                >
+                  <section id="dominance" className="animate-in fade-in duration-500">
+                    {(() => {
+                      const favDriverCode = profile?.favorite_driver;
+                      let rivalDriverCode = null;
 
-                    if (favDriverCode && sessionResults) {
-                      const favResult = sessionResults.find(
-                        (r) =>
-                          r.driverCode === favDriverCode ||
-                          r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
-                      );
-                      if (favResult && favResult.position) {
-                        // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
-                        const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
-                        const rivalResult = sessionResults.find((r) => r.position === rivalPos);
-                        if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                      if (favDriverCode && sessionResults) {
+                        const favResult = sessionResults.find(
+                          (r) =>
+                            r.driverCode === favDriverCode ||
+                            r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                        );
+                        if (favResult && favResult.position) {
+                          // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
+                          const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                          const rivalResult = sessionResults.find((r) => r.position === rivalPos);
+                          if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                        }
                       }
-                    }
 
-                    return (
-                      <div className="space-y-12">
-                        <CircuitComparisonChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          initialDriver1={favDriverCode}
-                          initialDriver2={rivalDriverCode || undefined}
-                          onDriversSelected={handleCircuitDriversSelected}
-                          openF1Drivers={openF1Drivers}
-                        />
+                      return (
+                        <div className="space-y-12">
+                          <CircuitComparisonChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            initialDriver1={favDriverCode}
+                            initialDriver2={rivalDriverCode || undefined}
+                            onDriversSelected={handleCircuitDriversSelected}
+                            openF1Drivers={openF1Drivers}
+                          />
 
-                        {/* Comparison Charts if selected */}
-                        {circuitDrivers.shouldLoadChart && (
-                          <div className="space-y-12">
-                            {/* Speed Trace - Full Width */}
-                            <DriverComparisonTelemetry
-                              year={year!}
-                              event={eventName}
-                              session={selectedSession}
-                              driver1={circuitDrivers.driver1}
-                              driver2={circuitDrivers.driver2}
-                              lap1={circuitDrivers.lap1}
-                              lap2={circuitDrivers.lap2}
-                              shouldLoadChart={true}
-                              telemetryType="speed"
-                              title="Speed Trace"
-                              openF1Drivers={openF1Drivers}
-                            />
-
-                            {/* Other Telemetry - Stacked */}
+                          {/* Comparison Charts if selected */}
+                          {circuitDrivers.shouldLoadChart && (
                             <div className="space-y-12">
+                              {/* Speed Trace - Full Width */}
                               <DriverComparisonTelemetry
                                 year={year!}
                                 event={eventName}
@@ -1399,162 +1409,189 @@ const Race = () => {
                                 lap1={circuitDrivers.lap1}
                                 lap2={circuitDrivers.lap2}
                                 shouldLoadChart={true}
-                                telemetryType="gap"
-                                title="Gap"
+                                telemetryType="speed"
+                                title="Speed Trace"
                                 openF1Drivers={openF1Drivers}
                               />
-                              <DriverComparisonTelemetry
-                                year={year!}
-                                event={eventName}
-                                session={selectedSession}
-                                driver1={circuitDrivers.driver1}
-                                driver2={circuitDrivers.driver2}
-                                lap1={circuitDrivers.lap1}
-                                lap2={circuitDrivers.lap2}
-                                shouldLoadChart={true}
-                                telemetryType="throttle"
-                                title="Throttle"
-                                openF1Drivers={openF1Drivers}
-                              />
-                              <DriverComparisonTelemetry
-                                year={year!}
-                                event={eventName}
-                                session={selectedSession}
-                                driver1={circuitDrivers.driver1}
-                                driver2={circuitDrivers.driver2}
-                                lap1={circuitDrivers.lap1}
-                                lap2={circuitDrivers.lap2}
-                                shouldLoadChart={true}
-                                telemetryType="brake"
-                                title="Brake"
-                                openF1Drivers={openF1Drivers}
-                              />
-                              <DriverComparisonTelemetry
-                                year={year!}
-                                event={eventName}
-                                session={selectedSession}
-                                driver1={circuitDrivers.driver1}
-                                driver2={circuitDrivers.driver2}
-                                lap1={circuitDrivers.lap1}
-                                lap2={circuitDrivers.lap2}
-                                shouldLoadChart={true}
-                                telemetryType="rpm"
-                                title="RPM"
-                                openF1Drivers={openF1Drivers}
-                              />
-                              <DriverComparisonTelemetry
-                                year={year!}
-                                event={eventName}
-                                session={selectedSession}
-                                driver1={circuitDrivers.driver1}
-                                driver2={circuitDrivers.driver2}
-                                lap1={circuitDrivers.lap1}
-                                lap2={circuitDrivers.lap2}
-                                shouldLoadChart={true}
-                                telemetryType="drs"
-                                title="DRS"
-                                openF1Drivers={openF1Drivers}
-                              />
+
+                              {/* Other Telemetry - Stacked */}
+                              <div className="space-y-12">
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={selectedSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="gap"
+                                  title="Gap"
+                                  openF1Drivers={openF1Drivers}
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={selectedSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="throttle"
+                                  title="Throttle"
+                                  openF1Drivers={openF1Drivers}
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={selectedSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="brake"
+                                  title="Brake"
+                                  openF1Drivers={openF1Drivers}
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={selectedSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="rpm"
+                                  title="RPM"
+                                  openF1Drivers={openF1Drivers}
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={selectedSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="drs"
+                                  title="DRS"
+                                  openF1Drivers={openF1Drivers}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </section>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </section>
+                </GatedRoute>
               )}
 
               {/* 6. Telemetry Section */}
               {activeSection === 'telemetry' && (
-                <section id="telemetry" className="animate-in fade-in duration-500">
-                  {(() => {
-                    const defaultDriver =
-                      profile?.favorite_driver ||
-                      (sessionResults && sessionResults.length > 0
-                        ? sessionResults[0].driverCode
-                        : undefined);
+                <GatedRoute
+                  featureName="Advanced Telemetry"
+                  description="Complete telemetry analysis with speed traces, throttle/brake patterns, RPM curves, gear selection, and DRS deployment strategies"
+                >
+                  <section id="telemetry" className="animate-in fade-in duration-500">
+                    {(() => {
+                      const defaultDriver =
+                        profile?.favorite_driver ||
+                        (sessionResults && sessionResults.length > 0
+                          ? sessionResults[0].driverCode
+                          : undefined);
 
-                    return (
-                      <div className="flex flex-col space-y-12">
-                        <SpeedTraceChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                        <ThrottleChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                        <BrakeChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                        <RPMChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                        <GearMapChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                        <DRSChart
-                          year={year!}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                          openF1Drivers={openF1Drivers}
-                          initialDriver={defaultDriver}
-                        />
-                      </div>
-                    );
-                  })()}
-                </section>
+                      return (
+                        <div className="flex flex-col space-y-12">
+                          <SpeedTraceChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                          <ThrottleChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                          <BrakeChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                          <RPMChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                          <GearMapChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                          <DRSChart
+                            year={year!}
+                            event={eventName}
+                            session={selectedSession}
+                            lap={selectedLap}
+                            openF1Drivers={openF1Drivers}
+                            initialDriver={defaultDriver}
+                          />
+                        </div>
+                      );
+                    })()}
+                  </section>
+                </GatedRoute>
               )}
 
               {/* 7. Replay Section */}
               {activeSection === 'replay' && year && eventSlug && selectedSession && (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
-                    <React.Suspense
-                      fallback={
-                        <div className="h-full flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
-                            <div className="text-xs text-gray-500 font-mono">
-                              LOADING REPLAY MODULE...
+                <GatedRoute
+                  featureName="Session Replay"
+                  description="Experience immersive race telemetry with real-time car positions and data overlays"
+                >
+                  <div className="space-y-6 animate-in fade-in duration-500">
+                    <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
+                      <React.Suspense
+                        fallback={
+                          <div className="h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                              <div className="text-xs text-gray-500 font-mono">
+                                LOADING REPLAY MODULE...
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      }
-                    >
-                      <SessionReplay
-                        year={year}
-                        event={eventSlug}
-                        session={selectedSession}
-                        className="h-full"
-                      />
-                    </React.Suspense>
+                        }
+                      >
+                        <SessionReplay
+                          year={year}
+                          event={eventSlug}
+                          session={selectedSession}
+                          className="h-full"
+                        />
+                      </React.Suspense>
+                    </div>
                   </div>
-                </div>
+                </GatedRoute>
               )}
             </div>
           </div>

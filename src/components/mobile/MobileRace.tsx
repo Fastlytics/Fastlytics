@@ -35,6 +35,7 @@ import MobileLapTimes from './MobileLapTimes';
 import MobileHeadToHead from './MobileHeadToHead';
 import MobileTelemetry from './MobileTelemetry';
 import { getDriverImage } from '@/utils/imageMapping';
+import { GatedRoute } from '@/components/common/GatedRoute';
 
 // --- Helper Functions ---
 const getTeamColorClass = (teamName: string | undefined): string => {
@@ -107,6 +108,51 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
     // Invalid time string format, return original
   }
   return timeStr;
+};
+
+const calculateFullRaceTime = (
+  winnerTime: string | null | undefined,
+  gap: string | null | undefined
+): string | null => {
+  if (!winnerTime || !gap) return null;
+  if (gap.includes('Lap')) return null;
+
+  try {
+    const winnerParts = winnerTime.split(/[:.]/);
+    if (winnerParts.length !== 3) return null;
+
+    const winnerTotalMs =
+      parseInt(winnerParts[0], 10) * 60 * 1000 +
+      parseInt(winnerParts[1], 10) * 1000 +
+      parseInt(winnerParts[2], 10);
+
+    const gapStr = gap.startsWith('+') ? gap.substring(1) : gap;
+    const gapParts = gapStr.split(/[:.]/);
+
+    let gapMs = 0;
+    if (gapParts.length === 3) {
+      gapMs =
+        parseInt(gapParts[0], 10) * 60 * 1000 +
+        parseInt(gapParts[1], 10) * 1000 +
+        parseInt(gapParts[2], 10);
+    } else if (gapParts.length === 2) {
+      gapMs = parseInt(gapParts[0], 10) * 1000 + parseInt(gapParts[1], 10);
+    } else {
+      return null;
+    }
+
+    const totalMs = winnerTotalMs + gapMs;
+    const totalMinutes = Math.floor(totalMs / 60000);
+    const seconds = Math.floor((totalMs % 60000) / 1000);
+    const milliseconds = totalMs % 1000;
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+  } catch {
+    return null;
+  }
 };
 
 // Countdown Component
@@ -672,6 +718,7 @@ interface ResultRowProps {
   isExpanded: boolean;
   onToggle: () => void;
   fastestLapHolder?: DetailedRaceResult | null;
+  winnerTime?: string | null;
 }
 
 const ResultRow: React.FC<ResultRowProps> = ({
@@ -683,6 +730,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
   isExpanded,
   onToggle,
   fastestLapHolder,
+  winnerTime,
 }) => {
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
   const isPodium = position <= 3;
@@ -811,7 +859,9 @@ const ResultRow: React.FC<ResultRowProps> = ({
                       Race Time
                     </div>
                     <div className="text-xs font-mono text-white">
-                      {position === 1 ? formatRaceTime(result.time, true) : result.time}
+                      {position === 1
+                        ? formatRaceTime(result.time, true)
+                        : calculateFullRaceTime(winnerTime, result.time) || result.time}
                     </div>
                   </div>
                 )}
@@ -1222,20 +1272,25 @@ const MobileRace: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {activeTab === 'h2h' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-4"
+          <GatedRoute
+            featureName="Head to Head Analysis"
+            description="Compare driver performance lap-by-lap with detailed head-to-head analysis."
           >
-            <MobileHeadToHead
-              year={year!}
-              event={eventName}
-              session={selectedSession}
-              openF1Drivers={openF1Drivers}
-              raceResults={raceResults}
-            />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="p-4"
+            >
+              <MobileHeadToHead
+                year={year!}
+                event={eventName}
+                session={selectedSession}
+                openF1Drivers={openF1Drivers}
+                raceResults={raceResults}
+              />
+            </motion.div>
+          </GatedRoute>
         )}
 
         {activeTab === 'overview' && (
@@ -1286,6 +1341,7 @@ const MobileRace: React.FC = () => {
                         )
                       }
                       fastestLapHolder={fastestLapHolder}
+                      winnerTime={raceResults?.find((r) => r.position === 1)?.time}
                     />
                   ))
                 )}
@@ -1295,33 +1351,48 @@ const MobileRace: React.FC = () => {
         )}
 
         {activeTab === 'strategy' && year && (
-          <MobileStrategy
-            year={year}
-            event={eventName}
-            session={selectedSession}
-            raceResults={raceResults}
-            getDriverImage={getDriverImg}
-          />
+          <GatedRoute
+            featureName="Tyre Strategy"
+            description="Analyze pit stops, tyre compounds, and race strategy decisions."
+          >
+            <MobileStrategy
+              year={year}
+              event={eventName}
+              session={selectedSession}
+              raceResults={raceResults}
+              getDriverImage={getDriverImg}
+            />
+          </GatedRoute>
         )}
 
         {activeTab === 'laptimes' && year && (
-          <MobileLapTimes
-            year={year}
-            event={eventName}
-            session={selectedSession}
-            raceResults={raceResults}
-            openF1Drivers={openF1Drivers}
-          />
+          <GatedRoute
+            featureName="Lap Times Analysis"
+            description="Deep dive into lap-by-lap timing data and performance trends."
+          >
+            <MobileLapTimes
+              year={year}
+              event={eventName}
+              session={selectedSession}
+              raceResults={raceResults}
+              openF1Drivers={openF1Drivers}
+            />
+          </GatedRoute>
         )}
 
         {activeTab === 'telemetry' && (
-          <MobileTelemetry
-            year={year!}
-            event={eventName}
-            session={selectedSession}
-            openF1Drivers={openF1Drivers}
-            raceResults={raceResults}
-          />
+          <GatedRoute
+            featureName="Advanced Telemetry"
+            description="Access detailed car telemetry including throttle, brake, gear, and speed data."
+          >
+            <MobileTelemetry
+              year={year!}
+              event={eventName}
+              session={selectedSession}
+              openF1Drivers={openF1Drivers}
+              raceResults={raceResults}
+            />
+          </GatedRoute>
         )}
       </div>
 
