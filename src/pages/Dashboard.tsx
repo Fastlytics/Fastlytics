@@ -9,7 +9,7 @@ import {
   TeamStanding,
   DriverStanding,
   ScheduleEvent,
-  RaceResult
+  RaceResult,
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,12 +30,12 @@ import {
   MobileNextSessionCard,
   MobileChampionshipWidget,
   MobileRecentRaces,
-  MobileFavoritesWidget
+  MobileFavoritesWidget,
 } from '@/components/mobile';
 
 const Dashboard = () => {
   const { selectedYear } = useSeason();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,7 +77,9 @@ const Dashboard = () => {
     let upcomingSession = undefined;
 
     // Sort schedule by date to ensure we check in order
-    const sortedSchedule = [...schedule].sort((a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime());
+    const sortedSchedule = [...schedule].sort(
+      (a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
+    );
 
     for (const event of sortedSchedule) {
       // Check all 5 possible sessions
@@ -87,7 +89,7 @@ const Dashboard = () => {
         { name: event.Session3, date: event.Session3Date },
         { name: event.Session4, date: event.Session4Date },
         { name: event.Session5, date: event.Session5Date },
-      ].filter(s => s.name && s.date); // Filter out null sessions
+      ].filter((s) => s.name && s.date); // Filter out null sessions
 
       for (const session of sessions) {
         if (session.date && new Date(session.date) > now) {
@@ -96,7 +98,7 @@ const Dashboard = () => {
             sessionName: session.name!,
             date: session.date,
             location: event.Location,
-            country: event.Country
+            country: event.Country,
           };
           break; // Found the very first upcoming session
         }
@@ -106,21 +108,22 @@ const Dashboard = () => {
 
     // Get 4 most recent completed races
     const recent = schedule
-      .filter(e => new Date(e.EventDate) < now)
+      .filter((e) => new Date(e.EventDate) < now)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
       .slice(0, 4);
 
     return {
       nextSession: upcomingSession,
-      recentRaces: recent
+      recentRaces: recent,
     };
   }, [schedule]);
 
   const favoriteDriverName = useMemo(() => {
     if (!profile?.favorite_driver || !driverStandings) return undefined;
-    const driver = driverStandings.find(d =>
-      d.code === profile.favorite_driver ||
-      d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
+    const driver = driverStandings.find(
+      (d) =>
+        d.code === profile.favorite_driver ||
+        d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
     );
     return driver?.name.split(' ').pop()?.toUpperCase(); // Last name only
   }, [profile, driverStandings]);
@@ -145,14 +148,15 @@ const Dashboard = () => {
             {/* Next Session Card */}
             <MobileNextSessionCard nextSession={nextSession} />
 
-            {/* Favorites / My Garage */}
-            <MobileFavoritesWidget
-              profile={profile}
-              drivers={driverStandings || []}
-              teams={teamStandings || []}
-              schedule={schedule || []}
-              isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-            />
+            {user && (
+              <MobileFavoritesWidget
+                profile={profile}
+                drivers={driverStandings || []}
+                teams={teamStandings || []}
+                schedule={schedule || []}
+                isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+              />
+            )}
 
             {/* Championship Standings */}
             <MobileChampionshipWidget
@@ -189,15 +193,17 @@ const Dashboard = () => {
           favoriteDriverName={favoriteDriverName}
         />
 
-        <FavoritesWidget
-          profile={profile}
-          drivers={driverStandings || []}
-          teams={teamStandings || []}
-          schedule={schedule || []}
-          isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-        />
+        {user && (
+          <FavoritesWidget
+            profile={profile}
+            drivers={driverStandings || []}
+            teams={teamStandings || []}
+            schedule={schedule || []}
+            isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+          />
+        )}
 
-        <QuickLinksWidget />
+        {user && <QuickLinksWidget />}
 
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
           {/* Main Content Area (3 cols) */}
@@ -222,7 +228,10 @@ const Dashboard = () => {
                 </h3>
                 <button
                   onClick={() => {
-                    posthog.capture('widget_clicked', { widget: 'recent_races', action: 'view_calendar' });
+                    posthog.capture('widget_clicked', {
+                      widget: 'recent_races',
+                      action: 'view_calendar',
+                    });
                     navigate('/calendar');
                   }}
                   className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
@@ -236,8 +245,14 @@ const Dashboard = () => {
                   <div
                     key={race.EventName}
                     onClick={() => {
-                      posthog.capture('widget_clicked', { widget: 'recent_races', action: 'click_race', race: race.EventName });
-                      navigate(`/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`);
+                      posthog.capture('widget_clicked', {
+                        widget: 'recent_races',
+                        action: 'click_race',
+                        race: race.EventName,
+                      });
+                      navigate(
+                        `/race/${selectedYear}-${race.EventName.toLowerCase().replace(/\s+/g, '-')}`
+                      );
                     }}
                     className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:border-red-600/50 cursor-pointer transition-colors group"
                   >
@@ -265,9 +280,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
         </div>
-
       </main>
     </div>
   );

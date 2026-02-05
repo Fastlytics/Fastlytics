@@ -99,16 +99,17 @@ const Landing: React.FC = () => {
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           <div className="max-w-5xl mx-auto px-4 text-center relative z-10">
             <h2 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter text-white mb-8">
-              Ready to Dive <span className="text-black">Deep?</span>
+              Explore <span className="text-black">F1 Analytics</span>
             </h2>
             <p className="text-2xl text-white/90 font-mono mb-12 max-w-2xl mx-auto">
-              Join the most advanced F1 analytics platform today.
+              Free access to standings, calendar, and race results. Advanced features require sign
+              in.
             </p>
             <a
               href="/dashboard"
               className="inline-block bg-black text-white text-xl font-bold uppercase tracking-widest py-6 px-12 border-4 border-white hover:bg-white hover:text-black transition-all duration-300 transform hover:-translate-y-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]"
             >
-              Start Analyzing
+              Explore Dashboard
             </a>
           </div>
         </section>

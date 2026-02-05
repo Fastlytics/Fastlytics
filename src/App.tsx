@@ -28,6 +28,7 @@ import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { GatedRoute } from '@/components/common/GatedRoute';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConsentBanner from '@/components/ConsentBanner';
 
@@ -134,17 +135,77 @@ const App = () => (
               {/* Auth route - public */}
               <Route path="/auth" element={<Auth />} />
 
-              {/* Protected Routes - require login */}
+              {/* Partially Public Routes - accessible to all, gated features show login prompt */}
+              <Route
+                path="/dashboard"
+                element={
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/race/:raceId"
+                element={
+                  <DashboardLayout>
+                    <Race />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <DashboardLayout>
+                    <Calendar />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/teams"
+                element={
+                  <DashboardLayout>
+                    <TeamStandings />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/drivers"
+                element={
+                  <DashboardLayout>
+                    <DriverStandings />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/standings/progression"
+                element={
+                  <DashboardLayout>
+                    <GatedRoute
+                      featureName="Championship Progression"
+                      description="Track how driver standings evolved throughout the season with interactive charts and race-by-race point progression."
+                    >
+                      <ChampionshipProgression />
+                    </GatedRoute>
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/team-pace"
+                element={
+                  <DashboardLayout>
+                    <GatedRoute
+                      featureName="Team Pace Analysis"
+                      description="Analyze team performance across race weekends with detailed pace comparisons, gap analysis, and consistency metrics."
+                    >
+                      <TeamPaceAnalysis />
+                    </GatedRoute>
+                  </DashboardLayout>
+                }
+              />
+
+              {/* Fully Protected Routes - require login */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/onboarding" element={<Onboarding />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <DashboardLayout>
-                      <Dashboard />
-                    </DashboardLayout>
-                  }
-                />
                 <Route
                   path="/account"
                   element={
@@ -153,56 +214,17 @@ const App = () => (
                     </DashboardLayout>
                   }
                 />
-                <Route
-                  path="/race/:raceId"
-                  element={
-                    <DashboardLayout>
-                      <Race />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/calendar"
-                  element={
-                    <DashboardLayout>
-                      <Calendar />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/teams"
-                  element={
-                    <DashboardLayout>
-                      <TeamStandings />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/drivers"
-                  element={
-                    <DashboardLayout>
-                      <DriverStandings />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/progression"
-                  element={
-                    <DashboardLayout>
-                      <ChampionshipProgression />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/team-pace"
-                  element={
-                    <DashboardLayout>
-                      <TeamPaceAnalysis />
-                    </DashboardLayout>
-                  }
-                />
-                <Route path="/replay/:year/:event/:session" element={<SessionReplayPage />} />
               </Route>
+
+              {/* Fully Gated Routes - show login page for unauthenticated users */}
+              <Route
+                path="/replay/:year/:event/:session"
+                element={
+                  <DashboardLayout>
+                    <SessionReplayPage />
+                  </DashboardLayout>
+                }
+              />
 
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />
