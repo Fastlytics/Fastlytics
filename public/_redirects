@@ -1,5 +1,2 @@
-# Proxy sitemap.xml to backend API
-/sitemap.xml  https://api.fastlytics.app/sitemap.xml  200
-
 # SPA fallback - must be last
 /*    /index.html   200
