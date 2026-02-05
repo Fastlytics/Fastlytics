@@ -94,3 +94,6 @@ SECURITY_AUDIT_REPORT.md
 FIX_PLAN.sh
 
 .sisyphus
+.pytest_cache/
+.ruff_cache/
+docs
