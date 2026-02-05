@@ -39,6 +39,30 @@ export default {
       });
     }
 
+    // Allow sitemap.xml without origin check (for search engine crawlers)
+    if (url.pathname === '/sitemap.xml') {
+      try {
+        const backendUrl = `${env.BACKEND_API_URL}/sitemap.xml`;
+        const backendResponse = await fetch(backendUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': request.headers.get('User-Agent') || 'Cloudflare-Worker',
+          },
+        });
+
+        return new Response(backendResponse.body, {
+          status: backendResponse.status,
+          headers: {
+            'Content-Type': 'application/xml',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      } catch (error) {
+        console.error('Sitemap proxy error:', error);
+        return new Response('Sitemap unavailable', { status: 502 });
+      }
+    }
+
     const refererOrigin = referer ? new URL(referer).origin : null;
     if (!isAllowedOrigin(origin) && !isAllowedOrigin(refererOrigin)) {
       return new Response(JSON.stringify({ detail: 'Forbidden: Invalid origin' }), {
