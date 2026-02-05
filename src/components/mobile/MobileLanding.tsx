@@ -357,11 +357,11 @@ const MobileLanding: React.FC = () => {
       <section className="relative z-10 px-4 py-20 bg-red-600 border-b-2 border-white/10">
         <div className="relative text-center">
           <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-6 text-black leading-none">
-            Ready to Dive <br />
-            <span className="text-white">Deep?</span>
+            Explore <br />
+            <span className="text-white">F1 Analytics</span>
           </h2>
           <p className="text-black/80 mb-8 max-w-xs mx-auto font-bold uppercase text-sm tracking-wide">
-            Join the most advanced F1 analytics platform today.
+            Free access to race data. Sign in for advanced features.
           </p>
           <Link to="/dashboard">
             <motion.button
