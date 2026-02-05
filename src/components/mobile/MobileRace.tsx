@@ -34,30 +34,7 @@ import MobileStrategy from './MobileStrategy';
 import MobileLapTimes from './MobileLapTimes';
 import MobileHeadToHead from './MobileHeadToHead';
 import MobileTelemetry from './MobileTelemetry';
-
-// Driver image map for 2025
-const driverImageMap: Record<string, string> = {
-  ALB: '/drivers/2025williamsalealb01right.avif',
-  ALO: '/drivers/2025astonmartinferalo01right.avif',
-  BEA: '/drivers/2025haasf1teamolibea01right.avif',
-  BOR: '/drivers/2025kicksaubergabbor01right.avif',
-  COL: '/drivers/2025alpinefracol01right.avif',
-  GAS: '/drivers/2025alpinepiegas01right.avif',
-  HAD: '/drivers/2025racingbullsisahad01right.avif',
-  HAM: '/drivers/2025ferrarilewham01right.avif',
-  HUL: '/drivers/2025kicksaubernichul01right.avif',
-  LAW: '/drivers/2025racingbullslialaw01right.avif',
-  LEC: '/drivers/2025ferrarichalec01right.avif',
-  NOR: '/drivers/2025mclarenlannor01right.avif',
-  OCO: '/drivers/2025haasf1teamestoco01right.avif',
-  PIA: '/drivers/2025mclarenoscpia01right.avif',
-  RUS: '/drivers/2025mercedesgeorus01right.avif',
-  SAI: '/drivers/2025williamscarsai01right.avif',
-  STR: '/drivers/2025astonmartinlanstr01right.avif',
-  TSU: '/drivers/2025redbullracingyuktsu01right.avif',
-  VER: '/drivers/2025redbullracingmaxver01right.avif',
-  ANT: '/drivers/2025mercedesandant01right.avif',
-};
+import { getDriverImage } from '@/utils/imageMapping';
 
 // --- Helper Functions ---
 const getTeamColorClass = (teamName: string | undefined): string => {
@@ -947,6 +924,19 @@ const MobileRace: React.FC = () => {
   const urlSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
 
+  // Parse ID
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const { year, eventSlug, eventName } = useMemo(() => {
+    if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
+    const parts = raceId.split('-');
+    const parsedYear = parseInt(parts[0], 10);
+    if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
+    const slug = parts.slice(1).join('-');
+    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return { year: parsedYear, eventSlug: slug, eventName: name };
+  }, [raceId]);
+
   const [now, setNow] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
   const [showSessionSelector, setShowSessionSelector] = useState(false);
@@ -962,11 +952,12 @@ const MobileRace: React.FC = () => {
 
   useEffect(() => {
     const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
+      // Pass the year to get relevant driver data
+      const drivers = await fetchAllOpenF1Drivers('latest', year || undefined);
       setOpenF1Drivers(drivers);
     };
     loadOpenF1Data();
-  }, []);
+  }, [year]);
 
   const setSelectedSession = (session: string) => {
     setSearchParams(
@@ -997,31 +988,17 @@ const MobileRace: React.FC = () => {
   };
 
   // Parse ID
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const { year, eventSlug, eventName } = useMemo(() => {
-    if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
-    const parts = raceId.split('-');
-    const parsedYear = parseInt(parts[0], 10);
-    if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
-    const slug = parts.slice(1).join('-');
-    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-    return { year: parsedYear, eventSlug: slug, eventName: name };
-  }, [raceId]);
-
+  // Removed duplicate useMemo block
   // Get driver image
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    // Check 2025 local images first
-    if (year === 2025 && driverImageMap[driverCode]) {
-      return driverImageMap[driverCode];
-    }
+  const getDriverImg = (driverCode: string, driverName: string) => {
     // Fallback to OpenF1
     const driver = openF1Drivers.find(
       (d) =>
         d.name_acronym === driverCode ||
         d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
     );
-    return driver?.headshot_url;
+    return getDriverImage(driverCode, year || 2025, driver?.headshot_url);
   };
 
   // Queries
@@ -1271,7 +1248,7 @@ const MobileRace: React.FC = () => {
                 </h3>
                 <StackedHighlightCards
                   highlights={highlights}
-                  getDriverImage={getDriverImage}
+                  getDriverImage={getDriverImg}
                   getTeamColorClass={getTeamColorClass}
                 />
               </div>
@@ -1301,7 +1278,7 @@ const MobileRace: React.FC = () => {
                       position={result.position}
                       sessionType={selectedSession}
                       isFavorite={profile?.favorite_driver === result.driverCode}
-                      driverImage={getDriverImage(result.driverCode, result.fullName)}
+                      driverImage={getDriverImg(result.driverCode, result.fullName)}
                       isExpanded={expandedDriver === result.driverCode}
                       onToggle={() =>
                         setExpandedDriver(
@@ -1323,7 +1300,7 @@ const MobileRace: React.FC = () => {
             event={eventName}
             session={selectedSession}
             raceResults={raceResults}
-            getDriverImage={getDriverImage}
+            getDriverImage={getDriverImg}
           />
         )}
 

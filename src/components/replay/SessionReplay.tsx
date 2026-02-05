@@ -11,6 +11,7 @@ import {
 } from '@/lib/api';
 import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import ReplayLoader from './ReplayLoader';
+import { getDriverImage } from '@/utils/imageMapping';
 import {
   Play,
   Pause,
@@ -85,30 +86,6 @@ interface CompletedLapInfo {
 }
 
 const FPS = 25;
-
-// Local fallback images from public/drivers
-const DRIVER_IMAGE_MAP: Record<string, string> = {
-  VER: '/drivers/2025redbullracingmaxver01right.avif',
-  TSU: '/drivers/2025redbullracingyuktsu01right.avif',
-  LAW: '/drivers/2025racingbullslialaw01right.avif',
-  HAD: '/drivers/2025racingbullsisahad01right.avif',
-  RUS: '/drivers/2025mercedesgeorus01right.avif',
-  ANT: '/drivers/2025mercedesandant01right.avif', // Antonelli
-  PIA: '/drivers/2025mclarenoscpia01right.avif',
-  NOR: '/drivers/2025mclarenlannor01right.avif',
-  HUL: '/drivers/2025kicksaubernichul01right.avif',
-  BOR: '/drivers/2025kicksaubergabbor01right.avif', // Bortoleto
-  BEA: '/drivers/2025haasf1teamolibea01right.avif',
-  OCO: '/drivers/2025haasf1teamestoco01right.avif',
-  HAM: '/drivers/2025ferrarilewham01right.avif',
-  LEC: '/drivers/2025ferrarichalec01right.avif',
-  STR: '/drivers/2025astonmartinlanstr01right.avif',
-  ALO: '/drivers/2025astonmartinferalo01right.avif',
-  GAS: '/drivers/2025alpinepiegas01right.avif',
-  COL: '/drivers/2025alpinefracol01right.avif', // Colapinto?
-  ALB: '/drivers/2025williamsalealb01right.avif',
-  SAI: '/drivers/2025williamscarsai01right.avif',
-};
 
 const getMessageConfig = (msg: { message: string; flag?: string }) => {
   const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
@@ -1266,8 +1243,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
   // --- OpenF1 Driver Details (Headshots) ---
   const { data: openF1Drivers } = useQuery<OpenF1Driver[]>({
-    queryKey: ['openf1', 'drivers', 'latest'],
-    queryFn: () => fetchAllOpenF1Drivers('latest'),
+    queryKey: ['openf1', 'drivers', 'latest', year],
+    queryFn: () => fetchAllOpenF1Drivers('latest', year),
     staleTime: 1000 * 60 * 60 * 24, // 24h
   });
 
@@ -1499,16 +1476,12 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
           <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
             <img
-              src={
-                driverHeadshots[lookupCode] || DRIVER_IMAGE_MAP[lookupCode] || '/placeholder.svg'
-              }
+              src={getDriverImage(lookupCode, year, driverHeadshots[lookupCode])}
               alt={lookupCode}
               className="w-full h-full object-cover object-top transform scale-110"
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
-                const localSrc = DRIVER_IMAGE_MAP[lookupCode];
-                if (localSrc && !img.src.includes(localSrc)) img.src = localSrc;
-                else img.src = '/placeholder.svg';
+                img.src = '/placeholder.svg';
               }}
             />
           </div>
@@ -1726,6 +1699,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                           drivers={data.drivers}
                           driverColors={data.driver_colors}
                           headshots={driverHeadshots}
+                          year={year}
                           onSelectDriver={(d) =>
                             setGhostConfig((prev) => ({ ...prev, d1: d, l1: null }))
                           }
@@ -1751,6 +1725,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                           drivers={data.drivers}
                           driverColors={data.driver_colors}
                           headshots={driverHeadshots}
+                          year={year}
                           onSelectDriver={(d) =>
                             setGhostConfig((prev) => ({ ...prev, d2: d, l2: null }))
                           }
@@ -2025,22 +2000,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                       const lookupCode = driver.code.replace('_GHOST', '');
                       return (
                         <img
-                          src={
-                            driverHeadshots[lookupCode] ||
-                            DRIVER_IMAGE_MAP[lookupCode] ||
-                            '/placeholder.svg'
-                          }
+                          src={getDriverImage(lookupCode, year, driverHeadshots[lookupCode])}
                           alt={driver.code}
                           className="w-full h-full object-cover object-top transform scale-110"
                           onError={(e) => {
                             const img = e.target as HTMLImageElement;
-                            const localSrc = DRIVER_IMAGE_MAP[lookupCode];
-                            if (localSrc && !img.src.includes(localSrc)) {
-                              img.src = localSrc;
-                            } else {
-                              img.src = '/placeholder.svg';
-                              img.onerror = null;
-                            }
+                            img.src = '/placeholder.svg';
+                            img.onerror = null;
                           }}
                         />
                       );
@@ -2241,6 +2207,7 @@ const CustomDriverSelect = ({
   drivers,
   driverColors,
   headshots,
+  year,
   onSelectDriver,
   onSelectLap,
   container,
@@ -2253,6 +2220,7 @@ const CustomDriverSelect = ({
   drivers: ReplayDriversMap;
   driverColors: Record<string, string>;
   headshots: Record<string, string>;
+  year: number;
   onSelectDriver: (d: string) => void;
   onSelectLap: (l: number) => void;
   container?: HTMLElement | null;
@@ -2281,9 +2249,7 @@ const CustomDriverSelect = ({
                 <>
                   <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800 shrink-0 border border-gray-600">
                     <img
-                      src={
-                        headshots[driverCode] || DRIVER_IMAGE_MAP[driverCode] || '/placeholder.svg'
-                      }
+                      src={getDriverImage(driverCode, year, headshots[driverCode])}
                       className="w-full h-full object-cover object-top"
                     />
                   </div>
@@ -2313,7 +2279,7 @@ const CustomDriverSelect = ({
                       style={{ borderColor: driverColors[d] }}
                     >
                       <img
-                        src={headshots[d] || DRIVER_IMAGE_MAP[d] || '/placeholder.svg'}
+                        src={getDriverImage(d, year, headshots[d])}
                         className="w-full h-full object-cover object-top"
                       />
                     </div>
