@@ -29,6 +29,7 @@ import {
 } from 'hugeicons-react';
 import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
 import { RacingChart } from '@/components/RacingChart';
+import { GapToLeaderChart } from '@/components/GapToLeaderChart';
 import { PaceAnalysisChart } from '@/components/PaceAnalysisChart';
 import { TireStrategy } from '@/components/TireStrategy';
 import { SpeedTraceChart } from '@/components/SpeedTraceChart';
@@ -439,7 +440,7 @@ const Race = () => {
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState(initialTab || 'overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-  const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace'>('history');
+  const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
 
   // New State for Redesign
   const [now, setNow] = useState(new Date());
@@ -1257,7 +1258,7 @@ const Race = () => {
                     <Tabs
                       defaultValue="history"
                       value={lapAnalysisMode}
-                      onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace')}
+                      onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace' | 'gap')}
                       className="w-full"
                     >
                       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
@@ -1273,6 +1274,12 @@ const Race = () => {
                             className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
                           >
                             Pace Distribution
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="gap"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                          >
+                            Gap to Leader
                           </TabsTrigger>
                         </TabsList>
                       </div>
@@ -1350,6 +1357,44 @@ const Race = () => {
                                   : []
                               }
                               openF1Drivers={openF1Drivers}
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+
+                      <TabsContent
+                        value="gap"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
+
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                            }
+                          }
+
+                          return (
+                            <GapToLeaderChart
+                              year={year!}
+                              event={eventName}
+                              session={selectedSession}
+                              autoLoad={true}
+                              openF1Drivers={openF1Drivers}
+                              favoriteDriver={favDriverCode}
+                              rivalDriver={rivalDriverCode}
                             />
                           );
                         })()}

@@ -22,10 +22,13 @@ import {
   CancelCircleIcon,
   Analytics01Icon,
   Time01Icon,
+  InformationCircleIcon,
 } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -84,6 +87,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
+  const [fuelCorrectionEnabled, setFuelCorrectionEnabled] = useState(false);
 
   // Determine initial drivers based on props
   const getInitialDrivers = () => {
@@ -144,6 +148,44 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const lapData = staticData || fetchedLapData;
 
+  // Fuel correction constants
+  const TOTAL_FUEL_KG = 110;
+  const FUEL_PER_LAP_KG = 1.8;
+  const SECONDS_PER_KG_PER_LAP = 0.03;
+
+  // Apply fuel correction to lap data
+  const correctedLapData = useMemo(() => {
+    if (!lapData || !fuelCorrectionEnabled) {
+      return lapData;
+    }
+
+    // Only apply correction for first 60% of laps (fuel effect minimal after)
+    const maxLapForCorrection = Math.ceil(lapData.length * 0.6);
+
+    return lapData.map((point) => {
+      const lapNumber = point.LapNumber;
+      if (lapNumber > maxLapForCorrection) {
+        return point;
+      }
+
+      const fuelLoad = TOTAL_FUEL_KG - lapNumber * FUEL_PER_LAP_KG;
+      const correctionAmount = fuelLoad * SECONDS_PER_KG_PER_LAP;
+
+      // Apply correction to each driver's lap time
+      const correctedPoint = { ...point };
+      Object.keys(point).forEach((key) => {
+        if (key !== 'LapNumber' && typeof point[key] === 'number') {
+          correctedPoint[key as keyof LapTimeDataPoint] =
+            (point[key as keyof LapTimeDataPoint] as number) - correctionAmount;
+        }
+      });
+
+      return correctedPoint;
+    });
+  }, [lapData, fuelCorrectionEnabled]);
+
+  const chartData = correctedLapData;
+
   const toggleDriver = (driverCode: string) => {
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
@@ -160,13 +202,13 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   // Calculate Fastest Laps
   const fastestLaps = useMemo(() => {
-    if (!lapData || lapData.length === 0) return [];
+    if (!chartData || chartData.length === 0) return [];
 
     const stats = driversToDisplay.map((driver) => {
       let minTime = Infinity;
       let lapNum = -1;
 
-      lapData.forEach((point) => {
+      chartData.forEach((point) => {
         const time = point[driver] as number | null;
         if (time !== null && time < minTime) {
           minTime = time;
@@ -187,7 +229,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
       if (b.fastestTime === null) return -1;
       return a.fastestTime - b.fastestTime;
     });
-  }, [lapData, driversToDisplay]);
+  }, [chartData, driversToDisplay]);
 
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
@@ -257,7 +299,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
     return (
       <>
         <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
-          <LineChart data={lapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
             <XAxis
               dataKey="LapNumber"
@@ -471,6 +513,41 @@ const RacingChart: React.FC<RacingChartProps> = ({
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
+            Lap Times
+          </h3>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-gray-400 uppercase">Fuel Corrected</span>
+            <Switch checked={fuelCorrectionEnabled} onCheckedChange={setFuelCorrectionEnabled} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-500 hover:text-white"
+                >
+                  <InformationCircleIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-gray-900 border-gray-800 text-gray-300">
+                <div className="space-y-2">
+                  <div className="font-bold text-white uppercase text-sm">Fuel Correction</div>
+                  <div className="text-xs space-y-1">
+                    <p>Applies correction for fuel weight (0.03s per kg)</p>
+                    <p className="text-gray-500">
+                      Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
+                    </p>
+                    <p className="text-gray-500">Applied to first 60% of laps only</p>
+                    <p className="text-gray-500 mt-2 italic">
+                      Formula: corrected = raw - (fuelLoad × 0.03)
+                    </p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
         {!staticData && availableDrivers && (
           <div className="flex flex-wrap gap-2">
             {availableDrivers.map((driver) => {
