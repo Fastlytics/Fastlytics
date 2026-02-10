@@ -1,0 +1,475 @@
+import React, { useState, useRef, useMemo } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Brush,
+  ReferenceLine,
+} from 'recharts';
+import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { fetchLapTimes, fetchSessionDrivers, SessionDriver, LapTimeDataPoint } from '@/lib/api';
+import { OpenF1Driver } from '@/lib/openf1';
+import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
+import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
+import { driverColor } from '@/lib/driverColor';
+import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
+import { Button } from '@/components/ui/button';
+
+const formatGap = (gap: number | null): string => {
+  if (gap === null || isNaN(gap)) {
+    return 'N/A';
+  }
+  if (gap === 0) {
+    return '+0.000';
+  }
+  return gap > 0 ? `+${gap.toFixed(3)}` : gap.toFixed(3);
+};
+
+interface GapToLeaderChartProps {
+  className?: string;
+  delay?: number;
+  year: number;
+  event: string;
+  session: string;
+  initialDrivers?: string[];
+  staticData?: LapTimeDataPoint[];
+  title?: string;
+  autoLoad?: boolean;
+  openF1Drivers?: OpenF1Driver[];
+  favoriteDriver?: string | null;
+  rivalDriver?: string | null;
+  maxDrivers?: number;
+}
+
+const MIN_DRIVERS = 2;
+const DEFAULT_MAX_DRIVERS = 20;
+
+const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
+  className,
+  delay = 0,
+  title,
+  year,
+  event,
+  session,
+  initialDrivers,
+  staticData,
+  autoLoad = false,
+  openF1Drivers = [],
+  favoriteDriver,
+  rivalDriver,
+  maxDrivers = DEFAULT_MAX_DRIVERS,
+}) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
+  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
+
+  const getInitialDrivers = () => {
+    if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
+
+    const defaults: string[] = [];
+    if (favoriteDriver) defaults.push(favoriteDriver);
+    if (rivalDriver) defaults.push(rivalDriver);
+
+    return defaults;
+  };
+
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
+
+  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
+    queryKey: ['sessionDrivers', year, event, session],
+    queryFn: () => fetchSessionDrivers(year, event, session),
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 24,
+    enabled: !staticData && !!year && !!event && !!session,
+  });
+
+  const effectiveDrivers = useMemo(() => {
+    if (staticData) return selectedDrivers;
+    if (selectedDrivers.length >= MIN_DRIVERS) return selectedDrivers;
+    if (!availableDrivers) return selectedDrivers;
+
+    const needed = MIN_DRIVERS - selectedDrivers.length;
+    const candidates = availableDrivers
+      .filter((d) => !selectedDrivers.includes(d.code))
+      .slice(0, needed)
+      .map((d) => d.code);
+    return [...selectedDrivers, ...candidates];
+  }, [selectedDrivers, availableDrivers, staticData]);
+
+  const driversToDisplay = staticData ? initialDrivers || [] : effectiveDrivers;
+
+  const {
+    data: fetchedLapData,
+    isLoading: isLoadingLapTimes,
+    error,
+    isError,
+  } = useQuery<LapTimeDataPoint[]>({
+    queryKey: ['lapTimes', year, event, session, ...effectiveDrivers.sort()],
+    queryFn: () => fetchLapTimes(year, event, session, effectiveDrivers),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
+    retry: 1,
+    enabled:
+      !staticData &&
+      !!year &&
+      !!event &&
+      !!session &&
+      effectiveDrivers.length >= MIN_DRIVERS &&
+      shouldLoadChart,
+  });
+
+  const lapData = staticData || fetchedLapData;
+
+  // Calculate gap to leader for each lap
+  const gapData = useMemo(() => {
+    if (!lapData || lapData.length === 0) return [];
+
+    // Calculate cumulative times for each driver
+    const cumulativeTimes: Record<string, number[]> = {};
+    driversToDisplay.forEach((driver) => {
+      cumulativeTimes[driver] = [];
+      let cumulative = 0;
+      lapData.forEach((point) => {
+        const time = point[driver] as number | null;
+        cumulative += time || 0;
+        cumulativeTimes[driver].push(cumulative);
+      });
+    });
+
+    // Find leader for each lap (driver with lowest cumulative time)
+    const leaderPerLap = lapData.map((point) => {
+      let minCumulative = Infinity;
+      let leader: string | null = null;
+
+      driversToDisplay.forEach((driver) => {
+        const lapIndex = point.LapNumber - 1;
+        if (cumulativeTimes[driver][lapIndex] < minCumulative) {
+          minCumulative = cumulativeTimes[driver][lapIndex];
+          leader = driver;
+        }
+      });
+
+      return leader;
+    });
+
+    // Calculate gap to leader for each lap
+    const gapPoints = lapData.map((point) => {
+      const lapIndex = point.LapNumber - 1;
+      const leader = leaderPerLap[lapIndex];
+      const gapPoint: LapTimeDataPoint = { LapNumber: point.LapNumber };
+
+      driversToDisplay.forEach((driver) => {
+        if (point[driver] !== null && leader !== null && cumulativeTimes[leader]) {
+          const driverCumulative = cumulativeTimes[driver][lapIndex];
+          const leaderCumulative = cumulativeTimes[leader][lapIndex];
+          gapPoint[driver] = driverCumulative - leaderCumulative;
+        } else {
+          gapPoint[driver] = null;
+        }
+      });
+
+      return gapPoint;
+    });
+
+    return gapPoints;
+  }, [lapData, driversToDisplay]);
+
+  const toggleDriver = (driverCode: string) => {
+    setSelectedDrivers((prev) => {
+      if (prev.includes(driverCode)) {
+        if (prev.length > MIN_DRIVERS) {
+          return prev.filter((d) => d !== driverCode);
+        }
+        return prev;
+      }
+      return [...prev, driverCode];
+    });
+  };
+
+  const isLoading = !staticData && isLoadingLapTimes;
+
+  const renderContent = () => {
+    if (!shouldLoadChart && !staticData) {
+      return (
+        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
+          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+          <Button
+            onClick={() => setShouldLoadChart(true)}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
+            disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
+          >
+            <Analytics01Icon className="w-4 h-4 mr-2" />
+            Load Data
+          </Button>
+        </div>
+      );
+    }
+
+    if (isLoading) {
+      return (
+        <div className="w-full h-[300px] flex items-center justify-center bg-gray-900/50 border border-gray-800">
+          <LoadingSpinnerF1 />
+        </div>
+      );
+    }
+
+    if (isError || !lapData) {
+      return (
+        <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
+          <AlertCircleIcon className="w-10 h-10 mb-2" />
+          <p className="font-bold uppercase">Error loading lap times</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {(error as Error)?.message || 'Could not fetch data.'}
+          </p>
+          {!staticData && (
+            <Button
+              onClick={() => setShouldLoadChart(false)}
+              variant="outline"
+              size="sm"
+              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-bold"
+            >
+              Back
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    if (lapData.length === 0 || gapData.length === 0) {
+      return (
+        <div className="w-full h-[300px] bg-black border border-gray-800 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+          <p>No common lap data found.</p>
+          {!staticData && (
+            <Button
+              onClick={() => setShouldLoadChart(false)}
+              variant="outline"
+              size="sm"
+              className="mt-4 border-gray-700 hover:bg-gray-800 rounded-none"
+            >
+              Back
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    const teamGroups = groupDriversByTeam(driversToDisplay, year);
+
+    return (
+      <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
+        <LineChart data={gapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+          <XAxis
+            dataKey="LapNumber"
+            stroke="#666"
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            padding={{ left: 10, right: 10 }}
+          />
+          <YAxis
+            stroke="#666"
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            domain={['auto', 'auto']}
+            tickFormatter={formatGap}
+            allowDecimals={true}
+            width={60}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload || !payload.length) return null;
+              const sortedPayload = [...payload].sort(
+                (a, b) => (a.value || Infinity) - (b.value || Infinity)
+              );
+
+              return (
+                <div className="bg-black border border-gray-800 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.9)] max-w-[500px] z-50">
+                  <div className="text-white font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 mb-2 font-mono text-sm">
+                    Lap {label}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                    {sortedPayload.map((entry) => {
+                      const driverCode = entry.name;
+                      const gap = entry.value;
+                      if (gap === null) return null;
+
+                      const driver = openF1Drivers.find(
+                        (d: OpenF1Driver) =>
+                          d.name_acronym === driverCode ||
+                          d.last_name.toUpperCase().slice(0, 3) === driverCode
+                      );
+                      const color = entry.color;
+
+                      return (
+                        <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
+                          <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
+                            {driver?.headshot_url ? (
+                              <img
+                                src={driver.headshot_url}
+                                alt={driverCode}
+                                className="w-full h-full object-cover scale-125 translate-y-1"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
+                                {driverCode[0]}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-xs font-black font-mono" style={{ color }}>
+                            {formatGap(gap)}
+                          </span>
+                          <span className="text-xs font-mono text-gray-400 font-bold">
+                            {driverCode}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }}
+            cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
+          />
+          <Legend
+            wrapperStyle={{
+              paddingTop: '20px',
+              paddingBottom: '10px',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+            }}
+            onClick={(e) =>
+              e &&
+              e.value &&
+              (focusedDriver === e.value ? setFocusedDriver(null) : setFocusedDriver(e.value))
+            }
+            onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
+            onMouseLeave={() => setFocusedDriver(null)}
+            formatter={(value, entry) => {
+              const isFocused = focusedDriver === value;
+              const isDimmed = focusedDriver && focusedDriver !== value;
+              return (
+                <span
+                  style={{
+                    color: entry.color,
+                    opacity: isDimmed ? 0.3 : 1,
+                    fontWeight: isFocused ? 'bold' : 'normal',
+                  }}
+                >
+                  {value}
+                </span>
+              );
+            }}
+          />
+          <ReferenceLine y={0} stroke="#888" strokeWidth={1} strokeDasharray="4 4" label="Leader" />
+          {driversToDisplay.map((driverCode, index) => {
+            const color = driverColor(driverCode, year);
+            let teammates: string[] = [];
+            Object.values(teamGroups).forEach((drivers) => {
+              if (drivers.includes(driverCode)) teammates = drivers;
+            });
+            const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
+            const isFocused = focusedDriver === driverCode;
+            const isDimmed = focusedDriver && !isFocused;
+
+            return (
+              <Line
+                key={driverCode}
+                type="monotone"
+                dataKey={driverCode}
+                stroke={color}
+                strokeWidth={isFocused ? 4 : lineStyle.strokeWidth}
+                strokeOpacity={isDimmed ? 0.1 : 1}
+                strokeDasharray={lineStyle.strokeDasharray}
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 0, fill: color }}
+                name={driverCode}
+                connectNulls={true}
+              />
+            );
+          })}
+          <Brush
+            dataKey="LapNumber"
+            height={30}
+            stroke="#333"
+            fill="#111"
+            tickFormatter={() => ''}
+            travellerWidth={10}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  return (
+    <div
+      ref={chartRef}
+      className={cn('space-y-6 relative', className)}
+      style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
+    >
+      <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
+        <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
+          Gap to Leader
+        </h3>
+        {!staticData && availableDrivers && (
+          <div className="flex flex-wrap gap-2">
+            {availableDrivers.map((driver) => {
+              const isSelected = selectedDrivers.includes(driver.code);
+              const openF1Driver = openF1Drivers.find(
+                (d: OpenF1Driver) =>
+                  d.name_acronym === driver.code ||
+                  d.last_name.toUpperCase().slice(0, 3) === driver.code
+              );
+              const color = driverColor(driver.code, year);
+
+              return (
+                <button
+                  key={driver.code}
+                  onClick={() => toggleDriver(driver.code)}
+                  className={cn(
+                    'flex items-center gap-2 px-2 py-1 border transition-all duration-200 group',
+                    isSelected
+                      ? 'bg-gray-900 border-gray-700 hover:border-gray-500'
+                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-900'
+                  )}
+                  style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                    {openF1Driver?.headshot_url ? (
+                      <img
+                        src={openF1Driver.headshot_url}
+                        alt={driver.code}
+                        className="w-full h-full object-cover scale-125 translate-y-1"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                        {driver.code[0]}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs font-mono font-bold',
+                      isSelected ? 'text-white' : 'text-gray-500'
+                    )}
+                  >
+                    {driver.code}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {renderContent()}
+    </div>
+  );
+};
+
+export { GapToLeaderChart };
+export default GapToLeaderChart;
