@@ -257,7 +257,7 @@ const Dashboard = () => {
                     className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:border-red-600/50 cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-7 bg-gray-800 rounded overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-7 bg-gray-800 rounded overflow-hidden shrink-0">
                         <img
                           src={`https://flagcdn.com/h40/${getCountryCode(race.Country || race.Location)}.png`}
                           alt={race.Country || race.Location}
