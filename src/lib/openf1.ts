@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { request } from '@/lib/api-client';
 
 export interface OpenF1Driver {
   broadcast_name: string;
@@ -45,20 +46,13 @@ export const fetchAllOpenF1Drivers = async (
   sessionKey: string | number = 'latest',
   year?: number
 ): Promise<OpenF1Driver[]> => {
-  // Use local backend to leverage caching
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  let url = `${API_BASE_URL}/api/openf1/drivers?session_key=${sessionKey}`;
+  let endpoint = `/api/openf1/drivers?session_key=${sessionKey}`;
   if (year) {
-    url += `&year=${year}`;
+    endpoint += `&year=${year}`;
   }
-  logger.debug(`Fetching all OpenF1 drivers from: ${url}`);
+  logger.debug(`Fetching all OpenF1 drivers from: ${endpoint}`);
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      logger.error(`OpenF1 API Error: ${response.statusText}`);
-      return [];
-    }
-    const data: OpenF1Driver[] = await response.json();
+    const data = await request<OpenF1Driver[]>(endpoint);
 
     // Deduplicate drivers based on driver_number, keeping the latest entry
     const driverMap = new Map<number, OpenF1Driver>();
