@@ -5,8 +5,7 @@ import LandingNavbar from '@/components/LandingNavbar';
 import HeroSection from '@/components/landing/HeroSection';
 import TrackDominance from '@/components/landing/TrackDominance';
 import StrategySection from '@/components/landing/StrategySection';
-import LapTimeSection from '@/components/landing/LapTimeSection';
-import SpeedTraceSection from '@/components/landing/SpeedTraceSection';
+import TelemetrySection from '@/components/landing/TelemetrySection';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLanding } from '@/components/mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,8 +89,7 @@ const Landing: React.FC = () => {
           </section>
 
           <StrategySection />
-          <LapTimeSection />
-          <SpeedTraceSection />
+          <TelemetrySection />
         </div>
 
         {/* CTA Section */}
@@ -106,10 +104,10 @@ const Landing: React.FC = () => {
               in.
             </p>
             <a
-              href="/dashboard"
+              href="/features"
               className="inline-block bg-black text-white text-xl font-bold uppercase tracking-widest py-6 px-12 border-4 border-white hover:bg-white hover:text-black transition-all duration-300 transform hover:-translate-y-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]"
             >
-              Explore Dashboard
+              Explore Features
             </a>
           </div>
         </section>
