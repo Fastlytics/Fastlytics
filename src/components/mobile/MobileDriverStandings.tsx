@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowUp01Icon,
@@ -20,11 +20,13 @@ import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/champions
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getDriverImage } from '@/utils/imageMapping';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
+
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(event.EventFormat?.toLowerCase().includes('test') || event.RoundNumber === 0);
 
 // Native Season Selector Modal
 interface SeasonSelectorProps {
@@ -130,17 +132,10 @@ const LeaderCard: React.FC<{
   driver: DriverStanding;
   championshipStatus: 'leader' | 'champion';
   selectedYear: number;
-  openF1Drivers: OpenF1Driver[];
-}> = ({ driver, championshipStatus, selectedYear, openF1Drivers }) => {
+}> = ({ driver, championshipStatus, selectedYear }) => {
   const teamColor = getTeamColorClass(driver.team);
   const driverIsRookie = isRookie(driver.code, selectedYear);
-
-  const openF1Driver = openF1Drivers.find(
-    (d) =>
-      d.name_acronym === driver.code ||
-      d.last_name.toUpperCase().includes(driver.name.split(' ').pop()?.toUpperCase() || '')
-  );
-  const driverImage = getDriverImage(driver.code, selectedYear, openF1Driver?.headshot_url);
+  const driverImage = getDriverImage(driver.code, selectedYear);
 
   return (
     <motion.div
@@ -225,10 +220,9 @@ const DriverRow: React.FC<{
   driver: DriverStanding;
   index: number;
   selectedYear: number;
-  openF1Drivers: OpenF1Driver[];
   isExpanded: boolean;
   onToggle: () => void;
-}> = ({ driver, index, selectedYear, openF1Drivers, isExpanded, onToggle }) => {
+}> = ({ driver, index, selectedYear, isExpanded, onToggle }) => {
   const teamColor = getTeamColorClass(driver.team);
   const driverIsRookie = isRookie(driver.code, selectedYear);
 
@@ -241,16 +235,7 @@ const DriverRow: React.FC<{
 
   const indicator = getChangeIndicator(driver.points_change);
 
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    const openF1Driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, selectedYear, openF1Driver?.headshot_url);
-  };
-
-  const driverImage = getDriverImg(driver.code, driver.name);
+  const driverImage = getDriverImage(driver.code, selectedYear);
 
   return (
     <motion.div
@@ -421,18 +406,10 @@ const DriverRow: React.FC<{
 };
 
 const MobileDriverStandings: React.FC = () => {
+  const [now] = useState(() => Date.now());
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers('latest', selectedYear);
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, [selectedYear]);
 
   // Fetch Driver Standings
   const { data: driverStandings, isLoading } = useQuery<DriverStanding[]>({
@@ -446,10 +423,19 @@ const MobileDriverStandings: React.FC = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
   // Fetch Race Results for championship calculation
   const { data: raceResults } = useQuery<RaceResult[]>({
     queryKey: ['raceResults', selectedYear],
     queryFn: () => fetchRaceResults(selectedYear),
+    enabled: hasCompletedRaceEventsInSchedule,
   });
 
   // Calculate Championship Status
@@ -497,7 +483,6 @@ const MobileDriverStandings: React.FC = () => {
                   driver={leader}
                   championshipStatus={championshipStatus}
                   selectedYear={selectedYear}
-                  openF1Drivers={openF1Drivers}
                 />
               )}
 
@@ -509,7 +494,6 @@ const MobileDriverStandings: React.FC = () => {
                     driver={driver}
                     index={index}
                     selectedYear={selectedYear}
-                    openF1Drivers={openF1Drivers}
                     isExpanded={expandedDriver === driver.code}
                     onToggle={() =>
                       setExpandedDriver(expandedDriver === driver.code ? null : driver.code)

@@ -50,26 +50,52 @@ export const driverImages2024: Record<string, string> = {
 };
 
 export const driverImages2025: Record<string, string> = {
-  ALB: '/drivers/2025williamsalealb01right.avif',
-  ALO: '/drivers/2025astonmartinferalo01right.avif',
-  BEA: '/drivers/2025haasf1teamolibea01right.avif',
-  BOR: '/drivers/2025kicksaubergabbor01right.avif',
-  COL: '/drivers/2025alpinefracol01right.avif',
-  GAS: '/drivers/2025alpinepiegas01right.avif',
-  HAD: '/drivers/2025racingbullsisahad01right.avif',
-  HAM: '/drivers/2025ferrarilewham01right.avif',
-  HUL: '/drivers/2025kicksaubernichul01right.avif',
-  LAW: '/drivers/2025racingbullslialaw01right.avif',
-  LEC: '/drivers/2025ferrarichalec01right.avif',
-  NOR: '/drivers/2025mclarenlannor01right.avif',
-  OCO: '/drivers/2025haasf1teamestoco01right.avif',
-  PIA: '/drivers/2025mclarenoscpia01right.avif',
-  RUS: '/drivers/2025mercedesgeorus01right.avif',
-  SAI: '/drivers/2025williamscarsai01right.avif',
-  STR: '/drivers/2025astonmartinlanstr01right.avif',
-  TSU: '/drivers/2025redbullracingyuktsu01right.avif',
-  VER: '/drivers/2025redbullracingmaxver01right.avif',
-  ANT: '/drivers/2025mercedesandant01right.avif',
+  ALB: '/drivers/2025/2025williamsalealb01right.avif',
+  ALO: '/drivers/2025/2025astonmartinferalo01right.avif',
+  BEA: '/drivers/2025/2025haasf1teamolibea01right.avif',
+  BOR: '/drivers/2025/2025kicksaubergabbor01right.avif',
+  COL: '/drivers/2025/2025alpinefracol01right.avif',
+  GAS: '/drivers/2025/2025alpinepiegas01right.avif',
+  HAD: '/drivers/2025/2025racingbullsisahad01right.avif',
+  HAM: '/drivers/2025/2025ferrarilewham01right.avif',
+  HUL: '/drivers/2025/2025kicksaubernichul01right.avif',
+  LAW: '/drivers/2025/2025racingbullslialaw01right.avif',
+  LEC: '/drivers/2025/2025ferrarichalec01right.avif',
+  NOR: '/drivers/2025/2025mclarenlannor01right.avif',
+  OCO: '/drivers/2025/2025haasf1teamestoco01right.avif',
+  PIA: '/drivers/2025/2025mclarenoscpia01right.avif',
+  RUS: '/drivers/2025/2025mercedesgeorus01right.avif',
+  SAI: '/drivers/2025/2025williamscarsai01right.avif',
+  STR: '/drivers/2025/2025astonmartinlanstr01right.avif',
+  TSU: '/drivers/2025/2025redbullracingyuktsu01right.avif',
+  VER: '/drivers/2025/2025redbullracingmaxver01right.avif',
+  ANT: '/drivers/2025/2025mercedesandant01right.avif',
+};
+
+export const driverImages2026: Record<string, string> = {
+  ALB: '/drivers/2026/2026williamsalealb01right.avif',
+  ALO: '/drivers/2026/2026astonmartinferalo01right.avif',
+  ANT: '/drivers/2026/2026mercedesandant01right.avif',
+  ARV: '/drivers/2026/2026racingbullsarvlin01right.avif',
+  BEA: '/drivers/2026/2026haasf1teamolibea01right.avif',
+  BOT: '/drivers/2026/2026cadillacvalbot01right.avif',
+  BOR: '/drivers/2026/2026audigabbor01right.avif',
+  COL: '/drivers/2026/2026alpinefracol01right.avif',
+  GAS: '/drivers/2026/2026alpinepiegas01right.avif',
+  HAD: '/drivers/2026/2026redbullracingisahad01right.avif',
+  HAM: '/drivers/2026/2026ferrarilewham01right.avif',
+  HUL: '/drivers/2026/2026audinichul01right.avif',
+  LAW: '/drivers/2026/2026racingbullslialaw01right.avif',
+  LEC: '/drivers/2026/2026ferrarichalec01right.avif',
+  LIN: '/drivers/2026/2026racingbullsarvlin01right.avif',
+  NOR: '/drivers/2026/2026mclarenlannor01right.avif',
+  OCO: '/drivers/2026/2026haasf1teamestoco01right.avif',
+  PER: '/drivers/2026/2026cadillacserper01right.avif',
+  PIA: '/drivers/2026/2026mclarenoscpia01right.avif',
+  RUS: '/drivers/2026/2026mercedesgeorus01right.avif',
+  SAI: '/drivers/2026/2026williamscarsai01right.avif',
+  STR: '/drivers/2026/2026astonmartinlanstr01right.avif',
+  VER: '/drivers/2026/2026redbullracingmaxver01right.avif',
 };
 
 export const carImages2023: Record<string, string> = {
@@ -101,20 +127,35 @@ export const carImages2024: Record<string, string> = {
 };
 
 export const carImages2025: Record<string, string> = {
-  mclaren: '/cars/2025mclarencarright.avif',
-  mercedes: '/cars/2025mercedescarright.avif',
-  redbull: '/cars/2025redbullracingcarright.avif',
-  ferrari: '/cars/2025ferraricarright.avif',
-  alpine: '/cars/2025alpinecarright.avif',
-  astonmartin: '/cars/2025astonmartincarright.avif',
-  williams: '/cars/2025williamscarright.avif',
-  haas: '/cars/2025haascarright.avif',
-  alfaromeo: '/cars/2025kicksaubercarright.avif',
-  sauber: '/cars/2025kicksaubercarright.avif',
-  kicksauber: '/cars/2025kicksaubercarright.avif',
-  alphatauri: '/cars/2025racingbullscarright.avif',
-  racingbulls: '/cars/2025racingbullscarright.avif',
-  rb: '/cars/2025racingbullscarright.avif',
+  mclaren: '/cars/2025/2025mclarencarright.avif',
+  mercedes: '/cars/2025/2025mercedescarright.avif',
+  redbull: '/cars/2025/2025redbullracingcarright.avif',
+  ferrari: '/cars/2025/2025ferraricarright.avif',
+  alpine: '/cars/2025/2025alpinecarright.avif',
+  astonmartin: '/cars/2025/2025astonmartincarright.avif',
+  williams: '/cars/2025/2025williamscarright.avif',
+  haas: '/cars/2025/2025haascarright.avif',
+  alfaromeo: '/cars/2025/2025kicksaubercarright.avif',
+  sauber: '/cars/2025/2025kicksaubercarright.avif',
+  kicksauber: '/cars/2025/2025kicksaubercarright.avif',
+  alphatauri: '/cars/2025/2025racingbullscarright.avif',
+  racingbulls: '/cars/2025/2025racingbullscarright.avif',
+  rb: '/cars/2025/2025racingbullscarright.avif',
+};
+
+export const carImages2026: Record<string, string> = {
+  alpine: '/cars/2026/2026alpinecarright.avif',
+  astonmartin: '/cars/2026/2026astonmartincarright.avif',
+  audi: '/cars/2026/2026audicarright.avif',
+  cadillac: '/cars/2026/2026cadillaccarright.avif',
+  ferrari: '/cars/2026/2026ferraricarright.avif',
+  haas: '/cars/2026/2026haasf1teamcarright.avif',
+  mclaren: '/cars/2026/2026mclarencarright.avif',
+  mercedes: '/cars/2026/2026mercedescarright.avif',
+  racingbulls: '/cars/2026/2026racingbullscarright.avif',
+  rb: '/cars/2026/2026racingbullscarright.avif',
+  redbull: '/cars/2026/2026redbullracingcarright.avif',
+  williams: '/cars/2026/2026williamscarright.avif',
 };
 
 export const getDriverImage = (
@@ -137,8 +178,7 @@ export const getDriverImage = (
   }
 
   if (year >= 2026) {
-    if (openF1Url) return openF1Url;
-    return driverImages2025[code] || '';
+    return driverImages2026[code] || driverImages2025[code] || '';
   }
 
   return driverImages2025[code] || '';
@@ -184,7 +224,7 @@ export const getCarImage = (teamName: string, year: number): string => {
   }
 
   if (year >= 2026) {
-    return matchKey(carImages2025, simpleName);
+    return matchKey(carImages2026, simpleName) || matchKey(carImages2025, simpleName);
   }
 
   return matchKey(carImages2025, simpleName);

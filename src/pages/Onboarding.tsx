@@ -8,7 +8,6 @@ import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding 
 import { CheckmarkCircle01Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
 import { toast } from 'sonner';
 import posthog from 'posthog-js';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,6 +16,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 
 const Onboarding = () => {
   const { user, refreshProfile } = useAuth();
@@ -26,7 +26,6 @@ const Onboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -36,14 +35,12 @@ const Onboarding = () => {
     const loadData = async () => {
       try {
         const currentYear = getCurrentSeasonYear();
-        const [driversData, teamsData, openF1Data] = await Promise.all([
+        const [driversData, teamsData] = await Promise.all([
           fetchDriverStandings(currentYear),
           fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers(),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
-        setOpenF1Drivers(openF1Data);
       } catch (error) {
         console.error('Error loading onboarding data:', error);
         toast.error('Failed to load F1 data. Please try again.');
@@ -52,14 +49,8 @@ const Onboarding = () => {
     loadData();
   }, []);
 
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const getDriverImageForYear = (driverCode: string) =>
+    getDriverImage(driverCode, getCurrentSeasonYear());
 
   const handleNext = () => {
     setStep((prev) => prev + 1);
@@ -208,7 +199,7 @@ const Onboarding = () => {
                   >
                     <Avatar className="h-24 w-24 mb-4 border-2 border-zinc-800">
                       <AvatarImage
-                        src={getDriverImage(driver.code, driver.name)}
+                        src={getDriverImageForYear(driver.code)}
                         className="object-cover object-top bg-zinc-800"
                       />
                       <AvatarFallback>{driver.name}</AvatarFallback>

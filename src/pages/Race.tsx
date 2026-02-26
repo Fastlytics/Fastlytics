@@ -118,6 +118,25 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
   return Infinity;
 };
 
+const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
+
+const parseTestingSessionAlias = (
+  sessionType: string
+): { day: number; window: 'morning' | 'afternoon' } | null => {
+  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
+  if (!match) return null;
+  return {
+    day: Number(match[1]),
+    window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
+  };
+};
+
+const resolveSessionForAnalysis = (sessionType: string): string => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (!parsed) return sessionType;
+  return `FP${parsed.day}`;
+};
+
 const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
   if (!timeStr) return '-';
   if (isWinner) {
@@ -177,25 +196,73 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
 const SessionResultsTable: React.FC<{
   results: DetailedRaceResult[];
   sessionType: string;
-  year: number;
   favoriteDriver?: string | null;
   fastestLapHolder?: DetailedRaceResult | null;
-}> = ({ results, sessionType, year, favoriteDriver, fastestLapHolder }) => {
-  const isPractice = sessionType.startsWith('FP');
+  isTestingSession?: boolean;
+  isTestingSplitSession?: boolean;
+  testingWindow?: 'full' | 'morning' | 'afternoon';
+}> = ({
+  results,
+  sessionType,
+  favoriteDriver,
+  fastestLapHolder,
+  isTestingSession = false,
+  isTestingSplitSession = false,
+  testingWindow = 'full',
+}) => {
+  const isPractice = sessionType.startsWith('FP') || isTestingSession;
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
 
+  const getPracticeLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const getPracticeLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession) return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
   const sortedResults = useMemo(() => {
     if ((isPractice || isQualifying) && results) {
-      return [...results].sort(
-        (a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime)
-      );
+      return [...results].sort((a, b) => {
+        const lapDelta = parseLapTime(getPracticeLapTime(a)) - parseLapTime(getPracticeLapTime(b));
+        if (lapDelta !== 0) return lapDelta;
+        return getPracticeLaps(b) - getPracticeLaps(a);
+      });
     }
     return results;
-  }, [results, isPractice, isQualifying]);
+  }, [results, isPractice, isQualifying, getPracticeLapTime, getPracticeLaps]);
+
+  const leaderLaps = useMemo(
+    () => sortedResults.reduce((max, res) => Math.max(max, getPracticeLaps(res)), 0),
+    [sortedResults, getPracticeLaps]
+  );
 
   const columns: {
-    key: keyof DetailedRaceResult | 'driver' | 'team' | 'displayPosition';
+    key:
+      | keyof DetailedRaceResult
+      | 'driver'
+      | 'team'
+      | 'displayPosition'
+      | 'mileage'
+      | 'reliability';
     label: string;
     className?: string;
   }[] = [
@@ -230,6 +297,14 @@ const SessionResultsTable: React.FC<{
       className: 'text-right font-mono',
     });
     columns.push({ key: 'lapsCompleted', label: 'LAPS', className: 'text-center font-mono' });
+    if (isTestingSession) {
+      columns.push({ key: 'mileage', label: 'MILEAGE', className: 'text-right font-mono' });
+      columns.push({
+        key: 'reliability',
+        label: 'RELIABILITY',
+        className: 'text-right font-mono',
+      });
+    }
   }
 
   return (
@@ -332,6 +407,39 @@ const SessionResultsTable: React.FC<{
                       </span>
                     ) : col.key === 'laps' ? (
                       <span className="text-gray-500">{res.laps ?? '-'}</span>
+                    ) : col.key === 'fastestLapTime' && isPractice ? (
+                      <span className="text-gray-300">{getPracticeLapTime(res) ?? '-'}</span>
+                    ) : col.key === 'lapsCompleted' && isPractice ? (
+                      <span className="text-gray-500">{getPracticeLaps(res) || '-'}</span>
+                    ) : col.key === 'mileage' ? (
+                      <span className="text-gray-300">
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          return `${laps} (${pct}%)`;
+                        })()}
+                      </span>
+                    ) : col.key === 'reliability' ? (
+                      <span
+                        className={cn(
+                          'font-bold',
+                          (() => {
+                            const laps = getPracticeLaps(res);
+                            const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                            if (pct >= 90) return 'text-green-400';
+                            if (pct >= 75) return 'text-yellow-400';
+                            return 'text-red-400';
+                          })()
+                        )}
+                      >
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          if (pct >= 90) return 'HIGH';
+                          if (pct >= 75) return 'MEDIUM';
+                          return 'LOW';
+                        })()}
+                      </span>
                     ) : col.key === 'driverFastestLapTime' ? (
                       res.driverFastestLapTime ? (
                         <span
@@ -441,6 +549,7 @@ const Race = () => {
   const [activeSection, setActiveSection] = useState(initialTab || 'overview');
   const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
+  const [testingWindow, setTestingWindow] = useState<'full' | 'morning' | 'afternoon'>('full');
 
   // New State for Redesign
   const [now, setNow] = useState(new Date());
@@ -501,7 +610,7 @@ const Race = () => {
         trackedEventRef.current = eventKey;
       }
     }
-  }, [year, eventName]);
+  }, [year, eventName, trackEvent]);
 
   // Queries
   const { data: availableSessions = [], isLoading: isLoadingSessions } = useQuery<
@@ -548,6 +657,7 @@ const Race = () => {
         { replace: true }
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableSessions]);
 
   // Derived Data
@@ -592,6 +702,92 @@ const Race = () => {
       .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))
       .slice(0, 3);
   }, [sessionResults, selectedSession]);
+
+  const isTestingEvent = useMemo(() => {
+    const format = sessionSchedule?.eventFormat?.toLowerCase() ?? '';
+    const onlyPracticeSessions =
+      availableSessions.length > 0 &&
+      availableSessions.every((session) => {
+        const sessionType = session.type || '';
+        return sessionType.startsWith('FP') || !!parseTestingSessionAlias(sessionType);
+      });
+    return (
+      format.includes('test') ||
+      (onlyPracticeSessions &&
+        !availableSessions.some((s) => s.type === 'R' || s.type === 'Sprint'))
+    );
+  }, [sessionSchedule, availableSessions]);
+
+  const testingSessionAlias = useMemo(
+    () => parseTestingSessionAlias(selectedSession),
+    [selectedSession]
+  );
+  const isTestingSplitSession = isTestingEvent && !!testingSessionAlias;
+  const analysisSession = useMemo(
+    () => resolveSessionForAnalysis(selectedSession),
+    [selectedSession]
+  );
+  const isTestingSession =
+    isTestingEvent && (selectedSession.startsWith('FP') || !!testingSessionAlias);
+
+  useEffect(() => {
+    if (!isTestingSession || isTestingSplitSession) {
+      setTestingWindow('full');
+    }
+  }, [isTestingSession, isTestingSplitSession, selectedSession]);
+
+  const getSessionWindowLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const getSessionWindowLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession) return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const testingInsights = useMemo(() => {
+    if (!sessionResults || !isTestingSession) {
+      return {
+        fastest: null as DetailedRaceResult | null,
+        mileage: null as DetailedRaceResult | null,
+        totalLaps: 0,
+        averageLaps: 0,
+      };
+    }
+
+    const fastest =
+      [...sessionResults]
+        .filter((result) => !!getSessionWindowLapTime(result))
+        .sort(
+          (a, b) =>
+            parseLapTime(getSessionWindowLapTime(a)) - parseLapTime(getSessionWindowLapTime(b))
+        )[0] ?? null;
+
+    const mileage =
+      [...sessionResults].sort((a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a))[0] ??
+      null;
+
+    const totalLaps = sessionResults.reduce((sum, result) => sum + getSessionWindowLaps(result), 0);
+    const averageLaps = sessionResults.length > 0 ? totalLaps / sessionResults.length : 0;
+
+    return { fastest, mileage, totalLaps, averageLaps };
+  }, [sessionResults, isTestingSession, getSessionWindowLapTime, getSessionWindowLaps]);
 
   const nextSession = useMemo(() => {
     if (!sessionSchedule) return null;
@@ -707,8 +903,8 @@ const Race = () => {
     );
   }
 
-  const isRaceFuture = !availableSessions.some((s) => s.type === 'R');
-  const shouldShowSchedule = isRaceFuture && !showAnalysis;
+  const hasProcessedSessions = availableSessions.length > 0;
+  const shouldShowSchedule = !hasProcessedSessions && !showAnalysis;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
@@ -734,7 +930,7 @@ const Race = () => {
               variant="ghost"
               className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
               onClick={() => {
-                if (showAnalysis && isRaceFuture) {
+                if (showAnalysis && !hasProcessedSessions) {
                   setShowAnalysis(false);
                 } else {
                   navigate(-1);
@@ -742,7 +938,7 @@ const Race = () => {
               }}
             >
               <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
-              {showAnalysis && isRaceFuture ? 'Back to Schedule' : 'Back'}
+              {showAnalysis && !hasProcessedSessions ? 'Back to Schedule' : 'Back'}
             </Button>
             <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
               {eventName}
@@ -1165,6 +1361,36 @@ const Race = () => {
                             />
                           )}
                         </>
+                      ) : isTestingSession ? (
+                        <>
+                          {testingInsights.fastest && (
+                            <F1Card
+                              title="FASTEST LAP"
+                              value={testingInsights.fastest.fullName}
+                              subValue={getSessionWindowLapTime(testingInsights.fastest) ?? '-'}
+                              team={getTeamColorClass(testingInsights.fastest.team)}
+                              icon={<Clock01Icon />}
+                              imageUrl={getDriverImage(testingInsights.fastest.fullName)}
+                            />
+                          )}
+                          {testingInsights.mileage && (
+                            <F1Card
+                              title="MILEAGE LEADER"
+                              value={testingInsights.mileage.fullName}
+                              subValue={`${getSessionWindowLaps(testingInsights.mileage)} laps`}
+                              team={getTeamColorClass(testingInsights.mileage.team)}
+                              icon={<TradeUpIcon />}
+                              imageUrl={getDriverImage(testingInsights.mileage.fullName)}
+                            />
+                          )}
+                          <F1Card
+                            title="SESSION WORKLOAD"
+                            value={`${testingInsights.totalLaps} laps`}
+                            subValue={`Avg ${testingInsights.averageLaps.toFixed(1)} laps/driver`}
+                            team="gray"
+                            icon={<Calendar01Icon />}
+                          />
+                        </>
                       ) : (
                         topPerformers.map((p, i) => (
                           <F1Card
@@ -1184,6 +1410,31 @@ const Race = () => {
                   <section id="results">
                     <SectionHeader title="Session Results" icon={UserGroupIcon} />
 
+                    {isTestingSession && !isTestingSplitSession && (
+                      <div className="mb-6 flex items-center gap-2 bg-gray-900/40 border border-gray-800 p-2 w-fit">
+                        {(
+                          [
+                            ['full', 'Full Day'],
+                            ['morning', 'Morning'],
+                            ['afternoon', 'Afternoon'],
+                          ] as const
+                        ).map(([value, label]) => (
+                          <button
+                            key={value}
+                            onClick={() => setTestingWindow(value)}
+                            className={cn(
+                              'px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors border',
+                              testingWindow === value
+                                ? 'bg-red-600 border-red-600 text-white'
+                                : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
                       <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
@@ -1198,13 +1449,28 @@ const Race = () => {
                       </Alert>
                     )}
 
+                    {isTestingSession && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-bold uppercase tracking-wider text-blue-300">
+                          Testing Focus
+                        </AlertTitle>
+                        <AlertDescription>
+                          Results are sorted by fastest lap. Mileage and reliability columns
+                          highlight long-run robustness.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {sessionResults && (
                       <SessionResultsTable
                         results={sessionResults}
                         sessionType={selectedSession}
-                        year={year!}
                         favoriteDriver={profile?.favorite_driver}
                         fastestLapHolder={fastestLapHolder}
+                        isTestingSession={isTestingSession}
+                        isTestingSplitSession={isTestingSplitSession}
+                        testingWindow={testingWindow}
                       />
                     )}
                   </section>
@@ -1222,7 +1488,7 @@ const Race = () => {
                       <TireStrategy
                         year={year!}
                         event={eventName}
-                        session={selectedSession}
+                        session={analysisSession}
                         favoriteDriver={profile?.favorite_driver}
                       />
                     </section>
@@ -1240,7 +1506,7 @@ const Race = () => {
                       <PositionsTabContent
                         year={year!}
                         event={eventName}
-                        session={selectedSession}
+                        session={analysisSession}
                         openF1Drivers={openF1Drivers}
                         favoriteDriver={profile?.favorite_driver}
                       />
@@ -1312,7 +1578,7 @@ const Race = () => {
                             <RacingChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               title="Lap Time Comparison"
                               autoLoad={true}
                               openF1Drivers={openF1Drivers}
@@ -1350,7 +1616,7 @@ const Race = () => {
                             <PaceAnalysisChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               initialDrivers={
                                 favDriverCode
                                   ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
@@ -1390,7 +1656,7 @@ const Race = () => {
                             <GapToLeaderChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               autoLoad={true}
                               openF1Drivers={openF1Drivers}
                               favoriteDriver={favDriverCode}
@@ -1434,7 +1700,7 @@ const Race = () => {
                           <CircuitComparisonChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             initialDriver1={favDriverCode}
                             initialDriver2={rivalDriverCode || undefined}
                             onDriversSelected={handleCircuitDriversSelected}
@@ -1448,7 +1714,7 @@ const Race = () => {
                               <DriverComparisonTelemetry
                                 year={year!}
                                 event={eventName}
-                                session={selectedSession}
+                                session={analysisSession}
                                 driver1={circuitDrivers.driver1}
                                 driver2={circuitDrivers.driver2}
                                 lap1={circuitDrivers.lap1}
@@ -1464,7 +1730,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1477,7 +1743,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1490,7 +1756,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1503,7 +1769,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1516,7 +1782,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1555,7 +1821,7 @@ const Race = () => {
                           <SpeedTraceChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1563,7 +1829,7 @@ const Race = () => {
                           <ThrottleChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1571,7 +1837,7 @@ const Race = () => {
                           <BrakeChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1579,7 +1845,7 @@ const Race = () => {
                           <RPMChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1587,7 +1853,7 @@ const Race = () => {
                           <GearMapChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1595,7 +1861,7 @@ const Race = () => {
                           <DRSChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
                             openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
@@ -1630,7 +1896,7 @@ const Race = () => {
                         <SessionReplay
                           year={year}
                           event={eventSlug}
-                          session={selectedSession}
+                          session={analysisSession}
                           className="h-full"
                         />
                       </React.Suspense>

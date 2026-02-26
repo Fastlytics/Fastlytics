@@ -1,11 +1,12 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
+import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -33,22 +34,8 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   schedule,
   isLoading,
 }) => {
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const { selectedYear } = useSeason();
+  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
   const favoriteDriver = useMemo(() => {
     if (!profile?.favorite_driver || !drivers.length) return null;
@@ -277,7 +264,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border-2 border-gray-700">
                   <AvatarImage
-                    src={getDriverImage(favoriteDriver.name)}
+                    src={getDriverImageForYear(favoriteDriver.code)}
                     className="object-cover bg-gray-800"
                   />
                   <AvatarFallback>{favoriteDriver.code}</AvatarFallback>
@@ -387,7 +374,10 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   <Avatar
                     className={`h-8 w-8 ${isYou ? (driverRivals.isTitleContender ? 'border-2 border-yellow-500' : 'border-2 border-red-600') : 'border border-gray-700'}`}
                   >
-                    <AvatarImage src={getDriverImage(item.driver.name)} className="object-cover" />
+                    <AvatarImage
+                      src={getDriverImageForYear(item.driver.code)}
+                      className="object-cover"
+                    />
                     <AvatarFallback>{item.driver.code}</AvatarFallback>
                   </Avatar>
                   <div className="flex-grow min-w-0">
