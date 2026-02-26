@@ -113,13 +113,11 @@ const Dashboard = () => {
   const { data: teamStandings = [], isLoading: isLoadingTeams } = useQuery<TeamStanding[]>({
     queryKey: ['teamStandings', selectedYear],
     queryFn: () => fetchTeamStandings(selectedYear),
-    enabled: hasRaceResults,
   });
 
   const { data: driverStandings = [], isLoading: isLoadingDrivers } = useQuery<DriverStanding[]>({
     queryKey: ['driverStandings', selectedYear],
     queryFn: () => fetchDriverStandings(selectedYear),
-    enabled: hasRaceResults,
   });
 
   const { nextSession, recentRaces, recentTestingEvents } = useMemo(() => {

@@ -286,7 +286,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                     >
                       <AvatarImage
                         src={getDriverImageForYear(favoriteDriver.code)}
-                        className="object-cover bg-zinc-900"
+                        className="object-cover object-top bg-zinc-900"
                       />
                       <AvatarFallback className="bg-zinc-900 rounded-md font-black text-lg">
                         {favoriteDriver.code}
@@ -356,7 +356,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                             <Avatar className="h-6 w-6 rounded-none border border-white/20">
                               <AvatarImage
                                 src={getDriverImageForYear(item.driver.code)}
-                                className="object-cover"
+                                className="object-cover object-top"
                               />
                               <AvatarFallback className="text-[8px] rounded-none">
                                 {item.driver.code}

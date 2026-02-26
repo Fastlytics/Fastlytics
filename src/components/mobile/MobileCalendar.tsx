@@ -674,7 +674,7 @@ const MobileCalendar: React.FC = () => {
             <AnimatePresence mode="popLayout">
               {filteredRaces.map((race, index) => (
                 <motion.div
-                  key={`${selectedYear}-${race.EventName}`}
+                  key={`${new Date(race.EventDate).getFullYear()}-${race.RoundNumber}-${race.EventName}-${race.EventDate}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}

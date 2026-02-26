@@ -103,7 +103,7 @@ const F1Card = ({
 
         {imageUrl ? (
           <Avatar className="h-16 w-16 border-2 border-gray-700">
-            <AvatarImage src={imageUrl} className="object-cover bg-gray-800" />
+            <AvatarImage src={imageUrl} className="object-cover object-top bg-gray-800" />
             <AvatarFallback>{String(value).substring(0, 2)}</AvatarFallback>
           </Avatar>
         ) : (
