@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { request } from '@/lib/api-client';
+import { getDriverImage } from '@/utils/imageMapping';
 
 export interface OpenF1Driver {
   broadcast_name: string;
@@ -33,7 +34,11 @@ export const fetchOpenF1Driver = async (
     const data: OpenF1Driver[] = await response.json();
     if (data && data.length > 0) {
       // Return the last entry as it's likely the most recent/relevant if multiple returned
-      return data[data.length - 1];
+      const latest = data[data.length - 1];
+      return {
+        ...latest,
+        headshot_url: getDriverImage(latest.name_acronym, new Date().getFullYear()),
+      };
     }
     return null;
   } catch (error) {
@@ -60,7 +65,11 @@ export const fetchAllOpenF1Drivers = async (
       driverMap.set(driver.driver_number, driver);
     });
 
-    return Array.from(driverMap.values());
+    const imageYear = year ?? new Date().getFullYear();
+    return Array.from(driverMap.values()).map((driver) => ({
+      ...driver,
+      headshot_url: getDriverImage(driver.name_acronym, imageYear),
+    }));
   } catch (error) {
     logger.error('Error fetching all OpenF1 drivers:', error);
     return [];

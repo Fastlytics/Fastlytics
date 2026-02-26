@@ -69,6 +69,34 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
   return Infinity;
 };
 
+const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
+
+const parseTestingSessionAlias = (
+  sessionType: string
+): { day: number; window: 'morning' | 'afternoon' } | null => {
+  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
+  if (!match) return null;
+  return {
+    day: Number(match[1]),
+    window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
+  };
+};
+
+const getTestingSessionOrder = (sessionType: string): number => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (parsed) return parsed.day * 10 + (parsed.window === 'morning' ? 0 : 1);
+  if (sessionType === 'FP1') return 11;
+  if (sessionType === 'FP2') return 21;
+  if (sessionType === 'FP3') return 31;
+  return -1;
+};
+
+const resolveSessionForAnalysis = (sessionType: string): string => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (!parsed) return sessionType;
+  return `FP${parsed.day}`;
+};
+
 const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
   if (!timeStr) return '-';
   if (isWinner) {
@@ -1070,25 +1098,52 @@ const MobileRace: React.FC = () => {
       (!fetchedAvailableSessions || !fetchedAvailableSessions.some((s) => s.type === 'R')),
   });
 
-  const availableSessions = fetchedAvailableSessions ?? [];
+  const availableSessions = useMemo(
+    () => fetchedAvailableSessions ?? [],
+    [fetchedAvailableSessions]
+  );
 
   const selectedSession = useMemo(() => {
     if (urlSession) return urlSession;
     if (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0) return '';
     const hasRace = fetchedAvailableSessions.some((s) => s.type === 'R');
-    return hasRace ? 'R' : fetchedAvailableSessions[0].type;
+    if (hasRace) return 'R';
+
+    return (
+      [...fetchedAvailableSessions].sort(
+        (a, b) => getTestingSessionOrder(b.type) - getTestingSessionOrder(a.type)
+      )[0]?.type ?? fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type
+    );
   }, [urlSession, fetchedAvailableSessions]);
 
+  const analysisSession = useMemo(
+    () => resolveSessionForAnalysis(selectedSession),
+    [selectedSession]
+  );
+
   const { data: raceResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
-    queryKey: ['raceResults', year, eventName, selectedSession],
-    queryFn: () => fetchSpecificRaceResults(year!, eventName, selectedSession),
-    enabled: !!year && !!eventName && !!selectedSession,
+    queryKey: ['raceResults', year, eventSlug, selectedSession],
+    queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
+    enabled: !!year && !!eventSlug && !!selectedSession,
   });
 
   // Derived State
   const currentSessionName =
     availableSessions.find((s) => s.type === selectedSession)?.name || 'Session';
   const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
+  const isTestingEvent = useMemo(() => {
+    const format = sessionSchedule?.eventFormat?.toLowerCase() ?? '';
+    const onlyPractice =
+      availableSessions.length > 0 &&
+      availableSessions.every((s) => s.type.startsWith('FP') || !!parseTestingSessionAlias(s.type));
+    return (
+      format.includes('test') ||
+      (onlyPractice && !availableSessions.some((s) => s.type === 'R' || s.type === 'Sprint'))
+    );
+  }, [sessionSchedule, availableSessions]);
+  const isTestingSession =
+    isTestingEvent &&
+    (selectedSession.startsWith('FP') || !!parseTestingSessionAlias(selectedSession));
 
   const fastestLapHolder = useMemo(() => {
     if (!isRaceOrSprint || !raceResults) return null;
@@ -1102,6 +1157,16 @@ const MobileRace: React.FC = () => {
     return validResults.sort(
       (a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime)
     )[0];
+  }, [raceResults, isRaceOrSprint]);
+
+  const displayResults = useMemo(() => {
+    if (!raceResults) return [];
+    if (isRaceOrSprint) return raceResults;
+    return [...raceResults].sort((a, b) => {
+      const lapDelta = parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime);
+      if (lapDelta !== 0) return lapDelta;
+      return (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0);
+    });
   }, [raceResults, isRaceOrSprint]);
 
   // Highlights Logic
@@ -1118,58 +1183,95 @@ const MobileRace: React.FC = () => {
       return driver?.driver_number;
     };
 
-    // Winner
-    const winner = raceResults.find((r) => r.position === 1);
-    if (winner) {
-      cards.push({
-        type: 'winner',
-        driver: winner,
-        label: 'Race Winner',
-        icon: ChampionIcon,
-        bgColor: 'bg-black',
-        borderColor: 'border-yellow-500',
-        textColor: 'text-yellow-500',
-        timeLabel: 'Race Time',
-        timeValue: formatRaceTime(winner.time, true),
-        driverNumber: getDriverNumber(winner.driverCode, winner.fullName),
-      });
-    }
+    if (isRaceOrSprint) {
+      const winner = raceResults.find((r) => r.position === 1);
+      if (winner) {
+        cards.push({
+          type: 'winner',
+          driver: winner,
+          label: 'Race Winner',
+          icon: ChampionIcon,
+          bgColor: 'bg-black',
+          borderColor: 'border-yellow-500',
+          textColor: 'text-yellow-500',
+          timeLabel: 'Race Time',
+          timeValue: formatRaceTime(winner.time, true),
+          driverNumber: getDriverNumber(winner.driverCode, winner.fullName),
+        });
+      }
 
-    // Fastest Lap
-    if (fastestLapHolder) {
-      cards.push({
-        type: 'fastestLap',
-        driver: fastestLapHolder,
-        label: 'Fastest Lap',
-        icon: Clock01Icon,
-        bgColor: 'bg-black',
-        borderColor: 'border-purple-600',
-        textColor: 'text-purple-500',
-        timeLabel: 'Lap Time',
-        timeValue: fastestLapHolder.driverFastestLapTime || '-',
-        driverNumber: getDriverNumber(fastestLapHolder.driverCode, fastestLapHolder.fullName),
-      });
-    }
+      if (fastestLapHolder) {
+        cards.push({
+          type: 'fastestLap',
+          driver: fastestLapHolder,
+          label: 'Fastest Lap',
+          icon: Clock01Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-purple-600',
+          textColor: 'text-purple-500',
+          timeLabel: 'Lap Time',
+          timeValue: fastestLapHolder.driverFastestLapTime || '-',
+          driverNumber: getDriverNumber(fastestLapHolder.driverCode, fastestLapHolder.fullName),
+        });
+      }
 
-    // Pole Position (if grid data available)
-    const pole = raceResults.find((r) => r.gridPosition === 1);
-    if (pole) {
-      cards.push({
-        type: 'pole',
-        driver: pole,
-        label: 'Pole Position',
-        icon: StartUp02Icon,
-        bgColor: 'bg-black',
-        borderColor: 'border-red-600',
-        textColor: 'text-red-600',
-        timeLabel: 'Pole Time',
-        timeValue: pole.poleLapTimeValue || '-',
-        driverNumber: getDriverNumber(pole.driverCode, pole.fullName),
-      });
+      const pole = raceResults.find((r) => r.gridPosition === 1);
+      if (pole) {
+        cards.push({
+          type: 'pole',
+          driver: pole,
+          label: 'Pole Position',
+          icon: StartUp02Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-red-600',
+          textColor: 'text-red-600',
+          timeLabel: 'Pole Time',
+          timeValue: pole.poleLapTimeValue || '-',
+          driverNumber: getDriverNumber(pole.driverCode, pole.fullName),
+        });
+      }
+    } else if (isTestingSession) {
+      const fastest = [...raceResults]
+        .filter((result) => !!result.fastestLapTime)
+        .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))[0];
+
+      const mileageLeader = [...raceResults].sort(
+        (a, b) => (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0)
+      )[0];
+
+      if (fastest) {
+        cards.push({
+          type: 'fastestLap',
+          driver: fastest,
+          label: 'Fastest Lap',
+          icon: Clock01Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-purple-600',
+          textColor: 'text-purple-500',
+          timeLabel: 'Lap Time',
+          timeValue: fastest.fastestLapTime || '-',
+          driverNumber: getDriverNumber(fastest.driverCode, fastest.fullName),
+        });
+      }
+
+      if (mileageLeader) {
+        cards.push({
+          type: 'winner',
+          driver: mileageLeader,
+          label: 'Mileage Leader',
+          icon: StartUp02Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-green-600',
+          textColor: 'text-green-500',
+          timeLabel: 'Total Laps',
+          timeValue: `${mileageLeader.lapsCompleted ?? 0}`,
+          driverNumber: getDriverNumber(mileageLeader.driverCode, mileageLeader.fullName),
+        });
+      }
     }
 
     return cards;
-  }, [raceResults, fastestLapHolder, openF1Drivers]);
+  }, [raceResults, fastestLapHolder, openF1Drivers, isRaceOrSprint, isTestingSession]);
 
   // Loading State
   if (isLoadingSessions) {
@@ -1285,7 +1387,7 @@ const MobileRace: React.FC = () => {
               <MobileHeadToHead
                 year={year!}
                 event={eventName}
-                session={selectedSession}
+                session={analysisSession}
                 openF1Drivers={openF1Drivers}
                 raceResults={raceResults}
               />
@@ -1295,11 +1397,11 @@ const MobileRace: React.FC = () => {
 
         {activeTab === 'overview' && (
           <>
-            {/* Highlights Carousel (Race Only) */}
-            {isRaceOrSprint && highlights.length > 0 && (
+            {/* Highlights Carousel */}
+            {highlights.length > 0 && (
               <div className="mb-8">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">
-                  Highlights
+                  {isTestingSession ? 'Testing Highlights' : 'Highlights'}
                 </h3>
                 <StackedHighlightCards
                   highlights={highlights}
@@ -1316,9 +1418,17 @@ const MobileRace: React.FC = () => {
                   Classification
                 </h3>
                 <span className="text-[10px] font-mono text-gray-600">
-                  {raceResults?.length || 0} DRIVERS
+                  {displayResults.length} DRIVERS
                 </span>
               </div>
+
+              {isTestingSession && (
+                <div className="mb-3 p-2 border border-blue-500/30 bg-blue-500/10 rounded-lg">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-blue-300">
+                    Sorted by fastest lap. Expand rows for mileage and reliability context.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {isLoadingResults ? (
@@ -1326,11 +1436,11 @@ const MobileRace: React.FC = () => {
                     Loading results...
                   </div>
                 ) : (
-                  raceResults?.map((result) => (
+                  displayResults.map((result, index) => (
                     <ResultRow
-                      key={result.driverCode}
+                      key={`${result.driverCode}-${index}`}
                       result={result}
-                      position={result.position}
+                      position={isRaceOrSprint ? (result.position ?? index + 1) : index + 1}
                       sessionType={selectedSession}
                       isFavorite={profile?.favorite_driver === result.driverCode}
                       driverImage={getDriverImg(result.driverCode, result.fullName)}
@@ -1341,7 +1451,7 @@ const MobileRace: React.FC = () => {
                         )
                       }
                       fastestLapHolder={fastestLapHolder}
-                      winnerTime={raceResults?.find((r) => r.position === 1)?.time}
+                      winnerTime={displayResults.find((r) => r.position === 1)?.time}
                     />
                   ))
                 )}
@@ -1358,7 +1468,7 @@ const MobileRace: React.FC = () => {
             <MobileStrategy
               year={year}
               event={eventName}
-              session={selectedSession}
+              session={analysisSession}
               raceResults={raceResults}
               getDriverImage={getDriverImg}
             />
@@ -1373,7 +1483,7 @@ const MobileRace: React.FC = () => {
             <MobileLapTimes
               year={year}
               event={eventName}
-              session={selectedSession}
+              session={analysisSession}
               raceResults={raceResults}
               openF1Drivers={openF1Drivers}
             />
@@ -1388,7 +1498,7 @@ const MobileRace: React.FC = () => {
             <MobileTelemetry
               year={year!}
               event={eventName}
-              session={selectedSession}
+              session={analysisSession}
               openF1Drivers={openF1Drivers}
               raceResults={raceResults}
             />

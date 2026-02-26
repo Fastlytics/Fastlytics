@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -37,10 +37,8 @@ import {
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
-import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileDriverStandings } from '@/components/mobile';
@@ -232,30 +230,19 @@ const getDriverNumber = (driverCode: string, year: number): number | null => {
   return driverNumbers[yearStr]?.[driverCode] || null;
 };
 
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(event.EventFormat?.toLowerCase().includes('test') || event.RoundNumber === 0);
+
 const DriverStandings = () => {
+  const [now] = useState(() => Date.now());
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const standingsRef = useRef(null);
   const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.1 });
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      // Pass the selected year to fetch relevant headshots
-      const drivers = await fetchAllOpenF1Drivers('latest', selectedYear);
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, [selectedYear]);
-
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, selectedYear, driver?.headshot_url);
+  const getDriverImg = (driverCode: string) => {
+    return getDriverImage(driverCode, selectedYear);
   };
 
   // Fetch Driver Standings
@@ -275,10 +262,19 @@ const DriverStandings = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
   // Fetch Race Results for championship calculation
   const { data: raceResults } = useQuery<RaceResult[]>({
     queryKey: ['raceResults', selectedYear],
     queryFn: () => fetchRaceResults(selectedYear),
+    enabled: hasCompletedRaceEventsInSchedule,
   });
 
   const isLoading = isLoadingStandings;
@@ -428,7 +424,7 @@ const DriverStandings = () => {
                       {/* Driver Image - Waist Up */}
                       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 h-48 z-0">
                         <img
-                          src={getDriverImg(top3[1].code, top3[1].name)}
+                          src={getDriverImg(top3[1].code)}
                           alt={top3[1].name}
                           className="w-full h-full object-cover object-top"
                           style={{
@@ -499,7 +495,7 @@ const DriverStandings = () => {
                       {/* Driver Image - Waist Up (Same style as P2/P3 but slightly larger) */}
                       <div className="absolute top-16 left-1/2 -translate-x-1/2 w-56 h-56 z-0">
                         <img
-                          src={getDriverImg(top3[0].code, top3[0].name)}
+                          src={getDriverImg(top3[0].code)}
                           alt={top3[0].name}
                           className="w-full h-full object-cover object-top"
                           style={{
@@ -564,7 +560,7 @@ const DriverStandings = () => {
                       {/* Driver Image - Waist Up */}
                       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-48 h-48 z-0">
                         <img
-                          src={getDriverImg(top3[2].code, top3[2].name)}
+                          src={getDriverImg(top3[2].code)}
                           alt={top3[2].name}
                           className="w-full h-full object-cover object-top"
                           style={{
@@ -638,7 +634,7 @@ const DriverStandings = () => {
                           <div className="flex items-center gap-4">
                             <Avatar className="h-12 w-12 border-2 border-gray-800">
                               <AvatarImage
-                                src={getDriverImg(driver.code, driver.name)}
+                                src={getDriverImg(driver.code)}
                                 className="object-cover object-top bg-gray-800"
                               />
                               <AvatarFallback>{driver.code}</AvatarFallback>

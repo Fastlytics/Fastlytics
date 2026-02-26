@@ -44,11 +44,9 @@ interface GapToLeaderChartProps {
   openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
   rivalDriver?: string | null;
-  maxDrivers?: number;
 }
 
 const MIN_DRIVERS = 2;
-const DEFAULT_MAX_DRIVERS = 20;
 
 const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   className,
@@ -63,7 +61,6 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   openF1Drivers = [],
   favoriteDriver,
   rivalDriver,
-  maxDrivers = DEFAULT_MAX_DRIVERS,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +100,10 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     return [...selectedDrivers, ...candidates];
   }, [selectedDrivers, availableDrivers, staticData]);
 
-  const driversToDisplay = staticData ? initialDrivers || [] : effectiveDrivers;
+  const driversToDisplay = useMemo(
+    () => (staticData ? initialDrivers || [] : effectiveDrivers),
+    [staticData, initialDrivers, effectiveDrivers]
+  );
 
   const {
     data: fetchedLapData,
@@ -284,7 +284,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null;
               const sortedPayload = [...payload].sort(
-                (a, b) => (a.value || Infinity) - (b.value || Infinity)
+                (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
               );
 
               return (
@@ -294,7 +294,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                     {sortedPayload.map((entry) => {
-                      const driverCode = entry.name;
+                      const driverCode = String(entry.name);
                       const gap = entry.value;
                       if (gap === null) return null;
 
@@ -321,7 +321,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                             )}
                           </div>
                           <span className="text-xs font-black font-mono" style={{ color }}>
-                            {formatGap(gap)}
+                            {formatGap(gap as number)}
                           </span>
                           <span className="text-xs font-mono text-gray-400 font-bold">
                             {driverCode}

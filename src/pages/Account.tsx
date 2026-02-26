@@ -25,7 +25,6 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import posthog from 'posthog-js';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -33,6 +32,7 @@ import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icon
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAccount } from '@/components/mobile';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 
 // ... existing imports
 
@@ -93,7 +93,6 @@ const Account = () => {
   // Favorites State
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
 
@@ -117,14 +116,12 @@ const Account = () => {
     const loadF1Data = async () => {
       const currentYear = getCurrentSeasonYear();
       try {
-        const [driversData, teamsData, openF1Data] = await Promise.all([
+        const [driversData, teamsData] = await Promise.all([
           fetchDriverStandings(currentYear),
           fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers(),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
-        setOpenF1Drivers(openF1Data);
       } catch (error) {
         console.error('Error loading F1 data:', error);
       }
@@ -158,14 +155,8 @@ const Account = () => {
     }
   }, [user, activeSection]);
 
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const getDriverImageForYear = (driverCode: string) =>
+    getDriverImage(driverCode, getCurrentSeasonYear());
 
   const handleUpdateFavorites = async () => {
     if (!user) return;
@@ -587,7 +578,7 @@ const Account = () => {
                           >
                             <Avatar className="h-10 w-10 border border-zinc-700">
                               <AvatarImage
-                                src={getDriverImage(driver.code, driver.name)}
+                                src={getDriverImageForYear(driver.code)}
                                 className="object-cover object-top"
                               />
                               <AvatarFallback className="text-black">{driver.code}</AvatarFallback>
@@ -783,11 +774,7 @@ const Account = () => {
                   ) : userActivity.length > 0 ? (
                     <div className="space-y-3">
                       {userActivity.map((activity) => (
-                        <ActivityItem
-                          key={activity.id}
-                          activity={activity}
-                          drivers={openF1Drivers}
-                        />
+                        <ActivityItem key={activity.id} activity={activity} drivers={[]} />
                       ))}
                     </div>
                   ) : (

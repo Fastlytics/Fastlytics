@@ -62,11 +62,9 @@ interface RacingChartProps {
   openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
   rivalDriver?: string | null;
-  maxDrivers?: number;
 }
 
 const MIN_DRIVERS = 2;
-const DEFAULT_MAX_DRIVERS = 20;
 
 const RacingChart: React.FC<RacingChartProps> = ({
   className,
@@ -81,7 +79,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
   openF1Drivers = [],
   favoriteDriver,
   rivalDriver,
-  maxDrivers = DEFAULT_MAX_DRIVERS,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +121,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
     return [...selectedDrivers, ...candidates];
   }, [selectedDrivers, availableDrivers, staticData]);
 
-  const driversToDisplay = staticData ? initialDrivers || [] : effectiveDrivers;
+  const driversToDisplay = useMemo(
+    () => (staticData ? initialDrivers || [] : effectiveDrivers),
+    [staticData, initialDrivers, effectiveDrivers]
+  );
 
   const {
     data: fetchedLapData,
@@ -320,7 +320,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 if (!active || !payload || !payload.length) return null;
                 // Sort by time (value)
                 const sortedPayload = [...payload].sort(
-                  (a, b) => (a.value || Infinity) - (b.value || Infinity)
+                  (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
                 );
 
                 return (
@@ -330,7 +330,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                     </div>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                       {sortedPayload.map((entry) => {
-                        const driverCode = entry.name;
+                        const driverCode = String(entry.name);
                         const time = entry.value;
                         if (time === null) return null;
 
@@ -357,7 +357,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                               )}
                             </div>
                             <span className="text-xs font-black font-mono" style={{ color }}>
-                              {formatLapTime(time)}
+                              {formatLapTime(time as number)}
                             </span>
                             <span className="text-xs font-mono text-gray-400 font-bold">
                               {driverCode}

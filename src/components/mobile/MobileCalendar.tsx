@@ -19,6 +19,67 @@ import { useQuery } from '@tanstack/react-query';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
 
+const TESTING_LOCATION_HINTS: Record<string, { location: string; country: string }> = {
+  bahrain: { location: 'Sakhir', country: 'Bahrain' },
+  sakhir: { location: 'Sakhir', country: 'Bahrain' },
+  barcelona: { location: 'Barcelona', country: 'Spain' },
+  jerez: { location: 'Jerez', country: 'Spain' },
+  abu_dhabi: { location: 'Yas Marina', country: 'United Arab Emirates' },
+  yas_marina: { location: 'Yas Marina', country: 'United Arab Emirates' },
+};
+
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(
+    event.EventFormat?.toLowerCase().includes('test') ||
+    event.RoundNumber === 0 ||
+    event.EventName?.toLowerCase().includes('testing')
+  );
+
+const getEventStartDate = (event: ScheduleEvent): Date => {
+  const dates = [
+    event.Session1Date,
+    event.Session2Date,
+    event.Session3Date,
+    event.Session4Date,
+    event.Session5Date,
+    event.EventDate,
+  ]
+    .filter(Boolean)
+    .map((value) => new Date(value as string))
+    .filter((value) => !Number.isNaN(value.getTime()));
+
+  if (dates.length === 0) return new Date(event.EventDate);
+  return dates.sort((a, b) => a.getTime() - b.getTime())[0];
+};
+
+const getTestingVenue = (event: ScheduleEvent): { location: string; country: string } | null => {
+  const directLocation = (event.Location || '').trim();
+  const directCountry = (event.Country || '').trim();
+  if (directLocation && directCountry) {
+    return { location: directLocation, country: directCountry };
+  }
+
+  const normalizedName = (event.EventName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  for (const [hint, venue] of Object.entries(TESTING_LOCATION_HINTS)) {
+    if (normalizedName.includes(hint)) return venue;
+  }
+
+  if (normalizedName.includes('pre_season_testing')) return TESTING_LOCATION_HINTS.bahrain;
+
+  if (directLocation || directCountry) {
+    return {
+      location: directLocation || directCountry,
+      country: directCountry || directLocation,
+    };
+  }
+
+  return null;
+};
+
 // Hero Countdown Component for next race
 const HeroCountdown = ({ targetDate, sessionName }: { targetDate: Date; sessionName: string }) => {
   const calculateTimeLeft = () => {
@@ -39,6 +100,7 @@ const HeroCountdown = ({ targetDate, sessionName }: { targetDate: Date; sessionN
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetDate]);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -237,9 +299,11 @@ interface MobileRaceCardProps {
   event: ScheduleEvent & {
     result?: RaceResult;
     isUpcoming: boolean;
+    isTesting: boolean;
     isSprint: boolean;
     countryCode?: string;
     displayDate: string;
+    displayLocation: string;
   };
   selectedYear: number;
   isNextRace?: boolean;
@@ -248,6 +312,7 @@ interface MobileRaceCardProps {
 const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, isNextRace }) => {
   const navigate = useNavigate();
   const isCompleted = !!event.result;
+  const isTesting = event.isTesting;
 
   return (
     <motion.div
@@ -255,9 +320,11 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
       animate={{ opacity: 1, y: 0 }}
       whileTap={{ scale: 0.98 }}
       className={`relative overflow-hidden transition-all group cursor-pointer rounded-xl ${
-        isCompleted
-          ? 'bg-black border-2 border-white/5 opacity-80 hover:opacity-100'
-          : 'bg-black border-2 border-white/10 hover:border-white/20'
+        isTesting
+          ? 'bg-blue-950/20 border-2 border-blue-600/50 hover:border-blue-500'
+          : isCompleted
+            ? 'bg-black border-2 border-white/5 opacity-80 hover:opacity-100'
+            : 'bg-black border-2 border-white/10 hover:border-white/20'
       }`}
       onClick={() => {
         navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
@@ -268,18 +335,26 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
           {/* Round Number */}
           <div
             className={`w-8 h-8 flex items-center justify-center flex-shrink-0 border-2 rounded-md ${
-              isCompleted ? 'bg-zinc-900 border-white/5' : 'bg-white text-black border-white'
+              isTesting
+                ? 'bg-blue-600/20 border-blue-600/50'
+                : isCompleted
+                  ? 'bg-zinc-900 border-white/5'
+                  : 'bg-white text-black border-white'
             }`}
           >
-            <span className={`text-xs font-black ${isCompleted ? 'text-gray-500' : 'text-black'}`}>
-              {event.RoundNumber}
+            <span
+              className={`text-xs font-black ${
+                isTesting ? 'text-blue-300' : isCompleted ? 'text-gray-500' : 'text-black'
+              }`}
+            >
+              {isTesting ? 'T' : event.RoundNumber}
             </span>
           </div>
 
           {/* Flag */}
           <div
             className={`w-10 h-7 overflow-hidden flex-shrink-0 border-2 rounded-md ${
-              isCompleted ? 'border-white/5' : 'border-white/10'
+              isTesting ? 'border-blue-600/40' : isCompleted ? 'border-white/5' : 'border-white/10'
             }`}
           >
             {event.countryCode && (
@@ -301,7 +376,14 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
               >
                 {event.EventName.replace('Grand Prix', 'GP')}
               </h3>
-              {event.isSprint && <FlashIcon className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
+              {!isTesting && event.isSprint && (
+                <FlashIcon className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+              )}
+              {isTesting && (
+                <span className="text-[9px] font-black uppercase bg-blue-600/20 text-blue-300 px-1.5 py-0.5 border border-blue-600/40 rounded-sm">
+                  Testing
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -313,14 +395,18 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
               <span
                 className={`text-xs truncate font-mono uppercase ${isCompleted ? 'text-gray-600' : 'text-gray-500'}`}
               >
-                {event.Location}
+                {event.displayLocation}
               </span>
             </div>
           </div>
 
           {/* Status/Result */}
           <div className="flex-shrink-0 text-right">
-            {event.result ? (
+            {isTesting ? (
+              <span className="text-[10px] font-black uppercase px-2 py-1 border-2 rounded-md bg-blue-900/20 text-blue-300 border-blue-600/40">
+                Session Data
+              </span>
+            ) : event.result ? (
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-1">
                   <ChampionIcon className="w-3 h-3 text-yellow-600" />
@@ -351,6 +437,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
 };
 
 const MobileCalendar: React.FC = () => {
+  const [now] = useState(() => Date.now());
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
@@ -361,10 +448,19 @@ const MobileCalendar: React.FC = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (scheduleData ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [scheduleData, now]
+  );
+
   // Fetch Race Results Summary
   const { data: resultsData, isLoading: isLoadingResults } = useQuery<RaceResult[]>({
     queryKey: ['raceResults', selectedYear],
     queryFn: () => fetchRaceResults(selectedYear),
+    enabled: !isLoadingSchedule && hasCompletedRaceEventsInSchedule,
   });
 
   // Combine schedule and results data
@@ -372,6 +468,7 @@ const MobileCalendar: React.FC = () => {
     if (!scheduleData) return { combinedRaceData: [], nextRace: null, nextSession: null };
     const resultsMap = new Map(resultsData?.map((res) => [res.event, res]));
     const now = new Date();
+    const currentYear = now.getFullYear();
 
     let nextRaceEvent:
       | (ScheduleEvent & { countryCode?: string; displayDate: string; isSprint: boolean })
@@ -379,10 +476,14 @@ const MobileCalendar: React.FC = () => {
     let nextSessionData: { name: string; date: Date } | null = null;
 
     const sortedSchedule = [...scheduleData].sort(
-      (a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
+      (a, b) => getEventStartDate(a).getTime() - getEventStartDate(b).getTime()
     );
 
     for (const event of sortedSchedule) {
+      if (isTestingEvent(event)) {
+        continue; // Hero is race-only.
+      }
+
       const sessions = [
         { name: event.Session1, date: event.Session1Date },
         { name: event.Session2, date: event.Session2Date },
@@ -396,9 +497,10 @@ const MobileCalendar: React.FC = () => {
 
       if (upcomingSession) {
         const eventDate = new Date(event.EventDate);
+        const nextCountryCode = getCountryCode(event.Country || event.Location);
         nextRaceEvent = {
           ...event,
-          countryCode: getCountryCode(event.Country || event.Location),
+          countryCode: nextCountryCode !== 'xx' ? nextCountryCode : undefined,
           displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           isSprint: event.EventFormat?.toLowerCase().includes('sprint') || false,
         };
@@ -410,36 +512,61 @@ const MobileCalendar: React.FC = () => {
       }
     }
 
-    const processedData = scheduleData.map((event) => {
-      const result = resultsMap.get(event.EventName);
-      const eventDate = new Date(event.EventDate);
-      const sessions = [
-        event.Session1Date,
-        event.Session2Date,
-        event.Session3Date,
-        event.Session4Date,
-        event.Session5Date,
-      ]
-        .filter((d) => d)
-        .map((d) => new Date(d!));
-      const isUpcoming = sessions.some((d) => d > now);
+    const processedData = scheduleData
+      .map((event) => {
+        const testing = isTestingEvent(event);
+        const testingVenue = testing ? getTestingVenue(event) : null;
+        const displayLocation =
+          testingVenue?.location || event.Location || event.Country || 'Testing Venue';
+        const displayCountry = testingVenue?.country || event.Country || event.Location || '';
+        const result = resultsMap.get(event.EventName);
+        const eventDate = new Date(event.EventDate);
+        const eventStartDate = getEventStartDate(event);
+        const sessions = [
+          event.Session1Date,
+          event.Session2Date,
+          event.Session3Date,
+          event.Session4Date,
+          event.Session5Date,
+        ]
+          .filter((d) => d)
+          .map((d) => new Date(d!));
+        let isUpcoming = sessions.some((d) => d > now);
+        if (testing && selectedYear < currentYear) {
+          isUpcoming = false;
+        }
+        const computedCountryCode = getCountryCode(displayCountry || displayLocation);
+        const countryCode = computedCountryCode !== 'xx' ? computedCountryCode : undefined;
 
-      return {
-        ...event,
-        result,
-        isUpcoming,
-        isSprint: event.EventFormat?.toLowerCase().includes('sprint') || false,
-        displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        countryCode: getCountryCode(event.Country || event.Location),
-      };
-    });
+        return {
+          ...event,
+          result,
+          isUpcoming,
+          isTesting: testing,
+          isSprint: event.EventFormat?.toLowerCase().includes('sprint') || false,
+          displayDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          eventStartDate,
+          displayLocation,
+          displayCountry,
+          countryCode,
+        };
+      })
+      .sort((a, b) => {
+        if (a.isTesting !== b.isTesting) {
+          return a.isTesting ? -1 : 1;
+        }
+        if (!a.isTesting && !b.isTesting) {
+          return a.RoundNumber - b.RoundNumber;
+        }
+        return a.eventStartDate.getTime() - b.eventStartDate.getTime();
+      });
 
     return {
       combinedRaceData: processedData,
       nextRace: nextRaceEvent,
       nextSession: nextSessionData,
     };
-  }, [scheduleData, resultsData]);
+  }, [scheduleData, resultsData, selectedYear]);
 
   // Filter races excluding the next race (it's shown in hero)
   const filteredRaces = useMemo(() => {
@@ -491,7 +618,7 @@ const MobileCalendar: React.FC = () => {
           <div className="flex gap-1.5 bg-black p-1.5 border-2 border-white/10 rounded-xl">
             {(
               [
-                { key: 'all', label: 'All Races' },
+                { key: 'all', label: 'All Events' },
                 { key: 'upcoming', label: `Upcoming (${stats.upcoming})` },
                 { key: 'completed', label: `Done (${stats.completed})` },
               ] as const
@@ -525,10 +652,10 @@ const MobileCalendar: React.FC = () => {
               <div className="h-0.5 flex-1 bg-white/10" />
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
                 {filter === 'completed'
-                  ? 'Race Results'
+                  ? 'Completed Events'
                   : filter === 'upcoming'
-                    ? 'Upcoming Races'
-                    : 'All Races'}
+                    ? 'Upcoming Events'
+                    : 'All Events'}
               </span>
               <div className="h-0.5 flex-1 bg-white/10" />
             </div>

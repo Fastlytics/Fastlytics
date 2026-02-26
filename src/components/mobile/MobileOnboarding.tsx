@@ -15,7 +15,6 @@ import {
 import { Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import posthog from 'posthog-js';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -31,7 +30,6 @@ const MobileOnboarding: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
 
@@ -39,14 +37,12 @@ const MobileOnboarding: React.FC = () => {
     const loadData = async () => {
       try {
         const currentYear = getCurrentSeasonYear();
-        const [driversData, teamsData, openF1Data] = await Promise.all([
+        const [driversData, teamsData] = await Promise.all([
           fetchDriverStandings(currentYear),
           fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers('latest', currentYear),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
-        setOpenF1Drivers(openF1Data);
       } catch (error) {
         console.error('Error loading onboarding data:', error);
         toast.error('Failed to load F1 data');
@@ -55,14 +51,7 @@ const MobileOnboarding: React.FC = () => {
     loadData();
   }, []);
 
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, getCurrentSeasonYear(), driver?.headshot_url);
-  };
+  const getDriverImg = (driverCode: string) => getDriverImage(driverCode, getCurrentSeasonYear());
 
   const handleComplete = async () => {
     if (!user) return;
@@ -205,7 +194,7 @@ const MobileOnboarding: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   {drivers.map((driver) => {
                     const isSelected = selectedDriver === driver.code;
-                    const driverImg = getDriverImg(driver.code, driver.name);
+                    const driverImg = getDriverImg(driver.code);
 
                     return (
                       <motion.button

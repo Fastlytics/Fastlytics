@@ -1,5 +1,6 @@
 import { request } from './api-client';
 import { logger } from './logger';
+import { getDriverImage } from '@/utils/imageMapping';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'; // Keep for constructing URLs not using request() yet?
 // Ideally we move everything to use request() which handles base URL.
@@ -116,6 +117,10 @@ export interface DetailedRaceResult {
   // Fields for specific session types
   fastestLapTime?: string | null; // For Practice
   lapsCompleted?: number | null; // For Practice
+  morningFastestLapTime?: string | null; // Testing day morning segment
+  morningLapsCompleted?: number | null; // Testing day morning segment
+  afternoonFastestLapTime?: string | null; // Testing day afternoon segment
+  afternoonLapsCompleted?: number | null; // Testing day afternoon segment
   q1Time?: string | null; // For Qualifying
   q2Time?: string | null; // For Qualifying
   q3Time?: string | null; // For Qualifying
@@ -136,7 +141,9 @@ export interface LapPositionDataPoint {
 export interface AvailableSession {
   name: string;
   type: string;
-  startTime: string; // Note: This might not be directly available from the schedule endpoint
+  startTime?: string; // Note: This might not be directly available from the schedule endpoint
+  sourceSession?: string; // Testing alias source (e.g. FP1)
+  testingWindow?: 'morning' | 'afternoon' | 'full';
 }
 
 export interface SessionScheduleInfo {
@@ -571,27 +578,10 @@ export const fetchLapPositions = async (
 export const getDriverDetails = async (driverId: string): Promise<DriverDetails> => {
   const data = await request<DriverDetails>(`/api/driver/${driverId}`);
 
-  // Fetch additional data from OpenF1
-  // We need to map driverId (e.g., 'VER') to driver number if possible, or fetch all and find match
-  // For now, let's try to fetch all drivers for the latest session and match by code/acronym
-  try {
-    const openF1Drivers = await import('./openf1').then((m) => m.fetchAllOpenF1Drivers());
-    const openF1Driver = openF1Drivers.find(
-      (d) => d.name_acronym === driverId || d.last_name.toUpperCase().includes(driverId)
-    );
-
-    if (openF1Driver) {
-      logger.debug(`Found OpenF1 data for ${driverId}`);
-      data.headshot_url = openF1Driver.headshot_url;
-      data.team_colour = openF1Driver.team_colour;
-      data.team_name = openF1Driver.team_name;
-      // Prefer OpenF1 headshot if available
-      if (openF1Driver.headshot_url) {
-        data.imageUrl = openF1Driver.headshot_url;
-      }
-    }
-  } catch (openF1Error) {
-    logger.warn('Failed to enrich driver details with OpenF1 data:', openF1Error);
+  const localImage = getDriverImage(driverId, new Date().getFullYear());
+  if (localImage) {
+    data.headshot_url = localImage;
+    data.imageUrl = localImage;
   }
 
   return data;

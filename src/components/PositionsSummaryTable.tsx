@@ -118,7 +118,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
       ) {
         placesChanged = result.gridPosition - result.position;
       } else if (result.gridPosition === 0 && typeof result.position === 'number') {
-        const effectiveGrid = sessionResults.length > 0 ? sessionResults.length : 20;
+        const effectiveGrid = sessionResults.length > 0 ? sessionResults.length : 22;
         placesChanged = effectiveGrid - result.position;
       }
       return { ...result, placesChanged };

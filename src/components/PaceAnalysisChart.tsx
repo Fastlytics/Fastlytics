@@ -82,7 +82,6 @@ interface PaceAnalysisChartProps {
   initialDrivers?: string[];
   driverColors?: Record<string, string>;
   openF1Drivers?: OpenF1Driver[];
-  maxDrivers?: number;
 }
 
 const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
@@ -92,7 +91,6 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   initialDrivers = [],
   driverColors = {},
   openF1Drivers = [],
-  maxDrivers = 20,
 }) => {
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(
     initialDrivers.length > 0 ? initialDrivers : []

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowUp01Icon,
@@ -24,6 +24,9 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
 import { getCarImage } from '@/utils/imageMapping';
+
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(event.EventFormat?.toLowerCase().includes('test') || event.RoundNumber === 0);
 
 // Native Season Selector Modal
 interface SeasonSelectorProps {
@@ -344,6 +347,7 @@ const TeamRow: React.FC<{
 };
 
 const MobileTeamStandings: React.FC = () => {
+  const [now] = useState(() => Date.now());
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
@@ -360,10 +364,19 @@ const MobileTeamStandings: React.FC = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
   // Fetch Race Results for championship calculation
   const { data: raceResults } = useQuery<RaceResult[]>({
     queryKey: ['raceResults', selectedYear],
     queryFn: () => fetchRaceResults(selectedYear),
+    enabled: hasCompletedRaceEventsInSchedule,
   });
 
   // Calculate Championship Status

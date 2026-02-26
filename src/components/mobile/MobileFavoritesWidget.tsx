@@ -1,11 +1,12 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
+import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -35,22 +36,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
   schedule,
   isLoading,
 }) => {
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const { selectedYear } = useSeason();
+  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
   const favoriteDriver = useMemo(() => {
     if (!profile?.favorite_driver || !drivers.length) return null;
@@ -298,7 +285,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                       )}
                     >
                       <AvatarImage
-                        src={getDriverImage(favoriteDriver.name)}
+                        src={getDriverImageForYear(favoriteDriver.code)}
                         className="object-cover bg-zinc-900"
                       />
                       <AvatarFallback className="bg-zinc-900 rounded-md font-black text-lg">
@@ -368,7 +355,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6 rounded-none border border-white/20">
                               <AvatarImage
-                                src={getDriverImage(item.driver.name)}
+                                src={getDriverImageForYear(item.driver.code)}
                                 className="object-cover"
                               />
                               <AvatarFallback className="text-[8px] rounded-none">
