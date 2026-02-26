@@ -511,7 +511,7 @@ const Calendar = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {combinedRaceData.map((race) => (
                 <RaceCard
-                  key={`${selectedYear}-${race.EventName}`}
+                  key={`${new Date(race.EventDate).getFullYear()}-${race.RoundNumber}-${race.EventName}-${race.EventDate}`}
                   event={race}
                   result={race.result}
                   isUpcoming={race.isUpcoming}

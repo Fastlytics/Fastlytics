@@ -265,7 +265,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                 <Avatar className="h-12 w-12 border-2 border-gray-700">
                   <AvatarImage
                     src={getDriverImageForYear(favoriteDriver.code)}
-                    className="object-cover bg-gray-800"
+                    className="object-cover object-top bg-gray-800"
                   />
                   <AvatarFallback>{favoriteDriver.code}</AvatarFallback>
                 </Avatar>
@@ -376,7 +376,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   >
                     <AvatarImage
                       src={getDriverImageForYear(item.driver.code)}
-                      className="object-cover"
+                      className="object-cover object-top"
                     />
                     <AvatarFallback>{item.driver.code}</AvatarFallback>
                   </Avatar>

@@ -97,7 +97,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                   <Avatar className="h-10 w-10 border-2 border-gray-700">
                     <AvatarImage
                       src={getDriverImageForYear(driver.code)}
-                      className="object-cover bg-gray-800"
+                      className="object-cover object-top bg-gray-800"
                     />
                     <AvatarFallback>{driver.code}</AvatarFallback>
                   </Avatar>

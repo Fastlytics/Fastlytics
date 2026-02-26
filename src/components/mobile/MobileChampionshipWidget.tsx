@@ -157,7 +157,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                     >
                       <AvatarImage
                         src={getDriverImageForYear(driver.code)}
-                        className="object-cover bg-zinc-900"
+                        className="object-cover object-top bg-zinc-900"
                       />
                       <AvatarFallback className="bg-zinc-900 text-xs rounded-md font-bold">
                         {driver.code}
