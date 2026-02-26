@@ -1275,7 +1275,7 @@ const Race = () => {
                   active={activeSection === 'replay'}
                   onClick={() => handleSectionChange('replay')}
                 />
-                {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+                {(selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) && (
                   <NavItem
                     id="strategy"
                     label="Strategy"
@@ -1477,9 +1477,9 @@ const Race = () => {
                 </div>
               )}
 
-              {/* 3. Strategy Section (Race Only) */}
+              {/* 3. Strategy Section */}
               {activeSection === 'strategy' &&
-                (selectedSession === 'R' || selectedSession === 'Sprint') && (
+                (selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) && (
                   <GatedRoute
                     featureName="Tire Strategy"
                     description="Advanced tire strategy analysis including pit stop patterns and compound selection strategies"
