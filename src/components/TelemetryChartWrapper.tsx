@@ -48,13 +48,21 @@ const TelemetryChartWrapper = <T,>({
   renderChart,
   renderStats,
 }: TelemetryChartWrapperProps<T>) => {
-  // Internal state for driver/lap - props can override via controlled pattern
+  // Internal state for driver/lap initialized from props
   const [internalDriver, setInternalDriver] = useState<string>(initialDriver);
   const [internalLap, setInternalLap] = useState<string | number>(lap);
 
-  // Controlled component pattern: props override internal state when provided
-  const selectedDriver = initialDriver || internalDriver;
-  const selectedLap = lap || internalLap;
+  // Sync internal state if initial prop values change
+  React.useEffect(() => {
+    if (initialDriver) setInternalDriver(initialDriver);
+  }, [initialDriver]);
+
+  React.useEffect(() => {
+    if (lap) setInternalLap(lap);
+  }, [lap]);
+
+  const selectedDriver = internalDriver;
+  const selectedLap = internalLap;
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
@@ -185,7 +193,7 @@ const TelemetryChartWrapper = <T,>({
                           <img
                             src={openF1Driver.headshot_url}
                             alt={displayCode}
-                            className="w-full h-full object-cover scale-125 translate-y-1"
+                            className="w-full h-full object-cover object-top"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -226,7 +234,7 @@ const TelemetryChartWrapper = <T,>({
                             <img
                               src={openF1Driver.headshot_url}
                               alt={driver.code}
-                              className="w-full h-full object-cover scale-125 translate-y-1"
+                              className="w-full h-full object-cover object-top"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">

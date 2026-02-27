@@ -63,7 +63,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
                   <img
                     src={openF1Driver.headshot_url}
                     alt={selectedDriver}
-                    className="w-full h-full object-cover scale-125 translate-y-1"
+                    className="w-full h-full object-cover object-top"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">
