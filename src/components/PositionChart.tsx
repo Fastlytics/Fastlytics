@@ -204,7 +204,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                               <img
                                 src={driver.headshot_url}
                                 alt={driverCode}
-                                className="w-full h-full object-cover scale-125 translate-y-1"
+                                className="w-full h-full object-cover object-top"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
@@ -436,7 +436,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                             <img
                               src={headshot}
                               alt={driverCode}
-                              className="w-6 h-6 object-cover rounded-full bg-gray-800"
+                              className="w-6 h-6 object-cover object-top rounded-full bg-gray-800"
                             />
                           ) : (
                             <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">

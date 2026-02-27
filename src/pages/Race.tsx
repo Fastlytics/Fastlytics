@@ -1893,12 +1893,25 @@ const Race = () => {
                           </div>
                         }
                       >
-                        <SessionReplay
-                          year={year}
-                          event={eventSlug}
-                          session={analysisSession}
-                          className="h-full"
-                        />
+                        {(() => {
+                          let replaySessionTarget = analysisSession;
+                          if (isTestingSession) {
+                            if (isTestingSplitSession && testingSessionAlias) {
+                              replaySessionTarget = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
+                            } else if (testingWindow !== 'full') {
+                              replaySessionTarget = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                            }
+                          }
+
+                          return (
+                            <SessionReplay
+                              year={year}
+                              event={eventSlug}
+                              session={replaySessionTarget}
+                              className="h-full"
+                            />
+                          );
+                        })()}
                       </React.Suspense>
                     </div>
                   </div>

@@ -362,7 +362,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                         <img
                           src={openF1Driver.headshot_url}
                           alt={selectedDriver1}
-                          className="w-full h-full object-cover scale-125 translate-y-1"
+                          className="w-full h-full object-cover object-top"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -403,7 +403,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                         <img
                           src={openF1Driver.headshot_url}
                           alt={selectedDriver2}
-                          className="w-full h-full object-cover scale-125 translate-y-1"
+                          className="w-full h-full object-cover object-top"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -499,7 +499,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                             <img
                               src={openF1Driver.headshot_url}
                               alt={driver.code}
-                              className="w-full h-full object-cover scale-125 translate-y-1"
+                              className="w-full h-full object-cover object-top"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -548,7 +548,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               <img
                                 src={openF1Driver.headshot_url}
                                 alt={driver.code}
-                                className="w-full h-full object-cover scale-125 translate-y-1"
+                                className="w-full h-full object-cover object-top"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -635,7 +635,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                             <img
                               src={openF1Driver.headshot_url}
                               alt={driver.code}
-                              className="w-full h-full object-cover scale-125 translate-y-1"
+                              className="w-full h-full object-cover object-top"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
@@ -684,7 +684,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               <img
                                 src={openF1Driver.headshot_url}
                                 alt={driver.code}
-                                className="w-full h-full object-cover scale-125 translate-y-1"
+                                className="w-full h-full object-cover object-top"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">

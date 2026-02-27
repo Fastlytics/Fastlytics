@@ -210,7 +210,7 @@ const ChampionshipProgression = () => {
                           <img
                             src={headshot}
                             alt={entry.name}
-                            className="w-full h-full object-cover scale-110 translate-y-1"
+                            className="w-full h-full object-cover object-top"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
@@ -257,7 +257,7 @@ const ChampionshipProgression = () => {
                   <img
                     src={headshot}
                     alt={entry.value}
-                    className="w-full h-full object-cover scale-110 translate-y-1"
+                    className="w-full h-full object-cover object-top"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
@@ -463,7 +463,7 @@ const ChampionshipProgression = () => {
                     0,
                     (dataMax: number) => {
                       // Adaptive rounding based on the maximum value
-                      if (!dataMax || dataMax <= 0) return 'auto';
+                      if (!dataMax || dataMax <= 0 || isNaN(dataMax)) return 100;
 
                       // Low points (e.g. backmarkers): round to nearest 5 or 10
                       if (dataMax <= 20) return Math.ceil(dataMax / 5) * 5;

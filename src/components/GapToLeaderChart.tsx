@@ -312,7 +312,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                               <img
                                 src={driver.headshot_url}
                                 alt={driverCode}
-                                className="w-full h-full object-cover scale-125 translate-y-1"
+                                className="w-full h-full object-cover object-top"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
@@ -443,7 +443,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                       <img
                         src={openF1Driver.headshot_url}
                         alt={driver.code}
-                        className="w-full h-full object-cover scale-125 translate-y-1"
+                        className="w-full h-full object-cover object-top"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
