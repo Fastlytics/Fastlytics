@@ -12,6 +12,7 @@ import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import StintAnalysisTable from './StintAnalysisTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface TireStrategyProps {
   className?: string;
@@ -44,8 +45,10 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   favoriteDriver,
 }) => {
   const [focusedDriver, setFocusedDriver] = React.useState<string | null>(null);
+  const { trackInteraction } = useAnalytics();
 
   const toggleDriverFocus = (driver: string) => {
+    trackInteraction('tire_strategy_driver_focused', { driver });
     setFocusedDriver((prev) => (prev === driver ? null : driver));
   };
 

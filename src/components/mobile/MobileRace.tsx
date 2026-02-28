@@ -427,7 +427,10 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
               </div>
             ) : isAvailable ? (
               <button
-                onClick={onViewResults}
+                onClick={() => {
+                  onViewResults();
+                  trackInteraction('view_results_clicked', { session: session.name });
+                }}
                 className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors border border-transparent hover:border-white"
               >
                 Results
@@ -1020,7 +1023,7 @@ const MobileRace: React.FC = () => {
   const [showSessionSelector, setShowSessionSelector] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
-  const { trackEvent } = useAnalytics();
+  const { trackEvent, trackInteraction } = useAnalytics();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -1036,7 +1039,7 @@ const MobileRace: React.FC = () => {
       },
       { replace: true }
     );
-    trackEvent('mobile_session_changed', {
+    trackEvent('session_changed', {
       session_type: session,
       race_name: eventName,
       year: year,
@@ -1485,7 +1488,10 @@ const MobileRace: React.FC = () => {
       {/* Bottom Nav */}
       <RaceBottomNav
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          trackInteraction('mobile_tab_changed', { tab });
+        }}
         hasStrategy={isRaceOrSprint}
       />
 

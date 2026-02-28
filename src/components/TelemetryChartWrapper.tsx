@@ -14,6 +14,8 @@ import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchLapTimes, SessionDriver } from '@/lib/api';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -46,6 +48,12 @@ const TelemetryChartWrapper = <T,>({
   renderChart,
   renderStats,
 }: TelemetryChartWrapperProps<T>) => {
+  const chartVisRef = useChartVisibility({
+    chartName: `telemetry_${title.toLowerCase().replace(/\s+/g, '_')}`,
+    page: 'race',
+    meta: { year, event, session },
+  });
+  const { trackSelection } = useAnalytics();
   // Internal state for driver/lap initialized from props
   const [internalDriver, setInternalDriver] = useState<string>(initialDriver);
   const [internalLap, setInternalLap] = useState<string | number>(lap);
@@ -155,7 +163,7 @@ const TelemetryChartWrapper = <T,>({
   };
 
   return (
-    <div className={cn('bg-black border-2 border-gray-800 p-6', className)}>
+    <div ref={chartVisRef} className={cn('bg-black border-2 border-gray-800 p-6', className)}>
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
         <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">{title}</h3>
 
@@ -165,6 +173,7 @@ const TelemetryChartWrapper = <T,>({
             onValueChange={(value) => {
               setInternalDriver(value);
               setInternalLap('fastest');
+              trackSelection('telemetry_driver', value, { chart: title, year, event, session });
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
@@ -238,9 +247,10 @@ const TelemetryChartWrapper = <T,>({
 
           <Select
             value={selectedLap.toString()}
-            onValueChange={(value) =>
-              setInternalLap(value === 'fastest' ? 'fastest' : parseInt(value))
-            }
+            onValueChange={(value) => {
+              setInternalLap(value === 'fastest' ? 'fastest' : parseInt(value));
+              trackSelection('telemetry_lap', value, { chart: title, year, event, session });
+            }}
             disabled={lapOptions.length <= 1}
           >
             <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors px-2">

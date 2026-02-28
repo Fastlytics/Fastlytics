@@ -14,7 +14,7 @@ import {
 } from 'hugeicons-react';
 import { Gauge } from 'lucide-react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 const MobileOnboarding: React.FC = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const { trackEvent } = useAnalytics();
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
@@ -70,7 +71,7 @@ const MobileOnboarding: React.FC = () => {
       if (error) throw error;
 
       await refreshProfile();
-      posthog.capture('onboarding_completed', {
+      trackEvent('onboarding_completed', {
         favorite_driver: selectedDriver,
         favorite_team: selectedTeam,
       });

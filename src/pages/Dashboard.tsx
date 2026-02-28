@@ -14,6 +14,9 @@ import {
   RaceResult,
   AvailableSession,
   DetailedRaceResult,
+  getCircuitLength,
+  calculateDistance,
+  formatDistance,
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,8 +28,8 @@ import QuickLinksWidget from '@/components/dashboard/QuickLinksWidget';
 import { ArrowRight01Icon, Activity01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/SEO';
-import posthog from 'posthog-js';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   MobileLayout,
   MobilePageHeader,
@@ -75,9 +78,11 @@ const Dashboard = () => {
   const { selectedYear } = useSeason();
   const { profile, user } = useAuth();
   const navigate = useNavigate();
+  const { trackEvent, trackPageView } = useAnalytics();
 
   useEffect(() => {
-    posthog.capture('dashboard_viewed');
+    trackPageView('dashboard', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { data: schedule = [], isLoading: isLoadingSchedule } = useQuery<ScheduleEvent[]>({
@@ -229,12 +234,20 @@ const Dashboard = () => {
         morningFastest: null as DetailedRaceResult | null,
         afternoonFastest: null as DetailedRaceResult | null,
         totalLaps: 0,
+        totalDistance: 0,
         morningLaps: 0,
         afternoonLaps: 0,
         driverCount: 0,
         leaderLaps: 0,
+        leaderDistance: 0,
+        circuitLength: 5.0,
       };
     }
+
+    const circuitLength = getCircuitLength(
+      primaryTestingEvent?.EventName,
+      primaryTestingEvent?.Location
+    );
 
     const fastest = [...testingSessionResults]
       .filter((result) => !!result.fastestLapTime)
@@ -251,6 +264,7 @@ const Dashboard = () => {
       (sum, result) => sum + (result.lapsCompleted ?? result.laps ?? 0),
       0
     );
+    const totalDistance = calculateDistance(totalLaps, circuitLength);
     const morningLaps = testingSessionResults.reduce(
       (sum, result) => sum + (result.morningLapsCompleted ?? 0),
       0
@@ -274,18 +288,24 @@ const Dashboard = () => {
             parseLapTime(a.afternoonFastestLapTime) - parseLapTime(b.afternoonFastestLapTime)
         )[0] ?? null;
 
+    const leaderLaps = mileage[0]?.lapsCompleted ?? mileage[0]?.laps ?? 0;
+    const leaderDistance = calculateDistance(leaderLaps, circuitLength);
+
     return {
       fastest,
       mileage,
       morningFastest,
       afternoonFastest,
       totalLaps,
+      totalDistance,
       morningLaps,
       afternoonLaps,
       driverCount: testingSessionResults.length,
-      leaderLaps: mileage[0]?.lapsCompleted ?? mileage[0]?.laps ?? 0,
+      leaderLaps,
+      leaderDistance,
+      circuitLength,
     };
-  }, [testingSessionResults]);
+  }, [testingSessionResults, primaryTestingEvent]);
 
   const favoriteDriverName = useMemo(() => {
     if (!profile?.favorite_driver || driverStandings.length === 0) return undefined;
@@ -525,7 +545,7 @@ const Dashboard = () => {
                         Full-Day Laps
                       </div>
                       <div className="text-2xl font-black uppercase tracking-tight mt-1">
-                        {testingInsights.totalLaps} laps
+                        {formatDistance(testingInsights.totalDistance)}
                       </div>
                     </div>
                     <div className="bg-gray-900/40 border border-gray-800 p-4">
@@ -585,6 +605,7 @@ const Dashboard = () => {
                     <div className="space-y-2">
                       {testingInsights.fastest.slice(0, 5).map((driver, index) => {
                         const laps = driver.lapsCompleted ?? driver.laps ?? 0;
+                        const distance = calculateDistance(laps, testingInsights.circuitLength);
                         const reliability =
                           testingInsights.leaderLaps > 0
                             ? Math.round((laps / testingInsights.leaderLaps) * 100)
@@ -607,7 +628,7 @@ const Dashboard = () => {
                                 {driver.fastestLapTime || '-'}
                               </div>
                               <div className="text-xs font-sans text-gray-500">
-                                {laps} laps • {reliability}% reliability
+                                {formatDistance(distance)} • {reliability}% reliability
                               </div>
                             </div>
                           </div>
@@ -649,7 +670,7 @@ const Dashboard = () => {
                 </h3>
                 <button
                   onClick={() => {
-                    posthog.capture('widget_clicked', {
+                    trackEvent('widget_clicked', {
                       widget: isTestingMode ? 'recent_testing' : 'recent_races',
                       action: 'view_calendar',
                     });
@@ -666,7 +687,7 @@ const Dashboard = () => {
                   <div
                     key={`${event.EventName}-${event.EventDate}`}
                     onClick={() => {
-                      posthog.capture('widget_clicked', {
+                      trackEvent('widget_clicked', {
                         widget: isTestingMode ? 'recent_testing' : 'recent_races',
                         action: 'click_event',
                         event: event.EventName,

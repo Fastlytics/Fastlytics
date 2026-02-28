@@ -25,6 +25,7 @@ import {
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
 type TelemetryDataPoint =
@@ -356,10 +357,19 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   const color1 = driverColor(driver1, year);
   const color2 = driverColor(driver2, year);
 
+  const chartVisRef = useChartVisibility({
+    chartName: 'driver_comparison_telemetry',
+    page: 'race',
+    meta: { year, event, session },
+  });
+
   if (!shouldLoadChart) return null;
 
   return (
-    <div className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group">
+    <div
+      ref={chartVisRef}
+      className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group"
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">

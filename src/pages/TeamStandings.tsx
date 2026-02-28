@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion, useInView } from 'framer-motion';
 import {
   ArrowLeft01Icon,
@@ -50,7 +51,13 @@ const TeamStandings = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
+  const { trackEvent, trackPageView } = useAnalytics();
   const standingsRef = useRef(null);
+
+  useEffect(() => {
+    trackPageView('team_standings', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.1 });
 
   // Fetch Team Standings
@@ -162,7 +169,10 @@ const TeamStandings = () => {
           <div className="relative">
             <Select
               value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', { page: 'team_standings', year: Number(value) });
+              }}
             >
               <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
                 <div className="flex items-center gap-2">

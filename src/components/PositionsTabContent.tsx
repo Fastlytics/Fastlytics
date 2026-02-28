@@ -15,6 +15,7 @@ import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface PositionsTabContentProps {
   year: number;
@@ -32,6 +33,7 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
   favoriteDriver,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const { trackInteraction } = useAnalytics();
 
   const queries: Readonly<
     [
@@ -108,7 +110,10 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
       <Tabs
         defaultValue="overview"
         className="w-full h-full flex flex-col"
-        onValueChange={setActiveTab}
+        onValueChange={(value) => {
+          trackInteraction('positions_subtab_changed', { tab: value });
+          setActiveTab(value);
+        }}
         value={activeTab}
       >
         <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-6 shrink-0">

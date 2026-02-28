@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion } from 'framer-motion';
 import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
 import { TrendingUp } from 'lucide-react';
@@ -43,6 +44,12 @@ const ChampionshipProgression = () => {
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const isMobile = useIsMobile();
+  const { trackEvent, trackPageView } = useAnalytics();
+
+  useEffect(() => {
+    trackPageView('championship_progression', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // State for driver filtering
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
@@ -138,9 +145,21 @@ const ChampionshipProgression = () => {
       .slice(0, 10)
       .map(([code]) => code);
     setSelectedDrivers(top10);
+    trackEvent('filter_action', {
+      page: 'championship_progression',
+      action: 'select_top10',
+      year: selectedYear,
+    });
   };
 
-  const clearSelection = () => setSelectedDrivers([]);
+  const clearSelection = () => {
+    setSelectedDrivers([]);
+    trackEvent('filter_action', {
+      page: 'championship_progression',
+      action: 'clear_selection',
+      year: selectedYear,
+    });
+  };
 
   // No separate helper needed — getDriverImage imported from @/utils/imageMapping
   // Usage: getDriverImage(driverCode, selectedYear)
@@ -279,7 +298,13 @@ const ChampionshipProgression = () => {
           <div className="flex flex-wrap items-center gap-4 ml-14 md:ml-0">
             <Select
               value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', {
+                  page: 'championship_progression',
+                  year: Number(value),
+                });
+              }}
             >
               <SelectTrigger className="w-[140px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue placeholder="Year" />

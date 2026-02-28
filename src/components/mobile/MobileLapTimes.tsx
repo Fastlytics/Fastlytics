@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select';
 import { driverColor } from '@/lib/driverColor';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ChartMouseEvent {
   activeLabel?: string | number;
@@ -86,6 +87,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
   const { profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { trackSelection, trackInteraction } = useAnalytics();
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
 
   // --- Driver Selection Logic ---
@@ -263,7 +265,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
         {/* Analysis Mode Toggle */}
         <div className="flex p-1 bg-zinc-900 border border-white/10 rounded-lg">
           <button
-            onClick={() => setLapAnalysisMode('history')}
+            onClick={() => {
+              setLapAnalysisMode('history');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'history' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'history'
@@ -275,7 +280,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
             History
           </button>
           <button
-            onClick={() => setLapAnalysisMode('gap')}
+            onClick={() => {
+              setLapAnalysisMode('gap');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'gap' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'gap'
@@ -287,7 +295,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
             Gap
           </button>
           <button
-            onClick={() => setLapAnalysisMode('pace')}
+            onClick={() => {
+              setLapAnalysisMode('pace');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'pace' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'pace'
@@ -314,7 +325,13 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
                 <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
                   {control.label}
                 </label>
-                <Select value={control.value} onValueChange={control.setter}>
+                <Select
+                  value={control.value}
+                  onValueChange={(value) => {
+                    control.setter(value);
+                    trackSelection('lap_driver', value, { label: control.label });
+                  }}
+                >
                   <SelectTrigger className="w-full bg-black border border-white/20 text-white h-12 px-2 rounded-md">
                     {control.value ? (
                       <div className="flex items-center gap-3 overflow-hidden">
@@ -507,7 +524,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
                   return (
                     <button
                       key={driverCode}
-                      onClick={() => setSelectedPaceDriver(driverPace)}
+                      onClick={() => {
+                        setSelectedPaceDriver(driverPace);
+                        trackSelection('pace_driver', driverCode);
+                      }}
                       className="w-full bg-black border border-white/10 p-3 rounded-lg relative overflow-hidden hover:bg-zinc-900/50 transition-colors text-left group"
                     >
                       <div className="flex items-center gap-3 mb-4 relative z-10">
