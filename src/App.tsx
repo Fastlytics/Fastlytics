@@ -27,6 +27,7 @@ import LandingFooter from './components/LandingFooter';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/ScrollToTop';
+import RouteTracker from '@/components/RouteTracker';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -71,6 +72,8 @@ const App = () => (
         <AuthProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <RouteTracker />
+            <RouteTracker />
             <Routes>
               {/* Landing Page Route (with LandingFooter) */}
               <Route

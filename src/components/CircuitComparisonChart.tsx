@@ -24,6 +24,7 @@ import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface CircuitComparisonChartProps {
   className?: string;
@@ -61,6 +62,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   onDriversSelected,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { trackSelection } = useAnalytics();
 
   const [userSelectedDriver1, setUserSelectedDriver1] = useState<string | null>(null);
   const [userSelectedDriver2, setUserSelectedDriver2] = useState<string | null>(null);
@@ -466,6 +468,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               onValueChange={(value) => {
                 setSelectedDriver1(value);
                 setSelectedLap1('fastest');
+                trackSelection('circuit_driver1', value, { year, event, session });
               }}
               disabled={isLoadingDrivers || !availableDrivers}
             >
@@ -551,9 +554,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
             <Select
               value={String(selectedLap1)}
-              onValueChange={(value) =>
-                setSelectedLap1(value === 'fastest' ? 'fastest' : parseInt(value))
-              }
+              onValueChange={(value) => {
+                setSelectedLap1(value === 'fastest' ? 'fastest' : parseInt(value));
+                trackSelection('circuit_lap1', value, { year, event, session });
+              }}
               disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
             >
               <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">
@@ -588,6 +592,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               onValueChange={(value) => {
                 setSelectedDriver2(value);
                 setSelectedLap2('fastest');
+                trackSelection('circuit_driver2', value, { year, event, session });
               }}
               disabled={isLoadingDrivers || !availableDrivers}
             >
@@ -673,9 +678,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
             <Select
               value={String(selectedLap2)}
-              onValueChange={(value) =>
-                setSelectedLap2(value === 'fastest' ? 'fastest' : parseInt(value))
-              }
+              onValueChange={(value) => {
+                setSelectedLap2(value === 'fastest' ? 'fastest' : parseInt(value));
+                trackSelection('circuit_lap2', value, { year, event, session });
+              }}
               disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
             >
               <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">

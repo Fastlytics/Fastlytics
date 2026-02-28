@@ -25,6 +25,8 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PlusSignCircleIcon, CancelCircleIcon } from 'hugeicons-react';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface PaceChartDataPoint extends PaceDistributionData {
   iqr: [number, number];
@@ -89,6 +91,12 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   initialDrivers = [],
   driverColors = {},
 }) => {
+  const chartVisRef = useChartVisibility({
+    chartName: 'pace_analysis_chart',
+    page: 'race',
+    meta: { year, event, session },
+  });
+  const { trackInteraction } = useAnalytics();
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(
     initialDrivers.length > 0 ? initialDrivers : []
   );
@@ -158,6 +166,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   }, [paceData]);
 
   const toggleDriver = (driverCode: string) => {
+    trackInteraction('driver_toggled', { chart: 'pace_analysis', year, event, session });
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
         return prev.filter((d) => d !== driverCode);
@@ -172,7 +181,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   const domainPadding = (maxPace - minPace) * 0.1;
 
   return (
-    <div className="w-full h-full p-4 relative">
+    <div ref={chartVisRef} className="w-full h-full p-4 relative">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
           Race Pace Distribution

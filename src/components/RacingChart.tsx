@@ -38,6 +38,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -79,6 +81,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
   rivalDriver,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartVisRef = useChartVisibility({
+    chartName: 'lap_time_chart',
+    page: 'race',
+    meta: { year, event, session },
+  });
+  const { trackInteraction } = useAnalytics();
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
@@ -185,6 +193,13 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const chartData = correctedLapData;
 
   const toggleDriver = (driverCode: string) => {
+    trackInteraction('driver_toggled', {
+      driver: driverCode,
+      chart: 'lap_time',
+      year,
+      event,
+      session,
+    });
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
         if (prev.length > MIN_DRIVERS) {
@@ -235,7 +250,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
         <div className="w-full h-[300px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
           <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
           <Button
-            onClick={() => setShouldLoadChart(true)}
+            onClick={() => {
+              trackInteraction('chart_data_loaded', { chart: 'lap_time', year, event, session });
+              setShouldLoadChart(true);
+            }}
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
@@ -372,11 +390,21 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 fontFamily: 'Geist',
                 fontSize: '12px',
               }}
-              onClick={(e) =>
-                e &&
-                e.value &&
-                (focusedDriver === e.value ? setFocusedDriver(null) : setFocusedDriver(e.value))
-              }
+              onClick={(e) => {
+                if (e && e.value) {
+                  trackInteraction('legend_driver_focused', {
+                    chart: 'lap_time',
+                    year,
+                    event,
+                    session,
+                  });
+                  if (focusedDriver === e.value) {
+                    setFocusedDriver(null);
+                  } else {
+                    setFocusedDriver(e.value);
+                  }
+                }
+              }}
               onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
               onMouseLeave={() => setFocusedDriver(null)}
               formatter={(value, entry) => {
@@ -502,7 +530,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   return (
     <div
-      ref={chartRef}
+      ref={(el) => {
+        chartRef.current = el;
+        chartVisRef.current = el;
+      }}
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
@@ -513,7 +544,19 @@ const RacingChart: React.FC<RacingChartProps> = ({
           </h3>
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-400 uppercase">Fuel Corrected</span>
-            <Switch checked={fuelCorrectionEnabled} onCheckedChange={setFuelCorrectionEnabled} />
+            <Switch
+              checked={fuelCorrectionEnabled}
+              onCheckedChange={(checked) => {
+                trackInteraction('fuel_correction_toggled', {
+                  enabled: checked,
+                  chart: 'lap_time',
+                  year,
+                  event,
+                  session,
+                });
+                setFuelCorrectionEnabled(checked);
+              }}
+            />
             <Popover>
               <PopoverTrigger asChild>
                 <Button

@@ -47,6 +47,9 @@ import {
   DetailedRaceResult,
   AvailableSession,
   EventSessionSchedule,
+  getCircuitLength,
+  calculateDistance,
+  formatDistance,
 } from '@/lib/api';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useQuery } from '@tanstack/react-query';
@@ -201,6 +204,7 @@ const SessionResultsTable: React.FC<{
   isTestingSession?: boolean;
   isTestingSplitSession?: boolean;
   testingWindow?: 'full' | 'morning' | 'afternoon';
+  eventName?: string;
 }> = ({
   results,
   sessionType,
@@ -209,6 +213,7 @@ const SessionResultsTable: React.FC<{
   isTestingSession = false,
   isTestingSplitSession = false,
   testingWindow = 'full',
+  eventName,
 }) => {
   const isPractice = sessionType.startsWith('FP') || isTestingSession;
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
@@ -253,6 +258,15 @@ const SessionResultsTable: React.FC<{
   const leaderLaps = useMemo(
     () => sortedResults.reduce((max, res) => Math.max(max, getPracticeLaps(res)), 0),
     [sortedResults, getPracticeLaps]
+  );
+
+  // Calculate circuit length for distance conversion (for testing sessions)
+  const circuitLength = useMemo(() => getCircuitLength(eventName), [eventName]);
+
+  // Calculate leader distance in km
+  const leaderDistance = useMemo(
+    () => calculateDistance(leaderLaps, circuitLength),
+    [leaderLaps, circuitLength]
   );
 
   const columns: {
@@ -415,8 +429,9 @@ const SessionResultsTable: React.FC<{
                       <span className="text-gray-300">
                         {(() => {
                           const laps = getPracticeLaps(res);
+                          const distance = calculateDistance(laps, circuitLength);
                           const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
-                          return `${laps} (${pct}%)`;
+                          return `${formatDistance(distance)} (${pct}%)`;
                         })()}
                       </span>
                     ) : col.key === 'reliability' ? (
@@ -519,7 +534,7 @@ const Race = () => {
   const showAnalysis = searchParams.get('view') === 'analysis';
   const initialTab = searchParams.get('tab');
 
-  const { trackEvent } = useAnalytics();
+  const { trackEvent, trackInteraction, trackSelection } = useAnalytics();
 
   const setSelectedSession = (session: string) => {
     setSearchParams(
@@ -751,9 +766,13 @@ const Race = () => {
         fastest: null as DetailedRaceResult | null,
         mileage: null as DetailedRaceResult | null,
         totalLaps: 0,
+        totalDistance: 0,
         averageLaps: 0,
+        circuitLength: 5.0,
       };
     }
+
+    const circuitLength = getCircuitLength(eventName);
 
     const fastest =
       [...sessionResults]
@@ -768,10 +787,11 @@ const Race = () => {
       null;
 
     const totalLaps = sessionResults.reduce((sum, result) => sum + getSessionWindowLaps(result), 0);
+    const totalDistance = calculateDistance(totalLaps, circuitLength);
     const averageLaps = sessionResults.length > 0 ? totalLaps / sessionResults.length : 0;
 
-    return { fastest, mileage, totalLaps, averageLaps };
-  }, [sessionResults, isTestingSession, getSessionWindowLapTime, getSessionWindowLaps]);
+    return { fastest, mileage, totalLaps, totalDistance, averageLaps, circuitLength };
+  }, [sessionResults, isTestingSession, getSessionWindowLapTime, getSessionWindowLaps, eventName]);
 
   const nextSession = useMemo(() => {
     if (!sessionSchedule) return null;
@@ -1027,7 +1047,10 @@ const Race = () => {
                   </h3>
                   <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
                     <button
-                      onClick={() => setIs24Hour(true)}
+                      onClick={() => {
+                        setIs24Hour(true);
+                        trackInteraction('time_format_changed', { format: '24h' });
+                      }}
                       className={cn(
                         'px-3 py-1 text-xs font-bold rounded transition-colors',
                         is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
@@ -1036,7 +1059,10 @@ const Race = () => {
                       24H
                     </button>
                     <button
-                      onClick={() => setIs24Hour(false)}
+                      onClick={() => {
+                        setIs24Hour(false);
+                        trackInteraction('time_format_changed', { format: '12h' });
+                      }}
                       className={cn(
                         'px-3 py-1 text-xs font-bold rounded transition-colors',
                         !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
@@ -1204,6 +1230,9 @@ const Race = () => {
                                     }
                                     setSelectedSession(targetSession);
                                     setShowAnalysis(true);
+                                    trackInteraction('results_button_clicked', {
+                                      sessionKey: targetSession,
+                                    });
                                   }}
                                 >
                                   Results
@@ -1361,7 +1390,7 @@ const Race = () => {
                             <F1Card
                               title="MILEAGE LEADER"
                               value={testingInsights.mileage.fullName}
-                              subValue={`${getSessionWindowLaps(testingInsights.mileage)} laps`}
+                              subValue={`${formatDistance(calculateDistance(getSessionWindowLaps(testingInsights.mileage), testingInsights.circuitLength))}`}
                               team={getTeamColorClass(testingInsights.mileage.team)}
                               icon={<TradeUpIcon />}
                               imageUrl={getDriverImage(testingInsights.mileage.driverCode, year!)}
@@ -1369,7 +1398,7 @@ const Race = () => {
                           )}
                           <F1Card
                             title="SESSION WORKLOAD"
-                            value={`${testingInsights.totalLaps} laps`}
+                            value={`${formatDistance(testingInsights.totalDistance)}`}
                             subValue={`Avg ${testingInsights.averageLaps.toFixed(1)} laps/driver`}
                             team="gray"
                             icon={<Calendar01Icon />}
@@ -1405,7 +1434,10 @@ const Race = () => {
                         ).map(([value, label]) => (
                           <button
                             key={value}
-                            onClick={() => setTestingWindow(value)}
+                            onClick={() => {
+                              setTestingWindow(value);
+                              trackInteraction('testing_window_toggled', { window: value });
+                            }}
                             className={cn(
                               'px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors border',
                               testingWindow === value
@@ -1455,6 +1487,7 @@ const Race = () => {
                         isTestingSession={isTestingSession}
                         isTestingSplitSession={isTestingSplitSession}
                         testingWindow={testingWindow}
+                        eventName={eventName}
                       />
                     )}
                   </section>
@@ -1507,7 +1540,10 @@ const Race = () => {
                     <Tabs
                       defaultValue="history"
                       value={lapAnalysisMode}
-                      onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace' | 'gap')}
+                      onValueChange={(v) => {
+                        setLapAnalysisMode(v as 'history' | 'pace' | 'gap');
+                        trackInteraction('desktop_analysis_tab_changed', { tab: v });
+                      }}
                       className="w-full"
                     >
                       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">

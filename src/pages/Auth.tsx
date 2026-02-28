@@ -11,7 +11,7 @@ import { Gauge } from 'lucide-react'; // Only allowed lucide icon
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAuth } from '@/components/mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, loading } = useAuth();
+  const { trackEvent } = useAnalytics();
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -36,7 +37,7 @@ const Auth = () => {
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);
-    posthog.capture('login_started', { method: 'social', provider });
+    trackEvent('login_started', { method: 'social', provider });
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
@@ -54,7 +55,7 @@ const Auth = () => {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    posthog.capture('login_started', { method: 'email' });
+    trackEvent('login_started', { method: 'email' });
 
     try {
       const { error } = await supabase.auth.signInWithPassword({

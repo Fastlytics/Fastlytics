@@ -20,6 +20,8 @@ import { ArrowUpDownIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface TooltipPayloadItem {
   value: number | null;
@@ -66,6 +68,12 @@ const PositionChart: React.FC<PositionChartProps> = ({
   favoriteDriver,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { trackInteraction } = useAnalytics();
+  const chartVisRef = useChartVisibility({
+    chartName: 'position_chart',
+    page: 'race',
+    meta: { year },
+  });
   const positionData = lapData;
 
   const driverCodes = useMemo(() => {
@@ -96,6 +104,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   };
 
   const handleDriverSelectionChange = (driverCode: string) => {
+    trackInteraction('driver_toggled', { driver: driverCode, chart: 'position', year });
     setSelectedDrivers((prevSelected) =>
       prevSelected.includes(driverCode)
         ? prevSelected.filter((code) => code !== driverCode)
@@ -104,10 +113,12 @@ const PositionChart: React.FC<PositionChartProps> = ({
   };
 
   const handleSelectAll = () => {
+    trackInteraction('select_all_drivers', { chart: 'position', year });
     setSelectedDrivers(driverCodes);
   };
 
   const handleSelectNone = () => {
+    trackInteraction('deselect_all_drivers', { chart: 'position', year });
     setSelectedDrivers([]);
   };
 
@@ -334,7 +345,10 @@ const PositionChart: React.FC<PositionChartProps> = ({
 
   return (
     <div
-      ref={chartRef}
+      ref={(el) => {
+        chartRef.current = el;
+        chartVisRef.current = el;
+      }}
       className={cn('bg-black p-0', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >

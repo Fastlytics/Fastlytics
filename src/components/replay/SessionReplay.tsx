@@ -8,6 +8,7 @@ import {
   ReplayDriverData,
   ReplayDriversMap,
 } from '@/lib/api';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 import ReplayLoader from './ReplayLoader';
 import { getDriverImage } from '@/utils/imageMapping';
@@ -213,6 +214,14 @@ const getMessageConfig = (msg: { message: string; flag?: string }) => {
 };
 
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
+  const { trackEvent, trackPageView } = useAnalytics();
+
+  // Track page view on mount
+  useEffect(() => {
+    trackPageView('session_replay', { year, event, session });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, event, session]);
+
   // --- Progressive Loading State ---
   const {
     data: metadata,
@@ -486,8 +495,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   // Toggle Fullscreen
   const toggleFullscreen = () => {
     if (!rootRef.current) return;
+    const entering = !document.fullscreenElement;
+    trackEvent('replay_fullscreen_toggled', { entering, year, event, session });
 
-    if (!document.fullscreenElement) {
+    if (entering) {
       rootRef.current.requestFullscreen().catch((err) => {
         console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
       });
@@ -570,6 +581,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTotalDuration, totalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -1610,7 +1622,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             {/* Segmented Control */}
             <div className="flex bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl relative isolate">
               <button
-                onClick={() => setReplayMode('session')}
+                onClick={() => {
+                  setReplayMode('session');
+                  trackEvent('replay_mode_changed', { mode: 'session', year, event, session });
+                }}
                 className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${replayMode === 'session' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
               >
                 {replayMode === 'session' && (
@@ -1623,7 +1638,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 Session
               </button>
               <button
-                onClick={() => setReplayMode('ghost')}
+                onClick={() => {
+                  setReplayMode('ghost');
+                  trackEvent('replay_mode_changed', { mode: 'ghost', year, event, session });
+                }}
                 className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-2 ${replayMode === 'ghost' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
               >
                 {replayMode === 'ghost' && (
@@ -2083,6 +2101,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             onClick={() => {
               setHasStarted(true);
               setIsPlaying(true);
+              trackEvent('replay_started', { year, event, session });
             }}
             className="group relative flex items-center justify-center w-24 h-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
           >
@@ -2144,7 +2163,16 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
               {/* Left Controls */}
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setIsPlaying(!isPlaying)}
+                  onClick={() => {
+                    setIsPlaying(!isPlaying);
+                    trackEvent('replay_play_pause', {
+                      action: isPlaying ? 'pause' : 'play',
+                      current_time: currentTime,
+                      year,
+                      event,
+                      session,
+                    });
+                  }}
                   className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
                   {isPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -2163,6 +2191,12 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                     const speeds = [1, 2, 5, 10, 20];
                     const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
                     setPlaybackSpeed(speeds[nextIdx]);
+                    trackEvent('replay_speed_changed', {
+                      speed: speeds[nextIdx],
+                      year,
+                      event,
+                      session,
+                    });
                   }}
                   className="font-mono text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3ch] text-center"
                 >

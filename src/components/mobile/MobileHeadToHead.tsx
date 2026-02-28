@@ -43,6 +43,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface MobileHeadToHeadProps {
   year: number;
@@ -102,6 +103,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   raceResults,
 }) => {
   const { profile } = useAuth();
+  const { trackSelection, trackInteraction } = useAnalytics();
 
   // --- Driver Selection Logic (Auto-Select Rival) ---
   const { favDriverCode, rivalDriverCode } = useMemo(() => {
@@ -353,6 +355,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
             onValueChange={(value) => {
               setSelectedDriver(value);
               setSelectedLap('fastest');
+              trackSelection('h2h_driver', value);
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
@@ -412,9 +415,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
 
           <Select
             value={String(selectedLap)}
-            onValueChange={(value) =>
-              setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))
-            }
+            onValueChange={(value) => {
+              setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value));
+              trackSelection('h2h_lap', value);
+            }}
             disabled={!selectedDriver || !lapTimes}
           >
             <SelectTrigger className="w-[70px] bg-black border border-white/20 text-white h-10 px-2 rounded-md">
@@ -525,7 +529,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
                 Track Dominance
               </h3>
               <button
-                onClick={() => setIsRotated(!isRotated)}
+                onClick={() => {
+                  setIsRotated(!isRotated);
+                  trackInteraction('track_map_rotated');
+                }}
                 className="text-[10px] text-red-500 uppercase font-bold border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
               >
                 Rotate Map

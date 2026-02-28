@@ -549,6 +549,94 @@ export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
   return request<ScheduleEvent[]>(`/api/schedule/${year}`);
 };
 
+// --- Circuit Lengths (in kilometers) ---
+// Used for calculating distance from laps in testing sessions
+const CIRCUIT_LENGTHS: Record<string, number> = {
+  // 2026 Circuits
+  'bahrain-grand-prix': 5.412,
+  bahrain: 5.412,
+  sakhir: 5.412,
+  'jeddah-grand-prix': 6.174,
+  jeddah: 6.174,
+  'australian-grand-prix': 5.278,
+  melbourne: 5.278,
+  'chinese-grand-prix': 5.451,
+  shanghai: 5.451,
+  'japanese-grand-prix': 5.807,
+  suzuka: 5.807,
+  'miami-grand-prix': 5.41,
+  miami: 5.41,
+  'monaco-grand-prix': 3.337,
+  monaco: 3.337,
+  'spanish-grand-prix': 4.657,
+  barcelona: 4.657,
+  'canadian-grand-prix': 4.361,
+  montreal: 4.361,
+  'austrian-grand-prix': 4.318,
+  'red-bull-ring': 4.318,
+  spielberg: 4.318,
+  'british-grand-prix': 5.891,
+  silverstone: 5.891,
+  'hungarian-grand-prix': 4.381,
+  hungaroring: 4.381,
+  'belgian-grand-prix': 7.004,
+  spa: 7.004,
+  'dutch-grand-prix': 4.259,
+  zandvoort: 4.259,
+  'italian-grand-prix': 5.757,
+  monza: 5.757,
+  'azerbaijan-grand-prix': 6.003,
+  baku: 6.003,
+  'singapore-grand-prix': 4.94,
+  singapore: 4.94,
+  'qatar-grand-prix': 5.38,
+  losail: 5.38,
+  'united-states-grand-prix': 5.513,
+  austin: 5.513,
+  'mexican-grand-prix': 4.304,
+  'mexico-city': 4.304,
+  'brazilian-grand-prix': 4.309,
+  interlagos: 4.309,
+  'las-vegas-grand-prix': 6.201,
+  'las-vegas': 6.201,
+  'abu-dhabi-grand-prix': 5.281,
+  'yas-marina': 5.281,
+  // Legacy/Alternative names
+  'pre-season-testing': 5.412,
+  'bahrain-pre-season-testing': 5.412,
+};
+
+export const getCircuitLength = (eventName?: string, location?: string): number => {
+  if (!eventName && !location) return 5.0;
+
+  const normalizedEventName = eventName?.toLowerCase().replace(/\s+/g, '-') ?? '';
+  const normalizedLocation = location?.toLowerCase().replace(/\s+/g, '-') ?? '';
+
+  if (normalizedEventName && CIRCUIT_LENGTHS[normalizedEventName]) {
+    return CIRCUIT_LENGTHS[normalizedEventName];
+  }
+
+  if (normalizedLocation && CIRCUIT_LENGTHS[normalizedLocation]) {
+    return CIRCUIT_LENGTHS[normalizedLocation];
+  }
+
+  for (const [key, length] of Object.entries(CIRCUIT_LENGTHS)) {
+    if (normalizedEventName.includes(key) || normalizedLocation.includes(key)) {
+      return length;
+    }
+  }
+
+  return 5.0;
+};
+
+export const calculateDistance = (laps: number, circuitLengthKm: number): number => {
+  return laps * circuitLengthKm;
+};
+
+export const formatDistance = (distanceKm: number): string => {
+  return `${distanceKm.toFixed(1)} km`;
+};
+
 /** Fetches team pace summary for a given year. */
 export const fetchTeamPaceSummary = async (year: number): Promise<TeamPaceSummary[]> => {
   const params = new URLSearchParams({ year: year.toString() });

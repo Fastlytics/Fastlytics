@@ -23,7 +23,7 @@ import {
 import ActivityItem, { ActivityItemProps } from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
@@ -76,6 +76,7 @@ const Account = () => {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { trackEvent } = useAnalytics();
   const [activeSection, setActiveSection] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -174,7 +175,7 @@ const Account = () => {
       if (error) throw error;
       await refreshProfile();
       toast.success('Favorites updated successfully');
-      posthog.capture('favorites_updated', {
+      trackEvent('favorites_updated', {
         favorite_driver: favoriteDriver,
         favorite_team: favoriteTeam,
       });
@@ -226,7 +227,7 @@ const Account = () => {
       toast.success(
         `${field === 'fullName' ? 'Name' : field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`
       );
-      posthog.capture('profile_updated', { field });
+      trackEvent('profile_updated', { field });
       await refreshProfile();
       setEditingField(null);
     } catch (error: unknown) {

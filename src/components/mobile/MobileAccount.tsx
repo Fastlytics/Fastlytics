@@ -31,7 +31,7 @@ import {
 import ActivityItem, { ActivityItemProps } from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -139,6 +139,7 @@ const MobileAccount: React.FC = () => {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { trackEvent } = useAnalytics();
   const [isLoading, setIsLoading] = useState(false);
 
   // Sheet States
@@ -242,7 +243,7 @@ const MobileAccount: React.FC = () => {
       await refreshProfile();
       toast.success('Favorites updated');
       setShowFavoritesSheet(false);
-      posthog.capture('favorites_updated', {
+      trackEvent('favorites_updated', {
         favorite_driver: favoriteDriver,
         favorite_team: favoriteTeam,
       });

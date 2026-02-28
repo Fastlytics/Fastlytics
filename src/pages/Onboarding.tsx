@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
 import { CheckmarkCircle01Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +22,7 @@ const Onboarding = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { trackEvent, trackSelection } = useAnalytics();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
@@ -77,7 +78,7 @@ const Onboarding = () => {
       if (error) throw error;
 
       await refreshProfile();
-      posthog.capture('onboarding_completed', {
+      trackEvent('onboarding_completed', {
         favorite_driver: selectedDriver,
         favorite_team: selectedTeam,
       });
@@ -187,7 +188,10 @@ const Onboarding = () => {
                 {drivers.map((driver) => (
                   <button
                     key={driver.code}
-                    onClick={() => setSelectedDriver(driver.code)}
+                    onClick={() => {
+                      setSelectedDriver(driver.code);
+                      trackSelection('onboarding_driver', driver.code);
+                    }}
                     className={`
                                             relative p-4 border-2 transition-all duration-200 text-left group flex flex-col items-center text-center
                                             ${
@@ -259,7 +263,10 @@ const Onboarding = () => {
                 {teams.map((team) => (
                   <button
                     key={team.team}
-                    onClick={() => setSelectedTeam(team.team)}
+                    onClick={() => {
+                      setSelectedTeam(team.team);
+                      trackSelection('onboarding_team', team.team);
+                    }}
                     className={`
                                             relative p-6 border-2 transition-all duration-200 text-left group flex items-center gap-6
                                             ${

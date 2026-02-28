@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { SEO } from '@/components/SEO';
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion, useInView } from 'framer-motion';
 import {
   ArrowLeft01Icon,
@@ -170,6 +171,12 @@ const Calendar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
+  const { trackEvent, trackPageView } = useAnalytics();
+
+  useEffect(() => {
+    trackPageView('calendar', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const racesRef = useRef(null);
   const isRacesInView = useInView(racesRef, { once: true, amount: 0.1 });
 
@@ -377,7 +384,10 @@ const Calendar = () => {
           <div className="relative">
             <Select
               value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', { page: 'calendar', year: Number(value) });
+              }}
             >
               <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
                 <div className="flex items-center gap-2">

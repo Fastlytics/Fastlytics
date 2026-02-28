@@ -20,6 +20,8 @@ import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { Button } from '@/components/ui/button';
+import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const formatGap = (gap: number | null): string => {
   if (gap === null || isNaN(gap)) {
@@ -61,6 +63,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   rivalDriver,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartVisRef = useChartVisibility({
+    chartName: 'gap_to_leader_chart',
+    page: 'race',
+    meta: { year, event, session },
+  });
+  const { trackInteraction } = useAnalytics();
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
@@ -180,6 +188,13 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   }, [lapData, driversToDisplay]);
 
   const toggleDriver = (driverCode: string) => {
+    trackInteraction('driver_toggled', {
+      driver: driverCode,
+      chart: 'gap_to_leader',
+      year,
+      event,
+      session,
+    });
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
         if (prev.length > MIN_DRIVERS) {
@@ -199,7 +214,15 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
         <div className="w-full h-[300px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
           <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
           <Button
-            onClick={() => setShouldLoadChart(true)}
+            onClick={() => {
+              trackInteraction('chart_data_loaded', {
+                chart: 'gap_to_leader',
+                year,
+                event,
+                session,
+              });
+              setShouldLoadChart(true);
+            }}
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
@@ -336,11 +359,21 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               fontFamily: 'Geist',
               fontSize: '12px',
             }}
-            onClick={(e) =>
-              e &&
-              e.value &&
-              (focusedDriver === e.value ? setFocusedDriver(null) : setFocusedDriver(e.value))
-            }
+            onClick={(e) => {
+              if (e && e.value) {
+                trackInteraction('legend_driver_focused', {
+                  chart: 'gap_to_leader',
+                  year,
+                  event,
+                  session,
+                });
+                if (focusedDriver === e.value) {
+                  setFocusedDriver(null);
+                } else {
+                  setFocusedDriver(e.value);
+                }
+              }
+            }}
             onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
             onMouseLeave={() => setFocusedDriver(null)}
             formatter={(value, entry) => {
@@ -401,7 +434,10 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
   return (
     <div
-      ref={chartRef}
+      ref={(el) => {
+        chartRef.current = el;
+        chartVisRef.current = el;
+      }}
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
