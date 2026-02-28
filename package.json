@@ -12,6 +12,9 @@
     "format": "prettier --write .",
     "preview": "vite preview",
     "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage --reporter=default",
     "prepare": "husky"
   },
   "lint-staged": {
