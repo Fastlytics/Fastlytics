@@ -6,7 +6,7 @@ import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
-import { getDriverImage } from '@/utils/imageMapping';
+import { getDriverImage, getCarImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -109,8 +109,9 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     const index = drivers.findIndex((d) => d === favoriteDriver);
     const leader = drivers[0];
 
-    // Title Contender Logic - same as desktop
-    const isTitleContender = leader.points - favoriteDriver.points <= remainingPoints;
+    // Title Contender Logic - same as desktop (ensure leader has points)
+    const isTitleContender =
+      leader.points > 0 && leader.points - favoriteDriver.points <= remainingPoints;
 
     // Rivalry Status Logic
     const getRivalryStatus = (rival: DriverStanding | null) => {
@@ -456,12 +457,12 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
               <div className="flex items-center gap-4">
                 {/* Logo & Position */}
                 <div className="relative">
-                  <div className="h-16 w-16 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-2">
-                    {getTeamLogo(favoriteTeam.team) ? (
+                  <div className="h-16 w-24 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-2">
+                    {getCarImage(favoriteTeam.team, selectedYear) ? (
                       <img
-                        src={getTeamLogo(favoriteTeam.team)!}
+                        src={getCarImage(favoriteTeam.team, selectedYear)!}
                         alt={favoriteTeam.team}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] [mix-blend-mode:lighten]"
                       />
                     ) : (
                       <UserGroupIcon className="w-6 h-6 text-white" />

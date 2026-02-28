@@ -149,7 +149,11 @@ const LeaderCard: React.FC<{
           {/* Team Logo & Car */}
           <div className="relative w-28 flex-shrink-0">
             {carImage ? (
-              <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+              <img
+                src={carImage}
+                alt={team.team}
+                className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+              />
             ) : logo ? (
               <img src={logo} alt={team.team} className="w-20 h-auto object-contain mx-auto" />
             ) : (
@@ -233,7 +237,11 @@ const TeamRow: React.FC<{
               {/* Team Logo/Car - Larger */}
               <div className="relative w-24 flex-shrink-0">
                 {carImage ? (
-                  <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+                  <img
+                    src={carImage}
+                    alt={team.team}
+                    className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                  />
                 ) : logo ? (
                   <img src={logo} alt={team.team} className="w-16 h-auto object-contain mx-auto" />
                 ) : (
@@ -305,7 +313,11 @@ const TeamRow: React.FC<{
             {/* Team Logo/Car */}
             <div className="w-16 h-10 flex items-center justify-center flex-shrink-0">
               {carImage ? (
-                <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+                <img
+                  src={carImage}
+                  alt={team.team}
+                  className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                />
               ) : logo ? (
                 <img
                   src={logo}
@@ -388,8 +400,9 @@ const MobileTeamStandings: React.FC = () => {
     championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
   }
 
-  const leader = teamStandings?.[0];
-  const rest = teamStandings?.slice(1) || [];
+  const isPreSeason = teamStandings && teamStandings.length > 0 && teamStandings[0].points === 0;
+  const leader = isPreSeason ? null : teamStandings?.[0];
+  const rest = isPreSeason ? teamStandings || [] : teamStandings?.slice(1) || [];
 
   return (
     <MobileLayout>

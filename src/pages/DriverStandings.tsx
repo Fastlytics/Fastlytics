@@ -314,8 +314,10 @@ const DriverStandings = () => {
     return 'gray';
   };
 
-  const top3 = driverStandings?.slice(0, 3) || [];
-  const rest = driverStandings?.slice(3) || [];
+  const isPreSeason =
+    driverStandings && driverStandings.length > 0 && driverStandings[0].points === 0;
+  const top3 = isPreSeason ? [] : driverStandings?.slice(0, 3) || [];
+  const rest = isPreSeason ? driverStandings || [] : driverStandings?.slice(3) || [];
 
   // Calculate Championship Status
   let championshipStatus: 'leader' | 'champion' = 'leader';
@@ -618,7 +620,6 @@ const DriverStandings = () => {
               {/* Rest of the Grid */}
               <div className="space-y-2">
                 {rest.map((driver, index) => {
-                  const realIndex = index + 3;
                   const indicator = getChangeIndicator(driver.points_change);
                   const teamColor = getTeamColorClass(driver.team);
                   const driverIsRookie = isRookie(driver.code, selectedYear);

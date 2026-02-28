@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { cn } from '@/lib/utils';
-import { getDriverImage } from '@/utils/imageMapping';
+import { getDriverImage, getCarImage } from '@/utils/imageMapping';
 
 interface MobileChampionshipWidgetProps {
   drivers: DriverStanding[];
@@ -33,6 +33,9 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
   const topTeams = teams.slice(0, 5);
   const { selectedYear } = useSeason();
   const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
+
+  const isPreSeasonDriver = drivers.length > 0 && drivers[0].points === 0;
+  const isPreSeasonTeam = teams.length > 0 && teams[0].points === 0;
 
   const getGap = (points: number, leaderPoints: number) => {
     const gap = leaderPoints - points;
@@ -125,7 +128,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                   profile?.favorite_driver &&
                   (driver.code === profile.favorite_driver ||
                     driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()));
-                const isLeader = index === 0;
+                const isLeader = index === 0 && !isPreSeasonDriver;
                 const isChampion = isLeader && driverChampionshipStatus === 'champion';
 
                 return (
@@ -206,7 +209,7 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                   profile?.favorite_team &&
                   (team.team === profile.favorite_team ||
                     team.team.toLowerCase().includes(profile.favorite_team.toLowerCase()));
-                const isLeader = index === 0;
+                const isLeader = index === 0 && !isPreSeasonTeam;
                 const isChampion = isLeader && teamChampionshipStatus === 'champion';
 
                 return (
@@ -230,13 +233,13 @@ const MobileChampionshipWidget: React.FC<MobileChampionshipWidgetProps> = ({
                       {index + 1}
                     </div>
 
-                    {/* Logo */}
-                    <div className="h-10 w-10 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-1">
-                      {getTeamLogo(team.team) ? (
+                    {/* Car Image */}
+                    <div className="h-10 w-16 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-1">
+                      {getCarImage(team.team, selectedYear) ? (
                         <img
-                          src={getTeamLogo(team.team)!}
+                          src={getCarImage(team.team, selectedYear)!}
                           alt={team.team}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-contain drop-shadow-md [mix-blend-mode:lighten]"
                         />
                       ) : (
                         <UserGroupIcon className="w-5 h-5 text-gray-400" />
