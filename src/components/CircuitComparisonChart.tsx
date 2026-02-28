@@ -23,7 +23,7 @@ import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeico
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 
 interface CircuitComparisonChartProps {
   className?: string;
@@ -41,7 +41,6 @@ interface CircuitComparisonChartProps {
     lap2: string | number;
     shouldLoadChart: boolean;
   }) => void;
-  openF1Drivers?: OpenF1Driver[];
 }
 
 interface LapTimeInfo {
@@ -60,7 +59,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   initialDriver1 = '',
   initialDriver2 = '',
   onDriversSelected,
-  openF1Drivers = [],
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -353,14 +351,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
                     {(() => {
-                      const openF1Driver = openF1Drivers.find(
-                        (d) =>
-                          d.name_acronym === selectedDriver1 ||
-                          d.last_name.toUpperCase().slice(0, 3) === selectedDriver1
-                      );
-                      return openF1Driver?.headshot_url ? (
+                      const headshot = getDriverImage(selectedDriver1, year);
+                      return headshot ? (
                         <img
-                          src={openF1Driver.headshot_url}
+                          src={headshot}
                           alt={selectedDriver1}
                           className="w-full h-full object-cover object-top"
                         />
@@ -394,14 +388,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
                     {(() => {
-                      const openF1Driver = openF1Drivers.find(
-                        (d) =>
-                          d.name_acronym === selectedDriver2 ||
-                          d.last_name.toUpperCase().slice(0, 3) === selectedDriver2
-                      );
-                      return openF1Driver?.headshot_url ? (
+                      const headshot = getDriverImage(selectedDriver2, year);
+                      return headshot ? (
                         <img
-                          src={openF1Driver.headshot_url}
+                          src={headshot}
                           alt={selectedDriver2}
                           className="w-full h-full object-cover object-top"
                         />
@@ -483,11 +473,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 <div className="flex items-center gap-2 w-full">
                   {(() => {
                     const driver = availableDrivers?.find((d) => d.code === selectedDriver1);
-                    const openF1Driver = openF1Drivers.find(
-                      (d) =>
-                        d.name_acronym === selectedDriver1 ||
-                        d.last_name.toUpperCase().slice(0, 3) === selectedDriver1
-                    );
+                    const headshot = getDriverImage(selectedDriver1, year);
                     const color = driverColor(selectedDriver1, year);
 
                     if (!driver) return <span className="text-gray-500">Select Driver</span>;
@@ -495,9 +481,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                     return (
                       <>
                         <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                          {openF1Driver?.headshot_url ? (
+                          {headshot ? (
                             <img
-                              src={openF1Driver.headshot_url}
+                              src={headshot}
                               alt={driver.code}
                               className="w-full h-full object-cover object-top"
                             />
@@ -508,9 +494,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                           )}
                         </div>
                         <span className="font-mono font-bold truncate">
-                          {openF1Driver
-                            ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                            : driver.code}
+                          {driver.name || driver.code}
                         </span>
                         <div
                           className="w-2 h-2 rounded-full ml-auto"
@@ -528,11 +512,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                   </SelectLabel>
                   {availableDrivers?.map((driver) => {
                     const isDisabled = selectedDriver2 === driver.code;
-                    const openF1Driver = openF1Drivers.find(
-                      (d) =>
-                        d.name_acronym === driver.code ||
-                        d.last_name.toUpperCase().slice(0, 3) === driver.code
-                    );
+                    const headshot = getDriverImage(driver.code, year);
                     const color = driverColor(driver.code, year);
 
                     return (
@@ -544,9 +524,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                       >
                         <div className="flex items-center gap-2 w-full">
                           <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                            {openF1Driver?.headshot_url ? (
+                            {headshot ? (
                               <img
-                                src={openF1Driver.headshot_url}
+                                src={headshot}
                                 alt={driver.code}
                                 className="w-full h-full object-cover object-top"
                               />
@@ -556,11 +536,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               </div>
                             )}
                           </div>
-                          <span>
-                            {openF1Driver
-                              ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                              : driver.code}
-                          </span>
+                          <span>{driver.name || driver.code}</span>
                           <div
                             className="w-2 h-2 rounded-full ml-auto"
                             style={{ backgroundColor: color }}
@@ -619,11 +595,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 <div className="flex items-center gap-2 w-full">
                   {(() => {
                     const driver = availableDrivers?.find((d) => d.code === selectedDriver2);
-                    const openF1Driver = openF1Drivers.find(
-                      (d) =>
-                        d.name_acronym === selectedDriver2 ||
-                        d.last_name.toUpperCase().slice(0, 3) === selectedDriver2
-                    );
+                    const headshot = getDriverImage(selectedDriver2, year);
                     const color = driverColor(selectedDriver2, year);
 
                     if (!driver) return <span className="text-gray-500">Select Driver</span>;
@@ -631,9 +603,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                     return (
                       <>
                         <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                          {openF1Driver?.headshot_url ? (
+                          {headshot ? (
                             <img
-                              src={openF1Driver.headshot_url}
+                              src={headshot}
                               alt={driver.code}
                               className="w-full h-full object-cover object-top"
                             />
@@ -644,9 +616,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                           )}
                         </div>
                         <span className="font-mono font-bold truncate">
-                          {openF1Driver
-                            ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                            : driver.code}
+                          {driver.name || driver.code}
                         </span>
                         <div
                           className="w-2 h-2 rounded-full ml-auto"
@@ -664,11 +634,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                   </SelectLabel>
                   {availableDrivers?.map((driver) => {
                     const isDisabled = selectedDriver1 === driver.code;
-                    const openF1Driver = openF1Drivers.find(
-                      (d) =>
-                        d.name_acronym === driver.code ||
-                        d.last_name.toUpperCase().slice(0, 3) === driver.code
-                    );
+                    const headshot = getDriverImage(driver.code, year);
                     const color = driverColor(driver.code, year);
 
                     return (
@@ -680,9 +646,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                       >
                         <div className="flex items-center gap-2 w-full">
                           <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                            {openF1Driver?.headshot_url ? (
+                            {headshot ? (
                               <img
-                                src={openF1Driver.headshot_url}
+                                src={headshot}
                                 alt={driver.code}
                                 className="w-full h-full object-cover object-top"
                               />
@@ -692,11 +658,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               </div>
                             )}
                           </div>
-                          <span>
-                            {openF1Driver
-                              ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                              : driver.code}
-                          </span>
+                          <span>{driver.name || driver.code}</span>
                           <div
                             className="w-2 h-2 rounded-full ml-auto"
                             style={{ backgroundColor: color }}

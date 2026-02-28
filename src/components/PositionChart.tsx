@@ -16,10 +16,10 @@ import {
 import { cn } from '@/lib/utils';
 import { LapPositionDataPoint, SessionIncident, DetailedRaceResult } from '@/lib/api';
 import { Slider } from '@/components/ui/slider';
-import { OpenF1Driver } from '@/lib/openf1';
 import { ArrowUpDownIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 
 interface TooltipPayloadItem {
   value: number | null;
@@ -53,7 +53,6 @@ interface PositionChartProps {
   lapData: LapPositionDataPoint[];
   incidents?: SessionIncident[];
   sessionResults?: DetailedRaceResult[];
-  openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
 }
 
@@ -64,7 +63,6 @@ const PositionChart: React.FC<PositionChartProps> = ({
   lapData,
   incidents = [],
   sessionResults,
-  openF1Drivers = [],
   favoriteDriver,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -131,7 +129,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
           <XAxis
             dataKey="LapNumber"
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
             padding={{ left: 10, right: 10 }}
             label={{
               value: 'Lap Number',
@@ -139,13 +137,13 @@ const PositionChart: React.FC<PositionChartProps> = ({
               offset: -5,
               fill: '#888',
               fontSize: 12,
-              fontFamily: 'monospace',
+              fontFamily: 'Geist',
             }}
             allowDecimals={false}
           />
           <YAxis
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
             reversed={true}
             domain={[1, 'dataMax + 1']}
             interval={0}
@@ -184,11 +182,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                       const position = entry.value;
                       if (position === null) return null;
 
-                      const driver = openF1Drivers.find(
-                        (d) =>
-                          d.name_acronym === driverCode ||
-                          d.last_name.toUpperCase().slice(0, 3) === driverCode
-                      );
+                      const headshot = getDriverImage(driverCode, year);
                       const color = entry.color;
 
                       return (
@@ -200,9 +194,9 @@ const PositionChart: React.FC<PositionChartProps> = ({
                             P{position}
                           </span>
                           <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
-                            {driver?.headshot_url ? (
+                            {headshot ? (
                               <img
-                                src={driver.headshot_url}
+                                src={headshot}
                                 alt={driverCode}
                                 className="w-full h-full object-cover object-top"
                               />
@@ -225,43 +219,41 @@ const PositionChart: React.FC<PositionChartProps> = ({
             cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Legend
-            {...({
-              wrapperStyle: { paddingTop: '20px', fontFamily: 'monospace', fontSize: '12px' },
-              payload: selectedDrivers.map((driverCode) => {
-                const color = driverColor(driverCode, year);
-                let team = '';
-                Object.entries(teamGroups).forEach(([teamName, drivers]) => {
-                  if (drivers.includes(driverCode)) team = teamName;
-                });
-                let teammates: string[] = [];
-                Object.values(teamGroups).forEach((drivers) => {
-                  if (drivers.includes(driverCode)) teammates = drivers;
-                });
-                const selectedTeammates = teammates.filter((t) => selectedDrivers.includes(t));
-                let lineStyle = '';
-                if (selectedTeammates.length > 1) {
-                  const driverIndex = teammates.indexOf(driverCode);
-                  switch (driverIndex % 3) {
-                    case 1:
-                      lineStyle = 'dashed line';
-                      break;
-                    case 2:
-                      lineStyle = 'dotted line';
-                      break;
-                  }
+            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Geist', fontSize: '12px' }}
+            payload={selectedDrivers.map((driverCode) => {
+              const color = driverColor(driverCode, year);
+              let team = '';
+              Object.entries(teamGroups).forEach(([teamName, drivers]) => {
+                if (drivers.includes(driverCode)) team = teamName;
+              });
+              let teammates: string[] = [];
+              Object.values(teamGroups).forEach((drivers) => {
+                if (drivers.includes(driverCode)) teammates = drivers;
+              });
+              const selectedTeammates = teammates.filter((t) => selectedDrivers.includes(t));
+              let lineStyle = '';
+              if (selectedTeammates.length > 1) {
+                const driverIndex = teammates.indexOf(driverCode);
+                switch (driverIndex % 3) {
+                  case 1:
+                    lineStyle = 'dashed line';
+                    break;
+                  case 2:
+                    lineStyle = 'dotted line';
+                    break;
                 }
-                const isInMultiDriverTeam = selectedTeammates.length > 1;
-                return {
-                  value:
-                    isInMultiDriverTeam && lineStyle !== ''
-                      ? `${driverCode} - ${lineStyle}`
-                      : driverCode,
-                  type: 'line',
-                  id: driverCode,
-                  color: color,
-                };
-              }),
-            } as React.ComponentProps<typeof Legend>)}
+              }
+              const isInMultiDriverTeam = selectedTeammates.length > 1;
+              return {
+                value:
+                  isInMultiDriverTeam && lineStyle !== ''
+                    ? `${driverCode} - ${lineStyle}`
+                    : driverCode,
+                type: 'line',
+                id: driverCode,
+                color: color,
+              };
+            })}
             onClick={(e: CustomLegendPayload) => e && e.id && toggleDriverFocus(String(e.id))}
             onMouseEnter={(e: CustomLegendPayload) => e && e.id && setFocusedDriver(String(e.id))}
             onMouseLeave={() => setFocusedDriver(null)}
@@ -287,7 +279,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 fill={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
                 fontSize={10}
                 opacity={0.7}
-                fontFamily="monospace"
+                fontFamily="Geist"
               />
             </ReferenceArea>
           ))}
@@ -295,11 +287,6 @@ const PositionChart: React.FC<PositionChartProps> = ({
           {selectedDrivers.map((driverCode) => {
             const color = driverColor(driverCode, year);
             if (!driverCodes.includes(driverCode)) return null;
-            const driver = openF1Drivers.find(
-              (d) =>
-                d.name_acronym === driverCode ||
-                d.last_name.toUpperCase().slice(0, 3) === driverCode
-            );
             let teammates: string[] = [];
             Object.values(teamGroups).forEach((drivers) => {
               if (drivers.includes(driverCode)) teammates = drivers;
@@ -333,9 +320,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                       : 1
                 }
                 style={
-                  favoriteDriver &&
-                  (driverCode === favoriteDriver ||
-                    driver?.last_name.toLowerCase() === favoriteDriver.toLowerCase())
+                  favoriteDriver && driverCode === favoriteDriver
                     ? { filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))' }
                     : undefined
                 }
@@ -400,19 +385,9 @@ const PositionChart: React.FC<PositionChartProps> = ({
               <ScrollArea className="h-[250px] p-2">
                 <div className="grid gap-2">
                   {driverCodes.map((driverCode) => {
-                    const driver = openF1Drivers.find(
-                      (d) =>
-                        d.last_name.toUpperCase().includes(driverCode.toUpperCase()) ||
-                        d.name_acronym === driverCode
-                    );
-                    const formattedName = driver
-                      ? `${driver.first_name.charAt(0)}. ${driver.last_name}`
-                      : driverCode;
-                    const headshot = driver?.headshot_url;
-                    const isFavorite =
-                      favoriteDriver &&
-                      (driverCode === favoriteDriver ||
-                        driver?.last_name.toLowerCase() === favoriteDriver.toLowerCase());
+                    const headshot = getDriverImage(driverCode, year);
+                    const formattedName = driverCode;
+                    const isFavorite = favoriteDriver && driverCode === favoriteDriver;
 
                     return (
                       <Label

@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/refs */
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchSessionReplayMetadata,
@@ -9,7 +8,7 @@ import {
   ReplayDriverData,
   ReplayDriversMap,
 } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+
 import ReplayLoader from './ReplayLoader';
 import { getDriverImage } from '@/utils/imageMapping';
 import {
@@ -367,7 +366,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     // Fetch strictly sequential
     fetchNextChunk();
-  }, [metadata, totalChunks, loadedChunks.size]); // Depend on size to trigger next
+  }, [metadata, totalChunks, loadedChunks.size, event, replayData, session, year]); // Depend on size to trigger next
 
   // Derived State for UI
   const data = replayData;
@@ -391,7 +390,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     } else {
       setIsBuffering(false);
     }
-  }, [currentTime, data, isPlaying, loadedChunks.size, totalChunks]);
+  }, [currentTime, data, isPlaying, loadedChunks.size, totalChunks, isLoading, metadata]);
 
   // --- Ghost Mode State ---
   const [replayMode, setReplayMode] = useState<'session' | 'ghost'>('session');
@@ -571,7 +570,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTotalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
+  }, [activeTotalDuration, totalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
@@ -595,31 +594,34 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   };
 
   // Playback Loop
-  const animate = (time: number) => {
-    if (previousTimeRef.current !== null) {
-      const deltaTime = (time - previousTimeRef.current) / 1000; // ms to s
+  const animate = useCallback(
+    function tick(time: number) {
+      if (previousTimeRef.current !== null) {
+        const deltaTime = (time - previousTimeRef.current) / 1000; // ms to s
 
-      if (isPlaying) {
-        setCurrentTime((prevTime) => {
-          const newTime = prevTime + deltaTime * playbackSpeed;
-          if (newTime >= activeTotalDuration) {
-            setIsPlaying(false);
-            return activeTotalDuration;
-          }
-          return newTime;
-        });
+        if (isPlaying) {
+          setCurrentTime((prevTime) => {
+            const newTime = prevTime + deltaTime * playbackSpeed;
+            if (newTime >= activeTotalDuration) {
+              setIsPlaying(false);
+              return activeTotalDuration;
+            }
+            return newTime;
+          });
+        }
       }
-    }
-    previousTimeRef.current = time;
-    requestRef.current = requestAnimationFrame(animate);
-  };
+      previousTimeRef.current = time;
+      requestRef.current = requestAnimationFrame(tick);
+    },
+    [isPlaying, playbackSpeed, activeTotalDuration]
+  );
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [isPlaying, playbackSpeed, activeTotalDuration]);
+  }, [isPlaying, playbackSpeed, activeTotalDuration, animate]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -961,28 +963,31 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   ]); // currentTime to trigger updates, selectedDriver/leaderboardOrder for target change
 
   // Helper: Calculate a sorting score (Lap takes precedence, then Visual Path Index)
-  const getDriverScore = (d: DriverFrameState | null | undefined) => {
+  const getDriverScore = useCallback((d: DriverFrameState | null | undefined) => {
     if (!d) return -1;
     // visual sorting: Lap * totalPoints + trackIndex
     // data.circuit_points might not be available in closure if not passed, but we can assume nice range.
     // Using 1,000,000 as multiplier is safe as points < 1M.
     return d.lap * 1000000 + (d.track_index || 0);
-  };
+  }, []);
 
   // Sort function for "Hard Sort" (Absolute distance)
-  const getSortedOrder = (currentDrivers: Record<string, DriverFrameState>) => {
-    return Object.entries(currentDrivers)
-      .sort(([, a], [, b]) => {
-        // START FIX: Grid Position for < 200m
-        if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
-          const gA = data?.driver_grid_positions?.[a.code ?? ''] ?? 99;
-          const gB = data?.driver_grid_positions?.[b.code ?? ''] ?? 99;
-          return gA - gB;
-        }
-        return getDriverScore(b) - getDriverScore(a);
-      })
-      .map(([code]) => code);
-  };
+  const getSortedOrder = useCallback(
+    (currentDrivers: Record<string, DriverFrameState>) => {
+      return Object.entries(currentDrivers)
+        .sort(([, a], [, b]) => {
+          // START FIX: Grid Position for < 200m
+          if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
+            const gA = data?.driver_grid_positions?.[a.code ?? ''] ?? 99;
+            const gB = data?.driver_grid_positions?.[b.code ?? ''] ?? 99;
+            return gA - gB;
+          }
+          return getDriverScore(b) - getDriverScore(a);
+        })
+        .map(([code]) => code);
+    },
+    [data?.driver_grid_positions, getDriverScore]
+  );
 
   // --- Leaderboard Logic with Hysteresis ---
   useEffect(() => {
@@ -1054,7 +1059,16 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     if (swapped) {
       setLeaderboardOrder(newOrder);
     }
-  }, [activeDrivers, isPlaying, data, replayMode, ghostConfig]);
+  }, [
+    activeDrivers,
+    isPlaying,
+    data,
+    replayMode,
+    ghostConfig,
+    getSortedOrder,
+    leaderboardOrder,
+    getDriverScore,
+  ]);
 
   // --- Session Logic (Race vs Qualy) ---
   const isRace = useMemo(() => {
@@ -1241,32 +1255,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return []; // Fallback if no data or timingStandings not ready
   }, [activeDrivers, data, isRace, timingStandings, leaderboardOrder, replayMode]);
 
-  // --- OpenF1 Driver Details (Headshots) ---
-  const { data: openF1Drivers } = useQuery<OpenF1Driver[]>({
-    queryKey: ['openf1', 'drivers', 'latest', year],
-    queryFn: () => fetchAllOpenF1Drivers('latest', year),
-    staleTime: 1000 * 60 * 60 * 24, // 24h
-  });
-
-  const driverHeadshots = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (openF1Drivers) {
-      for (const d of openF1Drivers) {
-        if (d.name_acronym) map[d.name_acronym] = d.headshot_url;
-      }
-    }
-    return map;
-  }, [openF1Drivers]);
-
-  const driverNameMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (openF1Drivers) {
-      for (const d of openF1Drivers) {
-        if (d.name_acronym) map[d.name_acronym] = d.full_name;
-      }
-    }
-    return map;
-  }, [openF1Drivers]);
+  const driverNameMap: Record<string, string> = {};
 
   // Pre-calculate Lap Start Times for all drivers
   const driverLapStartTimes = useMemo(() => {
@@ -1476,7 +1465,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
           <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
             <img
-              src={getDriverImage(lookupCode, year, driverHeadshots[lookupCode])}
+              src={getDriverImage(lookupCode, year)}
               alt={lookupCode}
               className="w-full h-full object-cover object-top transform scale-110"
               onError={(e) => {
@@ -1698,7 +1687,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                           lapNum={ghostConfig.l1}
                           drivers={data.drivers}
                           driverColors={data.driver_colors}
-                          headshots={driverHeadshots}
                           year={year}
                           onSelectDriver={(d) =>
                             setGhostConfig((prev) => ({ ...prev, d1: d, l1: null }))
@@ -1724,7 +1712,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                           lapNum={ghostConfig.l2}
                           drivers={data.drivers}
                           driverColors={data.driver_colors}
-                          headshots={driverHeadshots}
                           year={year}
                           onSelectDriver={(d) =>
                             setGhostConfig((prev) => ({ ...prev, d2: d, l2: null }))
@@ -2000,7 +1987,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                       const lookupCode = driver.code.replace('_GHOST', '');
                       return (
                         <img
-                          src={getDriverImage(lookupCode, year, driverHeadshots[lookupCode])}
+                          src={getDriverImage(lookupCode, year)}
                           alt={driver.code}
                           className="w-full h-full object-cover object-top transform scale-110"
                           onError={(e) => {
@@ -2206,7 +2193,6 @@ const CustomDriverSelect = ({
   lapNum,
   drivers,
   driverColors,
-  headshots,
   year,
   onSelectDriver,
   onSelectLap,
@@ -2219,7 +2205,6 @@ const CustomDriverSelect = ({
   lapNum: number | null;
   drivers: ReplayDriversMap;
   driverColors: Record<string, string>;
-  headshots: Record<string, string>;
   year: number;
   onSelectDriver: (d: string) => void;
   onSelectLap: (l: number) => void;
@@ -2249,7 +2234,7 @@ const CustomDriverSelect = ({
                 <>
                   <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800 shrink-0 border border-gray-600">
                     <img
-                      src={getDriverImage(driverCode, year, headshots[driverCode])}
+                      src={getDriverImage(driverCode, year)}
                       className="w-full h-full object-cover object-top"
                     />
                   </div>
@@ -2279,7 +2264,7 @@ const CustomDriverSelect = ({
                       style={{ borderColor: driverColors[d] }}
                     >
                       <img
-                        src={getDriverImage(d, year, headshots[d])}
+                        src={getDriverImage(d, year)}
                         className="w-full h-full object-cover object-top"
                       />
                     </div>

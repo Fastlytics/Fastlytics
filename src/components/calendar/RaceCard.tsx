@@ -88,10 +88,10 @@ const RaceCard: React.FC<RaceCardProps> = ({
           </div>
           <div className="text-right">
             {isTesting ? (
-              <div className="text-xs font-mono text-blue-300 uppercase">Pre-Season</div>
+              <div className="text-xs font-sans text-blue-300 uppercase">Pre-Season</div>
             ) : (
               <>
-                <div className="text-xs font-mono text-gray-500 uppercase">Round</div>
+                <div className="text-xs font-sans text-gray-500 uppercase">Round</div>
                 <div className="text-xl font-black text-white leading-none">
                   {event.RoundNumber}
                 </div>
@@ -113,13 +113,13 @@ const RaceCard: React.FC<RaceCardProps> = ({
         <div className="space-y-2 mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Location01Icon className={`w-4 h-4 ${isTesting ? 'text-blue-400' : 'text-red-600'}`} />
-            <span className="font-mono uppercase tracking-wide">
+            <span className="font-sans uppercase tracking-wide">
               {displayLocation || event.Location || event.Country || 'Testing Venue'}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Calendar01Icon className={`w-4 h-4 ${isTesting ? 'text-blue-400' : 'text-red-600'}`} />
-            <span className="font-mono uppercase tracking-wide">{displayDate}</span>
+            <span className="font-sans uppercase tracking-wide">{displayDate}</span>
           </div>
         </div>
 
@@ -129,13 +129,13 @@ const RaceCard: React.FC<RaceCardProps> = ({
         {/* Content: Results or Schedule */}
         <div className="mt-auto pb-6">
           {isTesting ? (
-            <div className="flex items-center gap-2 text-xs text-blue-300 font-mono uppercase">
+            <div className="flex items-center gap-2 text-xs text-blue-300 font-sans uppercase">
               <Flag01Icon className="w-3 h-3" />
               <span>Testing Session Data</span>
             </div>
           ) : isUpcoming ? (
             // Upcoming: Simplified Display (No Times)
-            <div className="flex items-center gap-2 text-xs text-blue-400 font-mono uppercase">
+            <div className="flex items-center gap-2 text-xs text-blue-400 font-sans uppercase">
               <Clock01Icon className="w-3 h-3" />
               <span>Upcoming Event</span>
             </div>
@@ -149,7 +149,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className={`font-mono font-black w-4 text-center ${
+                      className={`font-sans font-black w-4 text-center ${
                         p.position === 1
                           ? 'text-yellow-500'
                           : p.position === 2
@@ -180,7 +180,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
                   {result.driver}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
+              <div className="flex items-center gap-2 text-xs text-gray-500 font-sans">
                 <UserGroupIcon className="w-3 h-3" />
                 <span className="uppercase">{result.team}</span>
               </div>
@@ -188,7 +188,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
           ) : (
             // Finished but no data
             <div className="text-center py-2">
-              <span className="text-gray-600 font-mono text-xs uppercase">Results Pending</span>
+              <span className="text-gray-600 font-sans text-xs uppercase">Results Pending</span>
             </div>
           )}
         </div>

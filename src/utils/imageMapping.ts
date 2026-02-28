@@ -158,11 +158,7 @@ export const carImages2026: Record<string, string> = {
   williams: '/cars/2026/2026williamscarright.avif',
 };
 
-export const getDriverImage = (
-  driverCode: string,
-  year: number,
-  openF1Url?: string | null
-): string => {
+export const getDriverImage = (driverCode: string, year: number): string => {
   if (!driverCode) return '';
 
   const code = driverCode.toUpperCase();

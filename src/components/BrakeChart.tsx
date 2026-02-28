@@ -12,7 +12,7 @@ import {
 import { fetchTelemetryBrake, BrakeDataPoint } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
 
 interface BrakeChartProps {
@@ -24,7 +24,6 @@ interface BrakeChartProps {
   session: string;
   initialDriver?: string;
   lap?: string | number;
-  openF1Drivers?: OpenF1Driver[];
 }
 
 const BrakeChart: React.FC<BrakeChartProps> = ({
@@ -36,7 +35,6 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   session,
   initialDriver = '',
   lap = 'fastest',
-  openF1Drivers = [],
 }) => {
   // Custom Tooltip
   const CustomTooltip = ({
@@ -47,11 +45,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   }: CustomTooltipProps<BrakeDataPoint> & { selectedDriver?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const openF1Driver = openF1Drivers.find(
-        (d) =>
-          d.name_acronym === selectedDriver ||
-          d.last_name.toUpperCase().slice(0, 3) === selectedDriver
-      );
+      const headshot = getDriverImage(selectedDriver, year);
       const color = driverColor(selectedDriver, year);
 
       return (
@@ -59,9 +53,9 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
               <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                {openF1Driver?.headshot_url ? (
+                {headshot ? (
                   <img
-                    src={openF1Driver.headshot_url}
+                    src={headshot}
                     alt={selectedDriver}
                     className="w-full h-full object-cover object-top"
                   />
@@ -104,7 +98,6 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       session={session}
       initialDriver={initialDriver}
       lap={lap}
-      openF1Drivers={openF1Drivers}
       queryKey={(driver, lapVal) => ['brakeTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryBrake(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
@@ -120,7 +113,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
               type="number"
               dataKey="Distance"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
               tickFormatter={(value: number) => {
                 return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
               }}
@@ -129,7 +122,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
             <YAxis
               dataKey="Brake"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
               tickFormatter={(value) => `${value}%`}
               domain={[0, 100]}
               width={40}

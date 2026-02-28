@@ -1,11 +1,19 @@
 import React, { useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ReferenceLine,
 } from 'recharts';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchTrackEvolution, TrackEvolutionResponse } from '@/lib/api'; // Import API function and types
-import LoadingSpinnerF1 from "@/components/ui/LoadingSpinnerF1";
+import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon, ThermometerIcon } from 'hugeicons-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -33,7 +41,6 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
   event,
   session,
 }) => {
-
   // Fetch track evolution data
   const { data, isLoading, error, isError } = useQuery<TrackEvolutionResponse>({
     queryKey: ['trackEvolution', year, event, session],
@@ -49,11 +56,13 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     if (!data || !data.drivers) return [];
 
     // Combine driver rolling averages and track temp into a single array suitable for Recharts
-    const combined: { [lap: number]: { lap: number, temp?: number | null, [driverCode: string]: number | null } } = {};
+    const combined: {
+      [lap: number]: { lap: number; temp?: number | null; [driverCode: string]: number | null };
+    } = {};
 
     // Add driver rolling averages
-    data.drivers.forEach(driver => {
-      driver.rollingAverageLaps.forEach(lapData => {
+    data.drivers.forEach((driver) => {
+      driver.rollingAverageLaps.forEach((lapData) => {
         if (!combined[lapData.lap]) {
           combined[lapData.lap] = { lap: lapData.lap };
         }
@@ -62,7 +71,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     });
 
     // Add track temperature
-    data.trackTemperature.forEach(tempData => {
+    data.trackTemperature.forEach((tempData) => {
       if (combined[tempData.lap]) {
         combined[tempData.lap].temp = tempData.temp;
       } else {
@@ -73,7 +82,6 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
 
     // Convert combined object to sorted array
     return Object.values(combined).sort((a, b) => a.lap - b.lap);
-
   }, [data]);
 
   // --- Render States ---
@@ -90,7 +98,9 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
         <div className="w-full h-[400px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-semibold">Error loading track evolution data</p>
-          <p className="text-xs text-gray-500 mt-1">{(error as Error)?.message || 'Could not fetch analysis.'}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {(error as Error)?.message || 'Could not fetch analysis.'}
+          </p>
         </div>
       );
     }
@@ -112,20 +122,34 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
           <XAxis
             dataKey="lap"
             stroke="rgba(156, 163, 175, 0.7)"
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
+            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12, fontFamily: 'Geist' }}
             padding={{ left: 10, right: 10 }}
-            label={{ value: "Lap Number", position: "insideBottom", offset: -5, fill: 'rgba(156, 163, 175, 0.7)', fontSize: 12 }}
+            label={{
+              value: 'Lap Number',
+              position: 'insideBottom',
+              offset: -5,
+              fill: 'rgba(156, 163, 175, 0.7)',
+              fontSize: 12,
+              fontFamily: 'Geist',
+            }}
           />
           {/* Lap Time Y-Axis (Left) */}
           <YAxis
             yAxisId="left"
             stroke="rgba(156, 163, 175, 0.7)"
-            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12 }}
+            tick={{ fill: 'rgba(156, 163, 175, 0.9)', fontSize: 12, fontFamily: 'Geist' }}
             domain={['dataMin - 0.5', 'dataMax + 0.5']}
             tickFormatter={formatLapTime}
             allowDecimals={true}
             width={65}
-            label={{ value: "Lap Time (5-Lap Avg)", angle: -90, position: 'insideLeft', fill: 'rgba(156, 163, 175, 0.7)', fontSize: 12 }}
+            label={{
+              value: 'Lap Time (5-Lap Avg)',
+              angle: -90,
+              position: 'insideLeft',
+              fill: 'rgba(156, 163, 175, 0.7)',
+              fontSize: 12,
+              fontFamily: 'Geist',
+            }}
             reversed // Lap times decrease as track improves
           />
           {/* Track Temp Y-Axis (Right) - Conditionally Rendered */}
@@ -134,24 +158,39 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
               yAxisId="right"
               orientation="right"
               stroke="rgba(251, 146, 60, 0.7)" // Orange color for temp axis
-              tick={{ fill: 'rgba(251, 146, 60, 0.9)', fontSize: 12 }}
+              tick={{ fill: 'rgba(251, 146, 60, 0.9)', fontSize: 12, fontFamily: 'Geist' }}
               domain={['dataMin - 2', 'dataMax + 2']} // Add some padding
               unit="°C"
               width={50}
-              label={{ value: "Track Temp (°C)", angle: 90, position: 'insideRight', fill: 'rgba(251, 146, 60, 0.7)', fontSize: 12 }}
+              label={{
+                value: 'Track Temp (°C)',
+                angle: 90,
+                position: 'insideRight',
+                fill: 'rgba(251, 146, 60, 0.7)',
+                fontSize: 12,
+                fontFamily: 'Geist',
+              }}
             />
           )}
           <Tooltip
             contentStyle={{
-              backgroundColor: 'rgba(15, 23, 42, 0.95)', // Darker, more solid background 
+              backgroundColor: 'rgba(15, 23, 42, 0.95)', // Darker, more solid background
               borderColor: 'rgba(71, 85, 105, 0.6)',
               color: '#E5E7EB',
               borderRadius: '6px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)', // Stronger shadow
-              padding: '8px 12px' // More padding 
+              padding: '8px 12px', // More padding
+              fontFamily: 'Geist',
             }}
-            labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid rgba(100, 116, 139, 0.3)', paddingBottom: '4px' }}
-            itemStyle={{ padding: '3px 0' }} // More padding between items
+            labelStyle={{
+              color: '#ffffff',
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              borderBottom: '1px solid rgba(100, 116, 139, 0.3)',
+              paddingBottom: '4px',
+              fontFamily: 'Geist',
+            }}
+            itemStyle={{ padding: '3px 0', fontFamily: 'Geist' }} // More padding between items
             formatter={(value: number | null, name: string) => {
               if (name === 'Track Temp') return [`${value?.toFixed(1) ?? 'N/A'} °C`, name];
               return [formatLapTime(value), name]; // name is driver code
@@ -165,7 +204,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
               return item.value === null ? Infinity - 1 : item.value;
             }}
           />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+          <Legend wrapperStyle={{ paddingTop: '20px', fontFamily: 'Geist', fontSize: '12px' }} />
 
           {/* Driver Rolling Average Lines */}
           {data.drivers.map((driver) => (
@@ -177,7 +216,12 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
               stroke={driver.color}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 5, strokeWidth: 1, stroke: 'rgba(255,255,255,0.5)', fill: driver.color }}
+              activeDot={{
+                r: 5,
+                strokeWidth: 1,
+                stroke: 'rgba(255,255,255,0.5)',
+                fill: driver.color,
+              }}
               name={driver.code} // Legend name
               connectNulls={true} // Connect gaps in rolling average
             />
@@ -205,7 +249,12 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
   };
 
   return (
-    <Card className={cn("chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm", className)}>
+    <Card
+      className={cn(
+        'chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm',
+        className
+      )}
+    >
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
           <ThermometerIcon className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature

@@ -116,7 +116,7 @@ const HeroCountdown = ({ targetDate, sessionName }: { targetDate: Date; sessionN
         <React.Fragment key={item.label}>
           <div className="flex flex-col items-center">
             <div
-              className={`text-2xl font-black font-mono ${item.highlight ? 'text-red-500' : 'text-white'}`}
+              className={`text-2xl font-black font-sans ${item.highlight ? 'text-red-500' : 'text-white'}`}
             >
               {pad(item.value)}
             </div>
@@ -237,7 +237,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
               Next Grand Prix
             </span>
           </div>
-          <span className="text-xs font-mono text-gray-500 uppercase">
+          <span className="text-xs font-sans text-gray-500 uppercase">
             Round {event.RoundNumber}
           </span>
         </div>
@@ -258,7 +258,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
               {event.EventName.replace('Grand Prix', 'GP')}
             </h2>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <span className="text-sm text-gray-400 flex items-center gap-1 font-mono uppercase">
+              <span className="text-sm text-gray-400 flex items-center gap-1 font-sans uppercase">
                 <Calendar01Icon className="w-3.5 h-3.5" />
                 {event.displayDate}
               </span>
@@ -276,7 +276,7 @@ const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selecte
           <div className="bg-zinc-900/50 p-4 border-2 border-white/10 rounded-md">
             <div className="flex items-center justify-center gap-1.5 mb-3">
               <Clock01Icon className="w-3.5 h-3.5 text-red-500" />
-              <span className="text-xs uppercase tracking-wider text-gray-400 font-mono">
+              <span className="text-xs uppercase tracking-wider text-gray-400 font-sans">
                 Until <span className="text-white font-bold">{nextSession.name}</span>
               </span>
             </div>
@@ -387,13 +387,13 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
             </div>
             <div className="flex items-center gap-2">
               <span
-                className={`text-xs font-mono uppercase ${isCompleted ? 'text-gray-600' : 'text-gray-500'}`}
+                className={`text-xs font-sans uppercase ${isCompleted ? 'text-gray-600' : 'text-gray-500'}`}
               >
                 {event.displayDate}
               </span>
               <span className="text-gray-700">•</span>
               <span
-                className={`text-xs truncate font-mono uppercase ${isCompleted ? 'text-gray-600' : 'text-gray-500'}`}
+                className={`text-xs truncate font-sans uppercase ${isCompleted ? 'text-gray-600' : 'text-gray-500'}`}
               >
                 {event.displayLocation}
               </span>
@@ -414,7 +414,7 @@ const MobileRaceCard: React.FC<MobileRaceCardProps> = ({ event, selectedYear, is
                     {event.result.driver.split(' ').pop()}
                   </span>
                 </div>
-                <span className="text-[10px] text-gray-500 font-mono uppercase">
+                <span className="text-[10px] text-gray-500 font-sans uppercase">
                   {event.result.team?.split(' ')[0]}
                 </span>
               </div>
@@ -609,7 +609,7 @@ const MobileCalendar: React.FC = () => {
             </button>
 
             {/* Stats Badge */}
-            <div className="text-xs text-gray-500 font-mono uppercase tracking-wider bg-zinc-900 px-3 py-2 border-2 border-white/10 rounded-xl">
+            <div className="text-xs text-gray-500 font-sans uppercase tracking-wider bg-zinc-900 px-3 py-2 border-2 border-white/10 rounded-xl">
               {stats.completed}/{stats.total} Complete
             </div>
           </div>
@@ -688,8 +688,8 @@ const MobileCalendar: React.FC = () => {
               <div className="w-16 h-16 mx-auto mb-4 bg-black border-2 border-white/10 flex items-center justify-center">
                 <Calendar01Icon className="w-8 h-8 text-gray-700" />
               </div>
-              <p className="text-sm text-gray-500 font-mono uppercase">No races found</p>
-              <p className="text-xs text-gray-600 mt-1 font-mono uppercase">
+              <p className="text-sm text-gray-500 font-sans uppercase">No races found</p>
+              <p className="text-xs text-gray-600 mt-1 font-sans uppercase">
                 Try a different filter
               </p>
             </div>

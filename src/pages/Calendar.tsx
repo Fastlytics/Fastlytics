@@ -62,34 +62,34 @@ const Countdown = ({ targetDate }: { targetDate: Date }) => {
   return (
     <div className="flex gap-4 md:gap-8">
       <div className="text-center">
-        <div className="text-3xl md:text-5xl font-black text-white font-mono">
+        <div className="text-3xl md:text-5xl font-black text-white font-sans">
           {formatTime(timeLeft.days)}
         </div>
         <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">
           Days
         </div>
       </div>
-      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-sans">:</div>
       <div className="text-center">
-        <div className="text-3xl md:text-5xl font-black text-white font-mono">
+        <div className="text-3xl md:text-5xl font-black text-white font-sans">
           {formatTime(timeLeft.hours)}
         </div>
         <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">
           Hrs
         </div>
       </div>
-      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-sans">:</div>
       <div className="text-center">
-        <div className="text-3xl md:text-5xl font-black text-white font-mono">
+        <div className="text-3xl md:text-5xl font-black text-white font-sans">
           {formatTime(timeLeft.minutes)}
         </div>
         <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">
           Mins
         </div>
       </div>
-      <div className="text-3xl md:text-5xl font-black text-gray-700 font-mono">:</div>
+      <div className="text-3xl md:text-5xl font-black text-gray-700 font-sans">:</div>
       <div className="text-center">
-        <div className="text-3xl md:text-5xl font-black text-red-600 font-mono">
+        <div className="text-3xl md:text-5xl font-black text-red-600 font-sans">
           {formatTime(timeLeft.seconds)}
         </div>
         <div className="text-[10px] md:text-xs font-bold uppercase text-gray-500 tracking-widest">
@@ -368,7 +368,7 @@ const Calendar = () => {
                 Race <span className="text-red-600">Calendar</span>
               </h1>
             </div>
-            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest ml-14">
+            <p className="text-gray-500 font-sans text-sm uppercase tracking-widest ml-14">
               {selectedYear} Season Overview
             </p>
           </div>
@@ -432,7 +432,7 @@ const Calendar = () => {
                         />
                       )}
                     </div>
-                    <div className="text-red-500 font-mono text-sm uppercase tracking-widest">
+                    <div className="text-red-500 font-sans text-sm uppercase tracking-widest">
                       Round {nextRace.RoundNumber}
                     </div>
                   </div>
@@ -444,11 +444,11 @@ const Calendar = () => {
                   <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-gray-400 mb-8">
                     <div className="flex items-center gap-2">
                       <Calendar01Icon className="w-5 h-5 text-red-600" />
-                      <span className="font-mono text-lg text-white">{nextRace.displayDate}</span>
+                      <span className="font-sans text-lg text-white">{nextRace.displayDate}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Location01Icon className="w-5 h-5 text-red-600" />
-                      <span className="font-mono text-lg text-white">{nextRace.Location}</span>
+                      <span className="font-sans text-lg text-white">{nextRace.Location}</span>
                     </div>
                     {nextRace.EventFormat === 'sprint' && (
                       <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 border border-yellow-500 text-yellow-500 rounded-full">
@@ -475,7 +475,7 @@ const Calendar = () => {
                 {/* Right: Countdown */}
                 {nextSession && (
                   <div className="flex-1 w-full lg:w-auto flex flex-col items-center justify-center bg-gray-900/30 border border-gray-800 p-8 backdrop-blur-sm">
-                    <div className="text-gray-500 font-mono text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <div className="text-gray-500 font-sans text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
                       <Clock01Icon className="w-4 h-4 text-red-600" />
                       Upcoming Session:{' '}
                       <span className="text-white font-bold">{nextSession.name}</span>
@@ -503,7 +503,7 @@ const Calendar = () => {
             <div className="text-center py-20 border-2 border-red-600/50 border-dashed bg-red-900/10">
               <AlertCircleIcon className="w-12 h-12 mx-auto mb-4 text-red-600" />
               <h3 className="text-xl font-bold uppercase mb-2">Data Unavailable</h3>
-              <p className="text-gray-500 font-mono text-sm">
+              <p className="text-gray-500 font-sans text-sm">
                 Could not load race data for {selectedYear}.
               </p>
             </div>
@@ -527,7 +527,7 @@ const Calendar = () => {
             </div>
           ) : (
             <div className="text-center py-20 border-2 border-gray-800 border-dashed">
-              <p className="text-gray-500 font-mono">No races found for {selectedYear}.</p>
+              <p className="text-gray-500 font-sans">No races found for {selectedYear}.</p>
             </div>
           )}
         </div>

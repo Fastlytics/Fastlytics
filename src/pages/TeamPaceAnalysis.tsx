@@ -87,7 +87,7 @@ const TeamPaceAnalysis = () => {
       }
     };
     fetchSummary();
-  }, [selectedYear]);
+  }, [selectedYear, selectedEventSlug]);
 
   const [selectedSession, setSelectedSession] = useState<string>('R'); // Default to Race, will update on load
 
@@ -416,7 +416,7 @@ const TeamPaceAnalysis = () => {
                             fill="#666"
                             fontSize={12}
                             fontWeight="bold"
-                            fontFamily="monospace"
+                            fontFamily="Geist"
                             style={{ textTransform: 'uppercase' }}
                           >
                             {payload.value}

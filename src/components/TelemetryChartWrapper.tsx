@@ -13,7 +13,7 @@ import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeico
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchLapTimes, SessionDriver } from '@/lib/api';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -24,7 +24,6 @@ interface TelemetryChartWrapperProps<T> {
   session: string;
   initialDriver?: string;
   lap?: string | number;
-  openF1Drivers?: OpenF1Driver[];
   queryKey: (driver: string, lap: string | number) => readonly unknown[];
   queryFn: (driver: string, lap: string | number) => Promise<T>;
   queryEnabled?: (driver: string, lap: string | number) => boolean;
@@ -41,7 +40,6 @@ const TelemetryChartWrapper = <T,>({
   session,
   initialDriver = '',
   lap = 'fastest',
-  openF1Drivers = [],
   queryKey,
   queryFn,
   queryEnabled,
@@ -174,24 +172,18 @@ const TelemetryChartWrapper = <T,>({
               <div className="flex items-center gap-2 w-full">
                 {(() => {
                   const driver = availableDrivers?.find((d) => d.code === selectedDriver);
-                  const openF1Driver = openF1Drivers.find(
-                    (d) =>
-                      d.name_acronym === selectedDriver ||
-                      d.last_name.toUpperCase().slice(0, 3) === selectedDriver
-                  );
-                  const color = driverColor(selectedDriver);
 
                   if (!driver && !selectedDriver)
                     return <span className="text-gray-500">Select Driver</span>;
-                  // Fallback if driver object is missing but we have selectedDriver string
                   const displayCode = driver?.code || selectedDriver;
+                  const headshot = getDriverImage(displayCode, year);
 
                   return (
                     <>
                       <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                        {openF1Driver?.headshot_url ? (
+                        {headshot ? (
                           <img
-                            src={openF1Driver.headshot_url}
+                            src={headshot}
                             alt={displayCode}
                             className="w-full h-full object-cover object-top"
                           />
@@ -202,9 +194,7 @@ const TelemetryChartWrapper = <T,>({
                         )}
                       </div>
                       <span className="font-mono font-bold truncate">
-                        {openF1Driver
-                          ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                          : displayCode}
+                        {driver?.name || displayCode}
                       </span>
                     </>
                   );
@@ -215,12 +205,7 @@ const TelemetryChartWrapper = <T,>({
               <SelectGroup>
                 <SelectLabel className="text-xs text-gray-500 uppercase">Select Driver</SelectLabel>
                 {availableDrivers?.map((driver) => {
-                  const openF1Driver = openF1Drivers.find(
-                    (d) =>
-                      d.name_acronym === driver.code ||
-                      d.last_name.toUpperCase().slice(0, 3) === driver.code
-                  );
-                  const color = driverColor(driver.code);
+                  const headshot = getDriverImage(driver.code, year);
 
                   return (
                     <SelectItem
@@ -230,9 +215,9 @@ const TelemetryChartWrapper = <T,>({
                     >
                       <div className="flex items-center gap-2 w-full">
                         <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                          {openF1Driver?.headshot_url ? (
+                          {headshot ? (
                             <img
-                              src={openF1Driver.headshot_url}
+                              src={headshot}
                               alt={driver.code}
                               className="w-full h-full object-cover object-top"
                             />
@@ -242,11 +227,7 @@ const TelemetryChartWrapper = <T,>({
                             </div>
                           )}
                         </div>
-                        <span>
-                          {openF1Driver
-                            ? `${openF1Driver.first_name[0]}. ${openF1Driver.last_name}`
-                            : driver.code}
-                        </span>
+                        <span>{driver.name || driver.code}</span>
                       </div>
                     </SelectItem>
                   );

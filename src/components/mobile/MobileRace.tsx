@@ -23,7 +23,7 @@ import {
   AvailableSession,
   EventSessionSchedule,
 } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1019,7 +1019,6 @@ const MobileRace: React.FC = () => {
   const [is24Hour, setIs24Hour] = useState(true);
   const [showSessionSelector, setShowSessionSelector] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const { trackEvent } = useAnalytics();
 
@@ -1027,15 +1026,6 @@ const MobileRace: React.FC = () => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      // Pass the year to get relevant driver data
-      const drivers = await fetchAllOpenF1Drivers('latest', year || undefined);
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, [year]);
 
   const setSelectedSession = (session: string) => {
     setSearchParams(
@@ -1069,14 +1059,8 @@ const MobileRace: React.FC = () => {
 
   // Removed duplicate useMemo block
   // Get driver image
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    // Fallback to OpenF1
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, year || 2025, driver?.headshot_url);
+  const getDriverImg = (driverCode: string, _driverName: string) => {
+    return getDriverImage(driverCode, year || 2025);
   };
 
   // Queries
@@ -1174,13 +1158,8 @@ const MobileRace: React.FC = () => {
     if (!raceResults || raceResults.length === 0) return [];
     const cards: HighlightCardData[] = [];
 
-    const getDriverNumber = (driverCode: string, name: string) => {
-      const driver = openF1Drivers.find(
-        (d) =>
-          d.name_acronym === driverCode ||
-          d.last_name.toUpperCase().includes(name.split(' ').pop()?.toUpperCase() || '')
-      );
-      return driver?.driver_number;
+    const getDriverNumber = (_driverCode: string, _name: string): number | undefined => {
+      return undefined;
     };
 
     if (isRaceOrSprint) {
@@ -1271,7 +1250,7 @@ const MobileRace: React.FC = () => {
     }
 
     return cards;
-  }, [raceResults, fastestLapHolder, openF1Drivers, isRaceOrSprint, isTestingSession]);
+  }, [raceResults, fastestLapHolder, isRaceOrSprint, isTestingSession]);
 
   // Loading State
   if (isLoadingSessions) {
@@ -1388,7 +1367,6 @@ const MobileRace: React.FC = () => {
                 year={year!}
                 event={eventName}
                 session={analysisSession}
-                openF1Drivers={openF1Drivers}
                 raceResults={raceResults}
               />
             </motion.div>
@@ -1485,7 +1463,6 @@ const MobileRace: React.FC = () => {
               event={eventName}
               session={analysisSession}
               raceResults={raceResults}
-              openF1Drivers={openF1Drivers}
             />
           </GatedRoute>
         )}
@@ -1499,7 +1476,6 @@ const MobileRace: React.FC = () => {
               year={year!}
               event={eventName}
               session={analysisSession}
-              openF1Drivers={openF1Drivers}
               raceResults={raceResults}
             />
           </GatedRoute>

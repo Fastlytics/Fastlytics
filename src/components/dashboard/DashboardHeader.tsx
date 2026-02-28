@@ -21,7 +21,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   nextSession,
   favoriteDriverName,
 }) => {
-  const calculateTimeLeft = () => {
+  const calculateTimeLeft = React.useCallback(() => {
     if (!nextSession?.date) return null;
     const difference = new Date(nextSession.date).getTime() - new Date().getTime();
 
@@ -34,7 +34,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       };
     }
     return null;
-  };
+  }, [nextSession]);
 
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(
     calculateTimeLeft
@@ -46,7 +46,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
     return () => clearInterval(timer);
-  }, [nextSession]);
+  }, [nextSession, calculateTimeLeft]);
 
   return (
     <div className="mb-10">
@@ -62,7 +62,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <Activity01Icon className="w-3 h-3 animate-pulse" />
               <span className="text-[10px] font-bold uppercase tracking-widest">Telemetry</span>
             </div>
-            <span className="text-xs font-mono text-gray-500 uppercase tracking-wider">
+            <span className="text-xs font-sans text-gray-500 uppercase tracking-wider">
               Season {selectedYear}
             </span>
           </motion.div>
@@ -122,7 +122,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                       {nextSession.sessionName}
                     </div>
                     {favoriteDriverName && (
-                      <div className="text-[10px] text-gray-400 font-mono mt-1 hidden md:block">
+                      <div className="text-[10px] text-gray-400 font-sans mt-1 hidden md:block">
                         Time to cheer for{' '}
                         <span className="text-white font-bold">{favoriteDriverName}</span>!
                       </div>
@@ -134,7 +134,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <div className="flex items-center gap-4 bg-gray-900/80 border border-gray-800 rounded px-4 py-2 w-full md:w-auto justify-center md:justify-end">
                   <Time01Icon className="w-4 h-4 text-gray-600" />
                   {timeLeft ? (
-                    <div className="flex gap-4 font-mono">
+                    <div className="flex gap-4 font-sans">
                       {['d', 'h', 'm', 's'].map((unit) => (
                         <div key={unit} className="flex items-baseline gap-1">
                           <span
