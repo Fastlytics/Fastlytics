@@ -14,11 +14,11 @@ import {
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, fetchSessionDrivers, SessionDriver, LapTimeDataPoint } from '@/lib/api';
-import { OpenF1Driver } from '@/lib/openf1';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 import { Button } from '@/components/ui/button';
 
 const formatGap = (gap: number | null): string => {
@@ -41,7 +41,6 @@ interface GapToLeaderChartProps {
   staticData?: LapTimeDataPoint[];
   title?: string;
   autoLoad?: boolean;
-  openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
   rivalDriver?: string | null;
 }
@@ -58,7 +57,6 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   initialDrivers,
   staticData,
   autoLoad = false,
-  openF1Drivers = [],
   favoriteDriver,
   rivalDriver,
 }) => {
@@ -269,12 +267,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           <XAxis
             dataKey="LapNumber"
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
             padding={{ left: 10, right: 10 }}
           />
           <YAxis
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
             domain={['auto', 'auto']}
             tickFormatter={formatGap}
             allowDecimals={true}
@@ -298,19 +296,15 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                       const gap = entry.value;
                       if (gap === null) return null;
 
-                      const driver = openF1Drivers.find(
-                        (d: OpenF1Driver) =>
-                          d.name_acronym === driverCode ||
-                          d.last_name.toUpperCase().slice(0, 3) === driverCode
-                      );
+                      const headshot = getDriverImage(driverCode, year);
                       const color = entry.color;
 
                       return (
                         <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
                           <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
-                            {driver?.headshot_url ? (
+                            {headshot ? (
                               <img
-                                src={driver.headshot_url}
+                                src={headshot}
                                 alt={driverCode}
                                 className="w-full h-full object-cover object-top"
                               />
@@ -339,7 +333,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
             wrapperStyle={{
               paddingTop: '20px',
               paddingBottom: '10px',
-              fontFamily: 'monospace',
+              fontFamily: 'Geist',
               fontSize: '12px',
             }}
             onClick={(e) =>
@@ -419,11 +413,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           <div className="flex flex-wrap gap-2">
             {availableDrivers.map((driver) => {
               const isSelected = selectedDrivers.includes(driver.code);
-              const openF1Driver = openF1Drivers.find(
-                (d: OpenF1Driver) =>
-                  d.name_acronym === driver.code ||
-                  d.last_name.toUpperCase().slice(0, 3) === driver.code
-              );
+              const headshot = getDriverImage(driver.code, year);
               const color = driverColor(driver.code, year);
 
               return (
@@ -439,9 +429,9 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
                 >
                   <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                    {openF1Driver?.headshot_url ? (
+                    {headshot ? (
                       <img
-                        src={openF1Driver.headshot_url}
+                        src={headshot}
                         alt={driver.code}
                         className="w-full h-full object-cover object-top"
                       />

@@ -276,7 +276,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   <div className="font-black text-xl uppercase italic leading-none transition-colors text-white">
                     {favoriteDriver.name}
                   </div>
-                  <div className="text-xs font-mono text-gray-500 mt-1">{favoriteDriver.team}</div>
+                  <div className="text-xs font-sans text-gray-500 mt-1">{favoriteDriver.team}</div>
                 </div>
               </div>
               <div className="text-right">
@@ -284,7 +284,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   {favoriteDriver.rank}
                   <span className="text-sm align-top text-gray-500 ml-1">POS</span>
                 </div>
-                <div className="text-sm font-mono text-red-500 font-bold">
+                <div className="text-sm font-sans text-red-500 font-bold">
                   {favoriteDriver.points} PTS
                 </div>
               </div>
@@ -322,7 +322,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   {favoriteTeam.rank}
                   <span className="text-sm align-top text-gray-500 ml-1">POS</span>
                 </div>
-                <div className="text-sm font-mono text-red-500 font-bold">
+                <div className="text-sm font-sans text-red-500 font-bold">
                   {favoriteTeam.points} PTS
                 </div>
               </div>
@@ -405,7 +405,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                         ) : (
                           <>
                             <div
-                              className={`font-mono font-bold ${item.driver.points > favoriteDriver.points ? 'text-red-500' : 'text-green-500'}`}
+                              className={`font-sans font-bold ${item.driver.points > favoriteDriver.points ? 'text-red-500' : 'text-green-500'}`}
                             >
                               {item.driver.points > favoriteDriver.points ? '+' : ''}
                               {item.driver.points - favoriteDriver.points}

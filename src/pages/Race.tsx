@@ -48,7 +48,7 @@ import {
   AvailableSession,
   EventSessionSchedule,
 } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 import { useQuery } from '@tanstack/react-query';
 import {
   Table,
@@ -547,7 +547,6 @@ const Race = () => {
 
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState(initialTab || 'overview');
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
   const [testingWindow, setTestingWindow] = useState<'full' | 'morning' | 'afternoon'>('full');
 
@@ -559,21 +558,6 @@ const Race = () => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
 
   // Circuit Comparison State
   const [circuitDrivers, setCircuitDrivers] = useState<{
@@ -1337,7 +1321,7 @@ const Race = () => {
                               subValue={formatRaceTime(raceWinner.time, true)}
                               team={getTeamColorClass(raceWinner.team)}
                               icon={<ChampionIcon />}
-                              imageUrl={getDriverImage(raceWinner.fullName)}
+                              imageUrl={getDriverImage(raceWinner.driverCode, year!)}
                             />
                           )}
                           {poleSitter && (
@@ -1347,7 +1331,7 @@ const Race = () => {
                               subValue={poleSitter.poleLapTimeValue}
                               team={getTeamColorClass(poleSitter.team)}
                               icon={<FlashIcon />}
-                              imageUrl={getDriverImage(poleSitter.fullName)}
+                              imageUrl={getDriverImage(poleSitter.driverCode, year!)}
                             />
                           )}
                           {fastestLapHolder && (
@@ -1357,7 +1341,7 @@ const Race = () => {
                               subValue={fastestLapHolder.driverFastestLapTime}
                               team={getTeamColorClass(fastestLapHolder.team)}
                               icon={<Clock01Icon />}
-                              imageUrl={getDriverImage(fastestLapHolder.fullName)}
+                              imageUrl={getDriverImage(fastestLapHolder.driverCode, year!)}
                             />
                           )}
                         </>
@@ -1370,7 +1354,7 @@ const Race = () => {
                               subValue={getSessionWindowLapTime(testingInsights.fastest) ?? '-'}
                               team={getTeamColorClass(testingInsights.fastest.team)}
                               icon={<Clock01Icon />}
-                              imageUrl={getDriverImage(testingInsights.fastest.fullName)}
+                              imageUrl={getDriverImage(testingInsights.fastest.driverCode, year!)}
                             />
                           )}
                           {testingInsights.mileage && (
@@ -1380,7 +1364,7 @@ const Race = () => {
                               subValue={`${getSessionWindowLaps(testingInsights.mileage)} laps`}
                               team={getTeamColorClass(testingInsights.mileage.team)}
                               icon={<TradeUpIcon />}
-                              imageUrl={getDriverImage(testingInsights.mileage.fullName)}
+                              imageUrl={getDriverImage(testingInsights.mileage.driverCode, year!)}
                             />
                           )}
                           <F1Card
@@ -1400,7 +1384,7 @@ const Race = () => {
                             subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''}
                             team={getTeamColorClass(p.team)}
                             icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />}
-                            imageUrl={getDriverImage(p.fullName)}
+                            imageUrl={getDriverImage(p.driverCode, year!)}
                           />
                         ))
                       )}
@@ -1507,7 +1491,6 @@ const Race = () => {
                         year={year!}
                         event={eventName}
                         session={analysisSession}
-                        openF1Drivers={openF1Drivers}
                         favoriteDriver={profile?.favorite_driver}
                       />
                     </section>
@@ -1581,7 +1564,6 @@ const Race = () => {
                               session={analysisSession}
                               title="Lap Time Comparison"
                               autoLoad={true}
-                              openF1Drivers={openF1Drivers}
                               favoriteDriver={favDriverCode}
                               rivalDriver={rivalDriverCode}
                             />
@@ -1622,7 +1604,6 @@ const Race = () => {
                                   ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
                                   : []
                               }
-                              openF1Drivers={openF1Drivers}
                             />
                           );
                         })()}
@@ -1658,7 +1639,6 @@ const Race = () => {
                               event={eventName}
                               session={analysisSession}
                               autoLoad={true}
-                              openF1Drivers={openF1Drivers}
                               favoriteDriver={favDriverCode}
                               rivalDriver={rivalDriverCode}
                             />
@@ -1704,7 +1684,6 @@ const Race = () => {
                             initialDriver1={favDriverCode}
                             initialDriver2={rivalDriverCode || undefined}
                             onDriversSelected={handleCircuitDriversSelected}
-                            openF1Drivers={openF1Drivers}
                           />
 
                           {/* Comparison Charts if selected */}
@@ -1722,7 +1701,6 @@ const Race = () => {
                                 shouldLoadChart={true}
                                 telemetryType="speed"
                                 title="Speed Trace"
-                                openF1Drivers={openF1Drivers}
                               />
 
                               {/* Other Telemetry - Stacked */}
@@ -1738,7 +1716,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="gap"
                                   title="Gap"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
@@ -1751,7 +1728,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="throttle"
                                   title="Throttle"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
@@ -1764,7 +1740,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="brake"
                                   title="Brake"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
@@ -1777,7 +1752,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="rpm"
                                   title="RPM"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
@@ -1790,7 +1764,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="drs"
                                   title="DRS"
-                                  openF1Drivers={openF1Drivers}
                                 />
                               </div>
                             </div>
@@ -1823,7 +1796,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <ThrottleChart
@@ -1831,7 +1803,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <BrakeChart
@@ -1839,7 +1810,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <RPMChart
@@ -1847,7 +1817,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <GearMapChart
@@ -1855,7 +1824,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <DRSChart
@@ -1863,7 +1831,6 @@ const Race = () => {
                             event={eventName}
                             session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                         </div>

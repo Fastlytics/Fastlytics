@@ -382,7 +382,7 @@ const Dashboard = () => {
                       <div className="text-sm font-black uppercase text-white">
                         {testingInsights.fastest[0].fullName}
                       </div>
-                      <div className="text-xs font-mono text-red-500 mt-0.5">
+                      <div className="text-xs font-sans text-red-500 mt-0.5">
                         {testingInsights.fastest[0].fastestLapTime || '-'}
                       </div>
                     </button>
@@ -431,7 +431,7 @@ const Dashboard = () => {
                           <div className="font-black uppercase italic text-white text-sm">
                             {event.EventName}
                           </div>
-                          <div className="text-[10px] font-mono text-gray-500 uppercase">
+                          <div className="text-[10px] font-sans text-gray-500 uppercase">
                             {event.Location}
                           </div>
                         </div>
@@ -555,7 +555,7 @@ const Dashboard = () => {
                         <div className="font-bold uppercase mt-1">
                           {testingInsights.morningFastest?.fullName || '-'}
                         </div>
-                        <div className="text-sm font-mono text-red-500 mt-1">
+                        <div className="text-sm font-sans text-red-500 mt-1">
                           {testingInsights.morningFastest?.morningFastestLapTime || '-'}
                         </div>
                       </div>
@@ -566,7 +566,7 @@ const Dashboard = () => {
                         <div className="font-bold uppercase mt-1">
                           {testingInsights.afternoonFastest?.fullName || '-'}
                         </div>
-                        <div className="text-sm font-mono text-red-500 mt-1">
+                        <div className="text-sm font-sans text-red-500 mt-1">
                           {testingInsights.afternoonFastest?.afternoonFastestLapTime || '-'}
                         </div>
                       </div>
@@ -578,7 +578,7 @@ const Dashboard = () => {
                       <div className="text-sm font-bold uppercase tracking-widest text-gray-500">
                         Fastest First
                       </div>
-                      <div className="text-xs font-mono text-gray-600">
+                      <div className="text-xs font-sans text-gray-600">
                         Sorted by best lap, then mileage
                       </div>
                     </div>
@@ -596,17 +596,17 @@ const Dashboard = () => {
                             className="flex items-center justify-between p-3 bg-gray-900/40 border border-gray-800"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="text-lg font-mono text-gray-500 w-8">{index + 1}</div>
+                              <div className="text-lg font-sans text-gray-500 w-8">{index + 1}</div>
                               <div>
                                 <div className="font-bold uppercase">{driver.fullName}</div>
-                                <div className="text-xs font-mono text-gray-500">{driver.team}</div>
+                                <div className="text-xs font-sans text-gray-500">{driver.team}</div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-mono text-red-500 text-sm">
+                              <div className="font-sans text-red-500 text-sm">
                                 {driver.fastestLapTime || '-'}
                               </div>
-                              <div className="text-xs font-mono text-gray-500">
+                              <div className="text-xs font-sans text-gray-500">
                                 {laps} laps • {reliability}% reliability
                               </div>
                             </div>
@@ -614,7 +614,7 @@ const Dashboard = () => {
                         );
                       })}
                       {testingInsights.fastest.length === 0 && (
-                        <div className="text-center py-6 text-gray-500 font-mono text-sm">
+                        <div className="text-center py-6 text-gray-500 font-sans text-sm">
                           No testing session data cached yet.
                         </div>
                       )}
@@ -687,14 +687,14 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <div className="font-bold text-lg uppercase">{event.EventName}</div>
-                        <div className="text-xs font-mono text-gray-500">{event.Location}</div>
+                        <div className="text-xs font-sans text-gray-500">{event.Location}</div>
                       </div>
                     </div>
                     <ArrowRight01Icon className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
                   </div>
                 ))}
                 {(isTestingMode ? recentTestingEvents : recentRaces).length === 0 && (
-                  <div className="text-center py-8 text-gray-500 font-mono text-sm">
+                  <div className="text-center py-8 text-gray-500 font-sans text-sm">
                     {isTestingMode
                       ? 'No testing sessions completed yet this season.'
                       : 'No races completed yet this season.'}

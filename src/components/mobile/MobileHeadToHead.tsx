@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchSessionDrivers,
@@ -30,7 +30,7 @@ import {
 } from 'hugeicons-react';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 import {
   Select,
   SelectContent,
@@ -48,7 +48,6 @@ interface MobileHeadToHeadProps {
   year: number;
   event: string;
   session: string;
-  openF1Drivers: OpenF1Driver[];
   raceResults?: DetailedRaceResult[];
 }
 
@@ -100,7 +99,6 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   year,
   event,
   session,
-  openF1Drivers,
   raceResults,
 }) => {
   const { profile } = useAuth();
@@ -137,14 +135,6 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   const [selectedLap2, setSelectedLap2] = useState<string | number>('fastest');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
-  const selectedDriver1 = favDriverCode || internalDriver1;
-  const selectedDriver2 = rivalDriverCode || internalDriver2;
-  const shouldLoadData = !!(
-    selectedDriver1 &&
-    selectedDriver2 &&
-    selectedDriver1 !== selectedDriver2
-  );
-
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
@@ -152,6 +142,39 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
     gcTime: 1000 * 60 * 60 * 24,
     enabled: !!year && !!event && !!session,
   });
+
+  const [prevDeps, setPrevDeps] = useState<{
+    fav: string | undefined;
+    rival: string | undefined;
+    drivers: SessionDriver[] | undefined;
+  }>({ fav: undefined, rival: undefined, drivers: undefined });
+
+  if (
+    favDriverCode !== prevDeps.fav ||
+    rivalDriverCode !== prevDeps.rival ||
+    availableDrivers !== prevDeps.drivers
+  ) {
+    setPrevDeps({ fav: favDriverCode, rival: rivalDriverCode, drivers: availableDrivers });
+    if (availableDrivers && availableDrivers.length > 0) {
+      const codes = availableDrivers.map((d) => d.code);
+      const resolvedDriver1 = codes.includes(favDriverCode) ? favDriverCode : codes[0] || '';
+      setInternalDriver1(resolvedDriver1);
+
+      const resolvedDriver2 =
+        codes.includes(rivalDriverCode) && rivalDriverCode !== resolvedDriver1
+          ? rivalDriverCode
+          : codes.find((c) => c !== resolvedDriver1) || '';
+      setInternalDriver2(resolvedDriver2);
+    }
+  }
+
+  const selectedDriver1 = internalDriver1;
+  const selectedDriver2 = internalDriver2;
+  const shouldLoadData = !!(
+    selectedDriver1 &&
+    selectedDriver2 &&
+    selectedDriver1 !== selectedDriver2
+  );
 
   const { data: lapTimes1 } = useQuery<number[]>({
     queryKey: ['driverLapNumbers', year, event, session, selectedDriver1],
@@ -300,8 +323,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   };
 
   const getDriverImage = (code: string) => {
-    const driver = openF1Drivers.find((d) => d.name_acronym === code);
-    return driver?.headshot_url;
+    return getDriverImageFromMapping(code, year);
   };
 
   const getDriverTeam = (code: string) => {

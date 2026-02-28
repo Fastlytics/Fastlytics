@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DetailedRaceResult,
   fetchLapTimes,
@@ -8,7 +8,7 @@ import {
   SessionDriver,
   fetchSessionDrivers,
 } from '@/lib/api';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -55,7 +55,6 @@ interface MobileLapTimesProps {
   event: string;
   session: string;
   raceResults: DetailedRaceResult[] | undefined;
-  openF1Drivers: OpenF1Driver[];
 }
 
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -83,13 +82,7 @@ const getTeamColorClass = (teamName: string | undefined): string => {
   return 'gray';
 };
 
-const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
-  year,
-  event,
-  session,
-  raceResults,
-  openF1Drivers,
-}) => {
+const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, raceResults }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,14 +117,46 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   const [internalDriver1, setInternalDriver1] = useState<string>('');
   const [internalDriver2, setInternalDriver2] = useState<string>('');
 
-  const driver1 = favDriverCode || internalDriver1;
-  const driver2 = rivalDriverCode || internalDriver2;
-
   // --- Data Fetching ---
 
   const leaderCode = useMemo(() => {
     return raceResults?.find((r) => r.position === 1)?.driverCode;
   }, [raceResults]);
+
+  // 2. Pace Distribution Data (Fetch for ALL drivers to show the list)
+  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
+    queryKey: ['sessionDrivers', year, event, session],
+    queryFn: () => fetchSessionDrivers(year, event, session),
+    staleTime: Infinity,
+  });
+
+  const [prevDeps, setPrevDeps] = useState<{
+    fav: string | undefined;
+    rival: string | undefined;
+    drivers: SessionDriver[] | undefined;
+  }>({ fav: undefined, rival: undefined, drivers: undefined });
+
+  if (
+    favDriverCode !== prevDeps.fav ||
+    rivalDriverCode !== prevDeps.rival ||
+    sessionDrivers !== prevDeps.drivers
+  ) {
+    setPrevDeps({ fav: favDriverCode, rival: rivalDriverCode, drivers: sessionDrivers });
+    if (sessionDrivers && sessionDrivers.length > 0) {
+      const codes = sessionDrivers.map((d) => d.code);
+      const resolvedDriver1 = codes.includes(favDriverCode) ? favDriverCode : codes[0] || '';
+      setInternalDriver1(resolvedDriver1);
+
+      const resolvedDriver2 =
+        codes.includes(rivalDriverCode) && rivalDriverCode !== resolvedDriver1
+          ? rivalDriverCode
+          : codes.find((c) => c !== resolvedDriver1) || '';
+      setInternalDriver2(resolvedDriver2);
+    }
+  }
+
+  const driver1 = internalDriver1;
+  const driver2 = internalDriver2;
 
   const driversToFetch = useMemo(() => {
     const drivers = [driver1, driver2].filter(Boolean);
@@ -151,13 +176,6 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
       !!driver1 &&
       driversToFetch.length > 0,
     staleTime: 1000 * 60 * 5,
-  });
-
-  // 2. Pace Distribution Data (Fetch for ALL drivers to show the list)
-  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
   });
 
   const allDriverCodes = useMemo(() => sessionDrivers?.map((d) => d.code) || [], [sessionDrivers]);
@@ -214,8 +232,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
 
   // --- Helper for Driver Images ---
   const getDriverImage = (code: string) => {
-    const driver = openF1Drivers.find((d) => d.name_acronym === code);
-    return driver?.headshot_url;
+    return getDriverImageFromMapping(code, year);
   };
 
   const getDriverTeam = (code: string) => {
@@ -396,7 +413,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                       <XAxis
                         dataKey="LapNumber"
                         stroke="#666"
-                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
                         interval="preserveStartEnd"
                         tickLine={false}
                         axisLine={false}

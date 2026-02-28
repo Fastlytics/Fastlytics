@@ -89,7 +89,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             >
               <div className="flex items-center gap-4">
                 <span
-                  className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
+                  className={`font-sans font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
                 >
                   {index + 1}
                 </span>
@@ -112,13 +112,13 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 font-mono">{driver.team}</div>
+                    <div className="text-xs text-gray-500 font-sans">{driver.team}</div>
                   </div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-black text-xl">{driver.points}</div>
-                <div className="text-xs font-mono text-gray-500">
+                <div className="text-xs font-sans text-gray-500">
                   {getGap(driver.points, topDrivers[0].points)}
                 </div>
               </div>
@@ -164,7 +164,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             >
               <div className="flex items-center gap-4">
                 <span
-                  className={`font-mono font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
+                  className={`font-sans font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
                 >
                   {index + 1}
                 </span>
@@ -188,7 +188,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
               </div>
               <div className="text-right">
                 <div className="font-black text-xl">{team.points}</div>
-                <div className="text-xs font-mono text-gray-500">
+                <div className="text-xs font-sans text-gray-500">
                   {getGap(team.points, topTeams[0].points)}
                 </div>
               </div>

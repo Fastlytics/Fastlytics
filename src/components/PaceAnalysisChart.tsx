@@ -21,7 +21,6 @@ import {
   SessionDriver,
   fetchSessionDrivers,
 } from '../lib/api';
-import { OpenF1Driver } from '@/lib/openf1';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,6 @@ interface PaceAnalysisChartProps {
   session: string;
   initialDrivers?: string[];
   driverColors?: Record<string, string>;
-  openF1Drivers?: OpenF1Driver[];
 }
 
 const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
@@ -90,7 +88,6 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   session,
   initialDrivers = [],
   driverColors = {},
-  openF1Drivers = [],
 }) => {
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(
     initialDrivers.length > 0 ? initialDrivers : []
@@ -229,18 +226,18 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               <XAxis
                 dataKey="driverCode"
                 stroke="#666"
-                tick={{ fill: '#999' }}
+                tick={{ fill: '#999', fontFamily: 'Geist', fontSize: 12 }}
                 axisLine={{ stroke: '#333' }}
               />
               <YAxis
                 domain={[minPace - domainPadding, maxPace + domainPadding]}
                 tickFormatter={formatTime}
                 stroke="#666"
-                tick={{ fill: '#999' }}
+                tick={{ fill: '#999', fontFamily: 'Geist', fontSize: 12 }}
                 width={80}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Legend />
+              <Legend wrapperStyle={{ fontFamily: 'Geist', fontSize: '12px' }} />
 
               {/* The Box (Q1 to Q3) */}
               <Bar

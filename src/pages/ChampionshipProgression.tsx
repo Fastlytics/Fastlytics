@@ -36,7 +36,7 @@ import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCountryCode } from '@/utils/countryUtils';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 import { useEffect } from 'react';
 
 const ChampionshipProgression = () => {
@@ -47,15 +47,6 @@ const ChampionshipProgression = () => {
   // State for driver filtering
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
 
   // Reset selected drivers when year changes
   useEffect(() => {
@@ -151,25 +142,8 @@ const ChampionshipProgression = () => {
 
   const clearSelection = () => setSelectedDrivers([]);
 
-  const getDriverImage = (driverIdentity: string) => {
-    // Try exact match with acronym first
-    let driver = openF1Drivers.find((d) => d.name_acronym === driverIdentity);
-
-    // If not found, try last name match (case-insensitive)
-    if (!driver) {
-      const lastName = driverIdentity.split(' ').pop()?.toUpperCase();
-      driver = openF1Drivers.find((d) => d.last_name.toUpperCase() === lastName);
-    }
-
-    // Last resort: check if full name includes the string
-    if (!driver) {
-      driver = openF1Drivers.find((d) =>
-        d.full_name.toLowerCase().includes(driverIdentity.toLowerCase())
-      );
-    }
-
-    return driver?.headshot_url;
-  };
+  // No separate helper needed — getDriverImage imported from @/utils/imageMapping
+  // Usage: getDriverImage(driverCode, selectedYear)
 
   // Custom Toolkit Styles
   const CustomTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
@@ -198,7 +172,7 @@ const ChampionshipProgression = () => {
             {sortedPayload.map((entry, index: number) => {
               // Use dataKey (driver code) for image lookup if available, otherwise name
               const driverId = entry.dataKey || entry.name;
-              const headshot = getDriverImage(driverId);
+              const headshot = getDriverImage(driverId, selectedYear);
 
               return (
                 <div key={entry.name} className="flex items-center justify-between group">
@@ -245,7 +219,7 @@ const ChampionshipProgression = () => {
       <div className="flex flex-wrap items-center justify-center gap-4 mb-6 pt-4">
         {payload.map((entry, index: number) => {
           const driverId = entry.dataKey || entry.value; // Prefer dataKey (code)
-          const headshot = getDriverImage(driverId);
+          const headshot = getDriverImage(driverId, selectedYear);
 
           return (
             <div
@@ -456,7 +430,7 @@ const ChampionshipProgression = () => {
                 />
                 <YAxis
                   stroke="#666"
-                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold' }}
+                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold', fontFamily: 'Geist' }}
                   tickLine={false}
                   axisLine={false}
                   domain={[

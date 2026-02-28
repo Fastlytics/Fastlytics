@@ -204,9 +204,9 @@ export interface DriverDetails {
   dateOfBirth: string; // ISO string format ideally
   bio?: string; // Optional
   imageUrl?: string; // Optional URL for the large photo
-  headshot_url?: string; // From OpenF1
-  team_colour?: string; // From OpenF1
-  team_name?: string; // From OpenF1
+  headshot_url?: string;
+  team_colour?: string;
+  team_name?: string;
   careerStats?: {
     // Optional stats block
     wins?: number;

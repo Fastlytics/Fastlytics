@@ -1,7 +1,6 @@
 import React from 'react';
 import { fetchGearShiftMap, GearShiftMapData } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
-import { OpenF1Driver } from '@/lib/openf1';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
 
 const gearColors = [
@@ -31,7 +30,6 @@ interface GearMapChartProps {
   session: string;
   initialDriver?: string;
   lap?: string | number;
-  openF1Drivers?: OpenF1Driver[];
 }
 
 const GearMapChart: React.FC<GearMapChartProps> = ({
@@ -43,7 +41,6 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
   session,
   initialDriver = '',
   lap = 'fastest',
-  openF1Drivers = [],
 }) => {
   const [hoveredGear, setHoveredGear] = React.useState<number | null>(null);
 
@@ -57,7 +54,6 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       session={session}
       initialDriver={initialDriver}
       lap={lap}
-      openF1Drivers={openF1Drivers}
       queryKey={(driver, lapVal) => ['gearMap', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchGearShiftMap(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}

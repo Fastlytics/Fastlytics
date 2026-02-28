@@ -46,10 +46,13 @@ const DriverComparison: React.FC<DriverComparisonProps> = ({ data, className, de
       <ResponsiveContainer width="100%" height={400}>
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid stroke="rgba(255,255,255,0.2)" />
-          <PolarAngleAxis dataKey="attribute" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
+          <PolarAngleAxis
+            dataKey="attribute"
+            tick={{ fill: 'rgba(255,255,255,0.7)', fontFamily: 'Geist' }}
+          />
           <PolarRadiusAxis
             stroke="rgba(255,255,255,0.5)"
-            tick={{ fill: 'rgba(255,255,255,0.7)' }}
+            tick={{ fill: 'rgba(255,255,255,0.7)', fontFamily: 'Geist' }}
           />
 
           {drivers.map((driver) => (
@@ -63,7 +66,7 @@ const DriverComparison: React.FC<DriverComparisonProps> = ({ data, className, de
             />
           ))}
 
-          <Legend />
+          <Legend wrapperStyle={{ fontFamily: 'Geist', fontSize: '12px' }} />
         </RadarChart>
       </ResponsiveContainer>
     </div>

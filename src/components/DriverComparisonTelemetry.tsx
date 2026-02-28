@@ -24,7 +24,6 @@ import {
   SpeedDataPoint,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import { OpenF1Driver } from '@/lib/openf1';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
@@ -66,7 +65,6 @@ interface DriverComparisonTelemetryProps {
   shouldLoadChart: boolean;
   telemetryType: TelemetryType;
   title: string;
-  openF1Drivers?: OpenF1Driver[];
 }
 
 const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
@@ -80,7 +78,6 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   shouldLoadChart,
   telemetryType,
   title,
-  openF1Drivers = [],
 }) => {
   const fetchTelemetry = async (driver: string, lap: string | number) => {
     // For 'gap', we need speed data to calculate time
@@ -382,12 +379,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             <XAxis
               dataKey="Distance"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
               tickFormatter={(val) => `${Math.round(val)}m`}
             />
             <YAxis
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
               domain={props.domain}
               tickFormatter={props.yAxisFormatter}
               hide={!props.showYAxisTicks}
@@ -450,9 +447,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               }}
               cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-            <Legend
-              wrapperStyle={{ paddingTop: '10px', fontFamily: 'monospace', fontSize: '10px' }}
-            />
+            <Legend wrapperStyle={{ paddingTop: '10px', fontFamily: 'Geist', fontSize: '10px' }} />
 
             {telemetryType === 'gap' ? (
               <>

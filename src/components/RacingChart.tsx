@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -59,7 +59,6 @@ interface RacingChartProps {
   staticData?: LapTimeDataPoint[];
   title?: string;
   autoLoad?: boolean;
-  openF1Drivers?: OpenF1Driver[];
   favoriteDriver?: string | null;
   rivalDriver?: string | null;
 }
@@ -76,7 +75,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
   initialDrivers,
   staticData,
   autoLoad = false,
-  openF1Drivers = [],
   favoriteDriver,
   rivalDriver,
 }) => {
@@ -304,12 +302,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
             <XAxis
               dataKey="LapNumber"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
               padding={{ left: 10, right: 10 }}
             />
             <YAxis
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 12, fontFamily: 'monospace' }}
+              tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
               domain={['dataMin - 0.5', 'dataMax + 0.5']}
               tickFormatter={formatLapTime}
               allowDecimals={true}
@@ -334,19 +332,15 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         const time = entry.value;
                         if (time === null) return null;
 
-                        const driver = openF1Drivers.find(
-                          (d) =>
-                            d.name_acronym === driverCode ||
-                            d.last_name.toUpperCase().slice(0, 3) === driverCode
-                        );
+                        const headshot = getDriverImage(driverCode, year);
                         const color = entry.color;
 
                         return (
                           <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
                             <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
-                              {driver?.headshot_url ? (
+                              {headshot ? (
                                 <img
-                                  src={driver.headshot_url}
+                                  src={headshot}
                                   alt={driverCode}
                                   className="w-full h-full object-cover object-top"
                                 />
@@ -375,7 +369,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               wrapperStyle={{
                 paddingTop: '20px',
                 paddingBottom: '10px',
-                fontFamily: 'monospace',
+                fontFamily: 'Geist',
                 fontSize: '12px',
               }}
               onClick={(e) =>
@@ -552,11 +546,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
           <div className="flex flex-wrap gap-2">
             {availableDrivers.map((driver) => {
               const isSelected = selectedDrivers.includes(driver.code);
-              const openF1Driver = openF1Drivers.find(
-                (d) =>
-                  d.name_acronym === driver.code ||
-                  d.last_name.toUpperCase().slice(0, 3) === driver.code
-              );
+              const headshot = getDriverImage(driver.code, year);
               const color = driverColor(driver.code, year);
 
               return (
@@ -572,9 +562,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
                 >
                   <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                    {openF1Driver?.headshot_url ? (
+                    {headshot ? (
                       <img
-                        src={openF1Driver.headshot_url}
+                        src={headshot}
                         alt={driver.code}
                         className="w-full h-full object-cover object-top"
                       />
