@@ -282,8 +282,27 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
             </button>
           </div>
           <div className="p-3 max-h-80 overflow-y-auto space-y-2">
+            {sessions.some((s) => s.type === 'Summary') && (
+              <button
+                key="Summary"
+                onClick={() => {
+                  onSelect('Summary');
+                  onClose();
+                }}
+                className={`w-full p-4 text-left transition-all flex items-center justify-between border-2 ${
+                  selectedSession === 'Summary'
+                    ? 'bg-red-600 border-red-600 text-white'
+                    : 'bg-black border-red-600/30 hover:border-red-600/60 text-red-500'
+                }`}
+              >
+                <span className="text-base font-black uppercase tracking-wide">
+                  3-Day Testing Summary
+                </span>
+                {selectedSession === 'Summary' && <CheckmarkCircle02Icon className="w-5 h-5" />}
+              </button>
+            )}
             {sessions
-              .filter((s) => s.type !== 'Q')
+              .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
               .map((session) => (
                 <button
                   key={session.type}
@@ -319,7 +338,7 @@ interface ScheduleSessionCardProps {
   isLive: boolean;
   isAvailable: boolean;
   is24Hour: boolean;
-  onViewResults: () => void;
+  onViewResults: (sessionName: string) => void;
 }
 
 const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
@@ -428,8 +447,7 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
             ) : isAvailable ? (
               <button
                 onClick={() => {
-                  onViewResults();
-                  trackInteraction('view_results_clicked', { session: session.name });
+                  onViewResults(session.name);
                 }}
                 className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors border border-transparent hover:border-white"
               >
@@ -472,16 +490,28 @@ interface RaceBottomNavProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   hasStrategy: boolean;
+  isSummarySession?: boolean;
 }
 
-const RaceBottomNav: React.FC<RaceBottomNavProps> = ({ activeTab, onTabChange, hasStrategy }) => {
+const RaceBottomNav: React.FC<RaceBottomNavProps> = ({
+  activeTab,
+  onTabChange,
+  hasStrategy,
+  isSummarySession,
+}) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: ChampionIcon },
-    ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: TireIcon }] : []),
-    { id: 'laptimes', label: 'Laps', icon: ChartLineData01Icon },
-    { id: 'h2h', label: 'H2H', icon: GitCompareIcon },
-    { id: 'telemetry', label: 'Data', icon: Analytics01Icon },
+    ...(isSummarySession
+      ? []
+      : [
+          ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: TireIcon }] : []),
+          { id: 'laptimes', label: 'Laps', icon: ChartLineData01Icon },
+          { id: 'h2h', label: 'H2H', icon: GitCompareIcon },
+          { id: 'telemetry', label: 'Data', icon: Analytics01Icon },
+        ]),
   ];
+
+  if (isSummarySession) return null; // Or return a simplified nav if needed later, but standard is to hide telemetry for summary
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t-2 border-white/10 safe-area-pb">
@@ -1018,6 +1048,11 @@ const MobileRace: React.FC = () => {
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
+  const isTestingEvent = useMemo(() => {
+    const format = eventName?.toLowerCase() ?? '';
+    return format.includes('testing') || format.includes('test');
+  }, [eventName]);
+
   const [now, setNow] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
   const [showSessionSelector, setShowSessionSelector] = useState(false);
@@ -1094,43 +1129,90 @@ const MobileRace: React.FC = () => {
     if (urlSession) return urlSession;
     if (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0) return '';
     const hasRace = fetchedAvailableSessions.some((s) => s.type === 'R');
-    if (hasRace) return 'R';
+
+    if (isTestingEvent && fetchedAvailableSessions.some((s) => s.type === 'Summary')) {
+      return 'Summary';
+    } else if (hasRace) {
+      return 'R';
+    }
 
     return (
       [...fetchedAvailableSessions].sort(
         (a, b) => getTestingSessionOrder(b.type) - getTestingSessionOrder(a.type)
       )[0]?.type ?? fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type
     );
-  }, [urlSession, fetchedAvailableSessions]);
+  }, [urlSession, fetchedAvailableSessions, isTestingEvent]);
 
   const analysisSession = useMemo(
     () => resolveSessionForAnalysis(selectedSession),
     [selectedSession]
   );
 
-  const { data: raceResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
+  const { data: standardResults, isLoading: isLoadingStandard } = useQuery<DetailedRaceResult[]>({
     queryKey: ['raceResults', year, eventSlug, selectedSession],
     queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
-    enabled: !!year && !!eventSlug && !!selectedSession,
+    enabled: !!year && !!eventSlug && !!selectedSession && selectedSession !== 'Summary',
   });
+
+  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['summaryResult', year, eventSlug],
+    queryFn: async () => {
+      if (!year || !eventSlug || !fetchedAvailableSessions) return [];
+
+      const fetchingSessions = fetchedAvailableSessions.filter((s) => s.type !== 'Summary');
+
+      const allResultsPromises = fetchingSessions.map((s) =>
+        fetchSpecificRaceResults(year, eventSlug, s.type)
+      );
+
+      const allResultsArray = await Promise.all(allResultsPromises);
+
+      const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
+
+      allResultsArray.forEach((sessionResults) => {
+        sessionResults.forEach((result) => {
+          if (!aggregatedMap[result.driverCode]) {
+            aggregatedMap[result.driverCode] = {
+              ...result,
+              lapsCompleted: 0,
+              fastestLapTime: null,
+            };
+          }
+
+          const aggr = aggregatedMap[result.driverCode];
+
+          if (result.lapsCompleted) {
+            aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
+          }
+
+          if (result.fastestLapTime) {
+            const currentFastest = parseLapTime(aggr.fastestLapTime);
+            const newTime = parseLapTime(result.fastestLapTime);
+            if (!aggr.fastestLapTime || newTime < currentFastest) {
+              aggr.fastestLapTime = result.fastestLapTime;
+            }
+          }
+        });
+      });
+
+      return Object.values(aggregatedMap);
+    },
+    enabled: isTestingEvent && selectedSession === 'Summary' && !!fetchedAvailableSessions,
+  });
+
+  const raceResults = selectedSession === 'Summary' ? summaryResults : standardResults;
+  const isLoadingResults = selectedSession === 'Summary' ? isLoadingSummary : isLoadingStandard;
 
   // Derived State
   const currentSessionName =
     availableSessions.find((s) => s.type === selectedSession)?.name || 'Session';
   const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
-  const isTestingEvent = useMemo(() => {
-    const format = sessionSchedule?.eventFormat?.toLowerCase() ?? '';
-    const onlyPractice =
-      availableSessions.length > 0 &&
-      availableSessions.every((s) => s.type.startsWith('FP') || !!parseTestingSessionAlias(s.type));
-    return (
-      format.includes('test') ||
-      (onlyPractice && !availableSessions.some((s) => s.type === 'R' || s.type === 'Sprint'))
-    );
-  }, [sessionSchedule, availableSessions]);
+
   const isTestingSession =
     isTestingEvent &&
-    (selectedSession.startsWith('FP') || !!parseTestingSessionAlias(selectedSession));
+    (selectedSession.startsWith('FP') ||
+      selectedSession === 'Summary' ||
+      !!parseTestingSessionAlias(selectedSession));
 
   const fastestLapHolder = useMemo(() => {
     if (!isRaceOrSprint || !raceResults) return null;
@@ -1318,7 +1400,9 @@ const MobileRace: React.FC = () => {
                   isLive={isLive}
                   isAvailable={isAvailable}
                   is24Hour={is24Hour}
-                  onViewResults={() => {}}
+                  onViewResults={(sessionName) => {
+                    trackInteraction('view_results_clicked', { session: sessionName });
+                  }}
                 />
               );
             })}

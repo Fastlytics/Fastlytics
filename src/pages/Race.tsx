@@ -596,6 +596,11 @@ const Race = () => {
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
+  const isTestingEvent = useMemo(() => {
+    const format = eventName?.toLowerCase() ?? '';
+    return format.includes('testing') || format.includes('test');
+  }, [eventName]);
+
   const trackedEventRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -640,7 +645,9 @@ const Race = () => {
   useEffect(() => {
     if (availableSessions.length > 0 && !searchParams.get('session')) {
       let defaultSession = '';
-      if (availableSessions.some((s) => s.type === 'R')) {
+      if (isTestingEvent) {
+        defaultSession = 'Summary';
+      } else if (availableSessions.some((s) => s.type === 'R')) {
         defaultSession = 'R';
       } else {
         defaultSession = availableSessions[availableSessions.length - 1].type;
@@ -660,24 +667,79 @@ const Race = () => {
   }, [availableSessions]);
 
   // Derived Data
+  // Fetch aggregated data for "Summary" session in testing events
+  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['summaryResult', year, eventSlug],
+    queryFn: async () => {
+      if (!year || !eventSlug || availableSessions.length === 0) return [];
+
+      const fetchingSessions = availableSessions.filter((s) => s.type !== 'Summary');
+
+      const allResultsPromises = fetchingSessions.map((s) =>
+        fetchSpecificRaceResults(year, eventSlug, s.type)
+      );
+
+      const allResultsArray = await Promise.all(allResultsPromises);
+
+      const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
+
+      allResultsArray.forEach((sessionResults) => {
+        sessionResults.forEach((result) => {
+          if (!aggregatedMap[result.driverCode]) {
+            aggregatedMap[result.driverCode] = {
+              ...result,
+              lapsCompleted: 0,
+              fastestLapTime: null, // We'll find min
+            };
+          }
+
+          const aggr = aggregatedMap[result.driverCode];
+
+          // Sum laps
+          if (result.lapsCompleted) {
+            aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
+          }
+
+          // Find fastest lap across sessions
+          if (result.fastestLapTime) {
+            const currentFastest = parseLapTime(aggr.fastestLapTime);
+            const newTime = parseLapTime(result.fastestLapTime);
+            if (!aggr.fastestLapTime || newTime < currentFastest) {
+              aggr.fastestLapTime = result.fastestLapTime;
+            }
+          }
+        });
+      });
+
+      return Object.values(aggregatedMap);
+    },
+    enabled: isTestingEvent && selectedSession === 'Summary' && availableSessions.length > 0,
+  });
+
+  const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
+  const isLoadingEffectiveResults =
+    selectedSession === 'Summary' ? isLoadingSummary : isLoadingResults;
+
   const raceWinner = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? sessionResults?.find((r) => r.position === 1)
+        ? effectiveSessionResults?.find((r) => r.position === 1)
         : null,
-    [sessionResults, selectedSession]
+    [effectiveSessionResults, selectedSession]
   );
+
   const poleSitter = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? sessionResults?.find((r) => r.gridPosition === 1)
+        ? effectiveSessionResults?.find((r) => r.gridPosition === 1)
         : null,
-    [sessionResults, selectedSession]
+    [effectiveSessionResults, selectedSession]
   );
   const fastestLapHolder = useMemo(() => {
-    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !sessionResults) return null;
+    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !effectiveSessionResults)
+      return null;
 
-    const validResults = sessionResults.filter(
+    const validResults = effectiveSessionResults.filter(
       (r) => !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
     );
 
@@ -686,36 +748,23 @@ const Race = () => {
     return validResults.sort(
       (a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime)
     )[0];
-  }, [sessionResults, selectedSession]);
+  }, [effectiveSessionResults, selectedSession]);
 
   const topPerformers = useMemo(() => {
     if (
-      !sessionResults ||
+      !effectiveSessionResults ||
       !selectedSession ||
       selectedSession === 'R' ||
       selectedSession === 'Sprint'
     )
       return [];
-    return [...sessionResults]
+    return [...effectiveSessionResults]
       .filter((r) => r.fastestLapTime)
       .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))
       .slice(0, 3);
-  }, [sessionResults, selectedSession]);
+  }, [effectiveSessionResults, selectedSession]);
 
-  const isTestingEvent = useMemo(() => {
-    const format = sessionSchedule?.eventFormat?.toLowerCase() ?? '';
-    const onlyPracticeSessions =
-      availableSessions.length > 0 &&
-      availableSessions.every((session) => {
-        const sessionType = session.type || '';
-        return sessionType.startsWith('FP') || !!parseTestingSessionAlias(sessionType);
-      });
-    return (
-      format.includes('test') ||
-      (onlyPracticeSessions &&
-        !availableSessions.some((s) => s.type === 'R' || s.type === 'Sprint'))
-    );
-  }, [sessionSchedule, availableSessions]);
+  /* Testing Event identification logic moved up early in the component */
 
   const testingSessionAlias = useMemo(
     () => parseTestingSessionAlias(selectedSession),
@@ -727,10 +776,11 @@ const Race = () => {
     [selectedSession]
   );
   const isTestingSession =
-    isTestingEvent && (selectedSession.startsWith('FP') || !!testingSessionAlias);
+    isTestingEvent &&
+    (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
 
   useEffect(() => {
-    if (!isTestingSession || isTestingSplitSession) {
+    if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary') {
       setTestingWindow('full');
     }
   }, [isTestingSession, isTestingSplitSession, selectedSession]);
@@ -749,7 +799,8 @@ const Race = () => {
 
   const getSessionWindowLaps = useCallback(
     (result: DetailedRaceResult): number => {
-      if (!isTestingSession || isTestingSplitSession) return result.lapsCompleted ?? 0;
+      if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary')
+        return result.lapsCompleted ?? 0;
       if (testingWindow === 'morning')
         return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
       if (testingWindow === 'afternoon') {
@@ -757,11 +808,11 @@ const Race = () => {
       }
       return result.lapsCompleted ?? 0;
     },
-    [isTestingSession, isTestingSplitSession, testingWindow]
+    [isTestingSession, isTestingSplitSession, testingWindow, selectedSession]
   );
 
   const testingInsights = useMemo(() => {
-    if (!sessionResults || !isTestingSession) {
+    if (!effectiveSessionResults || !isTestingSession) {
       return {
         fastest: null as DetailedRaceResult | null,
         mileage: null as DetailedRaceResult | null,
@@ -775,7 +826,7 @@ const Race = () => {
     const circuitLength = getCircuitLength(eventName);
 
     const fastest =
-      [...sessionResults]
+      [...effectiveSessionResults]
         .filter((result) => !!getSessionWindowLapTime(result))
         .sort(
           (a, b) =>
@@ -783,15 +834,26 @@ const Race = () => {
         )[0] ?? null;
 
     const mileage =
-      [...sessionResults].sort((a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a))[0] ??
-      null;
+      [...effectiveSessionResults].sort(
+        (a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a)
+      )[0] ?? null;
 
-    const totalLaps = sessionResults.reduce((sum, result) => sum + getSessionWindowLaps(result), 0);
+    const totalLaps = effectiveSessionResults.reduce(
+      (sum, result) => sum + getSessionWindowLaps(result),
+      0
+    );
     const totalDistance = calculateDistance(totalLaps, circuitLength);
-    const averageLaps = sessionResults.length > 0 ? totalLaps / sessionResults.length : 0;
+    const averageLaps =
+      effectiveSessionResults.length > 0 ? totalLaps / effectiveSessionResults.length : 0;
 
     return { fastest, mileage, totalLaps, totalDistance, averageLaps, circuitLength };
-  }, [sessionResults, isTestingSession, getSessionWindowLapTime, getSessionWindowLaps, eventName]);
+  }, [
+    effectiveSessionResults,
+    isTestingSession,
+    getSessionWindowLapTime,
+    getSessionWindowLaps,
+    eventName,
+  ]);
 
   const nextSession = useMemo(() => {
     if (!sessionSchedule) return null;
@@ -959,26 +1021,53 @@ const Race = () => {
             </div>
           </div>
 
-          {!shouldShowSchedule && availableSessions.length > 0 && (
-            <Select value={selectedSession} onValueChange={setSelectedSession}>
-              <SelectTrigger className="w-[200px] bg-black border-2 border-gray-800 text-white font-bold uppercase tracking-wider h-12">
-                <SelectValue placeholder="SESSION" />
-              </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white">
-                {availableSessions
-                  .filter((s) => s.type !== 'Q')
-                  .map((s) => (
-                    <SelectItem
-                      key={s.type}
-                      value={s.type}
-                      className="uppercase font-bold focus:bg-gray-900 focus:text-red-500"
-                    >
-                      {s.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          )}
+          {!shouldShowSchedule &&
+            availableSessions.length > 0 &&
+            (isTestingEvent ? (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[300px] bg-red-900/20 border-2 border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-2 border-gray-800 text-white">
+                  <SelectItem
+                    value="Summary"
+                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-800"
+                  >
+                    3-DAY TESTING SUMMARY
+                  </SelectItem>
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-bold focus:bg-gray-900 focus:text-white py-2"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[200px] bg-black border-2 border-gray-800 text-white font-bold uppercase tracking-wider h-12">
+                  <SelectValue placeholder="SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-2 border-gray-800 text-white">
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-bold focus:bg-gray-900 focus:text-red-500"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ))}
         </header>
 
         {shouldShowSchedule ? (
@@ -1272,63 +1361,72 @@ const Race = () => {
           // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
           <div className="flex flex-col lg:flex-row gap-12">
             {/* Sticky Sidebar */}
-            <aside className="hidden lg:block w-64 shrink-0">
-              <div className="sticky top-32 space-y-1">
-                <NavItem
-                  id="overview"
-                  label="Overview"
-                  icon={ChampionIcon}
-                  active={activeSection === 'overview'}
-                  onClick={() => handleSectionChange('overview')}
-                />
-                <NavItem
-                  id="replay"
-                  label="Replay"
-                  icon={PlayCircle02Icon}
-                  active={activeSection === 'replay'}
-                  onClick={() => handleSectionChange('replay')}
-                />
-                {(selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) && (
+            {selectedSession !== 'Summary' && (
+              <aside className="hidden lg:block w-64 shrink-0">
+                <div className="sticky top-32 space-y-1">
                   <NavItem
-                    id="strategy"
-                    label="Strategy"
-                    icon={TireIcon}
-                    active={activeSection === 'strategy'}
-                    onClick={() => handleSectionChange('strategy')}
+                    id="overview"
+                    label="Overview"
+                    icon={ChampionIcon}
+                    active={activeSection === 'overview'}
+                    onClick={() => handleSectionChange('overview')}
                   />
-                )}
-                {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <NavItem
-                    id="positions"
-                    label="Positions"
-                    icon={ChartLineData01Icon}
-                    active={activeSection === 'positions'}
-                    onClick={() => handleSectionChange('positions')}
-                  />
-                )}
-                <NavItem
-                  id="laptimes"
-                  label="Lap Times"
-                  icon={Time01Icon}
-                  active={activeSection === 'laptimes'}
-                  onClick={() => handleSectionChange('laptimes')}
-                />
-                <NavItem
-                  id="dominance"
-                  label="Head to Head"
-                  icon={GitCompareIcon}
-                  active={activeSection === 'dominance'}
-                  onClick={() => handleSectionChange('dominance')}
-                />
-                <NavItem
-                  id="telemetry"
-                  label="Telemetry"
-                  icon={Analytics01Icon}
-                  active={activeSection === 'telemetry'}
-                  onClick={() => handleSectionChange('telemetry')}
-                />
-              </div>
-            </aside>
+
+                  {selectedSession !== 'Summary' && (
+                    <>
+                      <NavItem
+                        id="replay"
+                        label="Replay"
+                        icon={PlayCircle02Icon}
+                        active={activeSection === 'replay'}
+                        onClick={() => handleSectionChange('replay')}
+                      />
+                      {(selectedSession === 'R' ||
+                        selectedSession === 'Sprint' ||
+                        isTestingSession) && (
+                        <NavItem
+                          id="strategy"
+                          label="Strategy"
+                          icon={TireIcon}
+                          active={activeSection === 'strategy'}
+                          onClick={() => handleSectionChange('strategy')}
+                        />
+                      )}
+                      {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+                        <NavItem
+                          id="positions"
+                          label="Positions"
+                          icon={ChartLineData01Icon}
+                          active={activeSection === 'positions'}
+                          onClick={() => handleSectionChange('positions')}
+                        />
+                      )}
+                      <NavItem
+                        id="laptimes"
+                        label="Lap Times"
+                        icon={Time01Icon}
+                        active={activeSection === 'laptimes'}
+                        onClick={() => handleSectionChange('laptimes')}
+                      />
+                      <NavItem
+                        id="dominance"
+                        label="Head to Head"
+                        icon={GitCompareIcon}
+                        active={activeSection === 'dominance'}
+                        onClick={() => handleSectionChange('dominance')}
+                      />
+                      <NavItem
+                        id="telemetry"
+                        label="Telemetry"
+                        icon={Analytics01Icon}
+                        active={activeSection === 'telemetry'}
+                        onClick={() => handleSectionChange('telemetry')}
+                      />
+                    </>
+                  )}
+                </div>
+              </aside>
+            )}
 
             {/* Main Content Stream */}
             <div className="flex-1 space-y-8">
@@ -1423,33 +1521,35 @@ const Race = () => {
                   <section id="results">
                     <SectionHeader title="Session Results" icon={UserGroupIcon} />
 
-                    {isTestingSession && !isTestingSplitSession && (
-                      <div className="mb-6 flex items-center gap-2 bg-gray-900/40 border border-gray-800 p-2 w-fit">
-                        {(
-                          [
-                            ['full', 'Full Day'],
-                            ['morning', 'Morning'],
-                            ['afternoon', 'Afternoon'],
-                          ] as const
-                        ).map(([value, label]) => (
-                          <button
-                            key={value}
-                            onClick={() => {
-                              setTestingWindow(value);
-                              trackInteraction('testing_window_toggled', { window: value });
-                            }}
-                            className={cn(
-                              'px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors border',
-                              testingWindow === value
-                                ? 'bg-red-600 border-red-600 text-white'
-                                : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
-                            )}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    {isTestingSession &&
+                      !isTestingSplitSession &&
+                      selectedSession !== 'Summary' && (
+                        <div className="mb-6 flex items-center gap-2 bg-gray-900/40 border border-gray-800 p-2 w-fit">
+                          {(
+                            [
+                              ['full', 'Full Day'],
+                              ['morning', 'Morning'],
+                              ['afternoon', 'Afternoon'],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <button
+                              key={value}
+                              onClick={() => {
+                                setTestingWindow(value);
+                                trackInteraction('testing_window_toggled', { window: value });
+                              }}
+                              className={cn(
+                                'px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors border',
+                                testingWindow === value
+                                  ? 'bg-red-600 border-red-600 text-white'
+                                  : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
@@ -1465,7 +1565,7 @@ const Race = () => {
                       </Alert>
                     )}
 
-                    {isTestingSession && (
+                    {isTestingSession && selectedSession !== 'Summary' && (
                       <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
                         <Alert02Icon className="h-4 w-4 text-blue-400" />
                         <AlertTitle className="font-bold uppercase tracking-wider text-blue-300">
@@ -1478,9 +1578,22 @@ const Race = () => {
                       </Alert>
                     )}
 
-                    {sessionResults && (
+                    {isTestingSession && selectedSession === 'Summary' && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-bold uppercase tracking-wider text-blue-300">
+                          3-Day Testing Summary
+                        </AlertTitle>
+                        <AlertDescription>
+                          Aggregated data from all pre-season testing sessions. Total mileage and
+                          fastest laps are combined.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {effectiveSessionResults && (
                       <SessionResultsTable
-                        results={sessionResults}
+                        results={effectiveSessionResults}
                         sessionType={selectedSession}
                         favoriteDriver={profile?.favorite_driver}
                         fastestLapHolder={fastestLapHolder}
