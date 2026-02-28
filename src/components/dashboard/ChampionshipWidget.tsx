@@ -8,7 +8,7 @@ import { ArrowRight01Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
-import { getDriverImage } from '@/utils/imageMapping';
+import { getDriverImage, getCarImage } from '@/utils/imageMapping';
 
 interface ChampionshipWidgetProps {
   drivers: DriverStanding[];
@@ -31,6 +31,9 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   const topTeams = teams.slice(0, 3);
   const { selectedYear } = useSeason();
   const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
+
+  const isPreSeasonDriver = drivers.length > 0 && drivers[0].points === 0;
+  const isPreSeasonTeam = teams.length > 0 && teams[0].points === 0;
 
   const getGap = (points: number, leaderPoints: number) => {
     const gap = leaderPoints - points;
@@ -76,7 +79,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               className={`flex items-center justify-between p-3 border-l-4 ${
-                index === 0
+                index === 0 && !isPreSeasonDriver
                   ? driverChampionshipStatus === 'champion'
                     ? 'bg-yellow-500/10 border-yellow-500'
                     : 'bg-gray-900 border-yellow-500'
@@ -89,7 +92,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             >
               <div className="flex items-center gap-4">
                 <span
-                  className={`font-sans font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
+                  className={`font-sans font-bold text-xl w-6 ${index === 0 && !isPreSeasonDriver ? 'text-yellow-500' : 'text-gray-500'}`}
                 >
                   {index + 1}
                 </span>
@@ -151,7 +154,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 + 0.3 }}
               className={`flex items-center justify-between p-3 border-l-4 ${
-                index === 0
+                index === 0 && !isPreSeasonTeam
                   ? teamChampionshipStatus === 'champion'
                     ? 'bg-yellow-500/10 border-yellow-500'
                     : 'bg-gray-900 border-yellow-500'
@@ -164,17 +167,17 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             >
               <div className="flex items-center gap-4">
                 <span
-                  className={`font-sans font-bold text-xl w-6 ${index === 0 ? 'text-yellow-500' : 'text-gray-500'}`}
+                  className={`font-sans font-bold text-xl w-6 ${index === 0 && !isPreSeasonTeam ? 'text-yellow-500' : 'text-gray-500'}`}
                 >
                   {index + 1}
                 </span>
                 <div>
                   <div className="flex items-center gap-3">
-                    {getTeamLogo(team.team) && (
+                    {getCarImage(team.team, selectedYear) && (
                       <img
-                        src={getTeamLogo(team.team)!}
+                        src={getCarImage(team.team, selectedYear)!}
                         alt={team.team}
-                        className={`h-6 w-auto object-contain ${team.team.toLowerCase().includes('aston') ? 'h-3' : ''}`}
+                        className="h-8 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
                       />
                     )}
                     <div className="font-bold text-lg leading-none">{team.team.toUpperCase()}</div>

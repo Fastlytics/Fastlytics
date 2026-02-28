@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { getCarImage } from '@/utils/imageMapping';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileTeamStandings } from '@/components/mobile';
@@ -122,8 +123,9 @@ const TeamStandings = () => {
     return 'gray';
   };
 
-  const top3 = teamStandings?.slice(0, 3) || [];
-  const rest = teamStandings?.slice(3) || [];
+  const isPreSeason = teamStandings && teamStandings.length > 0 && teamStandings[0].points === 0;
+  const top3 = isPreSeason ? [] : teamStandings?.slice(0, 3) || [];
+  const rest = isPreSeason ? teamStandings || [] : teamStandings?.slice(3) || [];
 
   // Calculate Championship Status
   let championshipStatus: 'leader' | 'champion' = 'leader';
@@ -240,11 +242,11 @@ const TeamStandings = () => {
                       </div>
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
-                          {getTeamLogo(top3[1].team) && (
+                          {getCarImage(top3[1].team, selectedYear) && (
                             <img
-                              src={getTeamLogo(top3[1].team)!}
+                              src={getCarImage(top3[1].team, selectedYear)!}
                               alt={top3[1].team}
-                              className="h-8 w-auto"
+                              className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
                             />
                           )}
                           <h2 className="text-2xl font-bold uppercase leading-none">
@@ -301,11 +303,11 @@ const TeamStandings = () => {
                             : "Constructors' Leader"}
                         </div>
                         <div className="flex flex-col items-center gap-4 mb-6">
-                          {getTeamLogo(top3[0].team) && (
+                          {getCarImage(top3[0].team, selectedYear) && (
                             <img
-                              src={getTeamLogo(top3[0].team)!}
+                              src={getCarImage(top3[0].team, selectedYear)!}
                               alt={top3[0].team}
-                              className="h-16 w-auto"
+                              className="h-20 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
                             />
                           )}
                           <h2 className="text-3xl md:text-4xl font-black uppercase leading-none">
@@ -359,11 +361,11 @@ const TeamStandings = () => {
                       </div>
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
-                          {getTeamLogo(top3[2].team) && (
+                          {getCarImage(top3[2].team, selectedYear) && (
                             <img
-                              src={getTeamLogo(top3[2].team)!}
+                              src={getCarImage(top3[2].team, selectedYear)!}
                               alt={top3[2].team}
-                              className="h-8 w-auto"
+                              className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
                             />
                           )}
                           <h2 className="text-2xl font-bold uppercase leading-none">
@@ -429,14 +431,11 @@ const TeamStandings = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-4">
-                            {getTeamLogo(team.team) && (
+                            {getCarImage(team.team, selectedYear) && (
                               <img
-                                src={getTeamLogo(team.team)!}
+                                src={getCarImage(team.team, selectedYear)!}
                                 alt={team.team}
-                                className={cn(
-                                  'h-8 w-auto object-contain',
-                                  team.team.toLowerCase().includes('aston') ? 'h-4' : ''
-                                )}
+                                className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
                               />
                             )}
                             <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tight">

@@ -447,8 +447,10 @@ const MobileDriverStandings: React.FC = () => {
     championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
   }
 
-  const leader = driverStandings?.[0];
-  const rest = driverStandings?.slice(1) || [];
+  const isPreSeason =
+    driverStandings && driverStandings.length > 0 && driverStandings[0].points === 0;
+  const leader = isPreSeason ? null : driverStandings?.[0];
+  const rest = isPreSeason ? driverStandings || [] : driverStandings?.slice(1) || [];
 
   return (
     <MobileLayout>
