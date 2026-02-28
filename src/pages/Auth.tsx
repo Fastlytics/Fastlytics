@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import {
+  faEnvelope,
+  faLock,
+  faArrowRight,
+  faArrowLeft,
+  faCheck,
+  faKey,
+  faEye,
+  faEyeSlash,
+} from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,9 +31,17 @@ import { getErrorMessage } from '@/types';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [isResetPasswordMode, setIsResetPasswordMode] = useState(false);
   const [activeTab, setActiveTab] = useState('signup');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { user, loading } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -34,6 +52,16 @@ const Auth = () => {
       navigate('/dashboard', { replace: true });
     }
   }, [user, loading, navigate]);
+
+  // Check for password reset query parameter
+  useEffect(() => {
+    const isResetMode = searchParams.get('reset') === 'true';
+    setIsResetPasswordMode(isResetMode);
+    if (isResetMode) {
+      setActiveTab('signin');
+      setShowForgotPassword(true);
+    }
+  }, [searchParams]);
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);
@@ -72,6 +100,117 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    trackEvent('signup_started', { method: 'email' });
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Check your email to confirm your account!');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotPasswordEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setIsSendingReset(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      setResetEmailSent(true);
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+      setIsSendingReset(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) throw error;
+
+      toast.success('Password updated successfully!');
+      navigate('/dashboard');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+      setIsLoading(false);
+    }
+  };
+
+  // Check for password reset token in URL hash on mount
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+
+    if (accessToken && type === 'recovery') {
+      // Set the session from the access token
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: hashParams.get('refresh_token') || '',
+        })
+        .then(() => {
+          setIsResetPasswordMode(true);
+          setShowForgotPassword(true);
+          // Clear the hash
+          window.history.replaceState(null, '', '/auth?reset=true');
+        });
+    }
+  }, []);
 
   // Mobile Auth
   if (isMobile) {
@@ -300,6 +439,106 @@ const Auth = () => {
                         )}
                       </div>
 
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-zinc-800" />
+                        </div>
+                        <div className="relative flex justify-center text-sm uppercase tracking-wider">
+                          <span className="bg-black px-4 text-zinc-500 font-bold">
+                            Or continue with
+                          </span>
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleEmailSignUp} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="signup-email"
+                            className="text-base font-medium text-zinc-300"
+                          >
+                            Email
+                          </Label>
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faEnvelope}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                            />
+                            <Input
+                              id="signup-email"
+                              type="email"
+                              placeholder="name@example.com"
+                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              required
+                              disabled={isLoading}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="signup-password"
+                            className="text-base font-medium text-zinc-300"
+                          >
+                            Password
+                          </Label>
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faLock}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                            />
+                            <Input
+                              id="signup-password"
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Create a password"
+                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12 pr-12"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required
+                              disabled={isLoading}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                            >
+                              <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="confirm-password"
+                            className="text-base font-medium text-zinc-300"
+                          >
+                            Confirm Password
+                          </Label>
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faLock}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                            />
+                            <Input
+                              id="confirm-password"
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="Confirm your password"
+                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              required
+                              disabled={isLoading}
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          type="submit"
+                          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'Creating account...' : 'Create Account'}
+                        </Button>
+                      </form>
+
                       <p className="text-center text-sm text-zinc-500 mt-8">
                         By clicking continue, you agree to our{' '}
                         <span className="underline cursor-pointer hover:text-zinc-300">
@@ -386,31 +625,62 @@ const Auth = () => {
                           <Label htmlFor="email" className="text-base font-medium text-zinc-300">
                             Email
                           </Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            placeholder="name@example.com"
-                            className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            disabled={isLoading}
-                          />
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faEnvelope}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                            />
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="name@example.com"
+                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              required
+                              disabled={isLoading}
+                            />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="password" className="text-base font-medium text-zinc-300">
                             Password
                           </Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            disabled={isLoading}
-                          />
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faLock}
+                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                            />
+                            <Input
+                              id="password"
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
+                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12 pr-12"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required
+                              disabled={isLoading}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                            >
+                              <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowForgotPassword(true);
+                              setForgotPasswordEmail(email);
+                            }}
+                            className="text-sm text-zinc-500 hover:text-red-500 transition-colors"
+                          >
+                            Forgot password?
+                          </button>
                         </div>
                         <Button
                           type="submit"
@@ -426,6 +696,184 @@ const Auth = () => {
               </AnimatePresence>
             </div>
           </Tabs>
+
+          {/* Forgot Password Modal */}
+          <AnimatePresence>
+            {showForgotPassword && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmailSent(false);
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl p-8 mx-4"
+                >
+                  {!resetEmailSent ? (
+                    <>
+                      {isResetPasswordMode ? (
+                        // Password reset form (when user comes back from email)
+                        <>
+                          <h2 className="text-2xl font-bold text-white mb-2">Set New Password</h2>
+                          <p className="text-zinc-400 mb-6">Enter your new password below.</p>
+                          <form onSubmit={handleUpdatePassword} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="new-password"
+                                className="text-base font-medium text-zinc-300"
+                              >
+                                New Password
+                              </Label>
+                              <div className="relative">
+                                <FontAwesomeIcon
+                                  icon={faLock}
+                                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                                />
+                                <Input
+                                  id="new-password"
+                                  type={showPassword ? 'text' : 'password'}
+                                  placeholder="Enter new password"
+                                  className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12 pr-12"
+                                  value={password}
+                                  onChange={(e) => setPassword(e.target.value)}
+                                  required
+                                  disabled={isLoading}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                                >
+                                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="confirm-new-password"
+                                className="text-base font-medium text-zinc-300"
+                              >
+                                Confirm New Password
+                              </Label>
+                              <div className="relative">
+                                <FontAwesomeIcon
+                                  icon={faLock}
+                                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                                />
+                                <Input
+                                  id="confirm-new-password"
+                                  type={showPassword ? 'text' : 'password'}
+                                  placeholder="Confirm new password"
+                                  className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                                  value={confirmPassword}
+                                  onChange={(e) => setConfirmPassword(e.target.value)}
+                                  required
+                                  disabled={isLoading}
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="submit"
+                              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 mt-2"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? 'Updating password...' : 'Update Password'}
+                            </Button>
+                          </form>
+                        </>
+                      ) : (
+                        // Email input form (initial forgot password request)
+                        <>
+                          <h2 className="text-2xl font-bold text-white mb-2">Reset Password</h2>
+                          <p className="text-zinc-400 mb-6">
+                            Enter your email address and we'll send you a link to reset your
+                            password.
+                          </p>
+                          <form onSubmit={handleForgotPassword} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="forgot-email"
+                                className="text-base font-medium text-zinc-300"
+                              >
+                                Email
+                              </Label>
+                              <div className="relative">
+                                <FontAwesomeIcon
+                                  icon={faEnvelope}
+                                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                                />
+                                <Input
+                                  id="forgot-email"
+                                  type="email"
+                                  placeholder="name@example.com"
+                                  className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                                  value={forgotPasswordEmail}
+                                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                                  required
+                                  disabled={isSendingReset}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setShowForgotPassword(false);
+                                  setResetEmailSent(false);
+                                }}
+                                className="flex-1 h-12 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                                disabled={isSendingReset}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="submit"
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold h-12"
+                                disabled={isSendingReset}
+                              >
+                                {isSendingReset ? 'Sending...' : 'Send Reset Link'}
+                              </Button>
+                            </div>
+                          </form>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <FontAwesomeIcon icon={faEnvelope} className="w-8 h-8 text-green-500" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
+                        <p className="text-zinc-400 mb-6">
+                          We've sent a password reset link to{' '}
+                          <span className="text-white">{forgotPasswordEmail}</span>
+                        </p>
+                        <Button
+                          onClick={() => {
+                            setShowForgotPassword(false);
+                            setResetEmailSent(false);
+                          }}
+                          className="w-full bg-zinc-800 hover:bg-zinc-700 text-white h-12"
+                        >
+                          Back to Sign In
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

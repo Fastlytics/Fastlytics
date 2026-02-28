@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { CustomTooltipProps, CustomLegendProps } from '../recharts.types';
+import type { CustomTooltipProps, CustomLegendProps } from './recharts.types';
 
 describe('recharts.types', () => {
   describe('CustomTooltipProps', () => {

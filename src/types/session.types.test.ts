@@ -3,7 +3,7 @@ import type {
   ChunkManifest,
   SessionMetadataExtended,
   DriverTelemetryArrays,
-} from '../session.types';
+} from './session.types';
 
 describe('session.types', () => {
   describe('DriverTelemetryArrays', () => {
@@ -32,7 +32,6 @@ describe('session.types', () => {
   describe('ChunkManifest', () => {
     it('should define chunk metadata', () => {
       const manifest: ChunkManifest = [{ url: 'chunk1' }, { url: 'chunk2' }];
-
       expect(manifest).toHaveLength(2);
     });
   });
