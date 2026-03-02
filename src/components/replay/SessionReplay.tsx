@@ -11,6 +11,18 @@ import {
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 import ReplayLoader from './ReplayLoader';
+import PlaybackControls from './PlaybackControls';
+import RaceControlMessages from './RaceControlMessages';
+import Leaderboard from './Leaderboard';
+import {
+  getSectorMarkers,
+  getTrailPoints,
+  getSpeedHeatmapSegments,
+  getTrackStatusSegments,
+  getTyreAge,
+  getTimeForLap,
+  getAllLapNumbers,
+} from './replay-utils';
 import { getDriverImage } from '@/utils/imageMapping';
 import {
   Play,
@@ -245,6 +257,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  const [showSpeedHeatmap, setShowSpeedHeatmap] = useState(false);
   const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
@@ -1349,6 +1362,80 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return '#1f2937'; // Default
   }, [currentTime, data, isQualifying, sessionTimeRemaining]);
 
+  // --- Feature 1: Sector Markers + Start/Finish Line ---
+  const sectorMarkers = useMemo(() => {
+    if (!data?.circuit_points || !data?.circuit_distances) return [];
+    return getSectorMarkers(data.circuit_points, data.circuit_distances);
+  }, [data?.circuit_points, data?.circuit_distances]);
+
+  // --- Feature 3: Speed Heatmap Segments ---
+  const speedHeatmapSegments = useMemo(() => {
+    if (
+      !showSpeedHeatmap ||
+      !selectedDriver ||
+      !data?.circuit_points ||
+      !data?.drivers[selectedDriver]
+    )
+      return [];
+    const driverData = data.drivers[selectedDriver];
+    // Build speed-by-track-index mapping from current driver data at current frame
+    const pathPoints = data.circuit_points;
+    const speedArray: number[] = new Array(pathPoints.length).fill(0);
+    const len = driverData.x.length;
+    // Sample recent frames (last ~2 laps worth ≈ FPS*120) around safeIndex
+    const sampleRange = Math.min(len, 25 * 120);
+    const start = Math.max(0, safeIndex - sampleRange);
+    const end = Math.min(len - 1, safeIndex);
+    for (let i = start; i <= end; i++) {
+      const px = driverData.x[i];
+      const py = driverData.y[i];
+      // Find closest track index
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      // Sample every 3rd point for performance
+      for (let j = 0; j < pathPoints.length; j += 3) {
+        const dx = pathPoints[j][0] - px;
+        const dy = pathPoints[j][1] - py;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestDist) {
+          bestDist = d2;
+          bestIdx = j;
+        }
+      }
+      speedArray[bestIdx] = driverData.speed[i];
+    }
+    return getSpeedHeatmapSegments(data.circuit_points, speedArray, 350);
+  }, [showSpeedHeatmap, selectedDriver, data, safeIndex]);
+
+  // --- Feature 4: Track Status Segments for Seekbar ---
+  const seekbarStatusSegments = useMemo(() => {
+    if (!data?.track_statuses) return [];
+    return getTrackStatusSegments(data.track_statuses, activeTotalDuration);
+  }, [data?.track_statuses, activeTotalDuration]);
+
+  // --- Feature 6: Tyre Age per Driver ---
+  const tyreAgeMap = useMemo(() => {
+    if (!data?.drivers) return {};
+    const result: Record<string, number> = {};
+    for (const [code, d] of Object.entries(data.drivers)) {
+      result[code] = getTyreAge(d.tyre, d.lap, safeIndex);
+    }
+    return result;
+  }, [data?.drivers, safeIndex]);
+
+  // --- Feature 7: Lap-Based Seeking ---
+  const availableLaps = useMemo(() => {
+    if (!data?.drivers) return [];
+    return getAllLapNumbers(data.drivers);
+  }, [data?.drivers]);
+
+  const currentLap = useMemo(() => {
+    // Use selected driver's lap or leader's lap
+    const code = selectedDriver || leaderboard[0]?.code;
+    if (!code) return 0;
+    return activeDrivers[code]?.lap || 0;
+  }, [selectedDriver, leaderboard, activeDrivers]);
+
   // --- Helper for Time Display ---
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -1777,6 +1864,86 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
                 className="opacity-30"
               />
 
+              {/* Speed Heatmap Layer */}
+              {speedHeatmapSegments.map((seg, i) => (
+                <path
+                  key={`heatmap-${i}`}
+                  d={seg.path}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.8}
+                />
+              ))}
+
+              {/* Sector Markers + Start/Finish Line */}
+              {sectorMarkers.map((marker) => {
+                const lineLen = 18;
+                const dx = Math.cos(marker.angle) * lineLen;
+                const dy = Math.sin(marker.angle) * lineLen;
+                const isStartFinish = marker.label === 'S/F';
+                return (
+                  <g key={marker.label} className="opacity-70">
+                    <line
+                      x1={marker.x - dx}
+                      y1={marker.y - dy}
+                      x2={marker.x + dx}
+                      y2={marker.y + dy}
+                      stroke={isStartFinish ? '#ffffff' : '#9ca3af'}
+                      strokeWidth={isStartFinish ? 3 : 2}
+                      strokeLinecap="round"
+                    />
+                    {isStartFinish && (
+                      <line
+                        x1={marker.x - dx * 0.6}
+                        y1={marker.y - dy * 0.6}
+                        x2={marker.x + dx * 0.6}
+                        y2={marker.y + dy * 0.6}
+                        stroke="#000000"
+                        strokeWidth={1.5}
+                        strokeDasharray="3 3"
+                        strokeLinecap="round"
+                      />
+                    )}
+                    <text
+                      x={marker.x + dx * 1.4}
+                      y={marker.y + dy * 1.4}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill={isStartFinish ? '#ffffff' : '#9ca3af'}
+                      fontSize="10"
+                      fontWeight={isStartFinish ? 'bold' : 'normal'}
+                      className="select-none"
+                    >
+                      {marker.label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Car Trails Layer */}
+              {Object.entries(activeDrivers).map(([code, car]) => {
+                if (driverVisuals.visibility[code] === 'hidden' && replayMode !== 'ghost')
+                  return null;
+                const driverData = data.drivers[code.replace('_GHOST', '')];
+                if (!driverData) return null;
+                const color = car.color || data.driver_colors[code] || 'white';
+                const trailLength = selectedDriver === code ? 20 : 8;
+                const trail = getTrailPoints(driverData.x, driverData.y, safeIndex, trailLength);
+                return trail.map((pt, i) => (
+                  <circle
+                    key={`trail-${code}-${i}`}
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={2}
+                    fill={color}
+                    opacity={pt.opacity * 0.5}
+                  />
+                ));
+              })}
+
               {/* Cars Layer */}
               {Object.entries(activeDrivers).map(([code, car]) => {
                 // Check Visibility
@@ -1857,209 +2024,34 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         )}
 
         {/* 2. Messages Overlay (Top Center) */}
-        {replayMode !== 'ghost' && (
-          <div className="absolute top-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-50">
-            {data.race_control_messages
-              .filter((m) => {
-                const id = `${m.time}-${m.message}`;
-                return (
-                  m.time <= currentTime && m.time > currentTime - 5 && !dismissedMessages.has(id)
-                );
-              }) // Show last 5s & not dismissed
-              .slice(-3) // Show max 3
-              .reverse() // Newest top
-              .map((msg, i) => {
-                const id = `${msg.time}-${msg.message}`;
-                const config = getMessageConfig(msg);
-                const Icon = config.icon;
-
-                return (
-                  <div
-                    key={id}
-                    className={`
-                                    ${config.bg} ${config.border} ${config.color}
-                                    border-l-4 p-3 rounded-r shadow-lg max-w-xl w-full
-                                    animate-in fade-in slide-in-from-top-4 duration-300
-                                    pointer-events-auto flex items-center gap-4
-                                `}
-                  >
-                    <div className="shrink-0 p-2 bg-black/20 rounded-full">
-                      <Icon size={24} fill={config.fill ? 'currentColor' : 'none'} />
-                    </div>
-
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="font-bold text-sm tracking-wider uppercase opacity-90">
-                          {msg.flag || config.type}
-                        </span>
-                        <span className="text-[10px] font-mono opacity-60">
-                          {formatTime(msg.time)}
-                        </span>
-                      </div>
-                      <span className="text-white font-medium text-sm leading-tight break-words">
-                        {msg.message}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => setDismissedMessages((prev) => new Set(prev).add(id))}
-                      className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                );
-              })}
-          </div>
-        )}
+        <RaceControlMessages
+          messages={data.race_control_messages}
+          currentTime={currentTime}
+          dismissedMessages={dismissedMessages}
+          replayMode={replayMode}
+          getMessageConfig={getMessageConfig}
+          formatTime={formatTime}
+          onDismiss={(id) => setDismissedMessages((prev) => new Set(prev).add(id))}
+        />
 
         {/* 3. Leaderboard Sidebar (Right) */}
-        <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
-          <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
-            <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
-            {isRace && replayMode !== 'ghost' ? (
-              <span className="text-white">
-                LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span>
-              </span>
-            ) : sessionTimeRemaining && replayMode !== 'ghost' && !isQualifying ? (
-              <span
-                className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}
-              >
-                TIME {sessionTimeRemaining.formatted}
-              </span>
-            ) : null}
-          </div>
-          <div className="flex flex-col">
-            {leaderboard.map((driver, index) => {
-              const isOut = driverVisuals.outStatus?.[driver.code];
-
-              // Interval Calculation
-              let intervalText = 'LEADER';
-              let isPitting = false;
-
-              // Check Pit Status
-              if (data.pit_intervals?.[driver.code]) {
-                isPitting = data.pit_intervals[driver.code].some(
-                  (interval) => currentTime >= interval.start && currentTime <= interval.end
-                );
-              }
-
-              if (isOut) {
-                intervalText = 'OUT';
-              } else if (isPitting) {
-                intervalText = 'PIT';
-              } else {
-                if (isRace) {
-                  // --- RACE INTERVALS ---
-                  if (index > 0) {
-                    const leader = leaderboard[index - 1];
-                    const circuitLength =
-                      data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000;
-
-                    // GHOST MODE FIX: Ignore absolute lap difference, compare relative distance only
-                    const lapA = replayMode === 'ghost' ? 0 : leader.lap;
-                    const lapB = replayMode === 'ghost' ? 0 : driver.lap;
-
-                    const distA = lapA * circuitLength + (leader.ref_dist || 0);
-                    const distB = lapB * circuitLength + (driver.ref_dist || 0);
-
-                    const deltaMeters = Math.max(0, distA - distB);
-                    const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
-                    intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
-                  }
-                } else {
-                  // --- QUALY INTERVALS (Gap to P1) ---
-                  const bestLap = driver.bestLap;
-                  const p1Best = leaderboard[0]?.bestLap;
-
-                  if (index === 0) {
-                    intervalText = bestLap?.time_str || 'NO TIME';
-                  } else {
-                    if (bestLap && p1Best) {
-                      const diff = bestLap.seconds - p1Best.seconds;
-                      intervalText = `+${diff.toFixed(3)}s`;
-                    } else {
-                      intervalText = 'NO TIME';
-                    }
-                  }
-                }
-              }
-
-              return (
-                <div
-                  key={driver.code}
-                  onClick={() => {
-                    if (isOut) return;
-                    setSelectedDriver(driver.code === selectedDriver ? null : driver.code);
-                    setIsFollowing(true); // Enable follow
-                  }}
-                  className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 transition-colors ${isOut ? 'opacity-40 grayscale cursor-default' : 'cursor-pointer hover:bg-white/5'} ${selectedDriver === driver.code ? 'bg-white/10' : ''}`}
-                >
-                  <span className="w-4 text-center text-gray-500 font-mono text-[10px]">
-                    {driver.pos}
-                  </span>
-
-                  {/* Driver Image with Fallback */}
-                  <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded-full overflow-hidden border border-gray-700 shrink-0">
-                    {(() => {
-                      const lookupCode = driver.code.replace('_GHOST', '');
-                      return (
-                        <img
-                          src={getDriverImage(lookupCode, year)}
-                          alt={driver.code}
-                          className="w-full h-full object-cover object-top transform scale-110"
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement;
-                            img.src = '/placeholder.svg';
-                            img.onerror = null;
-                          }}
-                        />
-                      );
-                    })()}
-                  </div>
-                  <div className="w-1 h-5 mx-1" style={{ backgroundColor: driver.color }}></div>
-                  <span className="font-bold text-xs min-w-[3ch]">
-                    {driver.originalCode || driver.code.replace('_GHOST', '')}
-                  </span>
-
-                  {/* Tyre Icon */}
-                  <div className="w-5 flex justify-center ml-auto">
-                    <img
-                      src={`/tyres/${
-                        driver.tyre === 0
-                          ? 'soft'
-                          : driver.tyre === 1
-                            ? 'medium'
-                            : driver.tyre === 2
-                              ? 'hard'
-                              : driver.tyre === 3
-                                ? 'intermediate'
-                                : driver.tyre === 4
-                                  ? 'wet'
-                                  : 'soft'
-                      }.png`}
-                      alt="Tyre"
-                      className="h-4 w-4 object-contain"
-                    />
-                  </div>
-
-                  {/* Interval */}
-                  <span
-                    className={`text-[10px] font-mono w-10 text-right ${
-                      intervalText === 'PIT'
-                        ? 'text-orange-500 font-bold animate-pulse'
-                        : intervalText === 'OUT'
-                          ? 'text-gray-500 font-bold'
-                          : 'text-gray-400'
-                    }`}
-                  >
-                    {intervalText}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <Leaderboard
+          leaderboard={leaderboard}
+          selectedDriver={selectedDriver}
+          driverVisuals={driverVisuals}
+          isRace={isRace}
+          isQualifying={isQualifying}
+          replayMode={replayMode}
+          currentTime={currentTime}
+          totalLaps={totalLaps}
+          year={year}
+          sessionTimeRemaining={sessionTimeRemaining}
+          pitIntervals={data.pit_intervals}
+          circuitLength={data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000}
+          tyreAge={tyreAgeMap}
+          onSelectDriver={(code) => setSelectedDriver(code)}
+          onFollow={() => setIsFollowing(true)}
+        />
 
         {replayMode === 'ghost' ? (
           <>
@@ -2118,102 +2110,52 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       )}
 
       {/* 5. Playback Controls (Auto-Hide Bottom Overlay) */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-all duration-500 ${hasStarted ? (isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto') : 'translate-y-full opacity-0'}`}
-      >
-        <div className="w-full bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 pointer-events-auto">
-          <div className="max-w-7xl mx-auto flex flex-col gap-4">
-            {/* Slider Container with Tooltip */}
-            <div className="relative group/slider w-full">
-              {hoverTime !== null && hoverPos !== null && (
-                <div
-                  className="absolute bottom-4 -translate-x-1/2 bg-black/90 text-white text-xs font-mono font-bold py-1 px-2 rounded border border-gray-700 pointer-events-none z-50 whitespace-nowrap"
-                  style={{ left: `${hoverPos}px` }}
-                >
-                  {formatTime(hoverTime)}
-                </div>
-              )}
-              <input
-                type="range"
-                min={0}
-                max={activeTotalDuration}
-                step={0.1}
-                value={currentTime}
-                onChange={(e) => {
-                  setCurrentTime(parseFloat(e.target.value));
-                }}
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const width = rect.width;
-                  const pct = Math.max(0, Math.min(1, x / width));
-                  const time = pct * activeTotalDuration;
-                  setHoverTime(time);
-                  setHoverPos(x);
-                }}
-                onMouseLeave={() => {
-                  setHoverTime(null);
-                  setHoverPos(null);
-                }}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 block"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              {/* Left Controls */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => {
-                    setIsPlaying(!isPlaying);
-                    trackEvent('replay_play_pause', {
-                      action: isPlaying ? 'pause' : 'play',
-                      current_time: currentTime,
-                      year,
-                      event,
-                      session,
-                    });
-                  }}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                </button>
-
-                <span className="font-mono text-xl font-bold tabular-nums min-w-[5ch]">
-                  {/* Display Active Time based on mode */}
-                  {formatTime(currentTime)}
-                </span>
-              </div>
-
-              {/* Right - Speed & Fullscreen */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const speeds = [1, 2, 5, 10, 20];
-                    const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
-                    setPlaybackSpeed(speeds[nextIdx]);
-                    trackEvent('replay_speed_changed', {
-                      speed: speeds[nextIdx],
-                      year,
-                      event,
-                      session,
-                    });
-                  }}
-                  className="font-mono text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3ch] text-center"
-                >
-                  {playbackSpeed}x
-                </button>
-
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PlaybackControls
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        playbackSpeed={playbackSpeed}
+        activeTotalDuration={activeTotalDuration}
+        isFullscreen={isFullscreen}
+        hasStarted={hasStarted}
+        showSpeedHeatmap={showSpeedHeatmap}
+        seekbarStatusSegments={seekbarStatusSegments}
+        hoverTime={hoverTime}
+        hoverPos={hoverPos}
+        formatTime={formatTime}
+        onPlayPause={() => {
+          setIsPlaying(!isPlaying);
+          trackEvent('replay_play_pause', {
+            action: isPlaying ? 'pause' : 'play',
+            current_time: currentTime,
+            year,
+            event,
+            session,
+          });
+        }}
+        onSeek={(time) => setCurrentTime(time)}
+        onSpeedChange={() => {
+          const speeds = [1, 2, 5, 10, 20];
+          const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+          setPlaybackSpeed(speeds[nextIdx]);
+          trackEvent('replay_speed_changed', { speed: speeds[nextIdx], year, event, session });
+        }}
+        onToggleFullscreen={toggleFullscreen}
+        onToggleHeatmap={() => setShowSpeedHeatmap((v) => !v)}
+        availableLaps={availableLaps}
+        currentLap={currentLap}
+        onSeekToLap={(lap) => {
+          const time = getTimeForLap(data.drivers, data.time, lap);
+          if (time !== null) setCurrentTime(time);
+        }}
+        onHoverMove={(time, pos) => {
+          setHoverTime(time);
+          setHoverPos(pos);
+        }}
+        onHoverLeave={() => {
+          setHoverTime(null);
+          setHoverPos(null);
+        }}
+      />
     </div>
   );
 };
