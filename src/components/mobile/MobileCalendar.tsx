@@ -604,8 +604,8 @@ const MobileCalendar: React.FC = () => {
               onClick={() => setShowSeasonSelector(true)}
               className="flex items-center gap-2 bg-black border-2 border-white/10 px-4 py-2.5 text-base font-black uppercase italic active:scale-95 transition-transform hover:bg-zinc-900 rounded-xl"
             >
-              <span className="text-white">{selectedYear} Season</span>
-              <ArrowDown01Icon className="w-4 h-4 text-gray-400" />
+              <span className="text-white whitespace-nowrap">{selectedYear} Season</span>
+              <ArrowDown01Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
             </button>
 
             {/* Stats Badge */}

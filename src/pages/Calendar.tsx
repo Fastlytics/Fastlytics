@@ -389,8 +389,8 @@ const Calendar = () => {
                 trackEvent('season_changed', { page: 'calendar', year: Number(value) });
               }}
             >
-              <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
-                <div className="flex items-center gap-2">
+              <SelectTrigger className="w-auto min-w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12 px-6">
+                <div className="flex items-center gap-2 whitespace-nowrap">
                   <ChampionIcon className="w-4 h-4 text-red-600" />
                   <span>{selectedYear} Season</span>
                 </div>

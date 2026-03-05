@@ -135,13 +135,13 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
       );
     } else if (change > 0) {
       return (
-        <span className="text-green-500 flex items-center justify-center font-mono font-bold">
+        <span className="text-green-500 flex items-center justify-center font-mono font-black">
           <ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}
         </span>
       );
     } else {
       return (
-        <span className="text-red-500 flex items-center justify-center font-mono font-bold">
+        <span className="text-red-500 flex items-center justify-center font-mono font-black">
           <ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}
         </span>
       );
@@ -149,31 +149,31 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
   };
 
   return (
-    <div className="bg-black border border-gray-800">
-      <div className="p-4 border-b border-gray-800">
-        <h4 className="text-sm font-bold uppercase tracking-wider text-white">
+    <div className="bg-black border border-gray-700">
+      <div className="p-4 border-b border-gray-700">
+        <h4 className="text-sm font-black uppercase tracking-wider text-white">
           Places Gained/Lost
         </h4>
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-gray-900/50 border-b border-gray-800">
-            <TableRow className="border-gray-800 hover:bg-transparent">
-              <TableHead className="w-[50px] text-center text-gray-500 font-bold uppercase text-xs">
+          <TableHeader className="bg-black border-b border-gray-700">
+            <TableRow className="border-gray-700 hover:bg-transparent">
+              <TableHead className="w-[50px] text-center text-gray-400 font-black uppercase text-xs">
                 Pos
               </TableHead>
-              <TableHead className="text-gray-500 font-bold uppercase text-xs">Driver</TableHead>
-              <TableHead className="text-gray-500 font-bold uppercase text-xs">Team</TableHead>
-              <TableHead className="w-[90px] text-center text-gray-500 font-bold uppercase text-xs">
+              <TableHead className="text-gray-400 font-black uppercase text-xs">Driver</TableHead>
+              <TableHead className="text-gray-400 font-black uppercase text-xs">Team</TableHead>
+              <TableHead className="w-[90px] text-center text-gray-400 font-black uppercase text-xs">
                 Change
               </TableHead>
-              <TableHead className="w-[120px] text-right text-gray-500 font-bold uppercase text-xs">
+              <TableHead className="w-[120px] text-right text-gray-400 font-black uppercase text-xs">
                 Time
               </TableHead>
-              <TableHead className="w-[60px] text-center text-gray-500 font-bold uppercase text-xs">
+              <TableHead className="w-[60px] text-center text-gray-400 font-black uppercase text-xs">
                 Laps
               </TableHead>
-              <TableHead className="w-[70px] text-center text-gray-500 font-bold uppercase text-xs">
+              <TableHead className="w-[70px] text-center text-gray-400 font-black uppercase text-xs">
                 Grid
               </TableHead>
             </TableRow>
@@ -182,14 +182,14 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
             {calculatedResults.map((res) => (
               <TableRow
                 key={res.driverCode}
-                className="border-gray-800/50 hover:bg-gray-900/50 transition-colors group"
+                className="border-gray-700/50 hover:bg-gray-800/30 transition-colors group"
               >
-                <TableCell className="text-center font-mono font-bold text-gray-400 group-hover:text-white">
+                <TableCell className="text-center font-mono font-black text-gray-400 group-hover:text-white">
                   {res.position ?? '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white">{res.fullName}</span>
+                    <span className="font-black text-white">{res.fullName}</span>
                     {isRookie(res.driverCode, year) && (
                       <span className="text-[10px] px-1 py-0.5 bg-blue-900/50 text-blue-300 rounded border border-blue-800 font-mono">
                         R

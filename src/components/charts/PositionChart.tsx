@@ -128,7 +128,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const renderContent = () => {
     if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
       return (
-        <div className="w-full h-[400px] bg-gray-900/50 border border-gray-800 flex items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[400px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 font-mono uppercase">
           No position data found or provided.
         </div>
       );
@@ -143,21 +143,21 @@ const PositionChart: React.FC<PositionChartProps> = ({
           <XAxis
             dataKey="LapNumber"
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
+            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
             padding={{ left: 10, right: 10 }}
             label={{
               value: 'Lap Number',
               position: 'insideBottom',
               offset: -5,
-              fill: '#888',
-              fontSize: 12,
-              fontFamily: 'Geist',
+              fill: '#FFF',
+              fontSize: 13,
+              fontFamily: 'Geist Mono',
             }}
             allowDecimals={false}
           />
           <YAxis
             stroke="#666"
-            tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
+            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
             reversed={true}
             domain={[1, 'dataMax + 1']}
             interval={0}
@@ -186,8 +186,8 @@ const PositionChart: React.FC<PositionChartProps> = ({
               });
 
               return (
-                <div className="bg-black border border-gray-800 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.9)] max-w-[500px] z-50">
-                  <div className="text-white font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 mb-2 font-mono text-sm">
+                <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[500px] z-50">
+                  <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
                     Lap {label}
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
@@ -207,7 +207,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                           >
                             P{position}
                           </span>
-                          <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
+                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
                             {headshot ? (
                               <img
                                 src={headshot}
@@ -220,7 +220,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                               </div>
                             )}
                           </div>
-                          <span className="text-xs font-mono text-gray-300 font-bold">
+                          <span className="text-xs font-mono text-gray-300 font-black">
                             {driverCode}
                           </span>
                         </div>
@@ -233,7 +233,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
             cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Geist', fontSize: '12px' }}
+            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Geist Mono', fontSize: '12px' }}
             payload={selectedDrivers.map((driverCode) => {
               const color = driverColor(driverCode, year);
               let team = '';
@@ -293,7 +293,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 fill={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
                 fontSize={10}
                 opacity={0.7}
-                fontFamily="Geist"
+                fontFamily="Geist Mono"
               />
             </ReferenceArea>
           ))}
@@ -356,10 +356,10 @@ const PositionChart: React.FC<PositionChartProps> = ({
       className={cn('bg-black p-0', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">
+            <h3 className="text-lg font-black uppercase tracking-wider text-white">
               Lap-by-Lap Position Changes
             </h3>
             <ChartExportButton
@@ -385,7 +385,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={isPopoverOpen}
-                className="w-[180px] justify-between text-xs h-8 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 hover:text-white rounded-none uppercase font-bold tracking-wider"
+                className="w-[180px] justify-between text-xs h-8 bg-black border-gray-700 text-white hover:bg-gray-800 hover:text-white rounded-none uppercase font-black tracking-wider"
                 disabled={driverCodes.length === 0}
               >
                 {selectedDrivers.length === driverCodes.length
@@ -396,19 +396,19 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 <ArrowUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 bg-black border-2 border-gray-800 text-white rounded-none">
-              <div className="p-2 border-b border-gray-800 flex justify-between bg-gray-900">
+            <PopoverContent className="w-[200px] p-0 bg-black border border-gray-700 text-white rounded-none">
+              <div className="p-2 border-b border-gray-700 flex justify-between bg-black">
                 <Button
                   variant="link"
                   onClick={handleSelectAll}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-bold uppercase"
+                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
                 >
                   All
                 </Button>
                 <Button
                   variant="link"
                   onClick={handleSelectNone}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-bold uppercase"
+                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
                 >
                   None
                 </Button>
@@ -424,7 +424,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                       <Label
                         key={driverCode}
                         className={cn(
-                          'flex items-center space-x-2 p-2 hover:bg-gray-900 cursor-pointer transition-colors',
+                          'flex items-center space-x-2 p-2 hover:bg-gray-800/30 cursor-pointer transition-colors',
                           isFavorite && 'bg-red-900/20 border-l-2 border-red-600',
                           focusedDriver && focusedDriver !== driverCode && 'opacity-30'
                         )}
@@ -442,16 +442,16 @@ const PositionChart: React.FC<PositionChartProps> = ({
                             <img
                               src={headshot}
                               alt={driverCode}
-                              className="w-6 h-6 object-cover object-top rounded-full bg-gray-800"
+                              className="w-6 h-6 object-cover object-top rounded-full bg-black"
                             />
                           ) : (
-                            <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500">
+                            <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-[10px] font-black text-gray-500">
                               {driverCode.substring(0, 1)}
                             </div>
                           )}
                           <span
                             className={cn(
-                              'text-xs font-mono font-bold',
+                              'text-xs font-mono font-black',
                               isFavorite ? 'text-red-500' : 'text-white'
                             )}
                             style={{

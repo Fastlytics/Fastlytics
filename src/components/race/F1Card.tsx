@@ -57,40 +57,34 @@ const F1Card = ({
   return (
     <div
       className={cn(
-        'bg-black border-2 p-6 relative overflow-hidden group transition-all duration-300 hover:border-red-600',
-        `border-f1-${team}`,
+        'bg-black border p-6 relative overflow-hidden group transition-all duration-300 hover:border-white border-gray-700',
         className
       )}
       style={style}
     >
-      {/* Background accent */}
-      <div
-        className={cn(
-          'absolute top-0 right-0 w-32 h-32 opacity-10 -mr-10 -mt-10 rounded-full blur-3xl',
-          `bg-f1-${team}`
-        )}
-      />
+      {/* Team accent bar */}
+      <div className={cn('absolute top-0 left-0 right-0 h-1', `bg-f1-${team}`)} />
 
-      <div className="flex justify-between items-start relative z-10">
+      <div className="flex justify-between items-start relative z-10 pt-1">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{title}</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">{title}</h3>
             {isRookie && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-200 uppercase font-bold tracking-wider border border-blue-800">
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-200 uppercase font-black tracking-wider border border-blue-800">
                 Rookie
               </span>
             )}
           </div>
-          <div className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">
+          <div className="text-2xl font-black uppercase tracking-wider text-white mb-1 font-mono">
             {value}
           </div>
 
-          {subValue && <div className="text-sm text-red-500 font-mono font-bold">{subValue}</div>}
+          {subValue && <div className="text-sm text-red-500 font-mono font-black">{subValue}</div>}
 
           {indicator && (
             <div
               className={cn(
-                'text-xs mt-2 flex items-center gap-1 font-bold uppercase tracking-wider',
+                'text-xs mt-2 flex items-center gap-1 font-black uppercase tracking-wider',
                 indicator.color
               )}
               title="Points Change"
@@ -102,8 +96,8 @@ const F1Card = ({
         </div>
 
         {imageUrl ? (
-          <Avatar className="h-16 w-16 border-2 border-gray-700">
-            <AvatarImage src={imageUrl} className="object-cover object-top bg-gray-800" />
+          <Avatar className="h-16 w-16 border border-gray-700">
+            <AvatarImage src={imageUrl} className="object-cover object-top bg-black" />
             <AvatarFallback>{String(value).substring(0, 2)}</AvatarFallback>
           </Avatar>
         ) : (

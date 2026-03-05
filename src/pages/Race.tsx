@@ -37,6 +37,7 @@ import { GearMapChart } from '@/components/charts/GearMapChart';
 import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
+import { TeamPaceBreakdown } from '@/components/race/TeamPaceBreakdown';
 import { F1Card } from '@/components/race/F1Card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -284,7 +285,7 @@ const SessionResultsTable: React.FC<{
     {
       key: 'displayPosition',
       label: 'POS',
-      className: 'w-[60px] text-center font-mono font-bold text-gray-400',
+      className: 'w-[60px] text-center font-mono font-black text-gray-400',
     },
     { key: 'driver', label: 'DRIVER' },
     { key: 'team', label: 'TEAM' },
@@ -298,7 +299,7 @@ const SessionResultsTable: React.FC<{
       className: 'text-right font-mono',
     });
     columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
-    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-bold text-red-500' });
+    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-black text-red-500' });
   } else if (isQualifying) {
     columns.push({
       key: 'fastestLapTime',
@@ -323,15 +324,15 @@ const SessionResultsTable: React.FC<{
   }
 
   return (
-    <div className="bg-black border-2 border-gray-800 overflow-hidden">
+    <div className="bg-black border border-gray-700 overflow-hidden">
       <Table>
-        <TableHeader className="bg-gray-900/50 border-b border-gray-800">
-          <TableRow className="border-gray-800 hover:bg-transparent">
+        <TableHeader className="bg-black border-b border-gray-700">
+          <TableRow className="border-gray-700 hover:bg-transparent">
             {columns.map((col) => (
               <TableHead
                 key={String(col.key)}
                 className={cn(
-                  'text-gray-500 font-bold uppercase tracking-wider text-xs py-4',
+                  'text-gray-400 font-black uppercase tracking-wider text-xs py-4',
                   col.className
                 )}
               >
@@ -350,10 +351,10 @@ const SessionResultsTable: React.FC<{
               <TableRow
                 key={res.driverCode}
                 className={cn(
-                  'border-gray-800/50 transition-colors group',
+                  'border-gray-700/50 transition-colors group',
                   isFavorite
                     ? 'bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600'
-                    : 'hover:bg-gray-900/50'
+                    : 'hover:bg-gray-800/30'
                 )}
               >
                 {columns.map((col) => (
@@ -369,7 +370,7 @@ const SessionResultsTable: React.FC<{
                       )
                     ) : col.key === 'driver' ? (
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-white group-hover:text-red-500 transition-colors">
+                        <span className="font-black text-white group-hover:text-red-500 transition-colors">
                           {res.fullName}
                         </span>
                         {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
@@ -390,7 +391,7 @@ const SessionResultsTable: React.FC<{
                     ) : col.key === 'points' ? (
                       <span
                         className={cn(
-                          'flex items-center justify-end gap-2 font-bold',
+                          'flex items-center justify-end gap-2 font-black',
                           res.isProvisional ? 'text-yellow-500' : 'text-red-500'
                         )}
                       >
@@ -414,7 +415,7 @@ const SessionResultsTable: React.FC<{
                             return '-';
                           }
                           return (
-                            <span className="text-red-500 font-bold uppercase text-[10px]">
+                            <span className="text-red-500 font-black uppercase text-[10px]">
                               {res.status}
                             </span>
                           );
@@ -438,7 +439,7 @@ const SessionResultsTable: React.FC<{
                     ) : col.key === 'reliability' ? (
                       <span
                         className={cn(
-                          'font-bold',
+                          'font-black',
                           (() => {
                             const laps = getPracticeLaps(res);
                             const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
@@ -462,7 +463,7 @@ const SessionResultsTable: React.FC<{
                           className={cn(
                             (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
                               (!fastestLapHolder && res.isFastestLap)
-                              ? 'text-purple-400 font-bold'
+                              ? 'text-purple-400 font-black'
                               : 'text-gray-400'
                           )}
                         >
@@ -492,9 +493,9 @@ const SectionHeader = ({
   title: string;
   icon?: React.ComponentType<{ className?: string }>;
 }) => (
-  <div className="flex items-center gap-3 mb-6 border-b border-gray-800 pb-4">
+  <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
     {Icon && <Icon className="w-6 h-6 text-red-600" />}
-    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">{title}</h2>
+    <h2 className="text-2xl font-black uppercase tracking-wider text-white">{title}</h2>
   </div>
 );
 
@@ -514,10 +515,10 @@ const NavItem = ({
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
       active
         ? 'border-red-600 bg-red-600/10 text-white'
-        : 'border-transparent text-gray-500 hover:text-white hover:bg-gray-900'
+        : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
     )}
   >
     <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-gray-600')} />
@@ -996,7 +997,7 @@ const Race = () => {
 
       <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-800 pb-8">
+        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-700 pb-8">
           <div className="space-y-2">
             <Button
               variant="ghost"
@@ -1012,15 +1013,13 @@ const Race = () => {
               <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
               {showAnalysis && !hasProcessedSessions ? 'Back to Schedule' : 'Back'}
             </Button>
-            <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
               {eventName}
             </h1>
             <div className="flex items-center gap-4 text-gray-400 font-mono text-sm">
-              <span className="bg-gray-900 px-2 py-1 border border-gray-800 rounded">
-                {year} SEASON
-              </span>
+              <span className="bg-black px-2 py-1 border border-gray-700">{year} SEASON</span>
               {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
-                <span className="text-red-500 font-bold uppercase">
+                <span className="text-red-500 font-black uppercase">
                   {availableSessions.find((s) => s.type === selectedSession)?.name}
                 </span>
               )}
@@ -1031,13 +1030,13 @@ const Race = () => {
             availableSessions.length > 0 &&
             (isTestingEvent ? (
               <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[300px] bg-red-900/20 border-2 border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
+                <SelectTrigger className="w-[300px] bg-red-900/20 border border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
                   <SelectValue placeholder="SELECT SESSION" />
                 </SelectTrigger>
-                <SelectContent className="bg-black border-2 border-gray-800 text-white">
+                <SelectContent className="bg-black border border-gray-700 text-white">
                   <SelectItem
                     value="Summary"
-                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-800"
+                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-700"
                   >
                     3-DAY TESTING SUMMARY
                   </SelectItem>
@@ -1047,7 +1046,7 @@ const Race = () => {
                       <SelectItem
                         key={s.type}
                         value={s.type}
-                        className="uppercase font-bold focus:bg-gray-900 focus:text-white py-2"
+                        className="uppercase font-black focus:bg-gray-800 focus:text-white py-2"
                       >
                         {s.name}
                       </SelectItem>
@@ -1056,17 +1055,17 @@ const Race = () => {
               </Select>
             ) : (
               <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[200px] bg-black border-2 border-gray-800 text-white font-bold uppercase tracking-wider h-12">
+                <SelectTrigger className="w-[200px] bg-black border border-gray-700 text-white font-black uppercase tracking-wider h-12">
                   <SelectValue placeholder="SESSION" />
                 </SelectTrigger>
-                <SelectContent className="bg-black border-2 border-gray-800 text-white">
+                <SelectContent className="bg-black border border-gray-700 text-white">
                   {availableSessions
                     .filter((s) => s.type !== 'Q')
                     .map((s) => (
                       <SelectItem
                         key={s.type}
                         value={s.type}
-                        className="uppercase font-bold focus:bg-gray-900 focus:text-red-500"
+                        className="uppercase font-black focus:bg-gray-800 focus:text-red-500"
                       >
                         {s.name}
                       </SelectItem>
@@ -1081,7 +1080,7 @@ const Race = () => {
             // --- UPCOMING RACE DISPLAY ---
             <div className="space-y-12">
               {/* Hero Countdown Section */}
-              <div className="bg-gray-900/30 border border-gray-800 p-8 md:p-12 relative overflow-hidden group">
+              <div className="bg-black/30 border border-gray-700 p-8 md:p-12 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <Flag01Icon className="w-64 h-64" />
                 </div>
@@ -1090,11 +1089,11 @@ const Race = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-red-500 font-bold uppercase tracking-widest text-sm">
+                      <span className="text-red-500 font-black uppercase tracking-widest text-sm">
                         Upcoming Session
                       </span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-white mb-2">
+                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white mb-2">
                       Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
                     </h2>
                     <div className="text-gray-400 font-mono text-lg">
@@ -1117,10 +1116,10 @@ const Race = () => {
                         { label: 'SEC', value: countdown.seconds },
                       ].map((item, i) => (
                         <div key={i} className="flex flex-col items-center">
-                          <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                          <div className="text-4xl md:text-6xl font-mono font-black text-white tracking-tighter leading-none">
                             {item.value.toString().padStart(2, '0')}
                           </div>
-                          <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">
+                          <div className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
                             {item.label}
                           </div>
                         </div>
@@ -1136,19 +1135,19 @@ const Race = () => {
 
               {/* Schedule Section */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-                  <h3 className="text-2xl font-bold uppercase italic tracking-wider text-white">
+                <div className="flex items-center justify-between border-b border-gray-700 pb-4">
+                  <h3 className="text-2xl font-black uppercase tracking-wider text-white">
                     Weekend Schedule
                   </h3>
-                  <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
+                  <div className="flex items-center gap-2 bg-black p-1 border border-gray-700">
                     <button
                       onClick={() => {
                         setIs24Hour(true);
                         trackInteraction('time_format_changed', { format: '24h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-bold rounded transition-colors',
-                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
                       )}
                     >
                       24H
@@ -1159,8 +1158,8 @@ const Race = () => {
                         trackInteraction('time_format_changed', { format: '12h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-bold rounded transition-colors',
-                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
                       )}
                     >
                       12H
@@ -1168,7 +1167,7 @@ const Race = () => {
                   </div>
                 </div>
 
-                <div className="grid gap-px bg-gray-800 border border-gray-800 overflow-hidden rounded-lg">
+                <div className="grid gap-px bg-gray-800 border border-gray-700 overflow-hidden">
                   {/* Table Header */}
                   {/* Table Header Removed as per request */}
 
@@ -1214,14 +1213,14 @@ const Race = () => {
                           'grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center',
                           isNext
                             ? 'bg-red-900/10 hover:bg-red-900/20'
-                            : 'bg-black hover:bg-gray-900/50'
+                            : 'bg-black hover:bg-gray-800/30'
                         )}
                       >
                         {/* Date Column */}
-                        <div className="flex flex-col justify-center border-r border-gray-800 pr-4">
+                        <div className="flex flex-col justify-center border-r border-gray-700 pr-4">
                           <div
                             className={cn(
-                              'font-mono text-xl font-bold',
+                              'font-mono text-xl font-black',
                               isNext ? 'text-white' : 'text-gray-300'
                             )}
                           >
@@ -1229,7 +1228,7 @@ const Race = () => {
                               .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                               .toUpperCase()}
                           </div>
-                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                          <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                             {new Date(session.date).toLocaleDateString(undefined, {
                               weekday: 'short',
                             })}
@@ -1240,7 +1239,7 @@ const Race = () => {
                         <div className="flex flex-col justify-center pl-2">
                           <div
                             className={cn(
-                              'font-bold text-lg uppercase tracking-tight mb-1',
+                              'font-black text-lg uppercase tracking-tight mb-1',
                               isNext ? 'text-red-500' : 'text-white'
                             )}
                           >
@@ -1255,7 +1254,7 @@ const Race = () => {
                               <div className="font-mono text-gray-300 text-lg">
                                 {formatTimeStr(session.localTime)}
                               </div>
-                              <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                              <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                                 Local
                               </div>
                             </>
@@ -1286,7 +1285,7 @@ const Race = () => {
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                                   </div>
-                                  <span className="font-bold uppercase tracking-wider text-sm">
+                                  <span className="font-black uppercase tracking-wider text-sm">
                                     LIVE
                                   </span>
                                 </div>
@@ -1298,7 +1297,7 @@ const Race = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-bold tracking-wider w-full md:w-auto"
+                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-black tracking-wider w-full md:w-auto"
                                   onClick={() => {
                                     let targetSession = sessionType;
                                     if (
@@ -1345,7 +1344,7 @@ const Race = () => {
                                 >
                                   {formatDate(session.date)}
                                 </div>
-                                <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                                   Your Time
                                 </div>
                               </>
@@ -1420,6 +1419,13 @@ const Race = () => {
                         icon={GitCompareIcon}
                         active={activeSection === 'dominance'}
                         onClick={() => handleSectionChange('dominance')}
+                      />
+                      <NavItem
+                        id="teampace"
+                        label="Team Pace"
+                        icon={UserGroupIcon}
+                        active={activeSection === 'teampace'}
+                        onClick={() => handleSectionChange('teampace')}
                       />
                       <NavItem
                         id="telemetry"
@@ -1530,7 +1536,7 @@ const Race = () => {
                     {isTestingSession &&
                       !isTestingSplitSession &&
                       selectedSession !== 'Summary' && (
-                        <div className="mb-6 flex items-center gap-2 bg-gray-900/40 border border-gray-800 p-2 w-fit">
+                        <div className="mb-6 flex items-center gap-2 bg-black border border-gray-700 p-2 w-fit">
                           {(
                             [
                               ['full', 'Full Day'],
@@ -1545,9 +1551,9 @@ const Race = () => {
                                 trackInteraction('testing_window_toggled', { window: value });
                               }}
                               className={cn(
-                                'px-3 py-1 text-xs font-bold uppercase tracking-wider transition-colors border',
+                                'px-3 py-1 text-xs font-black uppercase tracking-wider transition-colors border',
                                 testingWindow === value
-                                  ? 'bg-red-600 border-red-600 text-white'
+                                  ? 'bg-white border-white text-black'
                                   : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
                               )}
                             >
@@ -1561,7 +1567,7 @@ const Race = () => {
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
                       <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
                         <Alert02Icon className="h-4 w-4" />
-                        <AlertTitle className="font-bold uppercase tracking-wider">
+                        <AlertTitle className="font-black uppercase tracking-wider">
                           Provisional Results
                         </AlertTitle>
                         <AlertDescription>
@@ -1574,7 +1580,7 @@ const Race = () => {
                     {isTestingSession && selectedSession !== 'Summary' && (
                       <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
                         <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-bold uppercase tracking-wider text-blue-300">
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
                           Testing Focus
                         </AlertTitle>
                         <AlertDescription>
@@ -1587,7 +1593,7 @@ const Race = () => {
                     {isTestingSession && selectedSession === 'Summary' && (
                       <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
                         <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-bold uppercase tracking-wider text-blue-300">
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
                           3-Day Testing Summary
                         </AlertTitle>
                         <AlertDescription>
@@ -1669,19 +1675,19 @@ const Race = () => {
                         <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
                           <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Lap History
                           </TabsTrigger>
                           <TabsTrigger
                             value="pace"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Pace Distribution
                           </TabsTrigger>
                           <TabsTrigger
                             value="gap"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Gap to Leader
                           </TabsTrigger>
@@ -1939,7 +1945,20 @@ const Race = () => {
                 </GatedRoute>
               )}
 
-              {/* 6. Telemetry Section */}
+              {/* 6. Team Pace Section */}
+              {activeSection === 'teampace' && (
+                <GatedRoute
+                  featureName="Team Pace Analysis"
+                  description="Team-level pace breakdown by tyre compound and sector, with individual driver analysis"
+                >
+                  <section id="teampace" className="animate-in fade-in duration-500">
+                    <SectionHeader title="Team Pace Analysis" icon={UserGroupIcon} />
+                    <TeamPaceBreakdown year={year!} event={eventName} session={analysisSession} />
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 7. Telemetry Section */}
               {activeSection === 'telemetry' && (
                 <GatedRoute
                   featureName="Advanced Telemetry"
@@ -2011,12 +2030,12 @@ const Race = () => {
                   description="Experience immersive race telemetry with real-time car positions and data overlays"
                 >
                   <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
+                    <div className="bg-black border border-gray-700 overflow-hidden h-[80vh] relative">
                       <React.Suspense
                         fallback={
                           <div className="h-full flex items-center justify-center">
                             <div className="text-center">
-                              <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                              <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
                               <div className="text-xs text-gray-500 font-mono">
                                 LOADING REPLAY MODULE...
                               </div>

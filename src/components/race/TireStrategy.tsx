@@ -136,7 +136,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     }
     if (!strategyData || strategyData.length === 0) {
       return (
-        <div className="w-full min-h-[200px] bg-gray-900/20 border border-gray-800 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
+        <div className="w-full min-h-[200px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
           No tire strategy data found
         </div>
       );

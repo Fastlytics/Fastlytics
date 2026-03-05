@@ -203,7 +203,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
     <div className="space-y-0">
       {/* Weather Strip */}
       {weatherData && (
-        <div className="flex items-center gap-5 px-4 py-2 bg-gray-900 border border-gray-700 text-sm font-mono text-white font-bold">
+        <div className="flex items-center gap-5 px-4 py-2 bg-black border border-gray-700 text-sm font-mono text-white font-black">
           <span className="text-xs font-black text-gray-400 uppercase tracking-wider mr-1">
             CONDITIONS
           </span>
@@ -224,7 +224,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       )}
 
       {/* Strategy Timeline */}
-      <div className="bg-gray-900 border-x border-gray-700 px-4 py-3">
+      <div className="bg-black border-x border-gray-700 px-4 py-3">
         <h4 className="text-base font-black uppercase italic text-white mb-3">Tyre Strategy</h4>
         {drivers.map((drv, drvIdx) => {
           const stints = driverStints[drv] || [];
@@ -337,7 +337,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Race Pace — interactive */}
       {paceData.length > 0 && (
-        <div className="bg-gray-900 border-x border-gray-700 px-4 py-3">
+        <div className="bg-black border-x border-gray-700 px-4 py-3">
           <h4 className="text-base font-black uppercase italic text-white mb-2">Race Pace</h4>
           <ResponsiveContainer width="100%" height={320}>
             <LineChart
@@ -351,11 +351,11 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
               <XAxis
                 dataKey="LapNumber"
                 stroke="#666"
-                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Geist' }}
+                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               />
               <YAxis
                 stroke="#666"
-                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Geist' }}
+                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
                 domain={['dataMin - 0.5', 'dataMax + 0.5']}
                 tickFormatter={(v: number) => formatLapTime(v)}
                 width={70}
@@ -503,7 +503,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                 {activeLapDetails.map(({ driver, record }) => {
                   const drvColor = driverColor(driver, year);
                   return (
-                    <div key={driver} className="border border-gray-800 p-3 bg-gray-900/50">
+                    <div key={driver} className="border border-gray-700 p-3 bg-black">
                       <div
                         className="text-sm font-black font-mono mb-1.5"
                         style={{ color: drvColor }}
@@ -582,7 +582,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Speed Trap Bar Chart */}
       {speedTrapData.length > 0 && (
-        <div className="bg-gray-900 border-x border-gray-700 px-4 py-3">
+        <div className="bg-black border-x border-gray-700 px-4 py-3">
           <h4 className="text-base font-black uppercase italic text-white mb-2">Speed Trap</h4>
           <ResponsiveContainer width="100%" height={110}>
             <BarChart
@@ -597,7 +597,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                   (dataMin: number) => Math.floor(dataMin - 5),
                   (dataMax: number) => Math.ceil(dataMax + 3),
                 ]}
-                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Geist' }}
+                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
                 stroke="#444"
               />
               <YAxis
@@ -669,7 +669,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Deleted Laps */}
       {deletedLaps.length > 0 && (
-        <div className="bg-gray-900 border-x border-b border-gray-700 px-4 py-3">
+        <div className="bg-black border-x border-b border-gray-700 px-4 py-3">
           <h4 className="text-base font-black uppercase italic text-white mb-2">
             Deleted Laps ({deletedLaps.length})
           </h4>

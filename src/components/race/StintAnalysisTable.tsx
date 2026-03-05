@@ -163,14 +163,14 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Driver
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-bold font-mono" style={{ color: row.original.driverColor }}>
+          <span className="font-black font-mono" style={{ color: row.original.driverColor }}>
             {row.original.driverCode}
           </span>
         ),
@@ -197,7 +197,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
               style={{ backgroundColor: row.original.compoundColor }}
               title={row.original.compound}
             ></span>
-            <span className="hidden md:inline font-bold text-xs uppercase text-gray-300">
+            <span className="hidden md:inline font-black text-xs uppercase text-gray-300">
               {row.original.compound}
             </span>
           </div>
@@ -210,7 +210,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Length
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -233,7 +233,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Fastest
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -253,7 +253,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Average
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -274,7 +274,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Consist. (σ)
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -294,7 +294,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-bold uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
           >
             Degr. (Δ/lap)
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -335,7 +335,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
 
   if (isLoading) {
     return (
-      <div className="mt-6 bg-black border border-gray-800 p-8 flex items-center justify-center">
+      <div className="mt-6 bg-black border border-gray-700 p-8 flex items-center justify-center">
         <LoadingSpinnerF1 />
       </div>
     );
@@ -345,7 +345,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
     return (
       <div className="mt-6 bg-black border border-red-600 p-6 flex flex-col items-center justify-center text-red-500">
         <AlertCircleIcon className="w-8 h-8 mb-2" />
-        <p className="font-bold uppercase">Error Loading Stint Analysis</p>
+        <p className="font-black uppercase">Error Loading Stint Analysis</p>
         <p className="text-xs text-gray-500 mt-1">
           {(error as Error)?.message || 'Could not fetch stint analysis data.'}
         </p>
@@ -355,7 +355,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
 
   if (!processedData || processedData.length === 0) {
     return (
-      <div className="mt-6 bg-black border border-gray-800 p-6 text-center text-gray-500 font-mono uppercase">
+      <div className="mt-6 bg-black border border-gray-700 p-6 text-center text-gray-500 font-mono uppercase">
         No stint data available for analysis in this session.
       </div>
     );
@@ -387,7 +387,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="border-b border-gray-800/50 hover:bg-white/5 transition-colors"
+                  className="border-b border-gray-700/50 hover:bg-white/5 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-4 py-3 text-sm font-mono">
@@ -409,8 +409,8 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           </TableBody>
         </Table>
       </div>
-      <div className="px-4 py-3 mt-4 border-t border-gray-800">
-        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+      <div className="px-4 py-3 mt-4 border-t border-gray-700">
+        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
           Metric Definitions:
         </h4>
         <ul className="space-y-1 text-[10px] text-gray-500 font-mono">

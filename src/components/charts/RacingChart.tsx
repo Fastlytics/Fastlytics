@@ -269,14 +269,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
       return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 gap-4">
+        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
           <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
           <Button
             onClick={() => {
               trackInteraction('chart_data_loaded', { chart: 'lap_time', year, event, session });
               setShouldLoadChart(true);
             }}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-none"
+            className="bg-white hover:bg-gray-200 text-black font-black uppercase tracking-wider rounded-none"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
             <Analytics01Icon className="w-4 h-4 mr-2" />
@@ -288,7 +288,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[300px] flex items-center justify-center bg-gray-900/50 border border-gray-800">
+        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-gray-700">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -297,7 +297,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
       return (
         <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-bold uppercase">Error loading lap times</p>
+          <p className="font-black uppercase">Error loading lap times</p>
           <p className="text-xs text-gray-500 mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
@@ -306,7 +306,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-bold"
+              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-black"
             >
               Back
             </Button>
@@ -316,7 +316,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
     }
     if (lapData.length === 0) {
       return (
-        <div className="w-full h-[300px] bg-black border border-gray-800 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[300px] bg-black border border-gray-700 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
           <p>No common lap data found.</p>
           {!staticData && (
             <Button
@@ -342,12 +342,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
             <XAxis
               dataKey="LapNumber"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               padding={{ left: 10, right: 10 }}
             />
             <YAxis
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 12, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               domain={['dataMin - 0.5', 'dataMax + 0.5']}
               tickFormatter={formatLapTime}
               allowDecimals={true}
@@ -363,8 +363,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 );
 
                 return (
-                  <div className="bg-black border border-gray-800 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.9)] max-w-[600px] z-50">
-                    <div className="text-white font-black uppercase italic tracking-tighter border-b border-gray-800 pb-2 mb-2 font-mono text-sm">
+                  <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[600px] z-50">
+                    <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
                       Lap {lapNumber}
                     </div>
                     <div className="space-y-2">
@@ -391,10 +391,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         return (
                           <div
                             key={driverCode}
-                            className="border-b border-gray-800/50 pb-2 last:border-0 last:pb-0"
+                            className="border-b border-gray-700/50 pb-2 last:border-0 last:pb-0"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-gray-900 overflow-hidden shrink-0 border border-gray-800">
+                              <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
                                 {headshot ? (
                                   <img
                                     src={headshot}
@@ -410,12 +410,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
                               <span className="text-xs font-black font-mono" style={{ color }}>
                                 {formatLapTime(time as number)}
                               </span>
-                              <span className="text-xs font-mono text-gray-400 font-bold">
+                              <span className="text-xs font-mono text-gray-400 font-black">
                                 {driverCode}
                               </span>
                               {lapDetail?.compound && (
                                 <span
-                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm"
+                                  className="text-[10px] font-black px-1.5 py-0.5"
                                   style={{
                                     backgroundColor:
                                       (compoundColors[lapDetail.compound] || '#666') + '22',
@@ -436,10 +436,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 </span>
                               )}
                               {lapDetail?.deleted && (
-                                <span className="text-[10px] text-red-500 font-bold">DEL</span>
+                                <span className="text-[10px] text-red-500 font-black">DEL</span>
                               )}
                               {lapDetail?.isPersonalBest && (
-                                <span className="text-[10px] text-green-400 font-bold">PB</span>
+                                <span className="text-[10px] text-green-400 font-black">PB</span>
                               )}
                             </div>
                             {lapDetail &&
@@ -486,7 +486,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               wrapperStyle={{
                 paddingTop: '20px',
                 paddingBottom: '10px',
-                fontFamily: 'Geist',
+                fontFamily: 'Geist Mono',
                 fontSize: '12px',
               }}
               onClick={(e) => {
@@ -561,8 +561,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
         {/* Weather Banner */}
         {weatherData && (
-          <div className="flex items-center gap-4 px-4 py-2 bg-gray-900 border border-gray-700 text-xs font-mono text-white mb-4">
-            <span className="font-bold text-gray-400">CONDITIONS</span>
+          <div className="flex items-center gap-4 px-4 py-2 bg-black border border-gray-700 text-xs font-mono text-white mb-4">
+            <span className="font-black text-gray-400 uppercase tracking-wider">CONDITIONS</span>
             <span>
               AIR <span className="text-white font-black">{weatherData.airTemp.toFixed(1)}°C</span>
             </span>
@@ -582,42 +582,42 @@ const RacingChart: React.FC<RacingChartProps> = ({
         )}
 
         {/* Fastest Laps Table — enriched */}
-        <div className="border-t border-gray-800 pt-6">
+        <div className="border-t border-gray-700 pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Time01Icon className="w-5 h-5 text-red-600" />
-            <h4 className="text-sm font-black uppercase italic text-white">
+            <h4 className="text-sm font-black uppercase tracking-wider text-white">
               Fastest Laps (Selection)
             </h4>
           </div>
-          <div className="overflow-x-auto border border-gray-800 bg-gray-900/30">
+          <div className="overflow-x-auto border border-gray-700 bg-black">
             <Table>
-              <TableHeader className="bg-gray-900/80">
-                <TableRow className="border-gray-800 hover:bg-transparent">
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8">
+              <TableHeader className="bg-black">
+                <TableRow className="border-gray-700 hover:bg-transparent">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8">
                     Driver
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     Time
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
                     Lap
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     Gap
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
                     Tyre
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     S1
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     S2
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     S3
                   </TableHead>
-                  <TableHead className="text-xs font-bold text-gray-500 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
                     ST
                   </TableHead>
                 </TableRow>
@@ -644,9 +644,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   return (
                     <TableRow
                       key={stat.driver}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/20"
+                      className="border-b border-gray-700/50 hover:bg-gray-800/30"
                     >
-                      <TableCell className="py-2 font-mono font-bold" style={{ color }}>
+                      <TableCell className="py-2 font-mono font-black" style={{ color }}>
                         {stat.driver}
                       </TableCell>
                       <TableCell className="py-2 text-right font-mono text-gray-300">
@@ -657,7 +657,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       </TableCell>
                       <TableCell className="py-2 text-right font-mono text-xs">
                         {index === 0 ? (
-                          <span className="text-purple-400 font-bold">FASTEST</span>
+                          <span className="text-purple-400 font-black">FASTEST</span>
                         ) : (
                           <span className="text-gray-500">
                             {gap !== null ? `+${gap.toFixed(3)}s` : '-'}
@@ -667,7 +667,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       <TableCell className="py-2 text-center">
                         {lapDetail?.compound ? (
                           <span
-                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-sm"
+                            className="text-[10px] font-black px-1.5 py-0.5"
                             style={{
                               backgroundColor:
                                 (compoundColors[lapDetail.compound] || '#666') + '22',
@@ -794,8 +794,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         tick={{
                           fill: '#FFF',
                           fontSize: 13,
-                          fontWeight: 'bold',
-                          fontFamily: 'Geist',
+                          fontWeight: 900,
+                          fontFamily: 'Geist Mono',
                         }}
                         stroke="#444"
                       />
@@ -816,7 +816,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-[#111] border border-gray-600 p-3 rounded shadow-xl min-w-[150px]">
+                              <div className="bg-black border border-gray-700 p-3 shadow-xl min-w-[150px]">
                                 <p className="text-white font-black font-mono border-b border-gray-700 pb-1 mb-2 text-base">
                                   {label}
                                 </p>
@@ -932,7 +932,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   const stintEntries = Array.from(stintMap.entries());
 
                   return (
-                    <div key={drv} className="border border-gray-700 bg-gray-900/30">
+                    <div key={drv} className="border border-gray-700 bg-black">
                       <div className="flex items-center gap-2 px-3 py-2">
                         <div
                           className="w-7 h-7 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
@@ -1047,11 +1047,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
+      <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
-            Lap Times
-          </h3>
+          <h3 className="text-lg font-black uppercase text-white tracking-wider">Lap Times</h3>
           <ChartExportButton
             onClick={exportChart}
             meta={{

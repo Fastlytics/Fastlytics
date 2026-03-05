@@ -49,10 +49,10 @@ const RPMChart: React.FC<RPMChartProps> = ({
       const color = driverColor(selectedDriver, year);
 
       return (
-        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[200px]">
+        <div className="bg-black border border-gray-700 p-4 shadow-xl min-w-[200px]">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+            <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
                 {headshot ? (
                   <img
                     src={headshot}
@@ -66,7 +66,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-gray-300 font-mono">{selectedDriver}</span>
+                <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
                 <span className="text-[10px] text-gray-500 font-mono">
                   DIST: {Math.round(label)}m
                 </span>
@@ -77,7 +77,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
               <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
                 RPM
               </span>
-              <span className="text-xl font-bold text-white font-mono" style={{ color: color }}>
+              <span className="text-xl font-black text-white font-mono" style={{ color: color }}>
                 {Math.round(data.RPM)}
               </span>
             </div>
@@ -113,7 +113,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
               type="number"
               dataKey="Distance"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               tickFormatter={(value: number) => {
                 return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
               }}
@@ -122,7 +122,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
             <YAxis
               dataKey="RPM"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               tickFormatter={(value) => `${Math.round(value)}`}
               domain={[0, 13000]}
               width={40}
@@ -155,26 +155,26 @@ const RPMChart: React.FC<RPMChartProps> = ({
         const avgRPM = rpms.reduce((a, b) => a + b, 0) / rpms.length;
 
         return (
-          <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+          <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-4">
+            <div className="flex flex-col gap-2 p-3 bg-black border border-gray-700">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
                   <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
                     Max RPM
                   </span>
-                  <span className="text-lg font-bold text-white font-mono">
+                  <span className="text-lg font-black text-white font-mono">
                     {Math.round(maxRPM)}
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
+            <div className="flex flex-col gap-2 p-3 bg-black border border-gray-700">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
                   <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
                     Avg RPM
                   </span>
-                  <span className="text-lg font-bold text-white font-mono">
+                  <span className="text-lg font-black text-white font-mono">
                     {Math.round(avgRPM)}
                   </span>
                 </div>
