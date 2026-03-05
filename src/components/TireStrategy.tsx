@@ -174,7 +174,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       return (
         <div className="w-full min-h-[200px] bg-red-900/10 border border-red-600/50 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
           <AlertCircleIcon className="w-8 h-8 mb-2" />
-          <p className="font-bold uppercase tracking-wider">Error loading strategy</p>
+          <p className="font-black uppercase tracking-wider">Error loading strategy</p>
           <p className="text-xs text-red-400 mt-1 font-mono">
             {(errorStrategy as Error)?.message || 'Could not fetch data.'}
           </p>
@@ -183,7 +183,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     }
     if (!strategyData || strategyData.length === 0) {
       return (
-        <div className="w-full min-h-[200px] bg-gray-900/20 border border-gray-800 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
+        <div className="w-full min-h-[200px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
           No tire strategy data found
         </div>
       );
@@ -193,7 +193,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       <TooltipProvider delayDuration={0}>
         <div className="pt-6">
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-800 pb-6">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-700 pb-6">
             {Object.entries(tireCompoundColors).map(
               ([compound, colorClass]) =>
                 compound !== 'UNKNOWN' && (
@@ -204,7 +204,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                         colorClass
                       )}
                     ></span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    <span className="text-xs font-black uppercase tracking-wider text-gray-400">
                       {compound}
                     </span>
                   </div>
@@ -306,13 +306,13 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                       {driverData.driver}
                     </span>
                     {positionText && (
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
                         {positionText}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex-grow h-8 bg-gray-900/50 relative flex rounded-sm overflow-hidden ring-1 ring-gray-800 group-hover:ring-gray-600 transition-all">
+                  <div className="flex-grow h-8 bg-black relative flex rounded-sm overflow-hidden ring-1 ring-gray-700 group-hover:ring-gray-600 transition-all">
                     {driverData.stints.map((stint, index) => {
                       const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
                       const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
@@ -359,13 +359,13 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-2">
                                 <span className={cn('w-2 h-2 rounded-full', bgColorClass)}></span>
-                                <span className="font-bold uppercase tracking-wider text-sm">
+                                <span className="font-black uppercase tracking-wider text-sm">
                                   {stint.compound}
                                 </span>
                                 {stint.freshTyre != null && (
                                   <span
                                     className={cn(
-                                      'text-[9px] font-bold px-1.5 py-0.5 rounded-sm',
+                                      'text-[9px] font-black px-1.5 py-0.5 rounded-sm',
                                       isFresh
                                         ? 'bg-green-900/60 text-green-400'
                                         : 'bg-gray-800 text-gray-400'
@@ -411,7 +411,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                                     <span>Position:</span>
                                     <span
                                       className={cn(
-                                        'text-right font-bold',
+                                        'text-right font-black',
                                         positionDelta && positionDelta > 0
                                           ? 'text-green-400'
                                           : positionDelta && positionDelta < 0
@@ -449,7 +449,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                             className="bg-black/90 backdrop-blur-xl border border-gray-700 text-white p-3 rounded-none shadow-2xl"
                           >
                             <div className="text-xs font-mono space-y-1">
-                              <div className="font-bold text-sm border-b border-gray-700 pb-1 mb-1">
+                              <div className="font-black text-sm border-b border-gray-700 pb-1 mb-1">
                                 PIT STOP {ps.stopNumber}
                               </div>
                               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-gray-300">
@@ -458,7 +458,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                                 <span>Duration:</span>
                                 <span
                                   className={cn(
-                                    'text-right font-bold',
+                                    'text-right font-black',
                                     ps.duration != null && ps.duration < 25
                                       ? 'text-green-400'
                                       : ps.duration != null && ps.duration > 30
@@ -496,23 +496,23 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     >
       {/* Weather Banner */}
       {weather && (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 px-4 py-3 bg-gray-900/40 border border-gray-800 text-xs font-mono text-gray-400">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 px-4 py-3 bg-black border border-gray-700 text-xs font-mono text-gray-400">
+          <span className="text-[10px] font-black uppercase tracking-wider text-gray-500">
             Weather
           </span>
           <span>
-            Air <span className="text-white font-bold">{weather.airTemp}°C</span>
+            Air <span className="text-white font-black">{weather.airTemp}°C</span>
           </span>
           <span>
-            Track <span className="text-white font-bold">{weather.trackTemp}°C</span>
+            Track <span className="text-white font-black">{weather.trackTemp}°C</span>
           </span>
           <span>
-            Humidity <span className="text-white font-bold">{weather.humidity}%</span>
+            Humidity <span className="text-white font-black">{weather.humidity}%</span>
           </span>
           <span>
-            Wind <span className="text-white font-bold">{weather.windSpeed} km/h</span>
+            Wind <span className="text-white font-black">{weather.windSpeed} km/h</span>
           </span>
-          {weather.rainfall && <span className="text-blue-400 font-bold">🌧 Rain</span>}
+          {weather.rainfall && <span className="text-blue-400 font-black">🌧 Rain</span>}
         </div>
       )}
 
@@ -533,20 +533,20 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
           <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto flex-wrap">
             <TabsTrigger
               value="overview"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
             >
               Stint Detail
             </TabsTrigger>
             {pitStops.length > 0 && (
               <TabsTrigger
                 value="pitstops"
-                className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
               >
                 Pit Stops ({pitStops.length})
               </TabsTrigger>
@@ -554,7 +554,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             {raceControlEvents.length > 0 && (
               <TabsTrigger
                 value="racecontrol"
-                className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
               >
                 Race Control ({raceControlEvents.length})
               </TabsTrigger>
@@ -584,7 +584,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
+                  <tr className="border-b border-gray-700 text-gray-500 uppercase tracking-wider">
                     <th className="text-left py-2 px-3">Driver</th>
                     <th className="text-center py-2 px-3">Stop #</th>
                     <th className="text-center py-2 px-3">Lap</th>
@@ -598,15 +598,15 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                     .map((ps, i) => (
                       <tr
                         key={i}
-                        className="border-b border-gray-900 hover:bg-gray-900/50 transition-colors"
+                        className="border-b border-gray-700 hover:bg-gray-800/30 transition-colors"
                       >
-                        <td className="py-2 px-3 font-bold text-white">{ps.driver}</td>
+                        <td className="py-2 px-3 font-black text-white">{ps.driver}</td>
                         <td className="py-2 px-3 text-center text-gray-400">{ps.stopNumber}</td>
                         <td className="py-2 px-3 text-center text-white">L{ps.lap}</td>
                         <td className="py-2 px-3 text-center">
                           <span
                             className={cn(
-                              'font-bold',
+                              'font-black',
                               ps.duration != null && ps.duration < 25
                                 ? 'text-green-400'
                                 : ps.duration != null && ps.duration > 30
@@ -658,7 +658,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                     ? 'border-yellow-600 bg-yellow-900/20'
                     : isGreen
                       ? 'border-green-600 bg-green-900/20'
-                      : 'border-gray-700 bg-gray-900/20';
+                      : 'border-gray-700 bg-black';
                 return (
                   <div
                     key={i}
@@ -672,7 +672,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                     )}
                     <span
                       className={cn(
-                        'shrink-0 font-bold uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded-sm',
+                        'shrink-0 font-black uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded-sm',
                         isRed
                           ? 'text-red-400 bg-red-900/40'
                           : isYellow

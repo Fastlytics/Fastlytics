@@ -388,13 +388,11 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group"
+      className="w-full h-[400px] bg-black border border-gray-700 p-4 relative group"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
-            {title}
-          </h3>
+          <h3 className="text-lg font-black uppercase text-white tracking-wider">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           <ChartExportButton
@@ -427,12 +425,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             <XAxis
               dataKey="Distance"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               tickFormatter={(val) => `${Math.round(val)}m`}
             />
             <YAxis
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               domain={props.domain}
               tickFormatter={props.yAxisFormatter}
               hide={!props.showYAxisTicks}
@@ -441,8 +439,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-black border border-gray-800 p-3 shadow-xl z-50">
-                      <div className="text-gray-400 text-xs font-mono mb-2 border-b border-gray-800 pb-1">
+                    <div className="bg-black border border-gray-700 p-3 shadow-xl z-50">
+                      <div className="text-gray-400 text-xs font-mono mb-2 border-b border-gray-700 pb-1">
                         {Math.round(Number(label))}m
                       </div>
                       {payload.map((entry: TooltipPayloadEntry, index: number) => {
@@ -459,7 +457,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: color1 }}
                                 ></div>
-                                <span className="text-xs font-bold text-white font-mono">
+                                <span className="text-xs font-black text-white font-mono">
                                   {driver1} vs {driver2}:
                                 </span>
                                 <span className="text-xs font-mono text-gray-300">
@@ -478,7 +476,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                               className="w-2 h-2 rounded-full"
                               style={{ backgroundColor: color }}
                             ></div>
-                            <span className="text-xs font-bold text-white font-mono">{name}:</span>
+                            <span className="text-xs font-black text-white font-mono">{name}:</span>
                             <span className="text-xs font-mono text-gray-300">
                               {typeof value === 'number'
                                 ? value.toFixed(telemetryType === 'rpm' ? 0 : 2)
@@ -495,7 +493,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               }}
               cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }}
             />
-            <Legend wrapperStyle={{ paddingTop: '10px', fontFamily: 'Geist', fontSize: '10px' }} />
+            <Legend
+              wrapperStyle={{ paddingTop: '10px', fontFamily: 'Geist Mono', fontSize: '10px' }}
+            />
 
             {telemetryType === 'gap' ? (
               <>

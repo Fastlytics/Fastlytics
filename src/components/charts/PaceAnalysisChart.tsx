@@ -276,18 +276,18 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               <XAxis
                 dataKey="driverCode"
                 stroke="#666"
-                tick={{ fill: '#999', fontFamily: 'Geist', fontSize: 12 }}
+                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
                 axisLine={{ stroke: '#333' }}
               />
               <YAxis
                 domain={[minPace - domainPadding, maxPace + domainPadding]}
                 tickFormatter={formatTime}
                 stroke="#666"
-                tick={{ fill: '#999', fontFamily: 'Geist', fontSize: 12 }}
+                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
                 width={80}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Legend wrapperStyle={{ fontFamily: 'Geist', fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontFamily: 'Geist Mono', fontSize: '12px' }} />
 
               {/* The Box (Q1 to Q3) */}
               <Bar

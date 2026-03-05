@@ -137,7 +137,7 @@ const TelemetryChartWrapper = <T,>({
   const renderContent = () => {
     if (!selectedDriver) {
       return (
-        <div className="w-full h-[350px] flex items-center justify-center bg-gray-900/20 border border-gray-800 text-gray-500 font-mono text-xs uppercase tracking-widest">
+        <div className="w-full h-[350px] flex items-center justify-center bg-black border border-gray-700 text-gray-500 font-mono text-xs uppercase tracking-widest">
           Select a driver to view telemetry
         </div>
       );
@@ -145,7 +145,7 @@ const TelemetryChartWrapper = <T,>({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[350px] flex items-center justify-center bg-gray-900/20 border border-gray-800">
+        <div className="w-full h-[350px] flex items-center justify-center bg-black border border-gray-700">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -155,7 +155,7 @@ const TelemetryChartWrapper = <T,>({
       return (
         <div className="w-full h-[350px] bg-black border border-red-900/50 flex flex-col items-center justify-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mb-2 opacity-50" />
-          <p className="font-bold uppercase tracking-widest text-sm">Data Unavailable</p>
+          <p className="font-black uppercase tracking-widest text-sm">Data Unavailable</p>
           <p className="text-[10px] text-gray-500 mt-1 font-mono">
             {(error as Error)?.message || 'Could not fetch telemetry.'}
           </p>
@@ -165,7 +165,7 @@ const TelemetryChartWrapper = <T,>({
 
     if (Array.isArray(data) && data.length === 0) {
       return (
-        <div className="w-full h-[350px] bg-black border border-gray-800 flex items-center justify-center text-gray-600 font-mono uppercase text-xs tracking-widest">
+        <div className="w-full h-[350px] bg-black border border-gray-700 flex items-center justify-center text-gray-600 font-mono uppercase text-xs tracking-widest">
           No data for {selectedDriver}
         </div>
       );
@@ -185,13 +185,11 @@ const TelemetryChartWrapper = <T,>({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('bg-black border-2 border-gray-800 p-6', className)}
+      className={cn('bg-black border border-gray-700 p-6', className)}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">
-            {title}
-          </h3>
+          <h3 className="text-xl font-black uppercase tracking-wider text-white">{title}</h3>
           <ChartExportButton
             onClick={exportChart}
             meta={{
@@ -219,7 +217,7 @@ const TelemetryChartWrapper = <T,>({
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
-            <SelectTrigger className="w-[200px] bg-gray-900 border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
+            <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
               <div className="flex items-center gap-2 w-full">
                 {(() => {
                   const driver = availableDrivers?.find((d) => d.code === selectedDriver);
@@ -231,7 +229,7 @@ const TelemetryChartWrapper = <T,>({
 
                   return (
                     <>
-                      <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
                         {headshot ? (
                           <img
                             src={headshot}
@@ -244,7 +242,7 @@ const TelemetryChartWrapper = <T,>({
                           </div>
                         )}
                       </div>
-                      <span className="font-mono font-bold truncate">
+                      <span className="font-mono font-black truncate">
                         {driver?.name || displayCode}
                       </span>
                     </>
@@ -265,7 +263,7 @@ const TelemetryChartWrapper = <T,>({
                       className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
                     >
                       <div className="flex items-center gap-2 w-full">
-                        <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
                           {headshot ? (
                             <img
                               src={headshot}
@@ -297,8 +295,8 @@ const TelemetryChartWrapper = <T,>({
           >
             <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors px-2">
               <div className="flex flex-col items-start leading-none gap-1">
-                <span className="text-[8px] text-gray-500 uppercase font-bold">Lap</span>
-                <span className="font-mono font-bold text-red-500">
+                <span className="text-[8px] text-gray-500 uppercase font-black">Lap</span>
+                <span className="font-mono font-black text-red-500">
                   {selectedLap === 'fastest' ? 'FASTEST' : selectedLap}
                 </span>
               </div>

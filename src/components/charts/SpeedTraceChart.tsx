@@ -50,10 +50,10 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
       const color = driverColor(selectedDriver, year);
 
       return (
-        <div className="bg-black/95 border border-gray-700 p-4 rounded-none shadow-2xl backdrop-blur-md min-w-[200px]">
+        <div className="bg-black border border-gray-700 p-4 shadow-xl min-w-[200px]">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-gray-800 pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+            <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
                 {headshot ? (
                   <img
                     src={headshot}
@@ -67,7 +67,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-gray-300 font-mono">{selectedDriver}</span>
+                <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
                 <span className="text-[10px] text-gray-500 font-mono">
                   DIST: {Math.round(label)}m
                 </span>
@@ -78,13 +78,13 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
                 Speed
               </span>
-              <span className="text-xl font-bold text-white font-mono" style={{ color: color }}>
+              <span className="text-xl font-black text-white font-mono" style={{ color: color }}>
                 {Math.round(data.Speed)} <span className="text-xs text-gray-500">km/h</span>
               </span>
             </div>
 
             {/* Extra telemetry channels */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-mono text-gray-400 border-t border-gray-800 pt-2 mt-1">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-mono text-gray-400 border-t border-gray-700 pt-2 mt-1">
               {data.Throttle != null && (
                 <>
                   <span>Throttle</span>
@@ -96,7 +96,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                   <span>Brake</span>
                   <span
                     className={cn(
-                      'text-right font-bold',
+                      'text-right font-black',
                       data.Brake > 0 ? 'text-red-400' : 'text-gray-600'
                     )}
                   >
@@ -115,7 +115,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                   <span>DRS</span>
                   <span
                     className={cn(
-                      'text-right font-bold',
+                      'text-right font-black',
                       data.DRS >= 10 ? 'text-green-400' : 'text-gray-600'
                     )}
                   >
@@ -160,7 +160,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               type="number"
               dataKey="Distance"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               tickFormatter={(value: number) => {
                 return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
               }}
@@ -169,7 +169,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             <YAxis
               dataKey="Speed"
               stroke="#666"
-              tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
               domain={['auto', 'dataMax + 10']}
               tickFormatter={(value) => `${value}`}
               width={40}
@@ -216,49 +216,49 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
         };
 
         return (
-          <div className="space-y-4 border-t border-gray-800 pt-4">
+          <div className="space-y-4 border-t border-gray-700 pt-4">
             {/* Speed stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
-                <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
+                <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
                   Max Speed
                 </span>
-                <span className="text-lg font-bold text-white font-mono">
+                <span className="text-lg font-black text-white font-mono">
                   {Math.round(maxSpeed)} <span className="text-[10px] text-gray-500">km/h</span>
                 </span>
               </div>
-              <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
-                <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
+                <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
                   Avg Speed
                 </span>
-                <span className="text-lg font-bold text-white font-mono">
+                <span className="text-lg font-black text-white font-mono">
                   {Math.round(avgSpeed)} <span className="text-[10px] text-gray-500">km/h</span>
                 </span>
               </div>
               {meta?.lapTime != null && (
-                <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
+                  <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
                     Lap Time
                   </span>
-                  <span className="text-lg font-bold text-white font-mono">
+                  <span className="text-lg font-black text-white font-mono">
                     {Math.floor(meta.lapTime / 60)}:
                     {(meta.lapTime % 60).toFixed(3).padStart(6, '0')}
                   </span>
                 </div>
               )}
               {meta?.position != null && (
-                <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
+                  <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
                     Position
                   </span>
-                  <span className="text-lg font-bold text-white font-mono">P{meta.position}</span>
+                  <span className="text-lg font-black text-white font-mono">P{meta.position}</span>
                 </div>
               )}
             </div>
 
             {/* Lap metadata row */}
             {meta && (meta.compound || meta.sector1Time != null || meta.deleted != null) && (
-              <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 bg-gray-900/20 border border-gray-800 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 bg-black border border-gray-700 text-xs font-mono">
                 {meta.compound && (
                   <div className="flex items-center gap-1.5">
                     <span
@@ -267,14 +267,14 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                         compoundColors[meta.compound.toUpperCase()] || 'bg-gray-500'
                       )}
                     ></span>
-                    <span className="text-gray-400 uppercase font-bold">{meta.compound}</span>
+                    <span className="text-gray-400 uppercase font-black">{meta.compound}</span>
                     {meta.tyreLife != null && (
                       <span className="text-gray-600 ml-1">({meta.tyreLife} laps)</span>
                     )}
                     {meta.freshTyre != null && (
                       <span
                         className={cn(
-                          'text-[9px] font-bold px-1 py-0.5 rounded-sm ml-1',
+                          'text-[9px] font-black px-1 py-0.5 ml-1',
                           meta.freshTyre
                             ? 'bg-green-900/60 text-green-400'
                             : 'bg-gray-800 text-gray-500'
@@ -294,7 +294,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector1Time != null && (
                       <span>
                         S1{' '}
-                        <span className="text-white font-bold">
+                        <span className="text-white font-black">
                           {formatSectorTime(meta.sector1Time)}
                         </span>
                       </span>
@@ -302,7 +302,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector2Time != null && (
                       <span>
                         S2{' '}
-                        <span className="text-white font-bold">
+                        <span className="text-white font-black">
                           {formatSectorTime(meta.sector2Time)}
                         </span>
                       </span>
@@ -310,7 +310,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector3Time != null && (
                       <span>
                         S3{' '}
-                        <span className="text-white font-bold">
+                        <span className="text-white font-black">
                           {formatSectorTime(meta.sector3Time)}
                         </span>
                       </span>
@@ -338,7 +338,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     )}
                     {meta.speedST != null && (
                       <span>
-                        ST <span className="text-white font-bold">{meta.speedST}</span>
+                        ST <span className="text-white font-black">{meta.speedST}</span>
                       </span>
                     )}
                   </div>
