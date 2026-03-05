@@ -24,14 +24,87 @@ export interface LapTimeDataPoint {
   LapNumber: number;
   [driverCode: string]: number | null; // Allow null for missed laps
 }
+
+export interface EnrichedLapRecord {
+  lapNumber: number | null;
+  lapTime: number | null;
+  sector1: number | null;
+  sector2: number | null;
+  sector3: number | null;
+  compound: string | null;
+  tyreLife: number | null;
+  freshTyre: boolean | null;
+  stint: number | null;
+  position: number | null;
+  trackStatus: string | null;
+  deleted: boolean;
+  deletedReason: string | null;
+  isPersonalBest: boolean;
+  speedI1: number | null;
+  speedI2: number | null;
+  speedFL: number | null;
+  speedST: number | null;
+}
+
+export interface WeatherSummary {
+  airTemp: number;
+  trackTemp: number;
+  humidity: number;
+  rainfall: boolean;
+  windSpeed: number;
+}
+
+export interface LapTimesEnrichedResponse {
+  lapComparison: LapTimeDataPoint[];
+  driverLapDetails: Record<string, EnrichedLapRecord[]>;
+  weather: WeatherSummary | null;
+}
 export interface SpeedDataPoint {
   Distance: number;
   Speed: number;
+  Throttle?: number;
+  Brake?: number;
+  DRS?: number;
+  nGear?: number;
+  RPM?: number;
+}
+export interface LapMeta {
+  lapNumber?: number;
+  lapTime?: number;
+  compound?: string;
+  tyreLife?: number;
+  freshTyre?: boolean;
+  stint?: number;
+  position?: number;
+  trackStatus?: string;
+  isPersonalBest?: boolean;
+  deleted?: boolean;
+  deletedReason?: string;
+  sector1Time?: number;
+  sector2Time?: number;
+  sector3Time?: number;
+  speedI1?: number;
+  speedI2?: number;
+  speedFL?: number;
+  speedST?: number;
+}
+export interface SpeedTraceResponse {
+  trace: SpeedDataPoint[];
+  lapMeta: LapMeta;
 }
 export interface GearMapDataPoint {
   X: number;
   Y: number;
   nGear: number;
+  Z?: number;
+  Status?: string;
+  Speed?: number;
+  DriverAhead?: string;
+  DistanceToDriverAhead?: number;
+}
+export interface GearMapResponse {
+  points: GearMapDataPoint[];
+  lapMeta: LapMeta;
 }
 export interface GearShiftMapData {
   circuitLayout: string;
@@ -61,15 +134,47 @@ export interface TireStint {
   startLap: number;
   endLap: number;
   lapCount: number;
+  tyreLifeStart?: number | null;
+  tyreLifeEnd?: number | null;
+  freshTyre?: boolean | null;
+  avgLapTime?: number | null;
+  bestLapTime?: number | null;
+  positionStart?: number | null;
+  positionEnd?: number | null;
 }
 export interface DriverStrategy {
   driver: string;
   stints: TireStint[];
 }
+export interface PitStop {
+  driver: string;
+  stopNumber: number;
+  lap: number;
+  duration: number | null;
+  tyreFrom: string;
+  tyreTo: string;
+}
+export interface RaceControlMessage {
+  time: number | string | null;
+  lap: number | null;
+  message: string | null;
+  category: string;
+  flag: string | null;
+}
+export interface TireStrategyResponse {
+  stints: DriverStrategy[];
+  pitStops: PitStop[];
+  raceControl: RaceControlMessage[];
+  weather: WeatherSummary | null;
+}
 export interface SessionDriver {
   code: string;
   name: string;
   team: string;
+  headshotUrl?: string;
+  countryCode?: string;
+  driverNumber?: string;
+  teamColor?: string;
 }
 export interface DriverStanding {
   rank: number;
@@ -81,7 +186,15 @@ export interface DriverStanding {
   podiums: number;
   points_change?: number;
   teamColor?: string;
-} // Use points_change?
+  headshotUrl?: string | null;
+  countryCode?: string | null;
+  avgGridPosition?: number | null;
+  bestGridPosition?: number | null;
+  bestFinish?: number | null;
+  dnfs?: number;
+  lapsCompleted?: number;
+  fastestLaps?: number;
+}
 export interface TeamStanding {
   rank: number;
   team: string;
@@ -108,30 +221,36 @@ export interface DetailedRaceResult {
   driverCode: string;
   fullName: string;
   team: string;
-  points: number | null; // Allow null for incomplete data
-  isProvisional?: boolean; // Flag for provisional results
+  points: number | null;
+  isProvisional?: boolean;
   status: string;
-  gridPosition?: number | null; // Optional for non-race/sprint
+  gridPosition?: number | null;
   teamColor: string;
-  isFastestLap?: boolean; // Optional, mainly for Race/Sprint
-  // Fields for specific session types
-  fastestLapTime?: string | null; // For Practice
-  lapsCompleted?: number | null; // For Practice
-  morningFastestLapTime?: string | null; // Testing day morning segment
-  morningLapsCompleted?: number | null; // Testing day morning segment
-  afternoonFastestLapTime?: string | null; // Testing day afternoon segment
-  afternoonLapsCompleted?: number | null; // Testing day afternoon segment
-  q1Time?: string | null; // For Qualifying
-  q2Time?: string | null; // For Qualifying
-  q3Time?: string | null; // For Qualifying
-  // Added fields for specific lap times from processor
-  poleLapTimeValue?: string | null; // Formatted pole time (MM:SS.ms)
-  fastestLapTimeValue?: string | null; // Formatted fastest lap time (MM:SS.ms)
-  time?: string | null; // Race finish time for winner, gap for others (e.g., "+5.123" or "1:32:15.456")
-  laps?: number | null; // Number of laps completed (for race sessions)
-  // Individual driver fastest lap data for race sessions
-  driverFastestLapTime?: string | null; // Individual driver's fastest lap time in race
-  driverFastestLapNumber?: number | null; // Lap number when driver set their fastest lap
+  isFastestLap?: boolean;
+  fastestLapTime?: string | null;
+  lapsCompleted?: number | null;
+  morningFastestLapTime?: string | null;
+  morningLapsCompleted?: number | null;
+  afternoonFastestLapTime?: string | null;
+  afternoonLapsCompleted?: number | null;
+  q1Time?: string | null;
+  q2Time?: string | null;
+  q3Time?: string | null;
+  poleLapTimeValue?: string | null;
+  fastestLapTimeValue?: string | null;
+  time?: string | null;
+  laps?: number | null;
+  driverFastestLapTime?: string | null;
+  driverFastestLapNumber?: number | null;
+  // Enriched fields
+  headshotUrl?: string | null;
+  countryCode?: string | null;
+  fastestLapSector1?: string | null;
+  fastestLapSector2?: string | null;
+  fastestLapSector3?: string | null;
+  deletedLapsCount?: number;
+  totalStints?: number | null;
+  maxSpeedTrap?: number | null;
 }
 export interface LapPositionDataPoint {
   LapNumber: number;
@@ -163,7 +282,16 @@ export interface EventSessionSchedule {
 // --- Stint Analysis Interfaces ---
 export interface LapDetail {
   lapNumber: number;
-  lapTime: number; // Lap time in seconds
+  lapTime: number;
+  sector1?: number;
+  sector2?: number;
+  sector3?: number;
+  tyreLife?: number;
+  position?: number;
+  speedI1?: number;
+  speedI2?: number;
+  speedFL?: number;
+  speedST?: number;
 }
 
 export interface StintAnalysisData {
@@ -172,7 +300,9 @@ export interface StintAnalysisData {
   compound: string;
   startLap: number;
   endLap: number;
-  lapDetails: LapDetail[]; // Array of {lapNumber, lapTime} objects
+  freshTyre?: boolean | null;
+  tyreDegradation?: number | null; // seconds per lap slope
+  lapDetails: LapDetail[];
 }
 
 // --- Schedule Interface ---
@@ -308,11 +438,58 @@ export interface TeamPaceSession {
   teamName: string;
   medianTime: number;
   averageTime: number;
-  fastestLapTime: number;
+  fastestLapTime?: number;
   stdDev: number;
   lapCount: number;
   teamColor: string;
   rank: number;
+}
+
+export interface CompoundPace {
+  teamName: string;
+  compound: string;
+  medianTime: number;
+  averageTime: number;
+  lapCount: number;
+  teamColor: string;
+}
+
+export interface DriverPace {
+  driverCode: string;
+  teamName: string;
+  medianTime: number;
+  averageTime: number;
+  stdDev: number;
+  lapCount: number;
+  teamColor: string;
+}
+
+export interface SectorPace {
+  teamName: string;
+  teamColor: string;
+  sector1Median?: number | null;
+  sector1Best?: number | null;
+  sector2Median?: number | null;
+  sector2Best?: number | null;
+  sector3Median?: number | null;
+  sector3Best?: number | null;
+}
+
+export interface WeatherSummary {
+  airTemp: number;
+  trackTemp: number;
+  humidity: number;
+  rainfall: boolean;
+  windSpeed: number;
+  windDirection?: number;
+}
+
+export interface TeamPaceResponse {
+  teamPace: TeamPaceSession[];
+  compoundPace: CompoundPace[];
+  driverPace: DriverPace[];
+  sectorPace: SectorPace[];
+  weather: WeatherSummary | null;
 }
 
 export interface TeamPaceEvent {
@@ -351,19 +528,19 @@ export const fetchSessionDrivers = async (
   return request<SessionDriver[]>(`/api/session/drivers?${params.toString()}`);
 };
 
-/** Fetches lap time comparison data for multiple drivers (2 or 3). */
+/** Fetches enriched lap time comparison data for multiple drivers. */
 export const fetchLapTimes = async (
   year: number,
   event: string,
   session: string,
   drivers: string[]
-): Promise<LapTimeDataPoint[]> => {
+): Promise<LapTimesEnrichedResponse> => {
   const params = new URLSearchParams();
   params.append('year', year.toString());
   params.append('event', event);
   params.append('session', session);
   drivers.forEach((driver) => params.append('drivers', driver));
-  return request<LapTimeDataPoint[]>(`/api/laptimes?${params.toString()}`);
+  return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
 };
 
 /** Fetches speed telemetry data for a specific lap. */
@@ -373,7 +550,7 @@ export const fetchTelemetrySpeed = async (
   session: string,
   driver: string,
   lap: string | number
-): Promise<SpeedDataPoint[]> => {
+): Promise<SpeedTraceResponse> => {
   const params = new URLSearchParams({
     year: year.toString(),
     event,
@@ -381,7 +558,7 @@ export const fetchTelemetrySpeed = async (
     driver,
     lap: String(lap),
   });
-  return request<SpeedDataPoint[]>(`/api/telemetry/speed?${params.toString()}`);
+  return request<SpeedTraceResponse>(`/api/telemetry/speed?${params.toString()}`);
 };
 
 /** Fetches gear map telemetry data for a specific lap. */
@@ -391,7 +568,7 @@ export const fetchTelemetryGear = async (
   session: string,
   driver: string,
   lap: string | number
-): Promise<GearMapDataPoint[]> => {
+): Promise<GearMapResponse> => {
   const params = new URLSearchParams({
     year: year.toString(),
     event,
@@ -399,7 +576,7 @@ export const fetchTelemetryGear = async (
     driver,
     lap: String(lap),
   });
-  return request<GearMapDataPoint[]>(`/api/telemetry/gear?${params.toString()}`);
+  return request<GearMapResponse>(`/api/telemetry/gear?${params.toString()}`);
 };
 
 /** Fetches gear shift map data (SVG paths) for a specific lap. */
@@ -497,9 +674,9 @@ export const fetchTireStrategy = async (
   year: number,
   event: string,
   session: string
-): Promise<DriverStrategy[]> => {
+): Promise<TireStrategyResponse> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
-  return request<DriverStrategy[]>(`/api/strategy?${params.toString()}`);
+  return request<TireStrategyResponse>(`/api/strategy?${params.toString()}`);
 };
 
 /** Fetches driver standings for a given year. */
@@ -825,16 +1002,43 @@ export interface PaceDistributionData {
   count: number;
 }
 
+export interface CompoundPaceDistribution {
+  driverCode: string;
+  compound: string;
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+  count: number;
+}
+
+export interface SectorStats {
+  driverCode: string;
+  sector1Best?: number;
+  sector1Median?: number;
+  sector2Best?: number;
+  sector2Median?: number;
+  sector3Best?: number;
+  sector3Median?: number;
+}
+
+export interface PaceDistributionResponse {
+  overall: PaceDistributionData[];
+  byCompound: CompoundPaceDistribution[];
+  sectorStats: SectorStats[];
+}
+
 /** Fetches pace distribution statistics for selected drivers. */
 export const fetchPaceDistribution = async (
   year: number,
   event: string,
   session: string,
   drivers: string[]
-): Promise<PaceDistributionData[]> => {
+): Promise<PaceDistributionResponse> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
   params.append('drivers', drivers.join(','));
-  return request<PaceDistributionData[]>(`/api/telemetry/pace-distribution?${params.toString()}`);
+  return request<PaceDistributionResponse>(`/api/telemetry/pace-distribution?${params.toString()}`);
 };
 
 // --- Session Replay Inteface (Columnar Optimization) ---
@@ -863,6 +1067,26 @@ export interface SessionReplayData {
   drivers: ReplayDriversMap;
   driver_colors: { [code: string]: string };
   driver_grid_positions: Record<string, number>;
+  driver_info?: Record<
+    string,
+    {
+      team: string;
+      team_color: string;
+      number: number | string;
+      full_name: string;
+      country_code: string;
+    }
+  >;
+  session_results?: Record<
+    string,
+    {
+      position: number | null;
+      classified_position: string | null;
+      status: string;
+      points: number;
+      time: number | null;
+    }
+  >;
   track_statuses: { status: string; start_time: number; end_time: number | null }[];
   race_control_messages: {
     time: number;
@@ -883,7 +1107,58 @@ export interface SessionReplayData {
     seconds: number;
     timestamp: number;
     compound: string;
+    s1?: number | null;
+    s2?: number | null;
+    s3?: number | null;
+    is_personal_best?: boolean;
+    tyre_life?: number | null;
+    speed_i1?: number | null;
+    speed_i2?: number | null;
+    speed_fl?: number | null;
+    speed_st?: number | null;
   }[];
+  weather?: {
+    time: number;
+    air_temp: number | null;
+    track_temp: number | null;
+    humidity: number | null;
+    pressure: number | null;
+    wind_speed: number | null;
+    wind_direction: number | null;
+    rainfall: boolean;
+  }[];
+  circuit_metadata?: {
+    circuit_name?: string;
+    official_event_name?: string;
+    country?: string;
+    location?: string;
+    event_format?: string;
+    total_laps?: number;
+    circuit_length_m?: number;
+    session_date?: string;
+  };
+  sector_boundaries?: {
+    index: number;
+    x: number;
+    y: number;
+    label: string;
+    distance?: number;
+  }[];
+  fastest_sectors?: {
+    s1: number | null;
+    s2: number | null;
+    s3: number | null;
+  };
+  driver_stints?: Record<
+    string,
+    {
+      compound: string;
+      start_lap: number;
+      end_lap: number;
+      laps: number;
+      tyre_age_at_start: number;
+    }[]
+  >;
   start_time?: number;
   session_info: { name: string; year: number; session: string };
 }

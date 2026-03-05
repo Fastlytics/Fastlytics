@@ -1143,10 +1143,15 @@ const MobileRace: React.FC = () => {
     );
   }, [urlSession, fetchedAvailableSessions, isTestingEvent]);
 
-  const analysisSession = useMemo(
-    () => resolveSessionForAnalysis(selectedSession),
-    [selectedSession]
-  );
+  const analysisSession = useMemo(() => {
+    const resolved = resolveSessionForAnalysis(selectedSession);
+    // "Summary" is not a real FastF1 session — map to first FP in available sessions
+    if (resolved === 'Summary' && fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
+      const firstFP = fetchedAvailableSessions.find((s) => s.type.startsWith('FP'));
+      return firstFP?.type ?? 'FP1';
+    }
+    return resolved;
+  }, [selectedSession, fetchedAvailableSessions]);
 
   const { data: standardResults, isLoading: isLoadingStandard } = useQuery<DetailedRaceResult[]>({
     queryKey: ['raceResults', year, eventSlug, selectedSession],

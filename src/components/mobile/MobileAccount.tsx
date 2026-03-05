@@ -37,7 +37,7 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
 // Bottom Sheet Component
@@ -183,11 +183,11 @@ const MobileAccount: React.FC = () => {
 
   useEffect(() => {
     const loadF1Data = async () => {
-      const currentYear = getCurrentSeasonYear();
       try {
+        const year = await resolveSeasonYear(fetchDriverStandings);
         const [driversData, teamsData] = await Promise.all([
-          fetchDriverStandings(currentYear),
-          fetchTeamStandings(currentYear),
+          fetchDriverStandings(year),
+          fetchTeamStandings(year),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);

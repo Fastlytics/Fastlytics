@@ -16,6 +16,8 @@ import { fetchSessionDrivers, fetchLapTimes, SessionDriver } from '@/lib/api';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -54,6 +56,7 @@ const TelemetryChartWrapper = <T,>({
     meta: { year, event, session },
   });
   const { trackSelection } = useAnalytics();
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
   // Internal state for driver/lap initialized from props
   const [internalDriver, setInternalDriver] = useState<string>(initialDriver);
   const [internalLap, setInternalLap] = useState<string | number>(lap);
@@ -67,9 +70,6 @@ const TelemetryChartWrapper = <T,>({
     if (lap) setInternalLap(lap);
   }, [lap]);
 
-  const selectedDriver = internalDriver;
-  const selectedLap = internalLap;
-
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
@@ -78,13 +78,30 @@ const TelemetryChartWrapper = <T,>({
     enabled: !!year && !!event && !!session,
   });
 
-  const { data: lapTimes } = useQuery({
+  // Validate selected driver against the session driver list —
+  // fall back to the first available driver when the favourite / initial
+  // driver does not exist in this session (e.g. VER not in testing).
+  React.useEffect(() => {
+    if (!availableDrivers || availableDrivers.length === 0) return;
+    const codes = availableDrivers.map((d) => d.code);
+    if (internalDriver && !codes.includes(internalDriver)) {
+      setInternalDriver(codes[0]);
+    } else if (!internalDriver) {
+      setInternalDriver(codes[0]);
+    }
+  }, [availableDrivers, internalDriver]);
+
+  const selectedDriver = internalDriver;
+  const selectedLap = internalLap;
+
+  const { data: lapTimesResponse } = useQuery({
     queryKey: ['lapTimes', year, event, session, selectedDriver],
     queryFn: () => fetchLapTimes(year, event, session, [selectedDriver]),
     enabled: !!year && !!event && !!session && !!selectedDriver,
   });
 
   const lapOptions = useMemo(() => {
+    const lapTimes = lapTimesResponse?.lapComparison;
     if (lapTimes && lapTimes.length > 0) {
       const validLaps = lapTimes
         .filter((lapData) => lapData[selectedDriver] !== null)
@@ -92,7 +109,7 @@ const TelemetryChartWrapper = <T,>({
       return ['fastest', ...validLaps];
     }
     return ['fastest'];
-  }, [lapTimes, selectedDriver]);
+  }, [lapTimesResponse, selectedDriver]);
 
   // Load Data Hook - useQuery is now called at top level in the wrapper
   const { data, isLoading, error } = useQuery<T>({
@@ -163,9 +180,34 @@ const TelemetryChartWrapper = <T,>({
   };
 
   return (
-    <div ref={chartVisRef} className={cn('bg-black border-2 border-gray-800 p-6', className)}>
+    <div
+      ref={(el) => {
+        chartVisRef.current = el;
+        exportRef.current = el;
+      }}
+      className={cn('bg-black border-2 border-gray-800 p-6', className)}
+    >
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
-        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">{title}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">
+            {title}
+          </h3>
+          <ChartExportButton
+            onClick={exportChart}
+            meta={{
+              title,
+              subtitle: selectedDriver
+                ? `${selectedDriver} — ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
+                : undefined,
+              year,
+              event,
+              session,
+              drivers: selectedDriver ? [selectedDriver] : undefined,
+              extra: selectedLap !== 'fastest' ? { Lap: String(selectedLap) } : undefined,
+            }}
+            isExporting={isExporting}
+          />
+        </div>
 
         <div className="flex flex-wrap gap-4">
           <Select

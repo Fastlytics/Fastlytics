@@ -8,9 +8,9 @@ import {
   DetailedRaceResult,
   SessionIncident,
 } from '@/lib/api';
-import PositionChart from './PositionChart';
+import PositionChart from '@/components/charts/PositionChart';
 import { AlertCircleIcon, Menu01Icon, Analytics01Icon, ChartLineData01Icon } from 'hugeicons-react';
-import { Skeleton } from './ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

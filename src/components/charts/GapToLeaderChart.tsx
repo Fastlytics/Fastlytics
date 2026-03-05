@@ -13,7 +13,13 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchLapTimes, fetchSessionDrivers, SessionDriver, LapTimeDataPoint } from '@/lib/api';
+import {
+  fetchLapTimes,
+  fetchSessionDrivers,
+  SessionDriver,
+  LapTimeDataPoint,
+  LapTimesEnrichedResponse,
+} from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
@@ -22,6 +28,8 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { Button } from '@/components/ui/button';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 const formatGap = (gap: number | null): string => {
   if (gap === null || isNaN(gap)) {
@@ -69,6 +77,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     meta: { year, event, session },
   });
   const { trackInteraction } = useAnalytics();
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
@@ -95,15 +104,22 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
   const effectiveDrivers = useMemo(() => {
     if (staticData) return selectedDrivers;
-    if (selectedDrivers.length >= MIN_DRIVERS) return selectedDrivers;
-    if (!availableDrivers) return selectedDrivers;
 
-    const needed = MIN_DRIVERS - selectedDrivers.length;
+    // Filter out any selected drivers that are not in this session
+    const validCodes = availableDrivers ? new Set(availableDrivers.map((d) => d.code)) : null;
+    const validSelected = validCodes
+      ? selectedDrivers.filter((d) => validCodes.has(d))
+      : selectedDrivers;
+
+    if (validSelected.length >= MIN_DRIVERS) return validSelected;
+    if (!availableDrivers) return validSelected;
+
+    const needed = MIN_DRIVERS - validSelected.length;
     const candidates = availableDrivers
-      .filter((d) => !selectedDrivers.includes(d.code))
+      .filter((d) => !validSelected.includes(d.code))
       .slice(0, needed)
       .map((d) => d.code);
-    return [...selectedDrivers, ...candidates];
+    return [...validSelected, ...candidates];
   }, [selectedDrivers, availableDrivers, staticData]);
 
   const driversToDisplay = useMemo(
@@ -112,11 +128,11 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   );
 
   const {
-    data: fetchedLapData,
+    data: fetchedEnrichedData,
     isLoading: isLoadingLapTimes,
     error,
     isError,
-  } = useQuery<LapTimeDataPoint[]>({
+  } = useQuery<LapTimesEnrichedResponse>({
     queryKey: ['lapTimes', year, event, session, ...effectiveDrivers.sort()],
     queryFn: () => fetchLapTimes(year, event, session, effectiveDrivers),
     staleTime: 1000 * 60 * 5,
@@ -131,7 +147,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       shouldLoadChart,
   });
 
-  const lapData = staticData || fetchedLapData;
+  const lapData = staticData || fetchedEnrichedData?.lapComparison;
 
   // Calculate gap to leader for each lap
   const gapData = useMemo(() => {
@@ -437,14 +453,30 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       ref={(el) => {
         chartRef.current = el;
         chartVisRef.current = el;
+        exportRef.current = el;
       }}
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-800 pb-4">
-        <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
-          Gap to Leader
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-black uppercase italic text-white tracking-tighter">
+            Gap to Leader
+          </h3>
+          <ChartExportButton
+            onClick={exportChart}
+            meta={{
+              title: 'Gap to Leader',
+              subtitle: 'Cumulative gap to race leader over laps',
+              year,
+              event,
+              session,
+              drivers: driversToDisplay,
+            }}
+            isExporting={isExporting}
+            variant="compact"
+          />
+        </div>
         {!staticData && availableDrivers && (
           <div className="flex flex-wrap gap-2">
             {availableDrivers.map((driver) => {

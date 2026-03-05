@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
 const MobileOnboarding: React.FC = () => {
@@ -37,10 +37,10 @@ const MobileOnboarding: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentYear = getCurrentSeasonYear();
+        const year = await resolveSeasonYear(fetchDriverStandings);
         const [driversData, teamsData] = await Promise.all([
-          fetchDriverStandings(currentYear),
-          fetchTeamStandings(currentYear),
+          fetchDriverStandings(year),
+          fetchTeamStandings(year),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
