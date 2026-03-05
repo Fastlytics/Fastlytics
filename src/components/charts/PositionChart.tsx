@@ -22,6 +22,8 @@ import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 interface TooltipPayloadItem {
   value: number | null;
@@ -74,6 +76,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
     page: 'race',
     meta: { year },
   });
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
   const positionData = lapData;
 
   const driverCodes = useMemo(() => {
@@ -348,15 +351,29 @@ const PositionChart: React.FC<PositionChartProps> = ({
       ref={(el) => {
         chartRef.current = el;
         chartVisRef.current = el;
+        exportRef.current = el;
       }}
       className={cn('bg-black p-0', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-800 pb-2">
         <div className="space-y-1">
-          <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">
-            Lap-by-Lap Position Changes
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">
+              Lap-by-Lap Position Changes
+            </h3>
+            <ChartExportButton
+              onClick={exportChart}
+              meta={{
+                title: 'Position Changes',
+                subtitle: 'Lap-by-lap position changes throughout the race',
+                year,
+                drivers: selectedDrivers,
+              }}
+              isExporting={isExporting}
+              variant="compact"
+            />
+          </div>
           <p className="text-xs text-gray-400 font-mono uppercase">
             Track driver positions throughout the race.
           </p>

@@ -22,10 +22,13 @@ import {
   RPMDataPoint,
   DRSDataPoint,
   SpeedDataPoint,
+  SpeedTraceResponse,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
 type TelemetryDataPoint =
@@ -80,7 +83,10 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   telemetryType,
   title,
 }) => {
-  const fetchTelemetry = async (driver: string, lap: string | number) => {
+  const fetchTelemetry = async (
+    driver: string,
+    lap: string | number
+  ): Promise<TelemetryDataPoint[]> => {
     // For 'gap', we need speed data to calculate time
     const typeToFetch = telemetryType === 'gap' ? 'speed' : telemetryType;
 
@@ -94,9 +100,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       case 'drs':
         return fetchTelemetryDRS(year, event, session, driver, lap);
       case 'speed':
-        return fetchTelemetrySpeed(year, event, session, driver, lap);
-      default:
-        return fetchTelemetrySpeed(year, event, session, driver, lap);
+      default: {
+        const result = await fetchTelemetrySpeed(year, event, session, driver, lap);
+        // Handle both new SpeedTraceResponse and old SpeedDataPoint[] format
+        if (Array.isArray(result)) return result;
+        return result.trace ?? [];
+      }
     }
   };
 
@@ -119,8 +128,15 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 
     // --- GAP CALCULATION LOGIC ---
     if (telemetryType === 'gap') {
-      const speedData1 = telemetryData1 as SpeedDataPoint[];
-      const speedData2 = telemetryData2 as SpeedDataPoint[];
+      // Handle both new SpeedTraceResponse format and old SpeedDataPoint[] format
+      const extractSpeedData = (data: unknown): SpeedDataPoint[] => {
+        if (Array.isArray(data)) return data as SpeedDataPoint[];
+        if (data && typeof data === 'object' && 'trace' in data)
+          return (data as SpeedTraceResponse).trace;
+        return [];
+      };
+      const speedData1 = extractSpeedData(telemetryData1);
+      const speedData2 = extractSpeedData(telemetryData2);
 
       const calculateTime = (speedData: SpeedDataPoint[]) => {
         let time = 0;
@@ -362,12 +378,16 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     page: 'race',
     meta: { year, event, session },
   });
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
   if (!shouldLoadChart) return null;
 
   return (
     <div
-      ref={chartVisRef}
+      ref={(el) => {
+        chartVisRef.current = el;
+        exportRef.current = el;
+      }}
       className="w-full h-[400px] bg-black/40 border border-gray-800 p-4 rounded-lg relative group"
     >
       <div className="flex items-center justify-between mb-4">
@@ -376,7 +396,25 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             {title}
           </h3>
         </div>
-        {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="w-4 h-4" />}
+        <div className="flex items-center gap-2">
+          <ChartExportButton
+            onClick={exportChart}
+            meta={{
+              title,
+              subtitle: `${driver1} vs ${driver2} — ${telemetryType.toUpperCase()} comparison`,
+              year,
+              event,
+              session,
+              drivers: [driver1, driver2],
+              extra: {
+                'Lap 1': String(lap1),
+                'Lap 2': String(lap2),
+              },
+            }}
+            isExporting={isExporting}
+          />
+          {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="w-4 h-4" />}
+        </div>
       </div>
 
       <div className="w-full h-[320px]">

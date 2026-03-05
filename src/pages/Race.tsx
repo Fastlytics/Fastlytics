@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { SEO } from '@/components/SEO';
+import { SEO } from '@/components/layout/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Select,
@@ -28,15 +28,16 @@ import {
   PlayCircle02Icon,
 } from 'hugeicons-react';
 import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
-import { RacingChart } from '@/components/RacingChart';
-import { GapToLeaderChart } from '@/components/GapToLeaderChart';
-import { PaceAnalysisChart } from '@/components/PaceAnalysisChart';
-import { TireStrategy } from '@/components/TireStrategy';
-import { SpeedTraceChart } from '@/components/SpeedTraceChart';
-import { GearMapChart } from '@/components/GearMapChart';
-import { CircuitComparisonChart } from '@/components/CircuitComparisonChart';
-import { DriverComparisonTelemetry } from '@/components/DriverComparisonTelemetry';
-import { F1Card } from '@/components/F1Card';
+import { RacingChart } from '@/components/charts/RacingChart';
+import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
+import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
+import { TireStrategy } from '@/components/race/TireStrategy';
+import { SpeedTraceChart } from '@/components/charts/SpeedTraceChart';
+import { GearMapChart } from '@/components/charts/GearMapChart';
+import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
+import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
+import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
+import { F1Card } from '@/components/race/F1Card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Alert02Icon } from 'hugeicons-react';
@@ -62,11 +63,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import ThrottleChart from '@/components/ThrottleChart';
-import BrakeChart from '@/components/BrakeChart';
-import RPMChart from '@/components/RPMChart';
-import DRSChart from '@/components/DRSChart';
-import PositionsTabContent from '@/components/PositionsTabContent';
+import ThrottleChart from '@/components/charts/ThrottleChart';
+import BrakeChart from '@/components/charts/BrakeChart';
+import RPMChart from '@/components/charts/RPMChart';
+import DRSChart from '@/components/charts/DRSChart';
+import PositionsTabContent from '@/components/race/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -771,10 +772,15 @@ const Race = () => {
     [selectedSession]
   );
   const isTestingSplitSession = isTestingEvent && !!testingSessionAlias;
-  const analysisSession = useMemo(
-    () => resolveSessionForAnalysis(selectedSession),
-    [selectedSession]
-  );
+  const analysisSession = useMemo(() => {
+    const resolved = resolveSessionForAnalysis(selectedSession);
+    // "Summary" is not a real FastF1 session — map to first FP in available sessions
+    if (resolved === 'Summary' && availableSessions.length > 0) {
+      const firstFP = availableSessions.find((s) => s.type.startsWith('FP'));
+      return firstFP?.type ?? 'FP1';
+    }
+    return resolved;
+  }, [selectedSession, availableSessions]);
   const isTestingSession =
     isTestingEvent &&
     (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
@@ -1838,6 +1844,15 @@ const Race = () => {
                           {/* Comparison Charts if selected */}
                           {circuitDrivers.shouldLoadChart && (
                             <div className="space-y-12">
+                              {/* Race Performance Summary */}
+                              <HeadToHeadEnriched
+                                year={year!}
+                                event={eventName}
+                                session={analysisSession}
+                                driver1={circuitDrivers.driver1}
+                                driver2={circuitDrivers.driver2}
+                              />
+
                               {/* Speed Trace - Full Width */}
                               <DriverComparisonTelemetry
                                 year={year!}

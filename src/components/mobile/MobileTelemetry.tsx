@@ -125,7 +125,7 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({ year, event, session,
       if (!defaultDriverCode) {
         return [];
       }
-      return fetchLapTimes(year, event, session, defaultDriverCode);
+      return fetchLapTimes(year, event, session, [defaultDriverCode]);
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,

@@ -25,6 +25,8 @@ import { areTeammates } from '@/lib/teamUtils';
 import { Button } from '@/components/ui/button';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 interface CircuitComparisonChartProps {
   className?: string;
@@ -63,6 +65,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const { trackSelection } = useAnalytics();
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
   const [userSelectedDriver1, setUserSelectedDriver1] = useState<string | null>(null);
   const [userSelectedDriver2, setUserSelectedDriver2] = useState<string | null>(null);
@@ -79,14 +82,18 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   });
 
   const selectedDriver1 = useMemo(() => {
-    if (initialDriver1) return initialDriver1;
     if (userSelectedDriver1 !== null) return userSelectedDriver1;
+    const codes = availableDrivers?.map((d) => d.code) ?? [];
+    if (initialDriver1 && codes.length > 0 && codes.includes(initialDriver1)) return initialDriver1;
+    if (initialDriver1 && codes.length === 0) return initialDriver1;
     return availableDrivers?.[0]?.code || '';
   }, [initialDriver1, userSelectedDriver1, availableDrivers]);
 
   const selectedDriver2 = useMemo(() => {
-    if (initialDriver2) return initialDriver2;
     if (userSelectedDriver2 !== null) return userSelectedDriver2;
+    const codes = availableDrivers?.map((d) => d.code) ?? [];
+    if (initialDriver2 && codes.length > 0 && codes.includes(initialDriver2)) return initialDriver2;
+    if (initialDriver2 && codes.length === 0) return initialDriver2;
     return availableDrivers?.[1]?.code || '';
   }, [initialDriver2, userSelectedDriver2, availableDrivers]);
 
@@ -452,11 +459,32 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   };
 
   return (
-    <div ref={chartRef} className={cn('bg-black border-2 border-gray-800 p-6', className)}>
+    <div
+      ref={(el) => {
+        chartRef.current = el;
+        exportRef.current = el;
+      }}
+      className={cn('bg-black border-2 border-gray-800 p-6', className)}
+    >
       <div className="flex flex-col gap-6 mb-6 border-b border-gray-800 pb-4">
-        <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-2">
-          {title || 'Track Dominance'}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-black uppercase italic tracking-tighter text-white flex items-center gap-2">
+            {title || 'Track Dominance'}
+          </h3>
+          <ChartExportButton
+            onClick={exportChart}
+            meta={{
+              title: title || 'Track Dominance',
+              subtitle: 'Sector-by-sector comparison between drivers',
+              year,
+              event,
+              session,
+              drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
+            }}
+            isExporting={isExporting}
+            variant="compact"
+          />
+        </div>
 
         {/* Driver Selection Area */}
         <div className="flex flex-col gap-4">

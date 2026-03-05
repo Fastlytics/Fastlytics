@@ -31,7 +31,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAccount } from '@/components/mobile';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
 // ... existing imports
@@ -115,11 +115,11 @@ const Account = () => {
 
   useEffect(() => {
     const loadF1Data = async () => {
-      const currentYear = getCurrentSeasonYear();
       try {
+        const year = await resolveSeasonYear(fetchDriverStandings);
         const [driversData, teamsData] = await Promise.all([
-          fetchDriverStandings(currentYear),
-          fetchTeamStandings(currentYear),
+          fetchDriverStandings(year),
+          fetchTeamStandings(year),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);

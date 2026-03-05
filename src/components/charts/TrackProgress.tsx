@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface TrackProgressProps {
@@ -7,10 +6,10 @@ interface TrackProgressProps {
   progressColor?: string;
 }
 
-const TrackProgress = ({ 
-  progress, 
-  trackColor = "rgba(255,255,255,0.1)", 
-  progressColor = "#ff2800" 
+const TrackProgress = ({
+  progress,
+  trackColor = 'rgba(255,255,255,0.1)',
+  progressColor = '#ff2800',
 }: TrackProgressProps) => {
   const strokeWidth = 6;
   const radius = 35;
@@ -29,7 +28,7 @@ const TrackProgress = ({
           stroke={trackColor}
           strokeWidth={strokeWidth}
         />
-        
+
         {/* Progress */}
         <circle
           cx="40"
@@ -55,7 +54,7 @@ const TrackProgress = ({
           strokeWidth="2"
         />
       </svg>
-      
+
       <div className="absolute text-center">
         <span className="text-xl font-bold">{progress}%</span>
       </div>

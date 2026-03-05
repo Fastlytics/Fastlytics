@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { SEO } from '@/components/SEO';
+import { SEO } from '@/components/layout/SEO';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion, useInView } from 'framer-motion';

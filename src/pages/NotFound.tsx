@@ -1,12 +1,12 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { AlertCircleIcon, ArrowLeft01Icon } from "hugeicons-react";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { AlertCircleIcon, ArrowLeft01Icon } from 'hugeicons-react';
 import { Gauge } from 'lucide-react';
-import LandingNavbar from "@/components/LandingNavbar";
-import LandingFooter from "@/components/LandingFooter";
-import { useIsMobile } from "@/hooks/use-mobile";
-import MobileNotFound from "@/components/mobile/MobileNotFound";
+import LandingNavbar from '@/components/layout/LandingNavbar';
+import LandingFooter from '@/components/layout/LandingFooter';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileNotFound from '@/components/mobile/MobileNotFound';
 
 const NotFound = () => {
   const location = useLocation();
@@ -14,10 +14,7 @@ const NotFound = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
+    console.error('404 Error: User attempted to access non-existent route:', location.pathname);
   }, [location.pathname]);
 
   if (isMobile) {
@@ -52,7 +49,8 @@ const NotFound = () => {
           </h2>
 
           <p className="text-xl text-gray-400 font-mono mb-12 max-w-2xl mx-auto leading-relaxed">
-            The telemetry data for this sector is missing. You might have taken a wrong turn at the chicane.
+            The telemetry data for this sector is missing. You might have taken a wrong turn at the
+            chicane.
           </p>
 
           <div className="flex flex-row gap-6 justify-center">
@@ -67,7 +65,7 @@ const NotFound = () => {
             </Button>
 
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => navigate('/')}
               className="bg-red-600 hover:bg-red-700 text-white text-lg font-bold uppercase tracking-widest px-8 py-6 h-auto transition-all duration-300 border-2 border-red-600 hover:border-red-500 rounded-none shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
             >
               Return to Pits

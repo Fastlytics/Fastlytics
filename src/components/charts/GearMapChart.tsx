@@ -133,20 +133,36 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       renderStats={(data) => {
         return (
           <div className="border-t border-gray-800 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-gray-900/30 border border-gray-800">
-              <div className="flex justify-between items-end">
-                <div className="flex flex-col">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
+                <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                  Most Used
+                </span>
+                <span
+                  className="text-lg font-bold font-mono"
+                  style={{ color: getGearColor(data.stats.mostUsedGear) }}
+                >
+                  Gear {data.stats.mostUsedGear}
+                </span>
+              </div>
+              {data.stats.avgGear != null && (
+                <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
                   <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
-                    Most Used
+                    Avg Gear
                   </span>
-                  <span
-                    className="text-lg font-bold text-white font-mono"
-                    style={{ color: getGearColor(data.stats.mostUsedGear) }}
-                  >
-                    {data.stats.mostUsedGear}
+                  <span className="text-lg font-bold text-white font-mono">
+                    {data.stats.avgGear.toFixed(1)}
                   </span>
                 </div>
-              </div>
+              )}
+              {data.lapNumber != null && (
+                <div className="flex flex-col gap-1 p-3 bg-gray-900/30 border border-gray-800">
+                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                    Lap
+                  </span>
+                  <span className="text-lg font-bold text-white font-mono">{data.lapNumber}</span>
+                </div>
+              )}
             </div>
           </div>
         );

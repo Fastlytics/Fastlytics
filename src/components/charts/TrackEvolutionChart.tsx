@@ -16,6 +16,8 @@ import { fetchTrackEvolution, TrackEvolutionResponse } from '@/lib/api'; // Impo
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon, ThermometerIcon } from 'hugeicons-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportButton from '@/components/charts/ChartExportButton';
 
 // Helper function to format seconds into MM:SS.mmm (can be shared if needed)
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -41,6 +43,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
   event,
   session,
 }) => {
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
   // Fetch track evolution data
   const { data, isLoading, error, isError } = useQuery<TrackEvolutionResponse>({
     queryKey: ['trackEvolution', year, event, session],
@@ -250,15 +253,29 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
 
   return (
     <Card
+      ref={exportRef}
       className={cn(
         'chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm',
         className
       )}
     >
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
-          <ThermometerIcon className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
+            <ThermometerIcon className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature
+          </CardTitle>
+          <ChartExportButton
+            onClick={exportChart}
+            meta={{
+              title: 'Track Evolution & Temperature',
+              subtitle: 'Track and air temperature evolution over the session',
+              year,
+              event,
+              session,
+            }}
+            isExporting={isExporting}
+          />
+        </div>
         {/* Optional: Add description or controls here */}
       </CardHeader>
       <CardContent className="pt-0">

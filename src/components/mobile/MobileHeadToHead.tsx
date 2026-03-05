@@ -12,6 +12,7 @@ import {
   SessionDriver,
   SectorComparisonData,
   SpeedDataPoint,
+  SpeedTraceResponse,
   ThrottleDataPoint,
   BrakeDataPoint,
   RPMDataPoint,
@@ -44,6 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 
 interface MobileHeadToHeadProps {
   year: number;
@@ -225,12 +227,20 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   // --- Telemetry Queries ---
   const { data: speedData1 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver1, selectedLap1],
-    queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver1, selectedLap1),
+    queryFn: async () => {
+      const result = await fetchTelemetrySpeed(year, event, session, selectedDriver1, selectedLap1);
+      if (Array.isArray(result)) return result;
+      return (result as SpeedTraceResponse).trace ?? [];
+    },
     enabled: shouldLoadData,
   });
   const { data: speedData2 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver2, selectedLap2],
-    queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver2, selectedLap2),
+    queryFn: async () => {
+      const result = await fetchTelemetrySpeed(year, event, session, selectedDriver2, selectedLap2);
+      if (Array.isArray(result)) return result;
+      return (result as SpeedTraceResponse).trace ?? [];
+    },
     enabled: shouldLoadData,
   });
 
@@ -841,6 +851,19 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
               isStep
             />
           </div>
+        </div>
+      )}
+
+      {/* Enriched Race Data Panels */}
+      {shouldLoadData && selectedDriver1 && selectedDriver2 && (
+        <div className="mt-6">
+          <HeadToHeadEnriched
+            year={year}
+            event={event}
+            session={session}
+            driver1={selectedDriver1}
+            driver2={selectedDriver2}
+          />
         </div>
       )}
     </div>

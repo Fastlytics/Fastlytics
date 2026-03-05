@@ -27,7 +27,7 @@ import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
 import QuickLinksWidget from '@/components/dashboard/QuickLinksWidget';
 import { ArrowRight01Icon, Activity01Icon } from 'hugeicons-react';
 import { getCountryCode } from '@/utils/countryUtils';
-import { SEO } from '@/components/SEO';
+import { SEO } from '@/components/layout/SEO';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import {

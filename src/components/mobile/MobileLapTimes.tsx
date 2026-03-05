@@ -4,7 +4,9 @@ import {
   fetchLapTimes,
   fetchPaceDistribution,
   LapTimeDataPoint,
+  LapTimesEnrichedResponse,
   PaceDistributionData,
+  PaceDistributionResponse,
   SessionDriver,
   fetchSessionDrivers,
 } from '@/lib/api';
@@ -170,7 +172,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
   }, [driver1, driver2, lapAnalysisMode, leaderCode]);
 
   // 1. Lap History / Gap Data
-  const { data: lapData, isLoading: isLoadingLaps } = useQuery<LapTimeDataPoint[]>({
+  const { data: lapTimesResponse, isLoading: isLoadingLaps } = useQuery<LapTimesEnrichedResponse>({
     queryKey: ['lapTimes', year, event, session, driversToFetch],
     queryFn: () => fetchLapTimes(year, event, session, driversToFetch),
     enabled:
@@ -179,12 +181,18 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
       driversToFetch.length > 0,
     staleTime: 1000 * 60 * 5,
   });
+  const lapData = lapTimesResponse?.lapComparison;
 
   const allDriverCodes = useMemo(() => sessionDrivers?.map((d) => d.code) || [], [sessionDrivers]);
 
   const { data: paceData, isLoading: isLoadingPace } = useQuery<PaceDistributionData[]>({
     queryKey: ['paceDistribution', year, event, session, 'all'], // 'all' as key
-    queryFn: () => fetchPaceDistribution(year, event, session, allDriverCodes),
+    queryFn: async () => {
+      const result = await fetchPaceDistribution(year, event, session, allDriverCodes);
+      // Handle both new PaceDistributionResponse format and old PaceDistributionData[] format
+      if (Array.isArray(result)) return result;
+      return (result as PaceDistributionResponse).overall ?? [];
+    },
     enabled: lapAnalysisMode === 'pace' && allDriverCodes.length > 0,
     staleTime: 1000 * 60 * 5,
   });

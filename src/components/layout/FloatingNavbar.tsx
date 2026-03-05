@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Gauge } from 'lucide-react';
 import { Menu01Icon, ArrowRight01Icon } from 'hugeicons-react';
 import { motion } from 'framer-motion';
@@ -18,7 +18,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
     { name: 'Features', href: '#features' },
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Showcase', href: '#showcase' },
-    { name: 'Community', href: '#community' }
+    { name: 'Community', href: '#community' },
   ];
 
   // Track scroll position for background opacity changes
@@ -38,7 +38,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
     if (targetElement) {
       window.scrollTo({
         top: targetElement.offsetTop - 80, // Offset for navbar height
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
       setMobileMenuOpen(false);
     }
@@ -59,7 +59,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
       className="fixed top-0 left-0 right-0 z-50 w-full"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
     >
       <div
         className="w-full h-16 md:h-20"
@@ -67,7 +67,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
           backgroundColor: `rgba(0, 0, 0, ${backgroundOpacity})`,
           backdropFilter: `blur(${blurAmount}px)`,
           borderBottom: scrollPosition > 50 ? '1px solid rgba(75, 75, 75, 0.2)' : 'none',
-          transition: 'all 0.3s ease-in-out'
+          transition: 'all 0.3s ease-in-out',
         }}
       >
         <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -75,7 +75,7 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
           <Link to="/" className="flex items-center space-x-2">
             <motion.div
               whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
+              transition={{ duration: 0.6, ease: 'easeInOut' }}
             >
               <Gauge className="h-7 w-7 text-red-500" />
             </motion.div>
@@ -109,7 +109,11 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
             </ul>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link to="/dashboard">
-                <Button variant="default" size="sm" className="ml-4 bg-red-600 hover:bg-red-700 text-white">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="ml-4 bg-red-600 hover:bg-red-700 text-white"
+                >
                   Explore Dashboard
                   <ArrowRight01Icon className="ml-1 h-4 w-4" />
                 </Button>
@@ -126,11 +130,16 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] bg-gray-900/95 backdrop-blur-md border-l-gray-800 text-white p-0">
+              <SheetContent
+                side="right"
+                className="w-[280px] bg-gray-900/95 backdrop-blur-md border-l-gray-800 text-white p-0"
+              >
                 <div className="p-6 space-y-6">
                   <div className="flex items-center space-x-2">
                     <Gauge className="h-6 w-6 text-red-500" />
-                    <span className="font-bold text-lg">Fast<span className="text-red-500">lytics</span></span>
+                    <span className="font-bold text-lg">
+                      Fast<span className="text-red-500">lytics</span>
+                    </span>
                   </div>
 
                   <div className="space-y-1 mt-6">
@@ -165,4 +174,4 @@ const FloatingNavbar: React.FC<FloatingNavbarProps> = ({ transparent = false }) 
 };
 
 export { FloatingNavbar };
-export default FloatingNavbar; 
+export default FloatingNavbar;

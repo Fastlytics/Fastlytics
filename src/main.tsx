@@ -4,7 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { PostHogProvider } from 'posthog-js/react';
 import posthog from 'posthog-js';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from './components/ErrorFallback';
+import { ErrorFallback } from './components/layout/ErrorFallback';
 import { hasAnalyticsConsent, hasConsentChoice } from './lib/consent';
 import App from './App.tsx';
 import './index.css';

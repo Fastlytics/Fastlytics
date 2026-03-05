@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import LandingNavbar from '@/components/LandingNavbar';
-import LandingFooter from '@/components/LandingFooter';
+import LandingNavbar from '@/components/layout/LandingNavbar';
+import LandingFooter from '@/components/layout/LandingFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobilePrivacyPolicy } from '@/components/mobile';
 
