@@ -44,15 +44,19 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
 
-  // Redirect to dashboard if already logged in
+  // Redirect logged-in users: onboarding if incomplete, otherwise dashboard
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard', { replace: true });
+      if (profile && !profile.onboarding_completed) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, profile, loading, navigate]);
 
   // Check for password reset query parameter
   useEffect(() => {
