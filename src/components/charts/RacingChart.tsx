@@ -51,7 +51,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -1050,20 +1050,20 @@ const RacingChart: React.FC<RacingChartProps> = ({
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-black uppercase text-white tracking-wider">Lap Times</h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Lap Times',
-              subtitle: fuelCorrectionEnabled
-                ? 'Fuel-corrected lap times'
-                : 'Raw lap times comparison',
-              year,
-              event,
-              session,
-              drivers: driversToDisplay,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Lap Times',
+                subtitle: fuelCorrectionEnabled
+                  ? 'Fuel-corrected lap times'
+                  : 'Raw lap times comparison',
+                year,
+                event,
+                session,
+                drivers: driversToDisplay,
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-400 uppercase">Fuel Corrected</span>

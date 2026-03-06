@@ -23,7 +23,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface TooltipPayloadItem {
   value: number | null;
@@ -362,16 +362,16 @@ const PositionChart: React.FC<PositionChartProps> = ({
             <h3 className="text-lg font-black uppercase tracking-wider text-white">
               Lap-by-Lap Position Changes
             </h3>
-            <ChartExportButton
-              onClick={exportChart}
-              meta={{
-                title: 'Position Changes',
-                subtitle: 'Lap-by-lap position changes throughout the race',
-                year,
-                drivers: selectedDrivers,
-              }}
+            <ChartExportMenu
+              onExport={(format) =>
+                exportChart(format, {
+                  title: 'Position Changes',
+                  subtitle: 'Lap-by-lap position changes throughout the race',
+                  year,
+                  drivers: selectedDrivers,
+                })
+              }
               isExporting={isExporting}
-              variant="compact"
             />
           </div>
           <p className="text-xs text-gray-400 font-mono uppercase">

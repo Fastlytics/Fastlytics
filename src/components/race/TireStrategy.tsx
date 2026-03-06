@@ -15,7 +15,7 @@ import StintAnalysisTable from './StintAnalysisTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface TireStrategyProps {
   className?: string;
@@ -289,17 +289,17 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     >
       <Tabs defaultValue="overview" className="w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Tire Strategy',
-              subtitle: 'Compound usage and stint breakdown',
-              year,
-              event,
-              session,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Tire Strategy',
+                subtitle: 'Compound usage and stint breakdown',
+                year,
+                event,
+                session,
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
           <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto">
             <TabsTrigger

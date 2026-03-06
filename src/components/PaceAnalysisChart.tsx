@@ -31,7 +31,7 @@ import { PlusSignCircleIcon, CancelCircleIcon } from 'hugeicons-react';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface PaceChartDataPoint extends PaceDistributionData {
   iqr: [number, number];
@@ -142,9 +142,14 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const paceData = fullPaceData?.overall ?? [];
-  const byCompound = fullPaceData?.byCompound ?? [];
-  const sectorStats = fullPaceData?.sectorStats ?? [];
+  const { paceData, byCompound, sectorStats } = useMemo(
+    () => ({
+      paceData: fullPaceData?.overall ?? [],
+      byCompound: fullPaceData?.byCompound ?? [],
+      sectorStats: fullPaceData?.sectorStats ?? [],
+    }),
+    [fullPaceData]
+  );
   const [activeTab, setActiveTab] = useState<'overall' | 'compound' | 'sectors'>('overall');
 
   // Merge colors
@@ -242,18 +247,18 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
           <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
             Race Pace Distribution
           </h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Race Pace Distribution',
-              subtitle: 'Lap time distribution comparison across drivers',
-              year,
-              event,
-              session,
-              drivers: selectedDrivers,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Race Pace Distribution',
+                subtitle: 'Lap time distribution comparison across drivers',
+                year,
+                event,
+                session,
+                drivers: selectedDrivers,
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
         </div>
 

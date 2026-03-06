@@ -28,7 +28,7 @@ import { driverColor } from '@/lib/driverColor';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
 type TelemetryDataPoint =
@@ -395,20 +395,17 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           <h3 className="text-lg font-black uppercase text-white tracking-wider">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title,
-              subtitle: `${driver1} vs ${driver2} — ${telemetryType.toUpperCase()} comparison`,
-              year,
-              event,
-              session,
-              drivers: [driver1, driver2],
-              extra: {
-                'Lap 1': String(lap1),
-                'Lap 2': String(lap2),
-              },
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title,
+                subtitle: `${driver1} vs ${driver2} — ${telemetryType.toUpperCase()} comparison`,
+                year,
+                event,
+                session,
+                drivers: [driver1, driver2],
+              })
+            }
             isExporting={isExporting}
           />
           {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="w-4 h-4" />}
