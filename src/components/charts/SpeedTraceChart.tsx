@@ -161,9 +161,10 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               dataKey="Distance"
               stroke="#666"
               tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
-              tickFormatter={(value: number) => {
-                return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
-              }}
+              ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
+                (t) => t <= (data.trace[data.trace.length - 1]?.Distance ?? 0)
+              )}
+              tickFormatter={(value: number) => `${value}m`}
               domain={['dataMin', 'dataMax']}
             />
             <YAxis

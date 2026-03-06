@@ -331,7 +331,7 @@ function buildBrandedSvg(
   ${driverSvg}
 
   <!-- Chart -->
-  <svg x="${padding}" y="${chartY}" width="${svgW}" height="${svgH}" ${viewBoxAttr}>
+  <svg x="${padding}" y="${chartY}" width="${svgW}" height="${svgH}" ${viewBoxAttr} overflow="visible">
     ${innerSvg}
   </svg>
 

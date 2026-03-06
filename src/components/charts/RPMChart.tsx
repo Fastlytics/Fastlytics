@@ -105,7 +105,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart
             data={data}
-            margin={{ top: 0, right: 10, left: -15, bottom: 5 }}
+            margin={{ top: 0, right: 10, left: 0, bottom: 5 }}
             className="chart-main-container"
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
@@ -114,18 +114,19 @@ const RPMChart: React.FC<RPMChartProps> = ({
               dataKey="Distance"
               stroke="#666"
               tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
-              tickFormatter={(value: number) => {
-                return window.innerWidth < 768 ? `${Math.round(value)}m` : `${value.toFixed(0)}m`;
-              }}
+              ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
+                (t) => t <= (data[data.length - 1]?.Distance ?? 0)
+              )}
+              tickFormatter={(value: number) => `${value}m`}
               domain={['dataMin', 'dataMax']}
             />
             <YAxis
               dataKey="RPM"
               stroke="#666"
               tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
-              tickFormatter={(value) => `${Math.round(value)}`}
+              tickFormatter={(value) => `${Math.round(value / 1000)}k`}
               domain={[0, 13000]}
-              width={40}
+              width={35}
             />
             <Tooltip
               content={<CustomTooltip selectedDriver={selectedDriver} />}

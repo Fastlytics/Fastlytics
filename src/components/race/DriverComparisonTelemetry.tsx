@@ -300,7 +300,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       case 'rpm':
         return {
           dataKey: 'RPM',
-          yAxisFormatter: (value: number) => `${value}`,
+          yAxisFormatter: (value: number) => `${Math.round(value / 1000)}k`,
           color1: '#fb923c',
           color2: '#fb923c',
           domain: [0, 13000] as [number, number],
@@ -416,14 +416,19 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={combinedTelemetryData}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
             <XAxis
               dataKey="Distance"
+              type="number"
               stroke="#666"
               tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
-              tickFormatter={(val) => `${Math.round(val)}m`}
+              ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
+                (t) => t <= (combinedTelemetryData[combinedTelemetryData.length - 1]?.Distance ?? 0)
+              )}
+              tickFormatter={(val: number) => `${val}m`}
+              domain={['dataMin', 'dataMax']}
             />
             <YAxis
               stroke="#666"
