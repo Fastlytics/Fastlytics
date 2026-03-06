@@ -117,9 +117,11 @@ const TeamStandings = () => {
     if (simpleName.includes('astonmartin')) return 'astonmartin';
     if (simpleName.includes('williams')) return 'williams';
     if (simpleName.includes('haas')) return 'haas';
-    if (simpleName.includes('sauber')) return 'alfaromeo';
+    if (simpleName.includes('audi')) return 'audi';
+    if (simpleName.includes('cadillac')) return 'cadillac';
+    if (simpleName.includes('sauber')) return 'kicksauber';
     if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri'))
-      return 'alphatauri';
+      return 'racingbulls';
     return 'gray';
   };
 

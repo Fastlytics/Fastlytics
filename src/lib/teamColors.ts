@@ -9,12 +9,14 @@ export const getTeamColorClass = (teamName: string | undefined): string => {
   if (simpleName.includes('astonmartin')) return 'astonmartin';
   if (simpleName.includes('williams')) return 'williams';
   if (simpleName.includes('haas')) return 'haas';
-  if (simpleName.includes('sauber') || simpleName.includes('kick')) return 'alfaromeo';
+  if (simpleName.includes('audi')) return 'audi';
+  if (simpleName.includes('cadillac')) return 'cadillac';
+  if (simpleName.includes('sauber') || simpleName.includes('kick')) return 'kicksauber';
   if (
     simpleName.includes('racingbulls') ||
     simpleName.includes('alphatauri') ||
     simpleName.includes('vcarb')
   )
-    return 'alphatauri';
+    return 'racingbulls';
   return 'gray';
 };
