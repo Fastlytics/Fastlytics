@@ -42,6 +42,9 @@ import {
 const isTestingEvent = (event: ScheduleEvent): boolean =>
   event.EventFormat?.toLowerCase().includes('test') ?? false;
 
+const getEventStartDate = (event: ScheduleEvent): Date =>
+  new Date(event.Session1Date || event.EventDate);
+
 const toRaceSlug = (eventName: string): string => eventName.toLowerCase().replace(/\s+/g, '-');
 
 const parseLapTime = (timeStr: string | null | undefined): number => {
@@ -92,9 +95,7 @@ const Dashboard = () => {
 
   const hasCompletedRaceEventsInSchedule = useMemo(
     () =>
-      schedule.some(
-        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
-      ),
+      schedule.some((event) => !isTestingEvent(event) && getEventStartDate(event).getTime() <= now),
     [schedule, now]
   );
 
@@ -113,7 +114,11 @@ const Dashboard = () => {
   const raceEvents = useMemo(() => schedule.filter((event) => !isTestingEvent(event)), [schedule]);
   const testingEvents = useMemo(() => schedule.filter(isTestingEvent), [schedule]);
   const hasRaceResults = raceResults.length > 0;
-  const isTestingMode = !hasRaceResults && testingEvents.length > 0;
+  const hasRaceWeekendStarted = useMemo(
+    () => raceEvents.some((event) => getEventStartDate(event).getTime() <= now),
+    [raceEvents, now]
+  );
+  const isTestingMode = !hasRaceResults && !hasRaceWeekendStarted && testingEvents.length > 0;
 
   const { data: teamStandings = [], isLoading: isLoadingTeams } = useQuery<TeamStanding[]>({
     queryKey: ['teamStandings', selectedYear],
@@ -162,7 +167,7 @@ const Dashboard = () => {
     }
 
     const recentRaceEvents = raceEvents
-      .filter((e) => new Date(e.EventDate) < now)
+      .filter((e) => getEventStartDate(e) < now)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
       .slice(0, 4);
 

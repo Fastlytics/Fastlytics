@@ -47,16 +47,18 @@ const Auth = () => {
   const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
 
-  // Redirect logged-in users: onboarding if incomplete, otherwise dashboard
+  // Redirect logged-in users: onboarding if incomplete, otherwise returnTo or dashboard
+  const returnTo = searchParams.get('returnTo');
+
   useEffect(() => {
     if (!loading && user) {
       if (profile && !profile.onboarding_completed) {
         navigate('/onboarding', { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate(returnTo || '/dashboard', { replace: true });
       }
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, profile, loading, navigate, returnTo]);
 
   // Check for password reset query parameter
   useEffect(() => {
@@ -75,7 +77,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}${returnTo || '/dashboard'}`,
         },
       });
       if (error) throw error;
@@ -99,7 +101,7 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate(returnTo || '/dashboard');
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
       setIsLoading(false);

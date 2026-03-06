@@ -22,7 +22,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const returnTo = location.pathname + location.search;
+    return <Navigate to={`/auth?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
   // Check if onboarding is complete
