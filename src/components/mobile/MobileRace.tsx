@@ -23,7 +23,7 @@ import {
   AvailableSession,
   EventSessionSchedule,
 } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -67,6 +67,34 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
     // Silent catch - return Infinity on parse error
   }
   return Infinity;
+};
+
+const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
+
+const parseTestingSessionAlias = (
+  sessionType: string
+): { day: number; window: 'morning' | 'afternoon' } | null => {
+  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
+  if (!match) return null;
+  return {
+    day: Number(match[1]),
+    window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
+  };
+};
+
+const getTestingSessionOrder = (sessionType: string): number => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (parsed) return parsed.day * 10 + (parsed.window === 'morning' ? 0 : 1);
+  if (sessionType === 'FP1') return 11;
+  if (sessionType === 'FP2') return 21;
+  if (sessionType === 'FP3') return 31;
+  return -1;
+};
+
+const resolveSessionForAnalysis = (sessionType: string): string => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (!parsed) return sessionType;
+  return `FP${parsed.day}`;
 };
 
 const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
@@ -254,8 +282,27 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
             </button>
           </div>
           <div className="p-3 max-h-80 overflow-y-auto space-y-2">
+            {sessions.some((s) => s.type === 'Summary') && (
+              <button
+                key="Summary"
+                onClick={() => {
+                  onSelect('Summary');
+                  onClose();
+                }}
+                className={`w-full p-4 text-left transition-all flex items-center justify-between border-2 ${
+                  selectedSession === 'Summary'
+                    ? 'bg-red-600 border-red-600 text-white'
+                    : 'bg-black border-red-600/30 hover:border-red-600/60 text-red-500'
+                }`}
+              >
+                <span className="text-base font-black uppercase tracking-wide">
+                  3-Day Testing Summary
+                </span>
+                {selectedSession === 'Summary' && <CheckmarkCircle02Icon className="w-5 h-5" />}
+              </button>
+            )}
             {sessions
-              .filter((s) => s.type !== 'Q')
+              .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
               .map((session) => (
                 <button
                   key={session.type}
@@ -291,7 +338,7 @@ interface ScheduleSessionCardProps {
   isLive: boolean;
   isAvailable: boolean;
   is24Hour: boolean;
-  onViewResults: () => void;
+  onViewResults: (sessionName: string) => void;
 }
 
 const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
@@ -399,7 +446,9 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
               </div>
             ) : isAvailable ? (
               <button
-                onClick={onViewResults}
+                onClick={() => {
+                  onViewResults(session.name);
+                }}
                 className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors border border-transparent hover:border-white"
               >
                 Results
@@ -441,16 +490,28 @@ interface RaceBottomNavProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   hasStrategy: boolean;
+  isSummarySession?: boolean;
 }
 
-const RaceBottomNav: React.FC<RaceBottomNavProps> = ({ activeTab, onTabChange, hasStrategy }) => {
+const RaceBottomNav: React.FC<RaceBottomNavProps> = ({
+  activeTab,
+  onTabChange,
+  hasStrategy,
+  isSummarySession,
+}) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: ChampionIcon },
-    ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: TireIcon }] : []),
-    { id: 'laptimes', label: 'Laps', icon: ChartLineData01Icon },
-    { id: 'h2h', label: 'H2H', icon: GitCompareIcon },
-    { id: 'telemetry', label: 'Data', icon: Analytics01Icon },
+    ...(isSummarySession
+      ? []
+      : [
+          ...(hasStrategy ? [{ id: 'strategy', label: 'Strategy', icon: TireIcon }] : []),
+          { id: 'laptimes', label: 'Laps', icon: ChartLineData01Icon },
+          { id: 'h2h', label: 'H2H', icon: GitCompareIcon },
+          { id: 'telemetry', label: 'Data', icon: Analytics01Icon },
+        ]),
   ];
+
+  if (isSummarySession) return null; // Or return a simplified nav if needed later, but standard is to hide telemetry for summary
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t-2 border-white/10 safe-area-pb">
@@ -987,27 +1048,22 @@ const MobileRace: React.FC = () => {
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
+  const isTestingEvent = useMemo(() => {
+    const format = eventName?.toLowerCase() ?? '';
+    return format.includes('testing') || format.includes('test');
+  }, [eventName]);
+
   const [now, setNow] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
   const [showSessionSelector, setShowSessionSelector] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
-  const { trackEvent } = useAnalytics();
+  const { trackEvent, trackInteraction } = useAnalytics();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      // Pass the year to get relevant driver data
-      const drivers = await fetchAllOpenF1Drivers('latest', year || undefined);
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, [year]);
 
   const setSelectedSession = (session: string) => {
     setSearchParams(
@@ -1018,7 +1074,7 @@ const MobileRace: React.FC = () => {
       },
       { replace: true }
     );
-    trackEvent('mobile_session_changed', {
+    trackEvent('session_changed', {
       session_type: session,
       race_name: eventName,
       year: year,
@@ -1041,14 +1097,8 @@ const MobileRace: React.FC = () => {
 
   // Removed duplicate useMemo block
   // Get driver image
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    // Fallback to OpenF1
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, year || 2025, driver?.headshot_url);
+  const getDriverImg = (driverCode: string, _driverName: string) => {
+    return getDriverImage(driverCode, year || 2025);
   };
 
   // Queries
@@ -1070,25 +1120,104 @@ const MobileRace: React.FC = () => {
       (!fetchedAvailableSessions || !fetchedAvailableSessions.some((s) => s.type === 'R')),
   });
 
-  const availableSessions = fetchedAvailableSessions ?? [];
+  const availableSessions = useMemo(
+    () => fetchedAvailableSessions ?? [],
+    [fetchedAvailableSessions]
+  );
 
   const selectedSession = useMemo(() => {
     if (urlSession) return urlSession;
     if (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0) return '';
     const hasRace = fetchedAvailableSessions.some((s) => s.type === 'R');
-    return hasRace ? 'R' : fetchedAvailableSessions[0].type;
-  }, [urlSession, fetchedAvailableSessions]);
 
-  const { data: raceResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
-    queryKey: ['raceResults', year, eventName, selectedSession],
-    queryFn: () => fetchSpecificRaceResults(year!, eventName, selectedSession),
-    enabled: !!year && !!eventName && !!selectedSession,
+    if (isTestingEvent && fetchedAvailableSessions.some((s) => s.type === 'Summary')) {
+      return 'Summary';
+    } else if (hasRace) {
+      return 'R';
+    }
+
+    return (
+      [...fetchedAvailableSessions].sort(
+        (a, b) => getTestingSessionOrder(b.type) - getTestingSessionOrder(a.type)
+      )[0]?.type ?? fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type
+    );
+  }, [urlSession, fetchedAvailableSessions, isTestingEvent]);
+
+  const analysisSession = useMemo(() => {
+    const resolved = resolveSessionForAnalysis(selectedSession);
+    // "Summary" is not a real FastF1 session — map to first FP in available sessions
+    if (resolved === 'Summary' && fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
+      const firstFP = fetchedAvailableSessions.find((s) => s.type.startsWith('FP'));
+      return firstFP?.type ?? 'FP1';
+    }
+    return resolved;
+  }, [selectedSession, fetchedAvailableSessions]);
+
+  const { data: standardResults, isLoading: isLoadingStandard } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['raceResults', year, eventSlug, selectedSession],
+    queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
+    enabled: !!year && !!eventSlug && !!selectedSession && selectedSession !== 'Summary',
   });
+
+  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['summaryResult', year, eventSlug],
+    queryFn: async () => {
+      if (!year || !eventSlug || !fetchedAvailableSessions) return [];
+
+      const fetchingSessions = fetchedAvailableSessions.filter((s) => s.type !== 'Summary');
+
+      const allResultsPromises = fetchingSessions.map((s) =>
+        fetchSpecificRaceResults(year, eventSlug, s.type)
+      );
+
+      const allResultsArray = await Promise.all(allResultsPromises);
+
+      const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
+
+      allResultsArray.forEach((sessionResults) => {
+        sessionResults.forEach((result) => {
+          if (!aggregatedMap[result.driverCode]) {
+            aggregatedMap[result.driverCode] = {
+              ...result,
+              lapsCompleted: 0,
+              fastestLapTime: null,
+            };
+          }
+
+          const aggr = aggregatedMap[result.driverCode];
+
+          if (result.lapsCompleted) {
+            aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
+          }
+
+          if (result.fastestLapTime) {
+            const currentFastest = parseLapTime(aggr.fastestLapTime);
+            const newTime = parseLapTime(result.fastestLapTime);
+            if (!aggr.fastestLapTime || newTime < currentFastest) {
+              aggr.fastestLapTime = result.fastestLapTime;
+            }
+          }
+        });
+      });
+
+      return Object.values(aggregatedMap);
+    },
+    enabled: isTestingEvent && selectedSession === 'Summary' && !!fetchedAvailableSessions,
+  });
+
+  const raceResults = selectedSession === 'Summary' ? summaryResults : standardResults;
+  const isLoadingResults = selectedSession === 'Summary' ? isLoadingSummary : isLoadingStandard;
 
   // Derived State
   const currentSessionName =
     availableSessions.find((s) => s.type === selectedSession)?.name || 'Session';
   const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
+
+  const isTestingSession =
+    isTestingEvent &&
+    (selectedSession.startsWith('FP') ||
+      selectedSession === 'Summary' ||
+      !!parseTestingSessionAlias(selectedSession));
 
   const fastestLapHolder = useMemo(() => {
     if (!isRaceOrSprint || !raceResults) return null;
@@ -1104,72 +1233,114 @@ const MobileRace: React.FC = () => {
     )[0];
   }, [raceResults, isRaceOrSprint]);
 
+  const displayResults = useMemo(() => {
+    if (!raceResults) return [];
+    if (isRaceOrSprint) return raceResults;
+    return [...raceResults].sort((a, b) => {
+      const lapDelta = parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime);
+      if (lapDelta !== 0) return lapDelta;
+      return (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0);
+    });
+  }, [raceResults, isRaceOrSprint]);
+
   // Highlights Logic
   const highlights = useMemo(() => {
     if (!raceResults || raceResults.length === 0) return [];
     const cards: HighlightCardData[] = [];
 
-    const getDriverNumber = (driverCode: string, name: string) => {
-      const driver = openF1Drivers.find(
-        (d) =>
-          d.name_acronym === driverCode ||
-          d.last_name.toUpperCase().includes(name.split(' ').pop()?.toUpperCase() || '')
-      );
-      return driver?.driver_number;
+    const getDriverNumber = (_driverCode: string, _name: string): number | undefined => {
+      return undefined;
     };
 
-    // Winner
-    const winner = raceResults.find((r) => r.position === 1);
-    if (winner) {
-      cards.push({
-        type: 'winner',
-        driver: winner,
-        label: 'Race Winner',
-        icon: ChampionIcon,
-        bgColor: 'bg-black',
-        borderColor: 'border-yellow-500',
-        textColor: 'text-yellow-500',
-        timeLabel: 'Race Time',
-        timeValue: formatRaceTime(winner.time, true),
-        driverNumber: getDriverNumber(winner.driverCode, winner.fullName),
-      });
-    }
+    if (isRaceOrSprint) {
+      const winner = raceResults.find((r) => r.position === 1);
+      if (winner) {
+        cards.push({
+          type: 'winner',
+          driver: winner,
+          label: 'Race Winner',
+          icon: ChampionIcon,
+          bgColor: 'bg-black',
+          borderColor: 'border-yellow-500',
+          textColor: 'text-yellow-500',
+          timeLabel: 'Race Time',
+          timeValue: formatRaceTime(winner.time, true),
+          driverNumber: getDriverNumber(winner.driverCode, winner.fullName),
+        });
+      }
 
-    // Fastest Lap
-    if (fastestLapHolder) {
-      cards.push({
-        type: 'fastestLap',
-        driver: fastestLapHolder,
-        label: 'Fastest Lap',
-        icon: Clock01Icon,
-        bgColor: 'bg-black',
-        borderColor: 'border-purple-600',
-        textColor: 'text-purple-500',
-        timeLabel: 'Lap Time',
-        timeValue: fastestLapHolder.driverFastestLapTime || '-',
-        driverNumber: getDriverNumber(fastestLapHolder.driverCode, fastestLapHolder.fullName),
-      });
-    }
+      if (fastestLapHolder) {
+        cards.push({
+          type: 'fastestLap',
+          driver: fastestLapHolder,
+          label: 'Fastest Lap',
+          icon: Clock01Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-purple-600',
+          textColor: 'text-purple-500',
+          timeLabel: 'Lap Time',
+          timeValue: fastestLapHolder.driverFastestLapTime || '-',
+          driverNumber: getDriverNumber(fastestLapHolder.driverCode, fastestLapHolder.fullName),
+        });
+      }
 
-    // Pole Position (if grid data available)
-    const pole = raceResults.find((r) => r.gridPosition === 1);
-    if (pole) {
-      cards.push({
-        type: 'pole',
-        driver: pole,
-        label: 'Pole Position',
-        icon: StartUp02Icon,
-        bgColor: 'bg-black',
-        borderColor: 'border-red-600',
-        textColor: 'text-red-600',
-        timeLabel: 'Pole Time',
-        timeValue: pole.poleLapTimeValue || '-',
-        driverNumber: getDriverNumber(pole.driverCode, pole.fullName),
-      });
+      const pole = raceResults.find((r) => r.gridPosition === 1);
+      if (pole) {
+        cards.push({
+          type: 'pole',
+          driver: pole,
+          label: 'Pole Position',
+          icon: StartUp02Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-red-600',
+          textColor: 'text-red-600',
+          timeLabel: 'Pole Time',
+          timeValue: pole.poleLapTimeValue || '-',
+          driverNumber: getDriverNumber(pole.driverCode, pole.fullName),
+        });
+      }
+    } else if (isTestingSession) {
+      const fastest = [...raceResults]
+        .filter((result) => !!result.fastestLapTime)
+        .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))[0];
+
+      const mileageLeader = [...raceResults].sort(
+        (a, b) => (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0)
+      )[0];
+
+      if (fastest) {
+        cards.push({
+          type: 'fastestLap',
+          driver: fastest,
+          label: 'Fastest Lap',
+          icon: Clock01Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-purple-600',
+          textColor: 'text-purple-500',
+          timeLabel: 'Lap Time',
+          timeValue: fastest.fastestLapTime || '-',
+          driverNumber: getDriverNumber(fastest.driverCode, fastest.fullName),
+        });
+      }
+
+      if (mileageLeader) {
+        cards.push({
+          type: 'winner',
+          driver: mileageLeader,
+          label: 'Mileage Leader',
+          icon: StartUp02Icon,
+          bgColor: 'bg-black',
+          borderColor: 'border-green-600',
+          textColor: 'text-green-500',
+          timeLabel: 'Total Laps',
+          timeValue: `${mileageLeader.lapsCompleted ?? 0}`,
+          driverNumber: getDriverNumber(mileageLeader.driverCode, mileageLeader.fullName),
+        });
+      }
     }
 
     return cards;
-  }, [raceResults, fastestLapHolder, openF1Drivers]);
+  }, [raceResults, fastestLapHolder, isRaceOrSprint, isTestingSession]);
 
   // Loading State
   if (isLoadingSessions) {
@@ -1234,7 +1405,9 @@ const MobileRace: React.FC = () => {
                   isLive={isLive}
                   isAvailable={isAvailable}
                   is24Hour={is24Hour}
-                  onViewResults={() => {}}
+                  onViewResults={(sessionName) => {
+                    trackInteraction('view_results_clicked', { session: sessionName });
+                  }}
                 />
               );
             })}
@@ -1285,8 +1458,7 @@ const MobileRace: React.FC = () => {
               <MobileHeadToHead
                 year={year!}
                 event={eventName}
-                session={selectedSession}
-                openF1Drivers={openF1Drivers}
+                session={analysisSession}
                 raceResults={raceResults}
               />
             </motion.div>
@@ -1295,11 +1467,11 @@ const MobileRace: React.FC = () => {
 
         {activeTab === 'overview' && (
           <>
-            {/* Highlights Carousel (Race Only) */}
-            {isRaceOrSprint && highlights.length > 0 && (
+            {/* Highlights Carousel */}
+            {highlights.length > 0 && (
               <div className="mb-8">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 px-1">
-                  Highlights
+                  {isTestingSession ? 'Testing Highlights' : 'Highlights'}
                 </h3>
                 <StackedHighlightCards
                   highlights={highlights}
@@ -1316,9 +1488,17 @@ const MobileRace: React.FC = () => {
                   Classification
                 </h3>
                 <span className="text-[10px] font-mono text-gray-600">
-                  {raceResults?.length || 0} DRIVERS
+                  {displayResults.length} DRIVERS
                 </span>
               </div>
+
+              {isTestingSession && (
+                <div className="mb-3 p-2 border border-blue-500/30 bg-blue-500/10 rounded-lg">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-blue-300">
+                    Sorted by fastest lap. Expand rows for mileage and reliability context.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {isLoadingResults ? (
@@ -1326,11 +1506,11 @@ const MobileRace: React.FC = () => {
                     Loading results...
                   </div>
                 ) : (
-                  raceResults?.map((result) => (
+                  displayResults.map((result, index) => (
                     <ResultRow
-                      key={result.driverCode}
+                      key={`${result.driverCode}-${index}`}
                       result={result}
-                      position={result.position}
+                      position={isRaceOrSprint ? (result.position ?? index + 1) : index + 1}
                       sessionType={selectedSession}
                       isFavorite={profile?.favorite_driver === result.driverCode}
                       driverImage={getDriverImg(result.driverCode, result.fullName)}
@@ -1341,7 +1521,7 @@ const MobileRace: React.FC = () => {
                         )
                       }
                       fastestLapHolder={fastestLapHolder}
-                      winnerTime={raceResults?.find((r) => r.position === 1)?.time}
+                      winnerTime={displayResults.find((r) => r.position === 1)?.time}
                     />
                   ))
                 )}
@@ -1358,7 +1538,7 @@ const MobileRace: React.FC = () => {
             <MobileStrategy
               year={year}
               event={eventName}
-              session={selectedSession}
+              session={analysisSession}
               raceResults={raceResults}
               getDriverImage={getDriverImg}
             />
@@ -1373,9 +1553,8 @@ const MobileRace: React.FC = () => {
             <MobileLapTimes
               year={year}
               event={eventName}
-              session={selectedSession}
+              session={analysisSession}
               raceResults={raceResults}
-              openF1Drivers={openF1Drivers}
             />
           </GatedRoute>
         )}
@@ -1388,8 +1567,7 @@ const MobileRace: React.FC = () => {
             <MobileTelemetry
               year={year!}
               event={eventName}
-              session={selectedSession}
-              openF1Drivers={openF1Drivers}
+              session={analysisSession}
               raceResults={raceResults}
             />
           </GatedRoute>
@@ -1399,7 +1577,10 @@ const MobileRace: React.FC = () => {
       {/* Bottom Nav */}
       <RaceBottomNav
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          trackInteraction('mobile_tab_changed', { tab });
+        }}
         hasStrategy={isRaceOrSprint}
       />
 

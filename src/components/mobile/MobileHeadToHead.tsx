@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchSessionDrivers,
@@ -12,6 +12,7 @@ import {
   SessionDriver,
   SectorComparisonData,
   SpeedDataPoint,
+  SpeedTraceResponse,
   ThrottleDataPoint,
   BrakeDataPoint,
   RPMDataPoint,
@@ -30,7 +31,7 @@ import {
 } from 'hugeicons-react';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 import {
   Select,
   SelectContent,
@@ -43,12 +44,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 
 interface MobileHeadToHeadProps {
   year: number;
   event: string;
   session: string;
-  openF1Drivers: OpenF1Driver[];
   raceResults?: DetailedRaceResult[];
 }
 
@@ -100,10 +102,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   year,
   event,
   session,
-  openF1Drivers,
   raceResults,
 }) => {
   const { profile } = useAuth();
+  const { trackSelection, trackInteraction } = useAnalytics();
 
   // --- Driver Selection Logic (Auto-Select Rival) ---
   const { favDriverCode, rivalDriverCode } = useMemo(() => {
@@ -137,14 +139,6 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   const [selectedLap2, setSelectedLap2] = useState<string | number>('fastest');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
-  const selectedDriver1 = favDriverCode || internalDriver1;
-  const selectedDriver2 = rivalDriverCode || internalDriver2;
-  const shouldLoadData = !!(
-    selectedDriver1 &&
-    selectedDriver2 &&
-    selectedDriver1 !== selectedDriver2
-  );
-
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
@@ -152,6 +146,39 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
     gcTime: 1000 * 60 * 60 * 24,
     enabled: !!year && !!event && !!session,
   });
+
+  const [prevDeps, setPrevDeps] = useState<{
+    fav: string | undefined;
+    rival: string | undefined;
+    drivers: SessionDriver[] | undefined;
+  }>({ fav: undefined, rival: undefined, drivers: undefined });
+
+  if (
+    favDriverCode !== prevDeps.fav ||
+    rivalDriverCode !== prevDeps.rival ||
+    availableDrivers !== prevDeps.drivers
+  ) {
+    setPrevDeps({ fav: favDriverCode, rival: rivalDriverCode, drivers: availableDrivers });
+    if (availableDrivers && availableDrivers.length > 0) {
+      const codes = availableDrivers.map((d) => d.code);
+      const resolvedDriver1 = codes.includes(favDriverCode) ? favDriverCode : codes[0] || '';
+      setInternalDriver1(resolvedDriver1);
+
+      const resolvedDriver2 =
+        codes.includes(rivalDriverCode) && rivalDriverCode !== resolvedDriver1
+          ? rivalDriverCode
+          : codes.find((c) => c !== resolvedDriver1) || '';
+      setInternalDriver2(resolvedDriver2);
+    }
+  }
+
+  const selectedDriver1 = internalDriver1;
+  const selectedDriver2 = internalDriver2;
+  const shouldLoadData = !!(
+    selectedDriver1 &&
+    selectedDriver2 &&
+    selectedDriver1 !== selectedDriver2
+  );
 
   const { data: lapTimes1 } = useQuery<number[]>({
     queryKey: ['driverLapNumbers', year, event, session, selectedDriver1],
@@ -200,12 +227,20 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   // --- Telemetry Queries ---
   const { data: speedData1 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver1, selectedLap1],
-    queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver1, selectedLap1),
+    queryFn: async () => {
+      const result = await fetchTelemetrySpeed(year, event, session, selectedDriver1, selectedLap1);
+      if (Array.isArray(result)) return result;
+      return (result as SpeedTraceResponse).trace ?? [];
+    },
     enabled: shouldLoadData,
   });
   const { data: speedData2 } = useQuery<SpeedDataPoint[]>({
     queryKey: ['speedTrace', year, event, session, selectedDriver2, selectedLap2],
-    queryFn: () => fetchTelemetrySpeed(year, event, session, selectedDriver2, selectedLap2),
+    queryFn: async () => {
+      const result = await fetchTelemetrySpeed(year, event, session, selectedDriver2, selectedLap2);
+      if (Array.isArray(result)) return result;
+      return (result as SpeedTraceResponse).trace ?? [];
+    },
     enabled: shouldLoadData,
   });
 
@@ -300,8 +335,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
   };
 
   const getDriverImage = (code: string) => {
-    const driver = openF1Drivers.find((d) => d.name_acronym === code);
-    return driver?.headshot_url;
+    return getDriverImageFromMapping(code, year);
   };
 
   const getDriverTeam = (code: string) => {
@@ -331,6 +365,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
             onValueChange={(value) => {
               setSelectedDriver(value);
               setSelectedLap('fastest');
+              trackSelection('h2h_driver', value);
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
@@ -390,9 +425,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
 
           <Select
             value={String(selectedLap)}
-            onValueChange={(value) =>
-              setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value))
-            }
+            onValueChange={(value) => {
+              setSelectedLap(value === 'fastest' ? 'fastest' : parseInt(value));
+              trackSelection('h2h_lap', value);
+            }}
             disabled={!selectedDriver || !lapTimes}
           >
             <SelectTrigger className="w-[70px] bg-black border border-white/20 text-white h-10 px-2 rounded-md">
@@ -503,7 +539,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
                 Track Dominance
               </h3>
               <button
-                onClick={() => setIsRotated(!isRotated)}
+                onClick={() => {
+                  setIsRotated(!isRotated);
+                  trackInteraction('track_map_rotated');
+                }}
                 className="text-[10px] text-red-500 uppercase font-bold border border-red-500/30 px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
               >
                 Rotate Map
@@ -812,6 +851,19 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
               isStep
             />
           </div>
+        </div>
+      )}
+
+      {/* Enriched Race Data Panels */}
+      {shouldLoadData && selectedDriver1 && selectedDriver2 && (
+        <div className="mt-6">
+          <HeadToHeadEnriched
+            year={year}
+            event={event}
+            session={session}
+            driver1={selectedDriver1}
+            driver2={selectedDriver2}
+          />
         </div>
       )}
     </div>

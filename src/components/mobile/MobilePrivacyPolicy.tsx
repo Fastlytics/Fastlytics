@@ -37,62 +37,113 @@ const MobilePrivacyPolicy: React.FC = () => {
 
           <div className="space-y-8 text-sm font-mono text-gray-400">
             <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">5. Contact</h2>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                1. Introduction and Scope
+              </h2>
+              <p className="mb-3">
+                This Privacy Policy governs the collection, processing, storage, and disclosure of
+                personal information by Fastlytics in connection with your use of our Services.
+              </p>
               <p>
-                Welcome to Fastlytics. We respect your privacy and are committed to protecting your
-                personal data.
+                By accessing or utilizing the Services, you acknowledge that you have read,
+                understood, and agree to be bound by the terms of this Policy.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-black text-white uppercase italic mb-3">
-                2. Data We Collect
+                2. Information We Collect
               </h2>
-              <ul className="list-disc pl-4 space-y-2">
+              <p className="mb-3">
+                We collect various categories of information to provide and improve our Services:
+              </p>
+              <ul className="list-disc pl-4 space-y-2 mb-3">
                 <li>
-                  <strong className="text-white">Identity Data:</strong> Name, username.
+                  <strong className="text-white">Personal Identifiable Information:</strong> Account
+                  credentials, name, username, email address, and profile information.
                 </li>
                 <li>
-                  <strong className="text-white">Contact Data:</strong> Email address.
+                  <strong className="text-white">Technical and Device Information:</strong> Device
+                  identifier, browser configuration, operating system, IP address, ISP details,
+                  geographic location data derived from network coordinates, and device fingerprint.
                 </li>
                 <li>
-                  <strong className="text-white">Usage Data:</strong> How you use our website.
-                </li>
-                <li>
-                  <strong className="text-white">Technical Data:</strong> IP address, browser type.
+                  <strong className="text-white">Usage and Behavioral Data:</strong> Pages visited,
+                  features accessed, session duration, navigation patterns, and engagement metrics.
                 </li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-black text-white uppercase italic mb-3">
-                3. Data Storage
+                3. Data Processing and Legal Basis
+              </h2>
+              <p className="mb-3">We process your personal information based on:</p>
+              <ul className="list-disc pl-4 space-y-2 mb-3">
+                <li>Performance of contractual obligations</li>
+                <li>
+                  Legitimate business interests (service improvement, security, fraud prevention)
+                </li>
+                <li>Legal compliance requirements</li>
+                <li>Your informed consent, where applicable</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                4. Storage and Security
               </h2>
               <ul className="list-disc pl-4 space-y-2">
                 <li>
-                  <strong className="text-white">Secure Storage:</strong> Provided by Supabase.
+                  <strong className="text-white">Secure Storage:</strong> Personal data and activity
+                  history are stored in our Supabase database infrastructure with encryption at rest
+                  and in transit.
                 </li>
                 <li>
-                  <strong className="text-white">Analytics:</strong> Self-hosted Umami and PostHog.
-                  Data is <strong className="text-red-600">NOT</strong> shared with third parties.
+                  <strong className="text-white">Analytics:</strong> Self-hosted Umami and PostHog
+                  analytics (including heatmaps and session recordings) operated on our proprietary
+                  infrastructure. Data is <strong className="text-red-600">NOT</strong> transmitted
+                  to third-party advertising networks or external data brokers.
                 </li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-black text-white uppercase italic mb-3">
-                4. Your Rights
+                5. Your Rights
               </h2>
+              <p className="mb-3">
+                Subject to applicable data protection laws, you may exercise the following rights:
+              </p>
+              <ul className="list-disc pl-4 space-y-2 mb-3">
+                <li>Right to access personal information we hold about you</li>
+                <li>Right to request correction of inaccurate data</li>
+                <li>Right to request deletion of your personal data</li>
+                <li>Right to object to processing based on legitimate interests</li>
+              </ul>
               <p>
-                You have the right to access, correct, or delete your data. You can view your
-                activity history in your Account page.
+                You may exercise these rights through your account settings or by contacting us.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">6. Contact</h2>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                6. International Data Transfers
+              </h2>
               <p>
-                Questions? Email us at{' '}
+                Your personal information may be transferred to and processed in countries other
+                than your country of residence. By using our Services, you consent to such
+                transfers.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                7. Contact Information
+              </h2>
+              <p>
+                For questions, concerns, or requests regarding this Policy or our data practices,
+                please contact us at{' '}
                 <a href="mailto:contact@fastlytics.app" className="text-red-600 hover:underline">
                   contact@fastlytics.app
                 </a>

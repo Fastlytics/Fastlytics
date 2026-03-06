@@ -1,11 +1,12 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
+import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { getDriverImage, getCarImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -35,22 +36,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
   schedule,
   isLoading,
 }) => {
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const { selectedYear } = useSeason();
+  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
   const favoriteDriver = useMemo(() => {
     if (!profile?.favorite_driver || !drivers.length) return null;
@@ -122,8 +109,9 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
     const index = drivers.findIndex((d) => d === favoriteDriver);
     const leader = drivers[0];
 
-    // Title Contender Logic - same as desktop
-    const isTitleContender = leader.points - favoriteDriver.points <= remainingPoints;
+    // Title Contender Logic - same as desktop (ensure leader has points)
+    const isTitleContender =
+      leader.points > 0 && leader.points - favoriteDriver.points <= remainingPoints;
 
     // Rivalry Status Logic
     const getRivalryStatus = (rival: DriverStanding | null) => {
@@ -298,8 +286,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                       )}
                     >
                       <AvatarImage
-                        src={getDriverImage(favoriteDriver.name)}
-                        className="object-cover bg-zinc-900"
+                        src={getDriverImageForYear(favoriteDriver.code)}
+                        className="object-cover object-top bg-zinc-900"
                       />
                       <AvatarFallback className="bg-zinc-900 rounded-md font-black text-lg">
                         {favoriteDriver.code}
@@ -368,8 +356,8 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6 rounded-none border border-white/20">
                               <AvatarImage
-                                src={getDriverImage(item.driver.name)}
-                                className="object-cover"
+                                src={getDriverImageForYear(item.driver.code)}
+                                className="object-cover object-top"
                               />
                               <AvatarFallback className="text-[8px] rounded-none">
                                 {item.driver.code}
@@ -469,12 +457,12 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
               <div className="flex items-center gap-4">
                 {/* Logo & Position */}
                 <div className="relative">
-                  <div className="h-16 w-16 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-2">
-                    {getTeamLogo(favoriteTeam.team) ? (
+                  <div className="h-16 w-24 flex items-center justify-center bg-transparent rounded-md border-2 border-white/10 p-2">
+                    {getCarImage(favoriteTeam.team, selectedYear) ? (
                       <img
-                        src={getTeamLogo(favoriteTeam.team)!}
+                        src={getCarImage(favoriteTeam.team, selectedYear)!}
                         alt={favoriteTeam.team}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] [mix-blend-mode:lighten]"
                       />
                     ) : (
                       <UserGroupIcon className="w-6 h-6 text-white" />

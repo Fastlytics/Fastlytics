@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DetailedRaceResult,
   fetchLapTimes,
   fetchPaceDistribution,
   LapTimeDataPoint,
+  LapTimesEnrichedResponse,
   PaceDistributionData,
+  PaceDistributionResponse,
   SessionDriver,
   fetchSessionDrivers,
 } from '@/lib/api';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -40,6 +42,7 @@ import {
 } from '@/components/ui/select';
 import { driverColor } from '@/lib/driverColor';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ChartMouseEvent {
   activeLabel?: string | number;
@@ -55,7 +58,6 @@ interface MobileLapTimesProps {
   event: string;
   session: string;
   raceResults: DetailedRaceResult[] | undefined;
-  openF1Drivers: OpenF1Driver[];
 }
 
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -83,16 +85,11 @@ const getTeamColorClass = (teamName: string | undefined): string => {
   return 'gray';
 };
 
-const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
-  year,
-  event,
-  session,
-  raceResults,
-  openF1Drivers,
-}) => {
+const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, raceResults }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { trackSelection, trackInteraction } = useAnalytics();
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
 
   // --- Driver Selection Logic ---
@@ -124,14 +121,46 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   const [internalDriver1, setInternalDriver1] = useState<string>('');
   const [internalDriver2, setInternalDriver2] = useState<string>('');
 
-  const driver1 = favDriverCode || internalDriver1;
-  const driver2 = rivalDriverCode || internalDriver2;
-
   // --- Data Fetching ---
 
   const leaderCode = useMemo(() => {
     return raceResults?.find((r) => r.position === 1)?.driverCode;
   }, [raceResults]);
+
+  // 2. Pace Distribution Data (Fetch for ALL drivers to show the list)
+  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
+    queryKey: ['sessionDrivers', year, event, session],
+    queryFn: () => fetchSessionDrivers(year, event, session),
+    staleTime: Infinity,
+  });
+
+  const [prevDeps, setPrevDeps] = useState<{
+    fav: string | undefined;
+    rival: string | undefined;
+    drivers: SessionDriver[] | undefined;
+  }>({ fav: undefined, rival: undefined, drivers: undefined });
+
+  if (
+    favDriverCode !== prevDeps.fav ||
+    rivalDriverCode !== prevDeps.rival ||
+    sessionDrivers !== prevDeps.drivers
+  ) {
+    setPrevDeps({ fav: favDriverCode, rival: rivalDriverCode, drivers: sessionDrivers });
+    if (sessionDrivers && sessionDrivers.length > 0) {
+      const codes = sessionDrivers.map((d) => d.code);
+      const resolvedDriver1 = codes.includes(favDriverCode) ? favDriverCode : codes[0] || '';
+      setInternalDriver1(resolvedDriver1);
+
+      const resolvedDriver2 =
+        codes.includes(rivalDriverCode) && rivalDriverCode !== resolvedDriver1
+          ? rivalDriverCode
+          : codes.find((c) => c !== resolvedDriver1) || '';
+      setInternalDriver2(resolvedDriver2);
+    }
+  }
+
+  const driver1 = internalDriver1;
+  const driver2 = internalDriver2;
 
   const driversToFetch = useMemo(() => {
     const drivers = [driver1, driver2].filter(Boolean);
@@ -143,7 +172,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
   }, [driver1, driver2, lapAnalysisMode, leaderCode]);
 
   // 1. Lap History / Gap Data
-  const { data: lapData, isLoading: isLoadingLaps } = useQuery<LapTimeDataPoint[]>({
+  const { data: lapTimesResponse, isLoading: isLoadingLaps } = useQuery<LapTimesEnrichedResponse>({
     queryKey: ['lapTimes', year, event, session, driversToFetch],
     queryFn: () => fetchLapTimes(year, event, session, driversToFetch),
     enabled:
@@ -152,19 +181,18 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
       driversToFetch.length > 0,
     staleTime: 1000 * 60 * 5,
   });
-
-  // 2. Pace Distribution Data (Fetch for ALL drivers to show the list)
-  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
-  });
+  const lapData = lapTimesResponse?.lapComparison;
 
   const allDriverCodes = useMemo(() => sessionDrivers?.map((d) => d.code) || [], [sessionDrivers]);
 
   const { data: paceData, isLoading: isLoadingPace } = useQuery<PaceDistributionData[]>({
     queryKey: ['paceDistribution', year, event, session, 'all'], // 'all' as key
-    queryFn: () => fetchPaceDistribution(year, event, session, allDriverCodes),
+    queryFn: async () => {
+      const result = await fetchPaceDistribution(year, event, session, allDriverCodes);
+      // Handle both new PaceDistributionResponse format and old PaceDistributionData[] format
+      if (Array.isArray(result)) return result;
+      return (result as PaceDistributionResponse).overall ?? [];
+    },
     enabled: lapAnalysisMode === 'pace' && allDriverCodes.length > 0,
     staleTime: 1000 * 60 * 5,
   });
@@ -214,8 +242,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
 
   // --- Helper for Driver Images ---
   const getDriverImage = (code: string) => {
-    const driver = openF1Drivers.find((d) => d.name_acronym === code);
-    return driver?.headshot_url;
+    return getDriverImageFromMapping(code, year);
   };
 
   const getDriverTeam = (code: string) => {
@@ -246,7 +273,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
         {/* Analysis Mode Toggle */}
         <div className="flex p-1 bg-zinc-900 border border-white/10 rounded-lg">
           <button
-            onClick={() => setLapAnalysisMode('history')}
+            onClick={() => {
+              setLapAnalysisMode('history');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'history' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'history'
@@ -258,7 +288,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
             History
           </button>
           <button
-            onClick={() => setLapAnalysisMode('gap')}
+            onClick={() => {
+              setLapAnalysisMode('gap');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'gap' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'gap'
@@ -270,7 +303,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
             Gap
           </button>
           <button
-            onClick={() => setLapAnalysisMode('pace')}
+            onClick={() => {
+              setLapAnalysisMode('pace');
+              trackInteraction('lap_analysis_mode_changed', { mode: 'pace' });
+            }}
             className={cn(
               'flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-md flex items-center justify-center gap-1.5',
               lapAnalysisMode === 'pace'
@@ -297,7 +333,13 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                 <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
                   {control.label}
                 </label>
-                <Select value={control.value} onValueChange={control.setter}>
+                <Select
+                  value={control.value}
+                  onValueChange={(value) => {
+                    control.setter(value);
+                    trackSelection('lap_driver', value, { label: control.label });
+                  }}
+                >
                   <SelectTrigger className="w-full bg-black border border-white/20 text-white h-12 px-2 rounded-md">
                     {control.value ? (
                       <div className="flex items-center gap-3 overflow-hidden">
@@ -396,7 +438,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                       <XAxis
                         dataKey="LapNumber"
                         stroke="#666"
-                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
                         interval="preserveStartEnd"
                         tickLine={false}
                         axisLine={false}
@@ -490,7 +532,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({
                   return (
                     <button
                       key={driverCode}
-                      onClick={() => setSelectedPaceDriver(driverPace)}
+                      onClick={() => {
+                        setSelectedPaceDriver(driverPace);
+                        trackSelection('pace_driver', driverCode);
+                      }}
                       className="w-full bg-black border border-white/10 p-3 rounded-lg relative overflow-hidden hover:bg-zinc-900/50 transition-colors text-left group"
                     >
                       <div className="flex items-center gap-3 mb-4 relative z-10">

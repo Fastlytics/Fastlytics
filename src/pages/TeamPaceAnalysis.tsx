@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Added
+import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity01Icon,
@@ -45,7 +46,8 @@ import { cn } from '@/lib/utils';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 
 const TeamPaceAnalysis = () => {
-  const navigate = useNavigate(); // Added
+  const navigate = useNavigate();
+  const { trackEvent, trackPageView } = useAnalytics();
   const [selectedYear, setSelectedYear] = useState(2025);
   const [summaryList, setSummaryList] = useState<TeamPaceSummary[]>([]);
   const [selectedEventSlug, setSelectedEventSlug] = useState<string | null>(null);
@@ -53,6 +55,12 @@ const TeamPaceAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [activeTeams, setActiveTeams] = useState<string[]>([]);
   const [selectedEventName, setSelectedEventName] = useState<string>(''); // For display in Select
+
+  // Track page view
+  useEffect(() => {
+    trackPageView('team_pace_analysis', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Constants
   const availableYears = [2025, 2024]; // Could be dynamic or imported
@@ -87,7 +95,7 @@ const TeamPaceAnalysis = () => {
       }
     };
     fetchSummary();
-  }, [selectedYear]);
+  }, [selectedYear, selectedEventSlug]);
 
   const [selectedSession, setSelectedSession] = useState<string>('R'); // Default to Race, will update on load
 
@@ -312,7 +320,10 @@ const TeamPaceAnalysis = () => {
             {/* Year Selector */}
             <Select
               value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', { page: 'team_pace', year: Number(value) });
+              }}
             >
               <SelectTrigger className="w-[120px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue placeholder="Year" />
@@ -336,7 +347,14 @@ const TeamPaceAnalysis = () => {
             {/* Event Selector */}
             <Select
               value={selectedEventSlug || ''}
-              onValueChange={(value) => setSelectedEventSlug(value)}
+              onValueChange={(value) => {
+                setSelectedEventSlug(value);
+                trackEvent('event_changed', {
+                  page: 'team_pace',
+                  event_slug: value,
+                  year: selectedYear,
+                });
+              }}
               disabled={summaryList.length === 0}
             >
               <SelectTrigger className="w-[240px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
@@ -416,7 +434,7 @@ const TeamPaceAnalysis = () => {
                             fill="#666"
                             fontSize={12}
                             fontWeight="bold"
-                            fontFamily="monospace"
+                            fontFamily="Geist"
                             style={{ textTransform: 'uppercase' }}
                           >
                             {payload.value}
@@ -465,7 +483,15 @@ const TeamPaceAnalysis = () => {
                   {/* Session Selector */}
                   <Select
                     value={selectedSession}
-                    onValueChange={setSelectedSession}
+                    onValueChange={(value) => {
+                      setSelectedSession(value);
+                      trackEvent('session_changed', {
+                        page: 'team_pace',
+                        session: value,
+                        event: selectedEventName,
+                        year: selectedYear,
+                      });
+                    }}
                     disabled={!eventData}
                   >
                     <SelectTrigger className="w-[100px] bg-zinc-900 border-gray-700 text-white h-8 text-xs font-bold uppercase tracking-wider">

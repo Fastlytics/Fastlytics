@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
 import { CheckmarkCircle01Icon, ArrowRight01Icon, ArrowLeft01Icon } from 'hugeicons-react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,34 +15,33 @@ import { MobileOnboarding } from '@/components/mobile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 
 const Onboarding = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { trackEvent, trackSelection } = useAnalytics();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
 
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
 
-  // Fetch data on mount
+  // Fetch data on mount — resolve season year based on data availability
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentYear = getCurrentSeasonYear();
-        const [driversData, teamsData, openF1Data] = await Promise.all([
-          fetchDriverStandings(currentYear),
-          fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers(),
+        const year = await resolveSeasonYear(fetchDriverStandings);
+        const [driversData, teamsData] = await Promise.all([
+          fetchDriverStandings(year),
+          fetchTeamStandings(year),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
-        setOpenF1Drivers(openF1Data);
       } catch (error) {
         console.error('Error loading onboarding data:', error);
         toast.error('Failed to load F1 data. Please try again.');
@@ -52,14 +50,8 @@ const Onboarding = () => {
     loadData();
   }, []);
 
-  const getDriverImage = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const getDriverImageForYear = (driverCode: string) =>
+    getDriverImage(driverCode, getCurrentSeasonYear());
 
   const handleNext = () => {
     setStep((prev) => prev + 1);
@@ -86,7 +78,7 @@ const Onboarding = () => {
       if (error) throw error;
 
       await refreshProfile();
-      posthog.capture('onboarding_completed', {
+      trackEvent('onboarding_completed', {
         favorite_driver: selectedDriver,
         favorite_team: selectedTeam,
       });
@@ -196,7 +188,10 @@ const Onboarding = () => {
                 {drivers.map((driver) => (
                   <button
                     key={driver.code}
-                    onClick={() => setSelectedDriver(driver.code)}
+                    onClick={() => {
+                      setSelectedDriver(driver.code);
+                      trackSelection('onboarding_driver', driver.code);
+                    }}
                     className={`
                                             relative p-4 border-2 transition-all duration-200 text-left group flex flex-col items-center text-center
                                             ${
@@ -208,7 +203,7 @@ const Onboarding = () => {
                   >
                     <Avatar className="h-24 w-24 mb-4 border-2 border-zinc-800">
                       <AvatarImage
-                        src={getDriverImage(driver.code, driver.name)}
+                        src={getDriverImageForYear(driver.code)}
                         className="object-cover object-top bg-zinc-800"
                       />
                       <AvatarFallback>{driver.name}</AvatarFallback>
@@ -268,7 +263,10 @@ const Onboarding = () => {
                 {teams.map((team) => (
                   <button
                     key={team.team}
-                    onClick={() => setSelectedTeam(team.team)}
+                    onClick={() => {
+                      setSelectedTeam(team.team);
+                      trackSelection('onboarding_team', team.team);
+                    }}
                     className={`
                                             relative p-6 border-2 transition-all duration-200 text-left group flex items-center gap-6
                                             ${
