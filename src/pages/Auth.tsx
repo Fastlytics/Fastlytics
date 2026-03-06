@@ -39,6 +39,7 @@ const Auth = () => {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [isResetPasswordMode, setIsResetPasswordMode] = useState(false);
+  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('signup');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -128,7 +129,8 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success('Check your email to confirm your account!');
+      setIsSignUpSuccess(true);
+      setIsLoading(false);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
       setIsLoading(false);
@@ -388,169 +390,208 @@ const Auth = () => {
                     className="space-y-6 focus-visible:outline-none mt-0"
                     key="signup"
                   >
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="space-y-4">
-                        {oauthFlags.enableGoogle && (
-                          <Button
-                            variant="outline"
-                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                            onClick={() => handleSocialLogin('google')}
-                            disabled={isLoading}
-                          >
-                            <FontAwesomeIcon
-                              icon={faGoogle}
-                              className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
-                            />
-                            Sign up with Google
-                          </Button>
-                        )}
-                        {oauthFlags.enableGithub && (
-                          <Button
-                            variant="outline"
-                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                            onClick={() => handleSocialLogin('github')}
-                            disabled={isLoading}
-                          >
-                            <FontAwesomeIcon
-                              icon={faGithub}
-                              className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
-                            />
-                            Sign up with GitHub
-                          </Button>
-                        )}
-                        {oauthFlags.enableDiscord && (
-                          <Button
-                            variant="outline"
-                            className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
-                            onClick={() => handleSocialLogin('discord')}
-                            disabled={isLoading}
-                          >
-                            <FontAwesomeIcon
-                              icon={faDiscord}
-                              className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
-                            />
-                            Sign up with Discord
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-zinc-800" />
-                        </div>
-                        <div className="relative flex justify-center text-sm uppercase tracking-wider">
-                          <span className="bg-black px-4 text-zinc-500 font-bold">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
-
-                      <form onSubmit={handleEmailSignUp} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="signup-email"
-                            className="text-base font-medium text-zinc-300"
-                          >
-                            Email
-                          </Label>
-                          <div className="relative">
-                            <FontAwesomeIcon
-                              icon={faEnvelope}
-                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
-                            />
-                            <Input
-                              id="signup-email"
-                              type="email"
-                              placeholder="name@example.com"
-                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
+                    {!isSignUpSuccess ? (
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="space-y-4">
+                          {oauthFlags.enableGoogle && (
+                            <Button
+                              variant="outline"
+                              className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                              onClick={() => handleSocialLogin('google')}
                               disabled={isLoading}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="signup-password"
-                            className="text-base font-medium text-zinc-300"
-                          >
-                            Password
-                          </Label>
-                          <div className="relative">
-                            <FontAwesomeIcon
-                              icon={faLock}
-                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
-                            />
-                            <Input
-                              id="signup-password"
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="Create a password"
-                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12 pr-12"
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              required
-                              disabled={isLoading}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                             >
-                              <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="confirm-password"
-                            className="text-base font-medium text-zinc-300"
-                          >
-                            Confirm Password
-                          </Label>
-                          <div className="relative">
-                            <FontAwesomeIcon
-                              icon={faLock}
-                              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
-                            />
-                            <Input
-                              id="confirm-password"
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="Confirm your password"
-                              className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
-                              value={confirmPassword}
-                              onChange={(e) => setConfirmPassword(e.target.value)}
-                              required
+                              <FontAwesomeIcon
+                                icon={faGoogle}
+                                className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
+                              />
+                              Sign up with Google
+                            </Button>
+                          )}
+                          {oauthFlags.enableGithub && (
+                            <Button
+                              variant="outline"
+                              className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                              onClick={() => handleSocialLogin('github')}
                               disabled={isLoading}
-                            />
+                            >
+                              <FontAwesomeIcon
+                                icon={faGithub}
+                                className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
+                              />
+                              Sign up with GitHub
+                            </Button>
+                          )}
+                          {oauthFlags.enableDiscord && (
+                            <Button
+                              variant="outline"
+                              className="w-full h-14 text-lg font-medium bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all duration-300 group"
+                              onClick={() => handleSocialLogin('discord')}
+                              disabled={isLoading}
+                            >
+                              <FontAwesomeIcon
+                                icon={faDiscord}
+                                className="mr-3 text-zinc-400 group-hover:text-white transition-colors"
+                              />
+                              Sign up with Discord
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="relative my-6">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-zinc-800" />
+                          </div>
+                          <div className="relative flex justify-center text-sm uppercase tracking-wider">
+                            <span className="bg-black px-4 text-zinc-500 font-bold">
+                              Or continue with
+                            </span>
                           </div>
                         </div>
-                        <Button
-                          type="submit"
-                          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? 'Creating account...' : 'Create Account'}
-                        </Button>
-                      </form>
 
-                      <p className="text-center text-sm text-zinc-500 mt-8">
-                        By clicking continue, you agree to our{' '}
-                        <span className="underline cursor-pointer hover:text-zinc-300">
-                          Terms of Service
-                        </span>{' '}
-                        and{' '}
-                        <span className="underline cursor-pointer hover:text-zinc-300">
-                          Privacy Policy
-                        </span>
-                        .
-                      </p>
-                    </motion.div>
+                        <form onSubmit={handleEmailSignUp} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="signup-email"
+                              className="text-base font-medium text-zinc-300"
+                            >
+                              Email
+                            </Label>
+                            <div className="relative">
+                              <FontAwesomeIcon
+                                icon={faEnvelope}
+                                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                              />
+                              <Input
+                                id="signup-email"
+                                type="email"
+                                placeholder="name@example.com"
+                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={isLoading}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="signup-password"
+                              className="text-base font-medium text-zinc-300"
+                            >
+                              Password
+                            </Label>
+                            <div className="relative">
+                              <FontAwesomeIcon
+                                icon={faLock}
+                                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                              />
+                              <Input
+                                id="signup-password"
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="Create a password"
+                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12 pr-12"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                disabled={isLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                              >
+                                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="confirm-password"
+                              className="text-base font-medium text-zinc-300"
+                            >
+                              Confirm Password
+                            </Label>
+                            <div className="relative">
+                              <FontAwesomeIcon
+                                icon={faLock}
+                                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-zinc-500"
+                              />
+                              <Input
+                                id="confirm-password"
+                                type={showPassword ? 'text' : 'password'}
+                                placeholder="Confirm your password"
+                                className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 focus:ring-red-500/20 text-lg pl-12"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                                disabled={isLoading}
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            type="submit"
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12 text-lg mt-2"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? 'Creating account...' : 'Create Account'}
+                          </Button>
+                        </form>
+
+                        <p className="text-center text-sm text-zinc-500 mt-8">
+                          By clicking continue, you agree to our{' '}
+                          <span className="underline cursor-pointer hover:text-zinc-300">
+                            Terms of Service
+                          </span>{' '}
+                          and{' '}
+                          <span className="underline cursor-pointer hover:text-zinc-300">
+                            Privacy Policy
+                          </span>
+                          .
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex flex-col items-center justify-center p-8 bg-zinc-900/50 border border-zinc-800 rounded-xl space-y-6 my-8"
+                      >
+                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-2">
+                          <FontAwesomeIcon icon={faEnvelope} className="text-4xl text-red-500" />
+                        </div>
+                        <div className="text-center space-y-2">
+                          <h3 className="text-3xl font-black uppercase tracking-tighter italic">
+                            Check your inbox
+                          </h3>
+                          <p className="text-zinc-400 text-lg">
+                            We've sent a verification link to
+                            <br />
+                            <span className="text-white font-bold">{email}</span>
+                          </p>
+                        </div>
+                        <div className="w-full h-px bg-zinc-800 my-4" />
+                        <p className="text-sm text-zinc-500 text-center">
+                          Please click the link in the email to verify your account and sign in.
+                        </p>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-2 h-12 text-lg bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 hover:text-white transition-all"
+                          onClick={() => {
+                            setIsSignUpSuccess(false);
+                            setEmail('');
+                            setPassword('');
+                            setConfirmPassword('');
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                          Back to Sign Up
+                        </Button>
+                      </motion.div>
+                    )}
                   </TabsContent>
                 ) : (
                   <TabsContent
