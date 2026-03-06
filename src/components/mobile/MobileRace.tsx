@@ -1359,7 +1359,9 @@ const MobileRace: React.FC = () => {
   }
 
   // Schedule View (No Race Results Yet)
-  const hasRaceData = availableSessions.some((s) => s.type === 'R');
+  const hasRaceData = isTestingEvent
+    ? availableSessions.length > 0
+    : availableSessions.some((s) => s.type === 'R');
   if (!hasRaceData && sessionSchedule && !showAnalysis) {
     const upcomingSession = sessionSchedule.sessions.find((s) => new Date(s.date) > now);
     const nextSession =
