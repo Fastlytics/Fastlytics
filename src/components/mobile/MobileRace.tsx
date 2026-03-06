@@ -36,9 +36,11 @@ import MobileHeadToHead from './MobileHeadToHead';
 import MobileTelemetry from './MobileTelemetry';
 import { getDriverImage } from '@/utils/imageMapping';
 import { GatedRoute } from '@/components/common/GatedRoute';
+import { getTeamColorClass } from '@/lib/teamColors';
 
 // --- Helper Functions ---
-const getTeamColorClass = (teamName: string | undefined): string => {
+// Using shared getTeamColorClass from @/lib/teamColors
+const _unused_getTeamColorClass = (teamName: string | undefined): string => {
   if (!teamName) return 'gray';
   const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (simpleName.includes('mclaren')) return 'mclaren';

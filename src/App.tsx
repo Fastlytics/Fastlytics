@@ -2,7 +2,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Landing from './pages/Landing'; // Updated import
 import Auth from './pages/Auth';
@@ -138,13 +138,15 @@ const App = () => (
               {/* Auth route - public */}
               <Route path="/auth" element={<Auth />} />
 
-              {/* Partially Public Routes - accessible to all, gated features show login prompt */}
+              {/* Protected Entry Point: Redirects to onboarding if needed or shows dashboard */}
               <Route
                 path="/dashboard"
                 element={
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
+                  <ProtectedRoute>
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  </ProtectedRoute>
                 }
               />
               <Route

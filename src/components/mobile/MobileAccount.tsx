@@ -353,7 +353,10 @@ const MobileAccount: React.FC = () => {
 
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border-2 border-white/20 rounded-md">
-                <AvatarImage src={user.user_metadata?.avatar_url} />
+                <AvatarImage
+                  src={user.user_metadata?.avatar_url}
+                  className="object-cover object-top"
+                />
                 <AvatarFallback className="bg-zinc-900 text-xl font-black rounded-md">
                   {user.email?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>

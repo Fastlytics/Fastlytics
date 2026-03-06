@@ -344,7 +344,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
                     {control.value ? (
                       <div className="flex items-center gap-3 overflow-hidden">
                         <Avatar className="w-6 h-6 border border-white/10">
-                          <AvatarImage src={getDriverImage(control.value)} />
+                          <AvatarImage
+                            src={getDriverImage(control.value)}
+                            className="object-cover object-top"
+                          />
                           <AvatarFallback
                             className={cn(
                               'text-[8px] font-bold',
@@ -376,7 +379,10 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="w-6 h-6 border border-white/10">
-                            <AvatarImage src={getDriverImage(r.driverCode)} />
+                            <AvatarImage
+                              src={getDriverImage(r.driverCode)}
+                              className="object-cover object-top"
+                            />
                             <AvatarFallback
                               className={cn(
                                 'text-[8px] font-bold',
@@ -700,7 +706,7 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
         <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/5">
           <div className="flex items-center gap-3">
             <Avatar className="w-8 h-8 border border-white/10">
-              <AvatarImage src={getDriverImage(driver1)} />
+              <AvatarImage src={getDriverImage(driver1)} className="object-cover object-top" />
               <AvatarFallback
                 className={cn(
                   'text-[10px] font-bold',
@@ -720,7 +726,7 @@ const OverlayContent: React.FC<OverlayContentProps> = ({
           <div className="flex items-center justify-between p-2 bg-black/40 rounded-lg border border-white/5">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 border border-white/10">
-                <AvatarImage src={getDriverImage(driver2)} />
+                <AvatarImage src={getDriverImage(driver2)} className="object-cover object-top" />
                 <AvatarFallback
                   className={cn(
                     'text-[10px] font-bold',
@@ -795,7 +801,10 @@ const PaceOverlayContent: React.FC<PaceOverlayProps> = ({
       <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 border border-white/10">
-            <AvatarImage src={getDriverImage(data.driverCode)} />
+            <AvatarImage
+              src={getDriverImage(data.driverCode)}
+              className="object-cover object-top"
+            />
             <AvatarFallback
               className={cn('text-[10px] font-bold', `bg-f1-${getTeamColorClass(team)}`)}
             >

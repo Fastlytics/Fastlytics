@@ -31,6 +31,7 @@ import {
 } from 'hugeicons-react';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
+import { getTeamColorClass } from '@/lib/teamColors';
 import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 import {
   Select,
@@ -53,22 +54,6 @@ interface MobileHeadToHeadProps {
   session: string;
   raceResults?: DetailedRaceResult[];
 }
-
-const getTeamColorClass = (teamName: string | undefined): string => {
-  if (!teamName) return 'gray';
-  const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (simpleName.includes('mclaren')) return 'mclaren';
-  if (simpleName.includes('mercedes')) return 'mercedes';
-  if (simpleName.includes('redbull')) return 'redbull';
-  if (simpleName.includes('ferrari')) return 'ferrari';
-  if (simpleName.includes('alpine')) return 'alpine';
-  if (simpleName.includes('astonmartin')) return 'astonmartin';
-  if (simpleName.includes('williams')) return 'williams';
-  if (simpleName.includes('haas')) return 'haas';
-  if (simpleName.includes('sauber')) return 'alfaromeo';
-  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
-  return 'gray';
-};
 
 type TelemetryDataPoint =
   | SpeedDataPoint
@@ -373,7 +358,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
               {selectedDriver ? (
                 <div className="flex items-center gap-2 overflow-hidden">
                   <Avatar className="w-5 h-5 border border-white/10">
-                    <AvatarImage src={getDriverImage(selectedDriver)} />
+                    <AvatarImage
+                      src={getDriverImage(selectedDriver)}
+                      className="object-cover object-top"
+                    />
                     <AvatarFallback
                       className={cn(
                         'text-[8px] font-bold',
@@ -404,7 +392,10 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
                     >
                       <div className="flex items-center gap-2 w-full">
                         <Avatar className="w-5 h-5 border border-white/10">
-                          <AvatarImage src={getDriverImage(d.code)} />
+                          <AvatarImage
+                            src={getDriverImage(d.code)}
+                            className="object-cover object-top"
+                          />
                           <AvatarFallback
                             className={cn(
                               'text-[8px] font-bold',
@@ -626,6 +617,7 @@ const MobileHeadToHead: React.FC<MobileHeadToHeadProps> = ({
                               ? selectedDriver1
                               : selectedDriver2
                           )}
+                          className="object-cover object-top"
                         />
                         <AvatarFallback
                           className={cn(

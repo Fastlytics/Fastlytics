@@ -1,8 +1,13 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Gauge } from 'lucide-react';
+import { ReactNode } from 'react';
 
-const ProtectedRoute = () => {
+interface ProtectedRouteProps {
+  children?: ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
@@ -21,15 +26,11 @@ const ProtectedRoute = () => {
   }
 
   // Check if onboarding is complete
-  // If profile is null (fetch failed or new user without trigger run yet), we might want to let them through or send to onboarding
-  // Assuming profile creation trigger works, profile should exist.
-  // If profile exists and onboarding_completed is false, redirect.
-  // BUT skip if we are already on /onboarding to avoid loop
   if (profile && !profile.onboarding_completed && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  return <Outlet />;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export { ProtectedRoute };
