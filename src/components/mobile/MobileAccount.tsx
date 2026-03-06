@@ -31,14 +31,13 @@ import {
 import ActivityItem, { ActivityItemProps } from '@/components/activity/ActivityItem';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchDriverStandings, fetchTeamStandings, DriverStanding, TeamStanding } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
 // Bottom Sheet Component
@@ -140,6 +139,7 @@ const MobileAccount: React.FC = () => {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { trackEvent } = useAnalytics();
   const [isLoading, setIsLoading] = useState(false);
 
   // Sheet States
@@ -163,7 +163,6 @@ const MobileAccount: React.FC = () => {
   // Favorites State
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
 
@@ -184,16 +183,14 @@ const MobileAccount: React.FC = () => {
 
   useEffect(() => {
     const loadF1Data = async () => {
-      const currentYear = getCurrentSeasonYear();
       try {
-        const [driversData, teamsData, openF1Data] = await Promise.all([
-          fetchDriverStandings(currentYear),
-          fetchTeamStandings(currentYear),
-          fetchAllOpenF1Drivers('latest', currentYear),
+        const year = await resolveSeasonYear(fetchDriverStandings);
+        const [driversData, teamsData] = await Promise.all([
+          fetchDriverStandings(year),
+          fetchTeamStandings(year),
         ]);
         setDrivers(driversData);
         setTeams(teamsData);
-        setOpenF1Drivers(openF1Data);
       } catch (error) {
         console.error('Error loading F1 data:', error);
       }
@@ -227,14 +224,7 @@ const MobileAccount: React.FC = () => {
     }
   }, [user, showHistorySheet]);
 
-  const getDriverImg = (driverCode: string, driverName: string) => {
-    const driver = openF1Drivers.find(
-      (d) =>
-        d.name_acronym === driverCode ||
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return getDriverImage(driverCode, getCurrentSeasonYear(), driver?.headshot_url);
-  };
+  const getDriverImg = (driverCode: string) => getDriverImage(driverCode, getCurrentSeasonYear());
 
   const handleUpdateFavorites = async () => {
     if (!user) return;
@@ -253,7 +243,7 @@ const MobileAccount: React.FC = () => {
       await refreshProfile();
       toast.success('Favorites updated');
       setShowFavoritesSheet(false);
-      posthog.capture('favorites_updated', {
+      trackEvent('favorites_updated', {
         favorite_driver: favoriteDriver,
         favorite_team: favoriteTeam,
       });
@@ -559,7 +549,7 @@ const MobileAccount: React.FC = () => {
                   <>
                     <Avatar className="h-10 w-10 border border-white/20 rounded-md">
                       <AvatarImage
-                        src={getDriverImg(favoriteDriver, getFavoriteDriverName())}
+                        src={getDriverImg(favoriteDriver)}
                         className="object-cover object-top"
                       />
                       <AvatarFallback className="rounded-md">{favoriteDriver}</AvatarFallback>
@@ -653,7 +643,7 @@ const MobileAccount: React.FC = () => {
                     >
                       <Avatar className="h-12 w-12 border border-white/20 rounded-md">
                         <AvatarImage
-                          src={getDriverImg(driver.code, driver.name)}
+                          src={getDriverImg(driver.code)}
                           className="object-cover object-top"
                         />
                         <AvatarFallback className="rounded-md">{driver.code}</AvatarFallback>
@@ -830,7 +820,7 @@ const MobileAccount: React.FC = () => {
             ) : userActivity.length > 0 ? (
               <div className="space-y-3">
                 {userActivity.map((activity) => (
-                  <ActivityItem key={activity.id} activity={activity} drivers={openF1Drivers} />
+                  <ActivityItem key={activity.id} activity={activity} drivers={[]} />
                 ))}
               </div>
             ) : (

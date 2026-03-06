@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SEO } from '@/components/SEO';
-import LandingNavbar from '@/components/LandingNavbar';
+import { SEO } from '@/components/layout/SEO';
+import LandingNavbar from '@/components/layout/LandingNavbar';
 import HeroSection from '@/components/landing/HeroSection';
 import TrackDominance from '@/components/landing/TrackDominance';
 import StrategySection from '@/components/landing/StrategySection';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import LandingNavbar from '@/components/LandingNavbar';
-import LandingFooter from '@/components/LandingFooter';
+import LandingNavbar from '@/components/layout/LandingNavbar';
+import LandingFooter from '@/components/layout/LandingFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobilePrivacyPolicy } from '@/components/mobile';
 
@@ -28,101 +28,210 @@ const PrivacyPolicy = () => {
 
           <div className="prose prose-invert prose-lg max-w-none space-y-8 text-gray-300">
             <section>
-              <h2 className="text-2xl font-bold text-white mb-4">1. Introduction</h2>
-              <p>
-                Welcome to Fastlytics. We respect your privacy and are committed to protecting your
-                personal data. This privacy policy will inform you as to how we look after your
-                personal data when you visit our website and tell you about your privacy rights and
-                how the law protects you.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">2. Data We Collect</h2>
-              <p>
-                We may collect, use, store and transfer different kinds of personal data about you
-                which we have grouped together follows:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 mt-4">
-                <li>
-                  <strong className="text-white">Identity Data</strong> includes first name, last
-                  name, username or similar identifier.
-                </li>
-                <li>
-                  <strong className="text-white">Contact Data</strong> includes email address.
-                </li>
-                <li>
-                  <strong className="text-white">Usage Data</strong> includes information about how
-                  you use our website, such as pages viewed, buttons clicked, and time spent on
-                  pages. This helps us improve the user experience.
-                </li>
-                <li>
-                  <strong className="text-white">Technical Data</strong> includes internet protocol
-                  (IP) address, your login data, browser type and version, time zone setting and
-                  location, browser plug-in types and versions, operating system and platform, and
-                  other technology on the devices you use to access this website.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">3. Data Storage & Analytics</h2>
-              <p className="mb-4">We are committed to data sovereignty and privacy.</p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>
-                  <strong className="text-white">Secure Storage:</strong> Your personal data and
-                  activity history are stored in a secure database provided by{' '}
-                  <strong className="text-white">Supabase</strong>. This data is linked to your user
-                  account to provide personalized features like activity history.
-                </li>
-                <li>
-                  <strong className="text-white">Self-Hosted Analytics:</strong> We use self-hosted
-                  instances of <strong className="text-white">Umami</strong> and{' '}
-                  <strong className="text-white">PostHog</strong> for analytics. This means your
-                  usage data is processed on our own controlled infrastructure and is{' '}
-                  <strong className="text-red-500">NOT</strong> shared with third-party analytics
-                  providers (like Google Analytics).
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">4. How We Use Your Data</h2>
-              <p>
-                We will only use your personal data when the law allows us to. Most commonly, we
-                will use your personal data in the following circumstances:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 mt-4">
-                <li>
-                  Where we need to perform the contract we are about to enter into or have entered
-                  into with you.
-                </li>
-                <li>
-                  Where it is necessary for our legitimate interests (or those of a third party) and
-                  your interests and fundamental rights do not override those interests.
-                </li>
-                <li>Where we need to comply with a legal obligation.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">5. Your Rights</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">1. Introduction and Scope</h2>
               <p className="mb-4">
-                Under certain circumstances, you have rights under data protection laws in relation
-                to your personal data, including the right to access, correct, or delete your data.
+                This Privacy Policy ("Policy") governs the collection, processing, storage, and
+                disclosure of personal information by Fastlytics ("we," "us," or "our") in
+                connection with your use of our web application and associated services
+                (collectively, the "Services").
               </p>
-              <p>You can view your own activity history directly within your Account page.</p>
+              <p className="mb-4">
+                By accessing or utilizing the Services, you ("User" or "you") acknowledge that you
+                have read, understood, and agree to be bound by the terms of this Policy. If you do
+                not agree to the terms herein, please refrain from using the Services.
+              </p>
+              <p>
+                We reserve the right to modify this Policy at any time without prior notice. Your
+                continued use of the Services following any such modifications constitutes your
+                acceptance of the revised Policy.
+              </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-white mb-4">6. Contact Us</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">2. Information We Collect</h2>
+              <p className="mb-4">
+                We collect various categories of information to provide, improve, and personalize
+                our Services. This collection may occur automatically through your interactions with
+                the platform or through explicit submissions by you.
+              </p>
+
+              <h3 className="text-xl font-semibold text-white mt-6 mb-3">
+                2.1 Personal Identifiable Information
+              </h3>
+              <p className="mb-4">
+                Personal information that you voluntarily provide may include, but is not limited
+                to:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 mb-4">
+                <li>Account credentials and authentication data</li>
+                <li>First name, last name, and username</li>
+                <li>Email address and other contact information</li>
+                <li>Profile information and preferences</li>
+              </ul>
+
+              <h3 className="text-xl font-semibold text-white mt-6 mb-3">
+                2.2 Technical and Device Information
+              </h3>
+              <p className="mb-4">
+                As part of our commitment to security and fraud prevention, we automatically collect
+                technical information regarding your device and network environment. This may
+                include:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 mb-4">
+                <li>Device identifier and fingerprinting data</li>
+                <li>Browser type, version, and configuration</li>
+                <li>Operating system and platform information</li>
+                <li>Hardware specifications (processor cores, memory)</li>
+                <li>Network protocol address (IP address)</li>
+                <li>Internet service provider and autonomous system information</li>
+                <li>Geographic location data (derived from network coordinates)</li>
+                <li>Language preferences and locale settings</li>
+                <li>Device capabilities and input methods</li>
+              </ul>
+
+              <h3 className="text-xl font-semibold text-white mt-6 mb-3">
+                2.3 Usage and Behavioral Data
+              </h3>
+              <p className="mb-4">
+                We collect information about your interactions with our Services, including:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Pages visited, features accessed, and content consumed</li>
+                <li>Session duration, navigation patterns, and engagement metrics</li>
+                <li>Actions performed within the application</li>
+                <li>Referring URLs and exit points</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                3. Data Processing and Legal Basis
+              </h2>
+              <p className="mb-4">
+                We process your personal information based on one or more of the following legal
+                bases:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 mb-4">
+                <li>
+                  <strong className="text-white">Performance of Contract:</strong> Processing
+                  necessary to fulfill our obligations under the terms of service agreed upon
+                  between you and Fastlytics.
+                </li>
+                <li>
+                  <strong className="text-white">Legitimate Interests:</strong> Processing necessary
+                  for our legitimate business interests, including service improvement, security
+                  enhancement, fraud prevention, and operational optimization, where such interests
+                  are not overridden by your rights and freedoms.
+                </li>
+                <li>
+                  <strong className="text-white">Legal Compliance:</strong> Processing necessary to
+                  comply with applicable laws, regulations, legal processes, or governmental
+                  requests.
+                </li>
+                <li>
+                  <strong className="text-white">Consent:</strong> Where expressly permitted, we may
+                  process certain data based on your informed consent.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                4. Data Storage, Security, and Third-Party Processing
+              </h2>
+              <p className="mb-4">
+                Your personal data is stored on infrastructure operated by Supabase, Inc., a
+                third-party cloud database provider. All data is maintained in encrypted form at
+                rest and in transit utilizing industry-standard cryptographic protocols.
+              </p>
+              <p className="mb-4">
+                For analytics and usage intelligence purposes, we deploy self-hosted instances of
+                Umami and PostHog analytics platforms. These analytics services are operated on our
+                proprietary infrastructure and are not integrated with, nor do they transmit data
+                to, third-party advertising networks or external data brokers.
+              </p>
               <p>
-                If you have any questions about this privacy policy or our privacy practices, please
-                contact us at{' '}
+                We implement appropriate technical and organizational measures to safeguard your
+                information against unauthorized access, alteration, disclosure, or destruction.
+                However, no method of electronic transmission or storage is entirely secure, and we
+                cannot guarantee absolute security.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">5. Data Retention</h2>
+              <p className="mb-4">
+                We retain personal information only for as long as necessary to fulfill the purposes
+                for which we collected it, including for the purposes of satisfying any legal,
+                accounting, or reporting requirements.
+              </p>
+              <p>
+                To determine the appropriate retention period, we consider the amount, nature, and
+                sensitivity of the personal data, the potential risk of harm from unauthorized use
+                or disclosure, and the purposes for which we process the data.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">6. Your Rights and Choices</h2>
+              <p className="mb-4">
+                Subject to applicable data protection laws, you may exercise the following rights:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 mb-4">
+                <li>The right to access personal information we hold about you</li>
+                <li>The right to request correction of inaccurate personal data</li>
+                <li>The right to request deletion of your personal data</li>
+                <li>The right to object to processing based on legitimate interests</li>
+                <li>The right to data portability, where applicable</li>
+                <li>The right to withdraw consent, where processing is based on consent</li>
+              </ul>
+              <p>
+                You may exercise these rights by accessing your account settings or contacting us at
+                the email address provided herein. We will respond to your request within the time
+                frame required by applicable law.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                7. International Data Transfers
+              </h2>
+              <p>
+                Your personal information may be transferred to, and processed in, countries other
+                than the country in which you reside. These countries may have data protection laws
+                that are different from the laws of your jurisdiction. By using our Services, you
+                consent to such transfers.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">8. Changes to This Policy</h2>
+              <p className="mb-4">
+                We may update this Policy from time to time to reflect changes in our practices,
+                technologies, or legal requirements. We will post any material changes on this page
+                and, where appropriate, notify you through the Services or via email.
+              </p>
+              <p>
+                We encourage you to review this Policy periodically to stay informed about our data
+                practices.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">9. Contact Information</h2>
+              <p className="mb-4">
+                For questions, concerns, or requests regarding this Policy or our data practices,
+                please contact us at:
+              </p>
+              <p className="mb-4">
+                <strong className="text-white">Email:</strong>{' '}
                 <a href="mailto:contact@fastlytics.app" className="text-red-600 hover:text-red-500">
                   contact@fastlytics.app
                 </a>
-                .
+              </p>
+              <p>
+                For data protection inquiries, you may also contact our designated privacy
+                representative.
               </p>
             </section>
           </div>

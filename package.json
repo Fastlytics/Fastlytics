@@ -12,6 +12,9 @@
     "format": "prettier --write .",
     "preview": "vite preview",
     "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage --reporter=default",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -71,6 +74,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^11.15.0",
+    "html-to-image": "^1.11.13",
     "hugeicons-react": "^0.4.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.563.0",

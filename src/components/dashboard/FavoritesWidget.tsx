@@ -1,11 +1,12 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
+import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
 import { getTeamLogo } from '@/lib/teamUtils';
+import { getDriverImage, getCarImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -33,22 +34,8 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   schedule,
   isLoading,
 }) => {
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
+  const { selectedYear } = useSeason();
+  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
   const favoriteDriver = useMemo(() => {
     if (!profile?.favorite_driver || !drivers.length) return null;
@@ -126,8 +113,9 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
     const index = drivers.findIndex((d) => d === favoriteDriver);
     const leader = drivers[0];
 
-    // Title Contender Logic
-    const isTitleContender = leader.points - favoriteDriver.points <= remainingPoints;
+    // Title Contender Logic - ensure season has started (leader has points)
+    const isTitleContender =
+      leader.points > 0 && leader.points - favoriteDriver.points <= remainingPoints;
 
     // Rivalry Status Logic
     const getRivalryStatus = (rival: DriverStanding | null) => {
@@ -277,8 +265,8 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 border-2 border-gray-700">
                   <AvatarImage
-                    src={getDriverImage(favoriteDriver.name)}
-                    className="object-cover bg-gray-800"
+                    src={getDriverImageForYear(favoriteDriver.code)}
+                    className="object-cover object-top bg-gray-800"
                   />
                   <AvatarFallback>{favoriteDriver.code}</AvatarFallback>
                 </Avatar>
@@ -289,7 +277,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   <div className="font-black text-xl uppercase italic leading-none transition-colors text-white">
                     {favoriteDriver.name}
                   </div>
-                  <div className="text-xs font-mono text-gray-500 mt-1">{favoriteDriver.team}</div>
+                  <div className="text-xs font-sans text-gray-500 mt-1">{favoriteDriver.team}</div>
                 </div>
               </div>
               <div className="text-right">
@@ -297,7 +285,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   {favoriteDriver.rank}
                   <span className="text-sm align-top text-gray-500 ml-1">POS</span>
                 </div>
-                <div className="text-sm font-mono text-red-500 font-bold">
+                <div className="text-sm font-sans text-red-500 font-bold">
                   {favoriteDriver.points} PTS
                 </div>
               </div>
@@ -310,12 +298,12 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
               className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:bg-gray-900 transition-colors group/card"
             >
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 flex items-center justify-center bg-white/5 rounded p-2 border border-gray-700">
-                  {getTeamLogo(favoriteTeam.team) ? (
+                <div className="h-12 w-16 flex items-center justify-center bg-white/5 rounded p-2 border border-gray-700">
+                  {getCarImage(favoriteTeam.team, selectedYear) ? (
                     <img
-                      src={getTeamLogo(favoriteTeam.team)!}
+                      src={getCarImage(favoriteTeam.team, selectedYear)!}
                       alt={favoriteTeam.team}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] [mix-blend-mode:lighten]"
                     />
                   ) : (
                     <UserGroupIcon className="w-6 h-6 text-gray-400" />
@@ -335,7 +323,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   {favoriteTeam.rank}
                   <span className="text-sm align-top text-gray-500 ml-1">POS</span>
                 </div>
-                <div className="text-sm font-mono text-red-500 font-bold">
+                <div className="text-sm font-sans text-red-500 font-bold">
                   {favoriteTeam.points} PTS
                 </div>
               </div>
@@ -387,7 +375,10 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   <Avatar
                     className={`h-8 w-8 ${isYou ? (driverRivals.isTitleContender ? 'border-2 border-yellow-500' : 'border-2 border-red-600') : 'border border-gray-700'}`}
                   >
-                    <AvatarImage src={getDriverImage(item.driver.name)} className="object-cover" />
+                    <AvatarImage
+                      src={getDriverImageForYear(item.driver.code)}
+                      className="object-cover object-top"
+                    />
                     <AvatarFallback>{item.driver.code}</AvatarFallback>
                   </Avatar>
                   <div className="flex-grow min-w-0">
@@ -415,7 +406,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                         ) : (
                           <>
                             <div
-                              className={`font-mono font-bold ${item.driver.points > favoriteDriver.points ? 'text-red-500' : 'text-green-500'}`}
+                              className={`font-sans font-bold ${item.driver.points > favoriteDriver.points ? 'text-red-500' : 'text-green-500'}`}
                             >
                               {item.driver.points > favoriteDriver.points ? '+' : ''}
                               {item.driver.points - favoriteDriver.points}

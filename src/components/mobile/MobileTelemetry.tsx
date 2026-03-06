@@ -30,7 +30,7 @@ import {
 } from '@/lib/api';
 import { LoadingSpinnerF1 } from '@/components/ui/LoadingSpinnerF1';
 import { driverColor } from '@/lib/driverColor';
-import { OpenF1Driver } from '@/lib/openf1';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Select,
@@ -91,7 +91,6 @@ interface MobileTelemetryProps {
   year: number;
   event: string;
   session: string;
-  openF1Drivers: OpenF1Driver[];
   raceResults?: DetailedRaceResult[];
 }
 
@@ -105,13 +104,7 @@ const gearColors = [
   '#0077bb', // 6th
 ];
 
-const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
-  year,
-  event,
-  session,
-  openF1Drivers,
-  raceResults,
-}) => {
+const MobileTelemetry: React.FC<MobileTelemetryProps> = ({ year, event, session, raceResults }) => {
   const [isTooltipActive, setIsTooltipActive] = useState(false);
   const [activePayload, setActivePayload] = useState<TooltipState['activePayload']>([]);
   const [activeLabel, setActiveLabel] = useState<TooltipState['activeLabel']>('');
@@ -121,22 +114,23 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
   const [showMobileTooltip, setShowMobileTooltip] = useState(false);
 
   // --- Data Fetching ---
+  const defaultDriverCode = raceResults?.[0]?.driverCode;
   const {
     data: chartData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['mobileTelemetry', year, event, session, openF1Drivers],
+    queryKey: ['mobileTelemetry', year, event, session, defaultDriverCode],
     queryFn: async () => {
-      if (!openF1Drivers || openF1Drivers.length === 0) {
+      if (!defaultDriverCode) {
         return [];
       }
-      return fetchLapTimes(year, event, session, openF1Drivers[0].code);
+      return fetchLapTimes(year, event, session, [defaultDriverCode]);
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     retry: 1,
-    enabled: !!year && !!event && !!session && !!openF1Drivers && openF1Drivers.length > 0,
+    enabled: !!year && !!event && !!session && !!defaultDriverCode,
   });
 
   // --- Chart Configuration ---
@@ -258,14 +252,14 @@ const MobileTelemetry: React.FC<MobileTelemetryProps> = ({
                 type="number"
                 dataKey="Distance"
                 stroke="#666"
-                tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
                 domain={config.domain}
                 hide
               />
               <YAxis
                 dataKey="value"
                 stroke="#666"
-                tick={{ fill: '#888', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
                 domain={config.domain}
                 width={50}
               />

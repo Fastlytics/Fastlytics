@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowUp01Icon,
@@ -24,6 +24,9 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
 import { getCarImage } from '@/utils/imageMapping';
+
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(event.EventFormat?.toLowerCase().includes('test') || event.RoundNumber === 0);
 
 // Native Season Selector Modal
 interface SeasonSelectorProps {
@@ -146,7 +149,11 @@ const LeaderCard: React.FC<{
           {/* Team Logo & Car */}
           <div className="relative w-28 flex-shrink-0">
             {carImage ? (
-              <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+              <img
+                src={carImage}
+                alt={team.team}
+                className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+              />
             ) : logo ? (
               <img src={logo} alt={team.team} className="w-20 h-auto object-contain mx-auto" />
             ) : (
@@ -230,7 +237,11 @@ const TeamRow: React.FC<{
               {/* Team Logo/Car - Larger */}
               <div className="relative w-24 flex-shrink-0">
                 {carImage ? (
-                  <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+                  <img
+                    src={carImage}
+                    alt={team.team}
+                    className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                  />
                 ) : logo ? (
                   <img src={logo} alt={team.team} className="w-16 h-auto object-contain mx-auto" />
                 ) : (
@@ -302,7 +313,11 @@ const TeamRow: React.FC<{
             {/* Team Logo/Car */}
             <div className="w-16 h-10 flex items-center justify-center flex-shrink-0">
               {carImage ? (
-                <img src={carImage} alt={team.team} className="w-full h-auto object-contain" />
+                <img
+                  src={carImage}
+                  alt={team.team}
+                  className="w-full h-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                />
               ) : logo ? (
                 <img
                   src={logo}
@@ -344,6 +359,7 @@ const TeamRow: React.FC<{
 };
 
 const MobileTeamStandings: React.FC = () => {
+  const [now] = useState(() => Date.now());
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
@@ -360,10 +376,19 @@ const MobileTeamStandings: React.FC = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
   // Fetch Race Results for championship calculation
   const { data: raceResults } = useQuery<RaceResult[]>({
     queryKey: ['raceResults', selectedYear],
     queryFn: () => fetchRaceResults(selectedYear),
+    enabled: hasCompletedRaceEventsInSchedule,
   });
 
   // Calculate Championship Status
@@ -375,8 +400,9 @@ const MobileTeamStandings: React.FC = () => {
     championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
   }
 
-  const leader = teamStandings?.[0];
-  const rest = teamStandings?.slice(1) || [];
+  const isPreSeason = teamStandings && teamStandings.length > 0 && teamStandings[0].points === 0;
+  const leader = isPreSeason ? null : teamStandings?.[0];
+  const rest = isPreSeason ? teamStandings || [] : teamStandings?.slice(1) || [];
 
   return (
     <MobileLayout>

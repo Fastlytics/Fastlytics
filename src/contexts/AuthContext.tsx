@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useContext,
@@ -8,6 +9,7 @@ import React, {
   useCallback,
 } from 'react';
 import { supabase } from '@/lib/supabase';
+import { linkSessionToUser } from '@/lib/session';
 import { Session, User } from '@supabase/supabase-js';
 import posthog from 'posthog-js';
 import { logger } from '@/lib/logger';
@@ -132,6 +134,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (event === 'SIGNED_IN' && session?.user) {
+        // Stitch anonymous session trail to the authenticated user
+        linkSessionToUser(session.user.id);
         posthog.identify(session.user.id, {
           email: session.user.email,
         });
@@ -164,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signOut = async () => {

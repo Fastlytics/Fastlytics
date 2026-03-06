@@ -11,7 +11,7 @@ import {
 import { StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
-import { OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
 
 export interface ActivityItemProps {
   activity: {
@@ -20,10 +20,10 @@ export interface ActivityItemProps {
     event_data: Record<string, unknown>;
     created_at: string;
   };
-  drivers: OpenF1Driver[];
+  drivers?: never[];
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({ activity, drivers }) => {
+const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
   const navigate = useNavigate();
   const { event_name, event_data, created_at } = activity;
   const date = new Date(created_at);
@@ -33,14 +33,9 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, drivers }) => {
     date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // Helper to get driver image
-  const getDriverImage = (driverName: string) => {
-    if (!driverName) return null;
-    const driver = drivers.find(
-      (d) =>
-        d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '') ||
-        d.name_acronym === driverName
-    );
-    return driver?.headshot_url;
+  const getDriverImage = (driverCodeOrName: string) => {
+    if (!driverCodeOrName) return null;
+    return getDriverImageFromMapping(driverCodeOrName, getCurrentSeasonYear()) || null;
   };
 
   // Helper to get country code from race name (simplified mapping)

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { SEO } from '@/components/SEO';
+import { SEO } from '@/components/layout/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Select,
@@ -28,15 +28,17 @@ import {
   PlayCircle02Icon,
 } from 'hugeicons-react';
 import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
-import { RacingChart } from '@/components/RacingChart';
-import { GapToLeaderChart } from '@/components/GapToLeaderChart';
-import { PaceAnalysisChart } from '@/components/PaceAnalysisChart';
-import { TireStrategy } from '@/components/TireStrategy';
-import { SpeedTraceChart } from '@/components/SpeedTraceChart';
-import { GearMapChart } from '@/components/GearMapChart';
-import { CircuitComparisonChart } from '@/components/CircuitComparisonChart';
-import { DriverComparisonTelemetry } from '@/components/DriverComparisonTelemetry';
-import { F1Card } from '@/components/F1Card';
+import { RacingChart } from '@/components/charts/RacingChart';
+import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
+import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
+import { TireStrategy } from '@/components/race/TireStrategy';
+import { SpeedTraceChart } from '@/components/charts/SpeedTraceChart';
+import { GearMapChart } from '@/components/charts/GearMapChart';
+import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
+import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
+import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
+import { TeamPaceBreakdown } from '@/components/race/TeamPaceBreakdown';
+import { F1Card } from '@/components/race/F1Card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Alert02Icon } from 'hugeicons-react';
@@ -47,8 +49,11 @@ import {
   DetailedRaceResult,
   AvailableSession,
   EventSessionSchedule,
+  getCircuitLength,
+  calculateDistance,
+  formatDistance,
 } from '@/lib/api';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 import { useQuery } from '@tanstack/react-query';
 import {
   Table,
@@ -59,11 +64,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import ThrottleChart from '@/components/ThrottleChart';
-import BrakeChart from '@/components/BrakeChart';
-import RPMChart from '@/components/RPMChart';
-import DRSChart from '@/components/DRSChart';
-import PositionsTabContent from '@/components/PositionsTabContent';
+import ThrottleChart from '@/components/charts/ThrottleChart';
+import BrakeChart from '@/components/charts/BrakeChart';
+import RPMChart from '@/components/charts/RPMChart';
+import DRSChart from '@/components/charts/DRSChart';
+import PositionsTabContent from '@/components/race/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -116,6 +121,25 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
     console.error(`Error parsing lap time: ${timeStr}`, e);
   }
   return Infinity;
+};
+
+const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
+
+const parseTestingSessionAlias = (
+  sessionType: string
+): { day: number; window: 'morning' | 'afternoon' } | null => {
+  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
+  if (!match) return null;
+  return {
+    day: Number(match[1]),
+    window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
+  };
+};
+
+const resolveSessionForAnalysis = (sessionType: string): string => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (!parsed) return sessionType;
+  return `FP${parsed.day}`;
 };
 
 const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
@@ -177,32 +201,91 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
 const SessionResultsTable: React.FC<{
   results: DetailedRaceResult[];
   sessionType: string;
-  year: number;
   favoriteDriver?: string | null;
   fastestLapHolder?: DetailedRaceResult | null;
-}> = ({ results, sessionType, year, favoriteDriver, fastestLapHolder }) => {
-  const isPractice = sessionType.startsWith('FP');
+  isTestingSession?: boolean;
+  isTestingSplitSession?: boolean;
+  testingWindow?: 'full' | 'morning' | 'afternoon';
+  eventName?: string;
+}> = ({
+  results,
+  sessionType,
+  favoriteDriver,
+  fastestLapHolder,
+  isTestingSession = false,
+  isTestingSplitSession = false,
+  testingWindow = 'full',
+  eventName,
+}) => {
+  const isPractice = sessionType.startsWith('FP') || isTestingSession;
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
 
+  const getPracticeLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const getPracticeLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession) return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
   const sortedResults = useMemo(() => {
     if ((isPractice || isQualifying) && results) {
-      return [...results].sort(
-        (a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime)
-      );
+      return [...results].sort((a, b) => {
+        const lapDelta = parseLapTime(getPracticeLapTime(a)) - parseLapTime(getPracticeLapTime(b));
+        if (lapDelta !== 0) return lapDelta;
+        return getPracticeLaps(b) - getPracticeLaps(a);
+      });
     }
     return results;
-  }, [results, isPractice, isQualifying]);
+  }, [results, isPractice, isQualifying, getPracticeLapTime, getPracticeLaps]);
+
+  const leaderLaps = useMemo(
+    () => sortedResults.reduce((max, res) => Math.max(max, getPracticeLaps(res)), 0),
+    [sortedResults, getPracticeLaps]
+  );
+
+  // Calculate circuit length for distance conversion (for testing sessions)
+  const circuitLength = useMemo(() => getCircuitLength(eventName), [eventName]);
+
+  // Calculate leader distance in km
+  const leaderDistance = useMemo(
+    () => calculateDistance(leaderLaps, circuitLength),
+    [leaderLaps, circuitLength]
+  );
 
   const columns: {
-    key: keyof DetailedRaceResult | 'driver' | 'team' | 'displayPosition';
+    key:
+      | keyof DetailedRaceResult
+      | 'driver'
+      | 'team'
+      | 'displayPosition'
+      | 'mileage'
+      | 'reliability';
     label: string;
     className?: string;
   }[] = [
     {
       key: 'displayPosition',
       label: 'POS',
-      className: 'w-[60px] text-center font-mono font-bold text-gray-400',
+      className: 'w-[60px] text-center font-mono font-black text-gray-400',
     },
     { key: 'driver', label: 'DRIVER' },
     { key: 'team', label: 'TEAM' },
@@ -216,7 +299,7 @@ const SessionResultsTable: React.FC<{
       className: 'text-right font-mono',
     });
     columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
-    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-bold text-red-500' });
+    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-black text-red-500' });
   } else if (isQualifying) {
     columns.push({
       key: 'fastestLapTime',
@@ -230,18 +313,26 @@ const SessionResultsTable: React.FC<{
       className: 'text-right font-mono',
     });
     columns.push({ key: 'lapsCompleted', label: 'LAPS', className: 'text-center font-mono' });
+    if (isTestingSession) {
+      columns.push({ key: 'mileage', label: 'MILEAGE', className: 'text-right font-mono' });
+      columns.push({
+        key: 'reliability',
+        label: 'RELIABILITY',
+        className: 'text-right font-mono',
+      });
+    }
   }
 
   return (
-    <div className="bg-black border-2 border-gray-800 overflow-hidden">
+    <div className="bg-black border border-gray-700 overflow-hidden">
       <Table>
-        <TableHeader className="bg-gray-900/50 border-b border-gray-800">
-          <TableRow className="border-gray-800 hover:bg-transparent">
+        <TableHeader className="bg-black border-b border-gray-700">
+          <TableRow className="border-gray-700 hover:bg-transparent">
             {columns.map((col) => (
               <TableHead
                 key={String(col.key)}
                 className={cn(
-                  'text-gray-500 font-bold uppercase tracking-wider text-xs py-4',
+                  'text-gray-400 font-black uppercase tracking-wider text-xs py-4',
                   col.className
                 )}
               >
@@ -260,10 +351,10 @@ const SessionResultsTable: React.FC<{
               <TableRow
                 key={res.driverCode}
                 className={cn(
-                  'border-gray-800/50 transition-colors group',
+                  'border-gray-700/50 transition-colors group',
                   isFavorite
                     ? 'bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600'
-                    : 'hover:bg-gray-900/50'
+                    : 'hover:bg-gray-800/30'
                 )}
               >
                 {columns.map((col) => (
@@ -279,7 +370,7 @@ const SessionResultsTable: React.FC<{
                       )
                     ) : col.key === 'driver' ? (
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-white group-hover:text-red-500 transition-colors">
+                        <span className="font-black text-white group-hover:text-red-500 transition-colors">
                           {res.fullName}
                         </span>
                         {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
@@ -300,7 +391,7 @@ const SessionResultsTable: React.FC<{
                     ) : col.key === 'points' ? (
                       <span
                         className={cn(
-                          'flex items-center justify-end gap-2 font-bold',
+                          'flex items-center justify-end gap-2 font-black',
                           res.isProvisional ? 'text-yellow-500' : 'text-red-500'
                         )}
                       >
@@ -324,7 +415,7 @@ const SessionResultsTable: React.FC<{
                             return '-';
                           }
                           return (
-                            <span className="text-red-500 font-bold uppercase text-[10px]">
+                            <span className="text-red-500 font-black uppercase text-[10px]">
                               {res.status}
                             </span>
                           );
@@ -332,13 +423,47 @@ const SessionResultsTable: React.FC<{
                       </span>
                     ) : col.key === 'laps' ? (
                       <span className="text-gray-500">{res.laps ?? '-'}</span>
+                    ) : col.key === 'fastestLapTime' && isPractice ? (
+                      <span className="text-gray-300">{getPracticeLapTime(res) ?? '-'}</span>
+                    ) : col.key === 'lapsCompleted' && isPractice ? (
+                      <span className="text-gray-500">{getPracticeLaps(res) || '-'}</span>
+                    ) : col.key === 'mileage' ? (
+                      <span className="text-gray-300">
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const distance = calculateDistance(laps, circuitLength);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          return `${formatDistance(distance)} (${pct}%)`;
+                        })()}
+                      </span>
+                    ) : col.key === 'reliability' ? (
+                      <span
+                        className={cn(
+                          'font-black',
+                          (() => {
+                            const laps = getPracticeLaps(res);
+                            const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                            if (pct >= 90) return 'text-green-400';
+                            if (pct >= 75) return 'text-yellow-400';
+                            return 'text-red-400';
+                          })()
+                        )}
+                      >
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          if (pct >= 90) return 'HIGH';
+                          if (pct >= 75) return 'MEDIUM';
+                          return 'LOW';
+                        })()}
+                      </span>
                     ) : col.key === 'driverFastestLapTime' ? (
                       res.driverFastestLapTime ? (
                         <span
                           className={cn(
                             (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
                               (!fastestLapHolder && res.isFastestLap)
-                              ? 'text-purple-400 font-bold'
+                              ? 'text-purple-400 font-black'
                               : 'text-gray-400'
                           )}
                         >
@@ -368,9 +493,9 @@ const SectionHeader = ({
   title: string;
   icon?: React.ComponentType<{ className?: string }>;
 }) => (
-  <div className="flex items-center gap-3 mb-6 border-b border-gray-800 pb-4">
+  <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
     {Icon && <Icon className="w-6 h-6 text-red-600" />}
-    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">{title}</h2>
+    <h2 className="text-2xl font-black uppercase tracking-wider text-white">{title}</h2>
   </div>
 );
 
@@ -390,10 +515,10 @@ const NavItem = ({
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
       active
         ? 'border-red-600 bg-red-600/10 text-white'
-        : 'border-transparent text-gray-500 hover:text-white hover:bg-gray-900'
+        : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
     )}
   >
     <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-gray-600')} />
@@ -411,7 +536,7 @@ const Race = () => {
   const showAnalysis = searchParams.get('view') === 'analysis';
   const initialTab = searchParams.get('tab');
 
-  const { trackEvent } = useAnalytics();
+  const { trackEvent, trackInteraction, trackSelection } = useAnalytics();
 
   const setSelectedSession = (session: string) => {
     setSearchParams(
@@ -439,8 +564,8 @@ const Race = () => {
 
   const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
   const [activeSection, setActiveSection] = useState(initialTab || 'overview');
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
   const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
+  const [testingWindow, setTestingWindow] = useState<'full' | 'morning' | 'afternoon'>('full');
 
   // New State for Redesign
   const [now, setNow] = useState(new Date());
@@ -450,21 +575,6 @@ const Race = () => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
-
-  const getDriverImage = (driverName: string) => {
-    const driver = openF1Drivers.find((d) =>
-      d.last_name.toUpperCase().includes(driverName.split(' ').pop()?.toUpperCase() || '')
-    );
-    return driver?.headshot_url;
-  };
 
   // Circuit Comparison State
   const [circuitDrivers, setCircuitDrivers] = useState<{
@@ -488,6 +598,11 @@ const Race = () => {
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
+  const isTestingEvent = useMemo(() => {
+    const format = eventName?.toLowerCase() ?? '';
+    return format.includes('testing') || format.includes('test');
+  }, [eventName]);
+
   const trackedEventRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -501,7 +616,7 @@ const Race = () => {
         trackedEventRef.current = eventKey;
       }
     }
-  }, [year, eventName]);
+  }, [year, eventName, trackEvent]);
 
   // Queries
   const { data: availableSessions = [], isLoading: isLoadingSessions } = useQuery<
@@ -532,7 +647,9 @@ const Race = () => {
   useEffect(() => {
     if (availableSessions.length > 0 && !searchParams.get('session')) {
       let defaultSession = '';
-      if (availableSessions.some((s) => s.type === 'R')) {
+      if (isTestingEvent) {
+        defaultSession = 'Summary';
+      } else if (availableSessions.some((s) => s.type === 'R')) {
         defaultSession = 'R';
       } else {
         defaultSession = availableSessions[availableSessions.length - 1].type;
@@ -548,27 +665,83 @@ const Race = () => {
         { replace: true }
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableSessions]);
 
   // Derived Data
+  // Fetch aggregated data for "Summary" session in testing events
+  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['summaryResult', year, eventSlug],
+    queryFn: async () => {
+      if (!year || !eventSlug || availableSessions.length === 0) return [];
+
+      const fetchingSessions = availableSessions.filter((s) => s.type !== 'Summary');
+
+      const allResultsPromises = fetchingSessions.map((s) =>
+        fetchSpecificRaceResults(year, eventSlug, s.type)
+      );
+
+      const allResultsArray = await Promise.all(allResultsPromises);
+
+      const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
+
+      allResultsArray.forEach((sessionResults) => {
+        sessionResults.forEach((result) => {
+          if (!aggregatedMap[result.driverCode]) {
+            aggregatedMap[result.driverCode] = {
+              ...result,
+              lapsCompleted: 0,
+              fastestLapTime: null, // We'll find min
+            };
+          }
+
+          const aggr = aggregatedMap[result.driverCode];
+
+          // Sum laps
+          if (result.lapsCompleted) {
+            aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
+          }
+
+          // Find fastest lap across sessions
+          if (result.fastestLapTime) {
+            const currentFastest = parseLapTime(aggr.fastestLapTime);
+            const newTime = parseLapTime(result.fastestLapTime);
+            if (!aggr.fastestLapTime || newTime < currentFastest) {
+              aggr.fastestLapTime = result.fastestLapTime;
+            }
+          }
+        });
+      });
+
+      return Object.values(aggregatedMap);
+    },
+    enabled: isTestingEvent && selectedSession === 'Summary' && availableSessions.length > 0,
+  });
+
+  const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
+  const isLoadingEffectiveResults =
+    selectedSession === 'Summary' ? isLoadingSummary : isLoadingResults;
+
   const raceWinner = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? sessionResults?.find((r) => r.position === 1)
+        ? effectiveSessionResults?.find((r) => r.position === 1)
         : null,
-    [sessionResults, selectedSession]
+    [effectiveSessionResults, selectedSession]
   );
+
   const poleSitter = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? sessionResults?.find((r) => r.gridPosition === 1)
+        ? effectiveSessionResults?.find((r) => r.gridPosition === 1)
         : null,
-    [sessionResults, selectedSession]
+    [effectiveSessionResults, selectedSession]
   );
   const fastestLapHolder = useMemo(() => {
-    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !sessionResults) return null;
+    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !effectiveSessionResults)
+      return null;
 
-    const validResults = sessionResults.filter(
+    const validResults = effectiveSessionResults.filter(
       (r) => !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
     );
 
@@ -577,21 +750,117 @@ const Race = () => {
     return validResults.sort(
       (a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime)
     )[0];
-  }, [sessionResults, selectedSession]);
+  }, [effectiveSessionResults, selectedSession]);
 
   const topPerformers = useMemo(() => {
     if (
-      !sessionResults ||
+      !effectiveSessionResults ||
       !selectedSession ||
       selectedSession === 'R' ||
       selectedSession === 'Sprint'
     )
       return [];
-    return [...sessionResults]
+    return [...effectiveSessionResults]
       .filter((r) => r.fastestLapTime)
       .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))
       .slice(0, 3);
-  }, [sessionResults, selectedSession]);
+  }, [effectiveSessionResults, selectedSession]);
+
+  /* Testing Event identification logic moved up early in the component */
+
+  const testingSessionAlias = useMemo(
+    () => parseTestingSessionAlias(selectedSession),
+    [selectedSession]
+  );
+  const isTestingSplitSession = isTestingEvent && !!testingSessionAlias;
+  const analysisSession = useMemo(() => {
+    const resolved = resolveSessionForAnalysis(selectedSession);
+    // "Summary" is not a real FastF1 session — map to first FP in available sessions
+    if (resolved === 'Summary' && availableSessions.length > 0) {
+      const firstFP = availableSessions.find((s) => s.type.startsWith('FP'));
+      return firstFP?.type ?? 'FP1';
+    }
+    return resolved;
+  }, [selectedSession, availableSessions]);
+  const isTestingSession =
+    isTestingEvent &&
+    (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
+
+  useEffect(() => {
+    if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary') {
+      setTestingWindow('full');
+    }
+  }, [isTestingSession, isTestingSplitSession, selectedSession]);
+
+  const getSessionWindowLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const getSessionWindowLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary')
+        return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow, selectedSession]
+  );
+
+  const testingInsights = useMemo(() => {
+    if (!effectiveSessionResults || !isTestingSession) {
+      return {
+        fastest: null as DetailedRaceResult | null,
+        mileage: null as DetailedRaceResult | null,
+        totalLaps: 0,
+        totalDistance: 0,
+        averageLaps: 0,
+        circuitLength: 5.0,
+      };
+    }
+
+    const circuitLength = getCircuitLength(eventName);
+
+    const fastest =
+      [...effectiveSessionResults]
+        .filter((result) => !!getSessionWindowLapTime(result))
+        .sort(
+          (a, b) =>
+            parseLapTime(getSessionWindowLapTime(a)) - parseLapTime(getSessionWindowLapTime(b))
+        )[0] ?? null;
+
+    const mileage =
+      [...effectiveSessionResults].sort(
+        (a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a)
+      )[0] ?? null;
+
+    const totalLaps = effectiveSessionResults.reduce(
+      (sum, result) => sum + getSessionWindowLaps(result),
+      0
+    );
+    const totalDistance = calculateDistance(totalLaps, circuitLength);
+    const averageLaps =
+      effectiveSessionResults.length > 0 ? totalLaps / effectiveSessionResults.length : 0;
+
+    return { fastest, mileage, totalLaps, totalDistance, averageLaps, circuitLength };
+  }, [
+    effectiveSessionResults,
+    isTestingSession,
+    getSessionWindowLapTime,
+    getSessionWindowLaps,
+    eventName,
+  ]);
 
   const nextSession = useMemo(() => {
     if (!sessionSchedule) return null;
@@ -707,8 +976,8 @@ const Race = () => {
     );
   }
 
-  const isRaceFuture = !availableSessions.some((s) => s.type === 'R');
-  const shouldShowSchedule = isRaceFuture && !showAnalysis;
+  const hasProcessedSessions = availableSessions.length > 0;
+  const shouldShowSchedule = !hasProcessedSessions && !showAnalysis;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
@@ -728,13 +997,13 @@ const Race = () => {
 
       <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-800 pb-8">
+        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-700 pb-8">
           <div className="space-y-2">
             <Button
               variant="ghost"
               className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
               onClick={() => {
-                if (showAnalysis && isRaceFuture) {
+                if (showAnalysis && !hasProcessedSessions) {
                   setShowAnalysis(false);
                 } else {
                   navigate(-1);
@@ -742,43 +1011,68 @@ const Race = () => {
               }}
             >
               <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
-              {showAnalysis && isRaceFuture ? 'Back to Schedule' : 'Back'}
+              {showAnalysis && !hasProcessedSessions ? 'Back to Schedule' : 'Back'}
             </Button>
-            <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
               {eventName}
             </h1>
             <div className="flex items-center gap-4 text-gray-400 font-mono text-sm">
-              <span className="bg-gray-900 px-2 py-1 border border-gray-800 rounded">
-                {year} SEASON
-              </span>
+              <span className="bg-black px-2 py-1 border border-gray-700">{year} SEASON</span>
               {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
-                <span className="text-red-500 font-bold uppercase">
+                <span className="text-red-500 font-black uppercase">
                   {availableSessions.find((s) => s.type === selectedSession)?.name}
                 </span>
               )}
             </div>
           </div>
 
-          {!shouldShowSchedule && availableSessions.length > 0 && (
-            <Select value={selectedSession} onValueChange={setSelectedSession}>
-              <SelectTrigger className="w-[200px] bg-black border-2 border-gray-800 text-white font-bold uppercase tracking-wider h-12">
-                <SelectValue placeholder="SESSION" />
-              </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white">
-                {availableSessions
-                  .filter((s) => s.type !== 'Q')
-                  .map((s) => (
-                    <SelectItem
-                      key={s.type}
-                      value={s.type}
-                      className="uppercase font-bold focus:bg-gray-900 focus:text-red-500"
-                    >
-                      {s.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          )}
+          {!shouldShowSchedule &&
+            availableSessions.length > 0 &&
+            (isTestingEvent ? (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[300px] bg-red-900/20 border border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border border-gray-700 text-white">
+                  <SelectItem
+                    value="Summary"
+                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-700"
+                  >
+                    3-DAY TESTING SUMMARY
+                  </SelectItem>
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-black focus:bg-gray-800 focus:text-white py-2"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[200px] bg-black border border-gray-700 text-white font-black uppercase tracking-wider h-12">
+                  <SelectValue placeholder="SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border border-gray-700 text-white">
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-black focus:bg-gray-800 focus:text-red-500"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ))}
         </header>
 
         {shouldShowSchedule ? (
@@ -786,7 +1080,7 @@ const Race = () => {
             // --- UPCOMING RACE DISPLAY ---
             <div className="space-y-12">
               {/* Hero Countdown Section */}
-              <div className="bg-gray-900/30 border border-gray-800 p-8 md:p-12 relative overflow-hidden group">
+              <div className="bg-black/30 border border-gray-700 p-8 md:p-12 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <Flag01Icon className="w-64 h-64" />
                 </div>
@@ -795,11 +1089,11 @@ const Race = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-red-500 font-bold uppercase tracking-widest text-sm">
+                      <span className="text-red-500 font-black uppercase tracking-widest text-sm">
                         Upcoming Session
                       </span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter text-white mb-2">
+                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white mb-2">
                       Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
                     </h2>
                     <div className="text-gray-400 font-mono text-lg">
@@ -822,10 +1116,10 @@ const Race = () => {
                         { label: 'SEC', value: countdown.seconds },
                       ].map((item, i) => (
                         <div key={i} className="flex flex-col items-center">
-                          <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                          <div className="text-4xl md:text-6xl font-mono font-black text-white tracking-tighter leading-none">
                             {item.value.toString().padStart(2, '0')}
                           </div>
-                          <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-2">
+                          <div className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
                             {item.label}
                           </div>
                         </div>
@@ -841,25 +1135,31 @@ const Race = () => {
 
               {/* Schedule Section */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-800 pb-4">
-                  <h3 className="text-2xl font-bold uppercase italic tracking-wider text-white">
+                <div className="flex items-center justify-between border-b border-gray-700 pb-4">
+                  <h3 className="text-2xl font-black uppercase tracking-wider text-white">
                     Weekend Schedule
                   </h3>
-                  <div className="flex items-center gap-2 bg-gray-900 p-1 rounded-lg border border-gray-800">
+                  <div className="flex items-center gap-2 bg-black p-1 border border-gray-700">
                     <button
-                      onClick={() => setIs24Hour(true)}
+                      onClick={() => {
+                        setIs24Hour(true);
+                        trackInteraction('time_format_changed', { format: '24h' });
+                      }}
                       className={cn(
-                        'px-3 py-1 text-xs font-bold rounded transition-colors',
-                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
                       )}
                     >
                       24H
                     </button>
                     <button
-                      onClick={() => setIs24Hour(false)}
+                      onClick={() => {
+                        setIs24Hour(false);
+                        trackInteraction('time_format_changed', { format: '12h' });
+                      }}
                       className={cn(
-                        'px-3 py-1 text-xs font-bold rounded transition-colors',
-                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
                       )}
                     >
                       12H
@@ -867,7 +1167,7 @@ const Race = () => {
                   </div>
                 </div>
 
-                <div className="grid gap-px bg-gray-800 border border-gray-800 overflow-hidden rounded-lg">
+                <div className="grid gap-px bg-gray-800 border border-gray-700 overflow-hidden">
                   {/* Table Header */}
                   {/* Table Header Removed as per request */}
 
@@ -913,14 +1213,14 @@ const Race = () => {
                           'grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center',
                           isNext
                             ? 'bg-red-900/10 hover:bg-red-900/20'
-                            : 'bg-black hover:bg-gray-900/50'
+                            : 'bg-black hover:bg-gray-800/30'
                         )}
                       >
                         {/* Date Column */}
-                        <div className="flex flex-col justify-center border-r border-gray-800 pr-4">
+                        <div className="flex flex-col justify-center border-r border-gray-700 pr-4">
                           <div
                             className={cn(
-                              'font-mono text-xl font-bold',
+                              'font-mono text-xl font-black',
                               isNext ? 'text-white' : 'text-gray-300'
                             )}
                           >
@@ -928,7 +1228,7 @@ const Race = () => {
                               .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                               .toUpperCase()}
                           </div>
-                          <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                          <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                             {new Date(session.date).toLocaleDateString(undefined, {
                               weekday: 'short',
                             })}
@@ -939,7 +1239,7 @@ const Race = () => {
                         <div className="flex flex-col justify-center pl-2">
                           <div
                             className={cn(
-                              'font-bold text-lg uppercase tracking-tight mb-1',
+                              'font-black text-lg uppercase tracking-tight mb-1',
                               isNext ? 'text-red-500' : 'text-white'
                             )}
                           >
@@ -954,7 +1254,7 @@ const Race = () => {
                               <div className="font-mono text-gray-300 text-lg">
                                 {formatTimeStr(session.localTime)}
                               </div>
-                              <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                              <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                                 Local
                               </div>
                             </>
@@ -985,7 +1285,7 @@ const Race = () => {
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                                   </div>
-                                  <span className="font-bold uppercase tracking-wider text-sm">
+                                  <span className="font-black uppercase tracking-wider text-sm">
                                     LIVE
                                   </span>
                                 </div>
@@ -997,7 +1297,7 @@ const Race = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-bold tracking-wider w-full md:w-auto"
+                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-black tracking-wider w-full md:w-auto"
                                   onClick={() => {
                                     let targetSession = sessionType;
                                     if (
@@ -1024,6 +1324,9 @@ const Race = () => {
                                     }
                                     setSelectedSession(targetSession);
                                     setShowAnalysis(true);
+                                    trackInteraction('results_button_clicked', {
+                                      sessionKey: targetSession,
+                                    });
                                   }}
                                 >
                                   Results
@@ -1041,7 +1344,7 @@ const Race = () => {
                                 >
                                   {formatDate(session.date)}
                                 </div>
-                                <div className="text-xs text-gray-600 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
                                   Your Time
                                 </div>
                               </>
@@ -1063,63 +1366,79 @@ const Race = () => {
           // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
           <div className="flex flex-col lg:flex-row gap-12">
             {/* Sticky Sidebar */}
-            <aside className="hidden lg:block w-64 shrink-0">
-              <div className="sticky top-32 space-y-1">
-                <NavItem
-                  id="overview"
-                  label="Overview"
-                  icon={ChampionIcon}
-                  active={activeSection === 'overview'}
-                  onClick={() => handleSectionChange('overview')}
-                />
-                <NavItem
-                  id="replay"
-                  label="Replay"
-                  icon={PlayCircle02Icon}
-                  active={activeSection === 'replay'}
-                  onClick={() => handleSectionChange('replay')}
-                />
-                {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+            {selectedSession !== 'Summary' && (
+              <aside className="hidden lg:block w-64 shrink-0">
+                <div className="sticky top-32 space-y-1">
                   <NavItem
-                    id="strategy"
-                    label="Strategy"
-                    icon={TireIcon}
-                    active={activeSection === 'strategy'}
-                    onClick={() => handleSectionChange('strategy')}
+                    id="overview"
+                    label="Overview"
+                    icon={ChampionIcon}
+                    active={activeSection === 'overview'}
+                    onClick={() => handleSectionChange('overview')}
                   />
-                )}
-                {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                  <NavItem
-                    id="positions"
-                    label="Positions"
-                    icon={ChartLineData01Icon}
-                    active={activeSection === 'positions'}
-                    onClick={() => handleSectionChange('positions')}
-                  />
-                )}
-                <NavItem
-                  id="laptimes"
-                  label="Lap Times"
-                  icon={Time01Icon}
-                  active={activeSection === 'laptimes'}
-                  onClick={() => handleSectionChange('laptimes')}
-                />
-                <NavItem
-                  id="dominance"
-                  label="Head to Head"
-                  icon={GitCompareIcon}
-                  active={activeSection === 'dominance'}
-                  onClick={() => handleSectionChange('dominance')}
-                />
-                <NavItem
-                  id="telemetry"
-                  label="Telemetry"
-                  icon={Analytics01Icon}
-                  active={activeSection === 'telemetry'}
-                  onClick={() => handleSectionChange('telemetry')}
-                />
-              </div>
-            </aside>
+
+                  {selectedSession !== 'Summary' && (
+                    <>
+                      <NavItem
+                        id="replay"
+                        label="Replay"
+                        icon={PlayCircle02Icon}
+                        active={activeSection === 'replay'}
+                        onClick={() => handleSectionChange('replay')}
+                      />
+                      {(selectedSession === 'R' ||
+                        selectedSession === 'Sprint' ||
+                        isTestingSession) && (
+                        <NavItem
+                          id="strategy"
+                          label="Strategy"
+                          icon={TireIcon}
+                          active={activeSection === 'strategy'}
+                          onClick={() => handleSectionChange('strategy')}
+                        />
+                      )}
+                      {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+                        <NavItem
+                          id="positions"
+                          label="Positions"
+                          icon={ChartLineData01Icon}
+                          active={activeSection === 'positions'}
+                          onClick={() => handleSectionChange('positions')}
+                        />
+                      )}
+                      <NavItem
+                        id="laptimes"
+                        label="Lap Times"
+                        icon={Time01Icon}
+                        active={activeSection === 'laptimes'}
+                        onClick={() => handleSectionChange('laptimes')}
+                      />
+                      <NavItem
+                        id="dominance"
+                        label="Head to Head"
+                        icon={GitCompareIcon}
+                        active={activeSection === 'dominance'}
+                        onClick={() => handleSectionChange('dominance')}
+                      />
+                      <NavItem
+                        id="teampace"
+                        label="Team Pace"
+                        icon={UserGroupIcon}
+                        active={activeSection === 'teampace'}
+                        onClick={() => handleSectionChange('teampace')}
+                      />
+                      <NavItem
+                        id="telemetry"
+                        label="Telemetry"
+                        icon={Analytics01Icon}
+                        active={activeSection === 'telemetry'}
+                        onClick={() => handleSectionChange('telemetry')}
+                      />
+                    </>
+                  )}
+                </div>
+              </aside>
+            )}
 
             {/* Main Content Stream */}
             <div className="flex-1 space-y-8">
@@ -1141,7 +1460,7 @@ const Race = () => {
                               subValue={formatRaceTime(raceWinner.time, true)}
                               team={getTeamColorClass(raceWinner.team)}
                               icon={<ChampionIcon />}
-                              imageUrl={getDriverImage(raceWinner.fullName)}
+                              imageUrl={getDriverImage(raceWinner.driverCode, year!)}
                             />
                           )}
                           {poleSitter && (
@@ -1151,7 +1470,7 @@ const Race = () => {
                               subValue={poleSitter.poleLapTimeValue}
                               team={getTeamColorClass(poleSitter.team)}
                               icon={<FlashIcon />}
-                              imageUrl={getDriverImage(poleSitter.fullName)}
+                              imageUrl={getDriverImage(poleSitter.driverCode, year!)}
                             />
                           )}
                           {fastestLapHolder && (
@@ -1161,9 +1480,39 @@ const Race = () => {
                               subValue={fastestLapHolder.driverFastestLapTime}
                               team={getTeamColorClass(fastestLapHolder.team)}
                               icon={<Clock01Icon />}
-                              imageUrl={getDriverImage(fastestLapHolder.fullName)}
+                              imageUrl={getDriverImage(fastestLapHolder.driverCode, year!)}
                             />
                           )}
+                        </>
+                      ) : isTestingSession ? (
+                        <>
+                          {testingInsights.fastest && (
+                            <F1Card
+                              title="FASTEST LAP"
+                              value={testingInsights.fastest.fullName}
+                              subValue={getSessionWindowLapTime(testingInsights.fastest) ?? '-'}
+                              team={getTeamColorClass(testingInsights.fastest.team)}
+                              icon={<Clock01Icon />}
+                              imageUrl={getDriverImage(testingInsights.fastest.driverCode, year!)}
+                            />
+                          )}
+                          {testingInsights.mileage && (
+                            <F1Card
+                              title="MILEAGE LEADER"
+                              value={testingInsights.mileage.fullName}
+                              subValue={`${formatDistance(calculateDistance(getSessionWindowLaps(testingInsights.mileage), testingInsights.circuitLength))}`}
+                              team={getTeamColorClass(testingInsights.mileage.team)}
+                              icon={<TradeUpIcon />}
+                              imageUrl={getDriverImage(testingInsights.mileage.driverCode, year!)}
+                            />
+                          )}
+                          <F1Card
+                            title="SESSION WORKLOAD"
+                            value={`${formatDistance(testingInsights.totalDistance)}`}
+                            subValue={`Avg ${testingInsights.averageLaps.toFixed(1)} laps/driver`}
+                            team="gray"
+                            icon={<Calendar01Icon />}
+                          />
                         </>
                       ) : (
                         topPerformers.map((p, i) => (
@@ -1174,7 +1523,7 @@ const Race = () => {
                             subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''}
                             team={getTeamColorClass(p.team)}
                             icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />}
-                            imageUrl={getDriverImage(p.fullName)}
+                            imageUrl={getDriverImage(p.driverCode, year!)}
                           />
                         ))
                       )}
@@ -1184,11 +1533,41 @@ const Race = () => {
                   <section id="results">
                     <SectionHeader title="Session Results" icon={UserGroupIcon} />
 
+                    {isTestingSession &&
+                      !isTestingSplitSession &&
+                      selectedSession !== 'Summary' && (
+                        <div className="mb-6 flex items-center gap-2 bg-black border border-gray-700 p-2 w-fit">
+                          {(
+                            [
+                              ['full', 'Full Day'],
+                              ['morning', 'Morning'],
+                              ['afternoon', 'Afternoon'],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <button
+                              key={value}
+                              onClick={() => {
+                                setTestingWindow(value);
+                                trackInteraction('testing_window_toggled', { window: value });
+                              }}
+                              className={cn(
+                                'px-3 py-1 text-xs font-black uppercase tracking-wider transition-colors border',
+                                testingWindow === value
+                                  ? 'bg-white border-white text-black'
+                                  : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
                       <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
                         <Alert02Icon className="h-4 w-4" />
-                        <AlertTitle className="font-bold uppercase tracking-wider">
+                        <AlertTitle className="font-black uppercase tracking-wider">
                           Provisional Results
                         </AlertTitle>
                         <AlertDescription>
@@ -1198,22 +1577,51 @@ const Race = () => {
                       </Alert>
                     )}
 
-                    {sessionResults && (
+                    {isTestingSession && selectedSession !== 'Summary' && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                          Testing Focus
+                        </AlertTitle>
+                        <AlertDescription>
+                          Results are sorted by fastest lap. Mileage and reliability columns
+                          highlight long-run robustness.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {isTestingSession && selectedSession === 'Summary' && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                          3-Day Testing Summary
+                        </AlertTitle>
+                        <AlertDescription>
+                          Aggregated data from all pre-season testing sessions. Total mileage and
+                          fastest laps are combined.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {effectiveSessionResults && (
                       <SessionResultsTable
-                        results={sessionResults}
+                        results={effectiveSessionResults}
                         sessionType={selectedSession}
-                        year={year!}
                         favoriteDriver={profile?.favorite_driver}
                         fastestLapHolder={fastestLapHolder}
+                        isTestingSession={isTestingSession}
+                        isTestingSplitSession={isTestingSplitSession}
+                        testingWindow={testingWindow}
+                        eventName={eventName}
                       />
                     )}
                   </section>
                 </div>
               )}
 
-              {/* 3. Strategy Section (Race Only) */}
+              {/* 3. Strategy Section */}
               {activeSection === 'strategy' &&
-                (selectedSession === 'R' || selectedSession === 'Sprint') && (
+                (selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) && (
                   <GatedRoute
                     featureName="Tire Strategy"
                     description="Advanced tire strategy analysis including pit stop patterns and compound selection strategies"
@@ -1222,7 +1630,7 @@ const Race = () => {
                       <TireStrategy
                         year={year!}
                         event={eventName}
-                        session={selectedSession}
+                        session={analysisSession}
                         favoriteDriver={profile?.favorite_driver}
                       />
                     </section>
@@ -1240,8 +1648,7 @@ const Race = () => {
                       <PositionsTabContent
                         year={year!}
                         event={eventName}
-                        session={selectedSession}
-                        openF1Drivers={openF1Drivers}
+                        session={analysisSession}
                         favoriteDriver={profile?.favorite_driver}
                       />
                     </section>
@@ -1258,26 +1665,29 @@ const Race = () => {
                     <Tabs
                       defaultValue="history"
                       value={lapAnalysisMode}
-                      onValueChange={(v) => setLapAnalysisMode(v as 'history' | 'pace' | 'gap')}
+                      onValueChange={(v) => {
+                        setLapAnalysisMode(v as 'history' | 'pace' | 'gap');
+                        trackInteraction('desktop_analysis_tab_changed', { tab: v });
+                      }}
                       className="w-full"
                     >
                       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
                         <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
                           <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Lap History
                           </TabsTrigger>
                           <TabsTrigger
                             value="pace"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Pace Distribution
                           </TabsTrigger>
                           <TabsTrigger
                             value="gap"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
                           >
                             Gap to Leader
                           </TabsTrigger>
@@ -1312,10 +1722,9 @@ const Race = () => {
                             <RacingChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               title="Lap Time Comparison"
                               autoLoad={true}
-                              openF1Drivers={openF1Drivers}
                               favoriteDriver={favDriverCode}
                               rivalDriver={rivalDriverCode}
                             />
@@ -1350,13 +1759,12 @@ const Race = () => {
                             <PaceAnalysisChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               initialDrivers={
                                 favDriverCode
                                   ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
                                   : []
                               }
-                              openF1Drivers={openF1Drivers}
                             />
                           );
                         })()}
@@ -1390,9 +1798,8 @@ const Race = () => {
                             <GapToLeaderChart
                               year={year!}
                               event={eventName}
-                              session={selectedSession}
+                              session={analysisSession}
                               autoLoad={true}
-                              openF1Drivers={openF1Drivers}
                               favoriteDriver={favDriverCode}
                               rivalDriver={rivalDriverCode}
                             />
@@ -1434,21 +1841,29 @@ const Race = () => {
                           <CircuitComparisonChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             initialDriver1={favDriverCode}
                             initialDriver2={rivalDriverCode || undefined}
                             onDriversSelected={handleCircuitDriversSelected}
-                            openF1Drivers={openF1Drivers}
                           />
 
                           {/* Comparison Charts if selected */}
                           {circuitDrivers.shouldLoadChart && (
                             <div className="space-y-12">
+                              {/* Race Performance Summary */}
+                              <HeadToHeadEnriched
+                                year={year!}
+                                event={eventName}
+                                session={analysisSession}
+                                driver1={circuitDrivers.driver1}
+                                driver2={circuitDrivers.driver2}
+                              />
+
                               {/* Speed Trace - Full Width */}
                               <DriverComparisonTelemetry
                                 year={year!}
                                 event={eventName}
-                                session={selectedSession}
+                                session={analysisSession}
                                 driver1={circuitDrivers.driver1}
                                 driver2={circuitDrivers.driver2}
                                 lap1={circuitDrivers.lap1}
@@ -1456,7 +1871,6 @@ const Race = () => {
                                 shouldLoadChart={true}
                                 telemetryType="speed"
                                 title="Speed Trace"
-                                openF1Drivers={openF1Drivers}
                               />
 
                               {/* Other Telemetry - Stacked */}
@@ -1464,7 +1878,7 @@ const Race = () => {
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1472,12 +1886,11 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="gap"
                                   title="Gap"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1485,12 +1898,11 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="throttle"
                                   title="Throttle"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1498,12 +1910,11 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="brake"
                                   title="Brake"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1511,12 +1922,11 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="rpm"
                                   title="RPM"
-                                  openF1Drivers={openF1Drivers}
                                 />
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
-                                  session={selectedSession}
+                                  session={analysisSession}
                                   driver1={circuitDrivers.driver1}
                                   driver2={circuitDrivers.driver2}
                                   lap1={circuitDrivers.lap1}
@@ -1524,7 +1934,6 @@ const Race = () => {
                                   shouldLoadChart={true}
                                   telemetryType="drs"
                                   title="DRS"
-                                  openF1Drivers={openF1Drivers}
                                 />
                               </div>
                             </div>
@@ -1536,7 +1945,20 @@ const Race = () => {
                 </GatedRoute>
               )}
 
-              {/* 6. Telemetry Section */}
+              {/* 6. Team Pace Section */}
+              {activeSection === 'teampace' && (
+                <GatedRoute
+                  featureName="Team Pace Analysis"
+                  description="Team-level pace breakdown by tyre compound and sector, with individual driver analysis"
+                >
+                  <section id="teampace" className="animate-in fade-in duration-500">
+                    <SectionHeader title="Team Pace Analysis" icon={UserGroupIcon} />
+                    <TeamPaceBreakdown year={year!} event={eventName} session={analysisSession} />
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 7. Telemetry Section */}
               {activeSection === 'telemetry' && (
                 <GatedRoute
                   featureName="Advanced Telemetry"
@@ -1555,49 +1977,43 @@ const Race = () => {
                           <SpeedTraceChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <ThrottleChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <BrakeChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <RPMChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <GearMapChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                           <DRSChart
                             year={year!}
                             event={eventName}
-                            session={selectedSession}
+                            session={analysisSession}
                             lap={selectedLap}
-                            openF1Drivers={openF1Drivers}
                             initialDriver={defaultDriver}
                           />
                         </div>
@@ -1614,12 +2030,12 @@ const Race = () => {
                   description="Experience immersive race telemetry with real-time car positions and data overlays"
                 >
                   <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="bg-black border border-gray-800 rounded-lg overflow-hidden h-[80vh] relative">
+                    <div className="bg-black border border-gray-700 overflow-hidden h-[80vh] relative">
                       <React.Suspense
                         fallback={
                           <div className="h-full flex items-center justify-center">
                             <div className="text-center">
-                              <div className="w-8 h-8 border-2 border-gray-800 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                              <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
                               <div className="text-xs text-gray-500 font-mono">
                                 LOADING REPLAY MODULE...
                               </div>
@@ -1627,12 +2043,25 @@ const Race = () => {
                           </div>
                         }
                       >
-                        <SessionReplay
-                          year={year}
-                          event={eventSlug}
-                          session={selectedSession}
-                          className="h-full"
-                        />
+                        {(() => {
+                          let replaySessionTarget = analysisSession;
+                          if (isTestingSession) {
+                            if (isTestingSplitSession && testingSessionAlias) {
+                              replaySessionTarget = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
+                            } else if (testingWindow !== 'full') {
+                              replaySessionTarget = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                            }
+                          }
+
+                          return (
+                            <SessionReplay
+                              year={year}
+                              event={eventSlug}
+                              session={replaySessionTarget}
+                              className="h-full"
+                            />
+                          );
+                        })()}
                       </React.Suspense>
                     </div>
                   </div>

@@ -23,14 +23,15 @@ import TermsOfService from './pages/TermsOfService';
 import FAQ from './pages/FAQ';
 import RefundPolicy from './pages/RefundPolicy';
 import Contact from './pages/Contact';
-import LandingFooter from './components/LandingFooter';
+import LandingFooter from './components/layout/LandingFooter';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
-import ScrollToTop from '@/components/ScrollToTop';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import ScrollToTop from '@/components/layout/ScrollToTop';
+import RouteTracker from '@/components/layout/RouteTracker';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { useIsMobile } from '@/hooks/use-mobile';
-import ConsentBanner from '@/components/ConsentBanner';
+import ConsentBanner from '@/components/auth/ConsentBanner';
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,8 @@ const App = () => (
         <AuthProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <RouteTracker />
+            <RouteTracker />
             <Routes>
               {/* Landing Page Route (with LandingFooter) */}
               <Route

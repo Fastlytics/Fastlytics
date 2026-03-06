@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { motion } from 'framer-motion';
 import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
 import { TrendingUp } from 'lucide-react';
@@ -36,26 +37,23 @@ import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getCountryCode } from '@/utils/countryUtils';
-import { fetchAllOpenF1Drivers, OpenF1Driver } from '@/lib/openf1';
+import { getDriverImage } from '@/utils/imageMapping';
 import { useEffect } from 'react';
 
 const ChampionshipProgression = () => {
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const isMobile = useIsMobile();
+  const { trackEvent, trackPageView } = useAnalytics();
+
+  useEffect(() => {
+    trackPageView('championship_progression', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // State for driver filtering
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [openF1Drivers, setOpenF1Drivers] = useState<OpenF1Driver[]>([]);
-
-  useEffect(() => {
-    const loadOpenF1Data = async () => {
-      const drivers = await fetchAllOpenF1Drivers();
-      setOpenF1Drivers(drivers);
-    };
-    loadOpenF1Data();
-  }, []);
 
   // Reset selected drivers when year changes
   useEffect(() => {
@@ -147,29 +145,24 @@ const ChampionshipProgression = () => {
       .slice(0, 10)
       .map(([code]) => code);
     setSelectedDrivers(top10);
+    trackEvent('filter_action', {
+      page: 'championship_progression',
+      action: 'select_top10',
+      year: selectedYear,
+    });
   };
 
-  const clearSelection = () => setSelectedDrivers([]);
-
-  const getDriverImage = (driverIdentity: string) => {
-    // Try exact match with acronym first
-    let driver = openF1Drivers.find((d) => d.name_acronym === driverIdentity);
-
-    // If not found, try last name match (case-insensitive)
-    if (!driver) {
-      const lastName = driverIdentity.split(' ').pop()?.toUpperCase();
-      driver = openF1Drivers.find((d) => d.last_name.toUpperCase() === lastName);
-    }
-
-    // Last resort: check if full name includes the string
-    if (!driver) {
-      driver = openF1Drivers.find((d) =>
-        d.full_name.toLowerCase().includes(driverIdentity.toLowerCase())
-      );
-    }
-
-    return driver?.headshot_url;
+  const clearSelection = () => {
+    setSelectedDrivers([]);
+    trackEvent('filter_action', {
+      page: 'championship_progression',
+      action: 'clear_selection',
+      year: selectedYear,
+    });
   };
+
+  // No separate helper needed — getDriverImage imported from @/utils/imageMapping
+  // Usage: getDriverImage(driverCode, selectedYear)
 
   // Custom Toolkit Styles
   const CustomTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
@@ -198,7 +191,7 @@ const ChampionshipProgression = () => {
             {sortedPayload.map((entry, index: number) => {
               // Use dataKey (driver code) for image lookup if available, otherwise name
               const driverId = entry.dataKey || entry.name;
-              const headshot = getDriverImage(driverId);
+              const headshot = getDriverImage(driverId, selectedYear);
 
               return (
                 <div key={entry.name} className="flex items-center justify-between group">
@@ -210,7 +203,7 @@ const ChampionshipProgression = () => {
                           <img
                             src={headshot}
                             alt={entry.name}
-                            className="w-full h-full object-cover scale-110 translate-y-1"
+                            className="w-full h-full object-cover object-top"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
@@ -245,7 +238,7 @@ const ChampionshipProgression = () => {
       <div className="flex flex-wrap items-center justify-center gap-4 mb-6 pt-4">
         {payload.map((entry, index: number) => {
           const driverId = entry.dataKey || entry.value; // Prefer dataKey (code)
-          const headshot = getDriverImage(driverId);
+          const headshot = getDriverImage(driverId, selectedYear);
 
           return (
             <div
@@ -257,7 +250,7 @@ const ChampionshipProgression = () => {
                   <img
                     src={headshot}
                     alt={entry.value}
-                    className="w-full h-full object-cover scale-110 translate-y-1"
+                    className="w-full h-full object-cover object-top"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
@@ -305,7 +298,13 @@ const ChampionshipProgression = () => {
           <div className="flex flex-wrap items-center gap-4 ml-14 md:ml-0">
             <Select
               value={String(selectedYear)}
-              onValueChange={(value) => setSelectedYear(Number(value))}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', {
+                  page: 'championship_progression',
+                  year: Number(value),
+                });
+              }}
             >
               <SelectTrigger className="w-[140px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue placeholder="Year" />
@@ -456,14 +455,14 @@ const ChampionshipProgression = () => {
                 />
                 <YAxis
                   stroke="#666"
-                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold' }}
+                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold', fontFamily: 'Geist' }}
                   tickLine={false}
                   axisLine={false}
                   domain={[
                     0,
                     (dataMax: number) => {
                       // Adaptive rounding based on the maximum value
-                      if (!dataMax || dataMax <= 0) return 'auto';
+                      if (!dataMax || dataMax <= 0 || isNaN(dataMax)) return 100;
 
                       // Low points (e.g. backmarkers): round to nearest 5 or 10
                       if (dataMax <= 20) return Math.ceil(dataMax / 5) * 5;

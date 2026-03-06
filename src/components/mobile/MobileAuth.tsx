@@ -14,7 +14,7 @@ import {
 import { Gauge } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { oauthFlags } from '@/config/featureFlags';
@@ -28,6 +28,7 @@ const MobileAuth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { trackEvent } = useAnalytics();
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -38,7 +39,7 @@ const MobileAuth: React.FC = () => {
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);
-    posthog.capture('login_started', { method: 'social', provider, platform: 'mobile' });
+    trackEvent('login_started', { method: 'social', provider });
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
@@ -56,7 +57,7 @@ const MobileAuth: React.FC = () => {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    posthog.capture('login_started', { method: 'email', platform: 'mobile' });
+    trackEvent('login_started', { method: 'email' });
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
