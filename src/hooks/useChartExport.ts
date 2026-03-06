@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { getDriverImage } from '@/utils/imageMapping';
 
 export interface ChartExportMeta {
   title: string;
@@ -53,6 +54,26 @@ export function useChartExport() {
 
       // Step 2: Load the captured chart as an Image
       const chartImg = await loadImage(chartDataUrl);
+
+      // Step 2.5: Load driver images
+      const driverImages: Record<string, HTMLImageElement> = {};
+      const targetYear = meta.year ? Number(meta.year) : new Date().getFullYear();
+      if (meta.drivers && meta.drivers.length > 0) {
+        await Promise.all(
+          meta.drivers.map(async (driverCode) => {
+            try {
+              const src = getDriverImage(driverCode, targetYear);
+              if (src) {
+                // If it's a relative path starting with /, it should resolve correctly.
+                const img = await loadImage(src);
+                driverImages[driverCode] = img;
+              }
+            } catch (e) {
+              // ignore missing images
+            }
+          })
+        );
+      }
 
       // Step 3: Compute canvas layout
       const chartW = chartImg.width;
@@ -149,7 +170,7 @@ export function useChartExport() {
         y += 10 * SCALE;
         ctx.font = `700 ${10 * SCALE}px ${MONO}`;
         ctx.fillStyle = '#6b7280';
-        ctx.fillText('DRIVERS', PADDING, y + 2 * SCALE);
+        ctx.fillText('DRIVERS', PADDING, y + 6 * SCALE); // Adjusted vertical alignment
 
         let dx = PADDING + ctx.measureText('DRIVERS').width + 16 * SCALE;
         ctx.font = `700 ${12 * SCALE}px ${MONO}`;
@@ -157,12 +178,31 @@ export function useChartExport() {
         meta.drivers.forEach((driver) => {
           const tw = ctx.measureText(driver).width;
           const pw = 8 * SCALE;
+          const img = driverImages[driver];
+          const imgSize = img ? 20 * SCALE : 0;
+          const imgGap = img ? 6 * SCALE : 0;
+
+          const chipW = tw + pw * 2 + imgSize + imgGap;
+
           // Chip background
           ctx.fillStyle = '#1f2937';
-          ctx.fillRect(dx - pw, y - 2 * SCALE, tw + pw * 2, 22 * SCALE);
-          ctx.fillStyle = '#e5e7eb';
-          ctx.fillText(driver, dx, y + 1 * SCALE);
-          dx += tw + pw * 2 + 8 * SCALE;
+          // Make chip taller if there is an image
+          const chipH = img ? 26 * SCALE : 22 * SCALE;
+          const chipY = img ? y - 4 * SCALE : y - 2 * SCALE;
+
+          ctx.fillRect(dx - pw, chipY, chipW, chipH);
+
+          if (img) {
+            // Draw image slightly inset
+            ctx.drawImage(img, dx - pw + 4 * SCALE, y - 1 * SCALE, imgSize, imgSize);
+            ctx.fillStyle = '#e5e7eb';
+            ctx.fillText(driver, dx + imgSize + imgGap - 2 * SCALE, y + 3 * SCALE);
+          } else {
+            ctx.fillStyle = '#e5e7eb';
+            ctx.fillText(driver, dx, y + 1 * SCALE);
+          }
+
+          dx += chipW + 8 * SCALE;
         });
 
         y += driversH - 10 * SCALE;
