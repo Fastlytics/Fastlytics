@@ -127,7 +127,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative', className)} data-export-menu>
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={isExporting}

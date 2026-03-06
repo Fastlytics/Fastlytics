@@ -11,6 +11,8 @@ import {
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { driverColor } from '@/lib/driverColor';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface TeamPaceBreakdownProps {
   year: number;
@@ -57,6 +59,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   const [viewMode, setViewMode] = useState<ViewMode>('compound');
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [selectedCompound, setSelectedCompound] = useState<string | null>(null);
+  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
   // Single query — backend handles all computation and caching
   const {
@@ -157,9 +160,9 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   const refPace = compoundBars.length > 0 ? compoundBars[0].medianTime : 0;
 
   return (
-    <div className="space-y-0">
-      {/* View Mode Tabs */}
-      <div className="flex border border-gray-700 bg-black">
+    <div ref={exportRef} className="space-y-0">
+      {/* View Mode Tabs with Export */}
+      <div className="flex border border-gray-700 bg-black" data-export-ignore>
         {(
           [
             ['compound', 'Compound Pace'],
@@ -179,6 +182,26 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
             {label}
           </button>
         ))}
+        {/* Export Button inside the tabs box */}
+        <div className="flex items-center justify-center px-4 border-l border-gray-700">
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Team Pace Breakdown',
+                subtitle:
+                  viewMode === 'compound'
+                    ? `${activeCompound} compound pace`
+                    : viewMode === 'sector'
+                      ? 'Sector dominance'
+                      : 'Driver breakdown',
+                year,
+                event,
+                session,
+              })
+            }
+            isExporting={isExporting}
+          />
+        </div>
       </div>
 
       {/* ── COMPOUND PACE VIEW ── */}

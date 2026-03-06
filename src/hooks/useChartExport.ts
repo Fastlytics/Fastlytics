@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import { getDriverImage } from '@/utils/imageMapping';
+import { driverColor } from '@/lib/driverColor';
 
 export type ExportFormat = 'svg' | 'png' | 'csv' | 'json' | 'clipboard';
 
@@ -20,6 +21,54 @@ export interface ChartExportData {
 const PNG_SCALE = 4;
 const FONT = 'Geist, system-ui, -apple-system, sans-serif';
 const MONO = 'Geist Mono, monospace';
+
+/** Map 3-letter driver codes to last names. */
+const DRIVER_LAST_NAMES: Record<string, string> = {
+  VER: 'Verstappen',
+  HAM: 'Hamilton',
+  NOR: 'Norris',
+  LEC: 'Leclerc',
+  PIA: 'Piastri',
+  SAI: 'Sainz',
+  RUS: 'Russell',
+  ALO: 'Alonso',
+  GAS: 'Gasly',
+  OCO: 'Ocon',
+  STR: 'Stroll',
+  PER: 'Perez',
+  ALB: 'Albon',
+  TSU: 'Tsunoda',
+  RIC: 'Ricciardo',
+  MAG: 'Magnussen',
+  HUL: 'Hulkenberg',
+  BOT: 'Bottas',
+  ZHO: 'Zhou',
+  SAR: 'Sargeant',
+  LAW: 'Lawson',
+  COL: 'Colapinto',
+  BEA: 'Bearman',
+  DOO: 'Doohan',
+  HAD: 'Hadjar',
+  BOR: 'Bortoleto',
+  ANT: 'Antonelli',
+  VET: 'Vettel',
+  RAI: 'Raikkonen',
+  GRO: 'Grosjean',
+  KVY: 'Kvyat',
+  GIO: 'Giovinazzi',
+  LAT: 'Latifi',
+  MSC: 'Schumacher',
+  MAZ: 'Mazepin',
+  DEV: 'de Vries',
+  KUB: 'Kubica',
+  FIT: 'Fittipaldi',
+  AITken: 'Aitken',
+  DRU: 'Drugovich',
+  LIN: 'Lindblad',
+};
+function driverLastName(code: string): string {
+  return DRIVER_LAST_NAMES[code] || code;
+}
 
 /**
  * Hook for multi-format chart export.
@@ -77,10 +126,11 @@ function findChartSvg(container: HTMLDivElement | null): SVGSVGElement | null {
   const allSvgs = Array.from(container.querySelectorAll('svg')) as SVGSVGElement[];
   let best: SVGSVGElement | null = null;
   let bestArea = 0;
+  const MIN_CHART_AREA = 10000; // ~100x100px minimum to qualify as a chart
   for (const svg of allSvgs) {
     const rect = svg.getBoundingClientRect();
     const area = rect.width * rect.height;
-    if (area > bestArea) {
+    if (area > bestArea && area >= MIN_CHART_AREA) {
       bestArea = area;
       best = svg;
     }
@@ -181,65 +231,72 @@ function buildBrandedSvg(
 
   const hasHeadshots = headshotDataUrls && Object.keys(headshotDataUrls).length > 0;
   const padding = 40;
-  const headerH = 70;
+
+  // --- Build context line: "2026 AUSTRALIAN GP // FP1" ---
+  const contextParts: string[] = [];
+  if (meta.year) contextParts.push(String(meta.year));
+  if (meta.event) contextParts.push(meta.event.replace(/-/g, ' ').toUpperCase());
+  if (meta.session) contextParts.push(meta.session.toUpperCase());
+  const contextLine = contextParts.join('  //  ');
+
+  // Layout measurements
+  const contextH = contextLine ? 28 : 0; // small context line at top
+  const titleH = 44; // big bold chart title
   const accentH = 3;
-  const badgesH = meta.year || meta.event || meta.session ? 32 : 0;
-  const driversH = meta.drivers?.length ? (hasHeadshots ? 68 : 28) : 0;
+  const headerH = 12 + contextH + titleH + 8; // top pad + context + title + bottom pad
+
+  // Driver section: circular headshots with last name below, left-aligned
+  const driverImgSize = 52;
+  const driverSlotW = 76;
+  const driverSlotH = driverImgSize + 22; // circle + name
+  const driversH = meta.drivers?.length ? driverSlotH + 16 : 0;
+
   const gapAbove = 16;
-  const gapBelow = 16;
-  const footerH = 40;
+  const gapBelow = 20;
+  const footerH = 44;
 
   const totalW = svgW + padding * 2;
-  const totalH = headerH + accentH + badgesH + driversH + gapAbove + svgH + gapBelow + footerH;
+  const totalH = headerH + accentH + driversH + gapAbove + svgH + gapBelow + footerH;
 
-  // Build badge markup
-  const badges: string[] = [];
-  if (meta.year) badges.push(String(meta.year));
-  if (meta.event) badges.push(meta.event.replace(/-/g, ' '));
-  if (meta.session) badges.push(meta.session);
-
-  let badgeSvg = '';
-  if (badges.length > 0) {
-    const badgeY = headerH + accentH + 10;
-    let x = totalW - padding;
-    for (let i = badges.length - 1; i >= 0; i--) {
-      const text = badges[i].toUpperCase();
-      const estW = text.length * 8 + 16;
-      x -= estW;
-      badgeSvg += `
-        <rect x="${x}" y="${badgeY}" width="${estW}" height="20" rx="2" fill="#111827" stroke="#374151" stroke-width="1"/>
-        <text x="${x + estW / 2}" y="${badgeY + 14}" text-anchor="middle" fill="#d1d5db" font-family="${MONO}" font-size="9" font-weight="700">${escapeXml(text)}</text>`;
-      x -= 6;
-    }
-  }
-
-  // Driver chips with optional headshot images
+  // --- Driver headshots ---
   let driverSvg = '';
   if (meta.drivers?.length) {
-    const dy = headerH + accentH + badgesH + 6;
-    const chipH = hasHeadshots ? 56 : 18;
-    const imgSize = 48;
-    let dx = padding;
-    driverSvg += `<text x="${dx}" y="${dy + (hasHeadshots ? 32 : 12)}" fill="#6b7280" font-family="${MONO}" font-size="8" font-weight="700">DRIVERS</text>`;
-    dx += 56;
+    const dy = headerH + accentH + 12;
+    let dx = padding; // left-aligned
+    const year = meta.year ? Number(meta.year) : new Date().getFullYear();
+
     meta.drivers.forEach((d) => {
+      const cx = dx + driverSlotW / 2;
+      const cy = dy + driverImgSize / 2;
       const hasImg = hasHeadshots && headshotDataUrls![d];
-      const imgW = hasImg ? imgSize + 8 : 0;
-      const tw = d.length * 8 + 16 + imgW;
-      driverSvg += `
-        <rect x="${dx}" y="${dy}" width="${tw}" height="${chipH}" rx="4" fill="#1f2937"/>`;
+      const teamColor = driverColor(d, year);
+      const name = driverLastName(d).toUpperCase();
+
       if (hasImg) {
+        // Circular headshot with team-colored ring
         driverSvg += `
-        <clipPath id="clip-${d}"><circle cx="${dx + 6 + imgSize / 2}" cy="${dy + chipH / 2}" r="${imgSize / 2}"/></clipPath>
-        <image href="${headshotDataUrls![d]}" x="${dx + 6}" y="${dy + (chipH - imgSize) / 2}" width="${imgSize}" height="${imgSize}" clip-path="url(#clip-${d})" preserveAspectRatio="xMidYMid slice"/>`;
+        <defs>
+          <clipPath id="clip-${d}"><circle cx="${cx}" cy="${cy}" r="${driverImgSize / 2 - 2}"/></clipPath>
+        </defs>
+        <circle cx="${cx}" cy="${cy}" r="${driverImgSize / 2}" fill="${teamColor}" opacity="0.3"/>
+        <image href="${headshotDataUrls![d]}" x="${cx - driverImgSize / 2 + 2}" y="${dy + 2}" width="${driverImgSize - 4}" height="${driverImgSize - 4}" clip-path="url(#clip-${d})" preserveAspectRatio="xMidYMid slice"/>
+        <circle cx="${cx}" cy="${cy}" r="${driverImgSize / 2}" fill="none" stroke="${teamColor}" stroke-width="3"/>`;
+      } else {
+        // No image — show initial in a team-colored ring
+        driverSvg += `
+        <circle cx="${cx}" cy="${cy}" r="${driverImgSize / 2}" fill="#0a0a0a" stroke="${teamColor}" stroke-width="3"/>
+        <text x="${cx}" y="${cy + 8}" text-anchor="middle" fill="${teamColor}" font-family="${FONT}" font-size="24" font-weight="900">${escapeXml(d.substring(0, 1))}</text>`;
       }
+
+      // Last name below circle
       driverSvg += `
-        <text x="${dx + imgW + (tw - imgW) / 2}" y="${dy + chipH / 2 + 5}" text-anchor="middle" fill="#e5e7eb" font-family="${MONO}" font-size="12" font-weight="700">${escapeXml(d)}</text>`;
-      dx += tw + 8;
+        <text x="${cx}" y="${dy + driverImgSize + 14}" text-anchor="middle" fill="#e5e7eb" font-family="${FONT}" font-size="8" font-weight="800" letter-spacing="1">${escapeXml(name)}</text>`;
+
+      dx += driverSlotW + 10;
     });
   }
 
-  const chartY = headerH + accentH + badgesH + driversH + gapAbove;
+  const chartY = headerH + accentH + driversH + gapAbove;
   const footerY = chartY + svgH + gapBelow;
 
   const dateStr = new Date().toLocaleDateString('en-GB', {
@@ -251,21 +308,26 @@ function buildBrandedSvg(
   const innerSvg = new XMLSerializer().serializeToString(chartSvg);
   const viewBoxAttr = viewBox ? `viewBox="${viewBox}"` : `viewBox="0 0 ${svgW} ${svgH}"`;
 
+  // Context line Y
+  const contextY = 30;
+  // Title Y — below context
+  const titleY = contextLine ? contextY + 32 : 38;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">
   <rect width="${totalW}" height="${totalH}" fill="#000000"/>
 
-  <!-- Title -->
-  <text x="${padding}" y="42" fill="#ffffff" font-family="${FONT}" font-size="22" font-weight="900" font-style="italic">${escapeXml(meta.title.toUpperCase())}</text>
-  ${meta.subtitle ? `<text x="${padding}" y="60" fill="#9ca3af" font-family="${MONO}" font-size="11">${escapeXml(meta.subtitle)}</text>` : ''}
+  <!-- Context: year / event / session -->
+  ${contextLine ? `<text x="${padding}" y="${contextY}" fill="#6b7280" font-family="${MONO}" font-size="12" font-weight="700" letter-spacing="2">${escapeXml(contextLine)}</text>` : ''}
+
+  <!-- Chart title -->
+  <text x="${padding}" y="${titleY}" fill="#ffffff" font-family="${FONT}" font-size="28" font-weight="900" font-style="italic">${escapeXml(meta.title.toUpperCase())}</text>
+  ${meta.subtitle ? `<text x="${padding}" y="${titleY + 20}" fill="#9ca3af" font-family="${MONO}" font-size="11">${escapeXml(meta.subtitle)}</text>` : ''}
 
   <!-- Red accent -->
   <rect y="${headerH}" width="${totalW}" height="${accentH}" fill="#dc2626"/>
 
-  <!-- Badges -->
-  ${badgeSvg}
-
-  <!-- Drivers -->
+  <!-- Driver headshots -->
   ${driverSvg}
 
   <!-- Chart -->
@@ -275,10 +337,10 @@ function buildBrandedSvg(
 
   <!-- Footer -->
   <line x1="${padding}" y1="${footerY}" x2="${totalW - padding}" y2="${footerY}" stroke="#1f2937" stroke-width="1"/>
-  <text x="${padding}" y="${footerY + 22}" font-family="${FONT}" font-size="13" font-weight="900" font-style="italic" fill="#ffffff">FASTLYTICS</text>
-  <text x="${padding + 95}" y="${footerY + 22}" font-family="${FONT}" font-size="13" font-weight="900" fill="#dc2626">//</text>
-  <text x="${padding + 115}" y="${footerY + 22}" font-family="${MONO}" font-size="9" fill="#6b7280">fastlytics.app</text>
-  <text x="${totalW - padding}" y="${footerY + 22}" text-anchor="end" font-family="${MONO}" font-size="8" fill="#4b5563">Generated ${escapeXml(dateStr)}</text>
+  <text x="${padding}" y="${footerY + 26}" font-family="${FONT}" font-size="14" font-weight="900" font-style="italic" fill="#ffffff">FASTLYTICS</text>
+  <text x="${padding + 100}" y="${footerY + 26}" font-family="${FONT}" font-size="14" font-weight="900" fill="#dc2626">//</text>
+  <text x="${padding + 120}" y="${footerY + 26}" font-family="${MONO}" font-size="10" fill="#6b7280">fastlytics.app</text>
+  <text x="${totalW - padding}" y="${footerY + 26}" text-anchor="end" font-family="${MONO}" font-size="9" fill="#4b5563">${escapeXml(dateStr)}</text>
 </svg>`;
 }
 
@@ -310,7 +372,11 @@ async function loadDriverHeadshots(meta: ChartExportMeta): Promise<Record<string
 
 async function exportAsSvg(container: HTMLDivElement | null, meta: ChartExportMeta) {
   const svg = findChartSvg(container);
-  if (!svg) throw new Error('No chart SVG found');
+
+  if (!svg) {
+    // No SVG chart found — fall back to PNG raster capture of the HTML container
+    return exportAsPng(container, meta);
+  }
 
   const [inlined, headshots] = await Promise.all([
     Promise.resolve(cloneAndInlineStyles(svg)),
@@ -321,8 +387,14 @@ async function exportAsSvg(container: HTMLDivElement | null, meta: ChartExportMe
 }
 
 async function exportAsPng(container: HTMLDivElement | null, meta: ChartExportMeta) {
+  if (!container) throw new Error('No container found');
+
   const svg = findChartSvg(container);
-  if (!svg) throw new Error('No chart SVG found');
+
+  if (!svg) {
+    // HTML-based view (tables, divs) — rasterize the container directly
+    return exportHtmlAsPng(container, meta);
+  }
 
   const [inlined, headshots] = await Promise.all([
     Promise.resolve(cloneAndInlineStyles(svg)),
@@ -399,7 +471,10 @@ function exportAsJson(meta: ChartExportMeta, data?: ChartExportData) {
 
 async function exportToClipboard(container: HTMLDivElement | null, meta: ChartExportMeta) {
   const svg = findChartSvg(container);
-  if (!svg) throw new Error('No chart SVG found');
+  if (!svg) {
+    // For HTML views, fall back to PNG export since SVG clipboard doesn't make sense
+    return exportAsPng(container, meta);
+  }
 
   const [inlined, headshots] = await Promise.all([
     Promise.resolve(cloneAndInlineStyles(svg)),
@@ -407,6 +482,224 @@ async function exportToClipboard(container: HTMLDivElement | null, meta: ChartEx
   ]);
   const branded = buildBrandedSvg(inlined, meta, headshots);
   await navigator.clipboard.writeText(branded);
+}
+
+/**
+ * Capture an HTML container as a branded PNG by reading DOM positions
+ * and drawing directly on canvas. Avoids foreignObject which taints canvases.
+ */
+async function exportHtmlAsPng(container: HTMLDivElement, meta: ChartExportMeta) {
+  const containerRect = container.getBoundingClientRect();
+  const contentW = containerRect.width;
+  const contentH = containerRect.height;
+
+  const padding = 40;
+  const contextParts: string[] = [];
+  if (meta.year) contextParts.push(String(meta.year));
+  if (meta.event) contextParts.push(meta.event.replace(/-/g, ' ').toUpperCase());
+  if (meta.session) contextParts.push(meta.session.toUpperCase());
+  const contextLine = contextParts.join('  //  ');
+  const headerH = 90;
+  const accentH = 3;
+  const gapAbove = 12;
+  const gapBelow = 20;
+  const footerH = 44;
+  const totalW = contentW + padding * 2;
+  const totalH = headerH + accentH + gapAbove + contentH + gapBelow + footerH;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalW * PNG_SCALE;
+  canvas.height = totalH * PNG_SCALE;
+  const ctx = canvas.getContext('2d')!;
+  ctx.scale(PNG_SCALE, PNG_SCALE);
+
+  // Black background
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, totalW, totalH);
+
+  // Context line
+  if (contextLine) {
+    ctx.font = `700 12px ${MONO}`;
+    ctx.fillStyle = '#6b7280';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(contextLine, padding, 30);
+  }
+
+  // Title
+  ctx.font = `italic 900 28px ${FONT}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(meta.title.toUpperCase(), padding, contextLine ? 62 : 38);
+
+  // Subtitle
+  if (meta.subtitle) {
+    ctx.font = `400 11px ${MONO}`;
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillText(meta.subtitle, padding, contextLine ? 80 : 56);
+  }
+
+  // Red accent
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(0, headerH, totalW, accentH);
+
+  // Render DOM content onto canvas
+  const contentX = padding;
+  const contentY = headerH + accentH + gapAbove;
+  renderDomToCanvas(ctx, container, containerRect, contentX, contentY);
+
+  // Footer
+  const footerY = totalH - footerH;
+  ctx.strokeStyle = '#1f2937';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, footerY);
+  ctx.lineTo(totalW - padding, footerY);
+  ctx.stroke();
+
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.font = `italic 900 14px ${FONT}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('FASTLYTICS', padding, footerY + 26);
+  ctx.fillStyle = '#dc2626';
+  ctx.fillText('//', padding + 100, footerY + 26);
+  ctx.font = `400 10px ${MONO}`;
+  ctx.fillStyle = '#6b7280';
+  ctx.fillText('fastlytics.app', padding + 120, footerY + 26);
+
+  const dateStr = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  ctx.font = `400 9px ${MONO}`;
+  ctx.fillStyle = '#4b5563';
+  ctx.textAlign = 'right';
+  ctx.fillText(dateStr, totalW - padding, footerY + 26);
+  ctx.textAlign = 'left';
+
+  const dataUrl = canvas.toDataURL('image/png', 1.0);
+  download(dataUrl, buildFilename(meta, 'png'));
+}
+
+/** Walk the live DOM tree and paint backgrounds, borders, and text onto canvas. */
+function renderDomToCanvas(
+  ctx: CanvasRenderingContext2D,
+  container: Element,
+  containerRect: DOMRect,
+  offsetX: number,
+  offsetY: number
+) {
+  const elements = container.querySelectorAll('*');
+
+  // Pass 1 — backgrounds and borders
+  elements.forEach((el) => {
+    const elRect = el.getBoundingClientRect();
+    if (elRect.width === 0 || elRect.height === 0) return;
+
+    const computed = window.getComputedStyle(el);
+    if (computed.display === 'none' || computed.visibility === 'hidden') return;
+
+    // Skip export menu & tabs bar
+    if (el.closest('[data-export-menu]') || el.closest('[data-export-ignore]')) return;
+
+    const x = elRect.left - containerRect.left + offsetX;
+    const y = elRect.top - containerRect.top + offsetY;
+    const w = elRect.width;
+    const h = elRect.height;
+
+    // Background color
+    const bg = computed.backgroundColor;
+    if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+      ctx.fillStyle = bg;
+      const radius = parseFloat(computed.borderRadius) || 0;
+      if (radius > 0) {
+        drawRoundRect(ctx, x, y, w, h, Math.min(radius, w / 2, h / 2));
+        ctx.fill();
+      } else {
+        ctx.fillRect(x, y, w, h);
+      }
+    }
+
+    // Borders
+    const sides: [string, number, number, number, number][] = [
+      ['top', x, y, x + w, y],
+      ['bottom', x, y + h, x + w, y + h],
+      ['left', x, y, x, y + h],
+      ['right', x + w, y, x + w, y + h],
+    ];
+    for (const [side, x1, y1, x2, y2] of sides) {
+      const bw = parseFloat(computed.getPropertyValue(`border-${side}-width`));
+      const bc = computed.getPropertyValue(`border-${side}-color`);
+      const bs = computed.getPropertyValue(`border-${side}-style`);
+      if (bw > 0 && bs !== 'none' && bc && bc !== 'rgba(0, 0, 0, 0)') {
+        ctx.strokeStyle = bc;
+        ctx.lineWidth = bw;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
+  });
+
+  // Pass 2 — text
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let textNode: Node | null;
+  while ((textNode = walker.nextNode())) {
+    const text = textNode.textContent?.trim();
+    if (!text) continue;
+
+    const parent = textNode.parentElement;
+    if (!parent) continue;
+
+    const computed = window.getComputedStyle(parent);
+    if (computed.display === 'none' || computed.visibility === 'hidden') continue;
+
+    // Skip export menu & tabs bar
+    if (parent.closest('[data-export-menu]') || parent.closest('[data-export-ignore]')) continue;
+
+    const range = document.createRange();
+    range.selectNode(textNode);
+    const rects = range.getClientRects();
+
+    const fontSize = parseFloat(computed.fontSize) || 12;
+    ctx.font = `${computed.fontStyle} ${computed.fontWeight} ${fontSize}px ${computed.fontFamily}`;
+    ctx.fillStyle = computed.color;
+    ctx.textBaseline = 'top';
+
+    // Use only the first rect to avoid duplicating text when lines wrap
+    if (rects.length > 0) {
+      const r = rects[0];
+      if (r.width > 0 && r.height > 0) {
+        const tx = r.left - containerRect.left + offsetX;
+        const ty = r.top - containerRect.top + offsetY;
+        ctx.textAlign = 'left';
+        ctx.fillText(text, tx, ty);
+      }
+    }
+    range.detach();
+  }
+}
+
+function drawRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 // ---------------------------------------------------------------------------
