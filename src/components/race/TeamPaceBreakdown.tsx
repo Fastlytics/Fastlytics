@@ -283,7 +283,9 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                       fontFamily: 'Geist Mono',
                       formatter: (_: number, __: unknown, index: number) => {
                         const item = compoundBars[index as number];
-                        return item ? formatLapTime(item.medianTime) : '';
+                        return item
+                          ? `${formatLapTime(item.medianTime)}  (${item.lapCount} laps)`
+                          : '';
                       },
                     }}
                   >

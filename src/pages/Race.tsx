@@ -1953,7 +1953,6 @@ const Race = () => {
                   description="Team-level pace breakdown by tyre compound and sector, with individual driver analysis"
                 >
                   <section id="teampace" className="animate-in fade-in duration-500">
-                    <SectionHeader title="Team Pace Analysis" icon={UserGroupIcon} />
                     <TeamPaceBreakdown year={year!} event={eventName} session={analysisSession} />
                   </section>
                 </GatedRoute>

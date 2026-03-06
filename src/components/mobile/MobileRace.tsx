@@ -1360,7 +1360,7 @@ const MobileRace: React.FC = () => {
 
   // Schedule View (No Race Results Yet)
   const hasRaceData = availableSessions.some((s) => s.type === 'R');
-  if (!hasRaceData && sessionSchedule) {
+  if (!hasRaceData && sessionSchedule && !showAnalysis) {
     const upcomingSession = sessionSchedule.sessions.find((s) => new Date(s.date) > now);
     const nextSession =
       upcomingSession || sessionSchedule.sessions[sessionSchedule.sessions.length - 1];
@@ -1457,7 +1457,6 @@ const MobileRace: React.FC = () => {
             })}
           </div>
         </div>
-        <MobilePageHeader title={eventName} showBack />
       </div>
     );
   }
