@@ -63,7 +63,7 @@ const TeamPaceAnalysis = () => {
   }, []);
 
   // Constants
-  const availableYears = [2025, 2024]; // Could be dynamic or imported
+  const availableYears = [2026, 2025, 2024];
 
   // Fetch Summary List
   useEffect(() => {
@@ -222,7 +222,7 @@ const TeamPaceAnalysis = () => {
   const getTeamColorHex = (colorName: string) => {
     const colors: Record<string, string> = {
       redbull: '#4781D7',
-      redbullracing: '#4781D7', // Add full name match
+      redbullracing: '#4781D7',
       mercedes: '#6CD3BF',
       ferrari: '#F91536',
       mclaren: '#F58020',
@@ -232,8 +232,13 @@ const TeamPaceAnalysis = () => {
       haas: '#B6BABD',
       alfaromeo: '#C92D4B',
       kicksauber: '#52E252',
+      sauber: '#52E252',
+      audi: '#00E701',
+      cadillac: '#C6A664',
       alphatauri: '#5E8FAA',
       vcarb: '#6692FF',
+      racingbulls: '#6692FF',
+      rb: '#6692FF',
       gray: '#666666',
     };
     const normalized = colorName.toLowerCase().replace(/\s+/g, '');

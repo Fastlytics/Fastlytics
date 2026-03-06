@@ -241,11 +241,46 @@ const seasonalDriverColorMap: { [year: string]: { [driverCode: string]: string }
     // RB (Visa Cash App RB)
     HAD: '#4E7C9B',
     LAW: '#4E7C9B', // Lawson (Using recent AT/RB blue)
-    // Sauber / Audi (Using Sauber Red for now)
-    HUL: '#900000', // Hulkenberg
-    BOR: '#900000', // Bortoleto (If confirmed)
+    // Sauber (Using Sauber green)
+    HUL: '#52E252', // Hulkenberg
+    BOR: '#52E252', // Bortoleto
     // Haas
-    OCO: '#B6BABD', // Ocon (Using recent Haas gray)
+    OCO: '#B6BABD', // Ocon
+    BEA: '#B6BABD', // Bearman
+  },
+  '2026': {
+    // Red Bull Racing
+    VER: '#4781D7',
+    HAD: '#4781D7', // Hadjar
+    // Mercedes
+    RUS: '#6CD3BF',
+    ANT: '#6CD3BF', // Antonelli
+    // Ferrari
+    LEC: '#FF2800',
+    HAM: '#FF2800', // Hamilton
+    // McLaren
+    NOR: '#FF8700',
+    PIA: '#FF8700',
+    // Aston Martin
+    ALO: '#00594F',
+    STR: '#00594F',
+    // Alpine
+    GAS: '#0090FF',
+    COL: '#0090FF', // Colapinto
+    // Williams
+    ALB: '#00A3E0',
+    SAI: '#00A3E0',
+    // Racing Bulls
+    LAW: '#6692FF',
+    LIN: '#6692FF', // Lindblad
+    // Audi
+    HUL: '#00E701', // Hulkenberg
+    BOR: '#00E701', // Bortoleto
+    // Cadillac
+    BOT: '#C6A664', // Bottas
+    PER: '#C6A664', // Perez
+    // Haas
+    OCO: '#B6BABD', // Ocon
     BEA: '#B6BABD', // Bearman
   },
 };

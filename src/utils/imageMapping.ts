@@ -198,6 +198,8 @@ export const getCarImage = (teamName: string, year: number): string => {
     if (name.includes('haas')) return map['haas'];
     if (name.includes('sauber') || name.includes('alfa'))
       return map['sauber'] || map['kicksauber'] || map['alfaromeo'];
+    if (name.includes('audi')) return map['audi'];
+    if (name.includes('cadillac')) return map['cadillac'];
     if (
       name.includes('racingbulls') ||
       name.includes('alpha') ||
