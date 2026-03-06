@@ -43,11 +43,28 @@ import {
   SelectValue,
 } from '@/components/ui/select'; // Added
 import { cn } from '@/lib/utils';
+import { useChartExport } from '@/hooks/useChartExport';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 
 const TeamPaceAnalysis = () => {
   const navigate = useNavigate();
   const { trackEvent, trackPageView } = useAnalytics();
+  const {
+    chartRef: evolutionRef,
+    exportChart: exportEvolution,
+    isExporting: isExportingEvolution,
+  } = useChartExport();
+  const {
+    chartRef: paceGapRef,
+    exportChart: exportPaceGap,
+    isExporting: isExportingPaceGap,
+  } = useChartExport();
+  const {
+    chartRef: scatterRef,
+    exportChart: exportScatter,
+    isExporting: isExportingScatter,
+  } = useChartExport();
   const [selectedYear, setSelectedYear] = useState(2025);
   const [summaryList, setSummaryList] = useState<TeamPaceSummary[]>([]);
   const [selectedEventSlug, setSelectedEventSlug] = useState<string | null>(null);
@@ -407,12 +424,26 @@ const TeamPaceAnalysis = () => {
         ) : eventData ? (
           <div className="space-y-6">
             {/* 1. Weekend Evolution Chart */}
-            <div className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[550px]">
+            <div
+              ref={evolutionRef}
+              className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[550px]"
+            >
               <h3 className="text-xl font-black uppercase italic text-white mb-6 flex items-center gap-2">
                 Pace <span className="text-red-600">Evolution</span>
                 <span className="text-gray-600 text-sm font-mono not-italic ml-auto font-normal normal-case border border-gray-800 px-2 py-1 rounded">
                   Rank per session
                 </span>
+                <ChartExportMenu
+                  onExport={(format) =>
+                    exportEvolution(format, {
+                      title: 'Pace Evolution',
+                      subtitle: 'Team rank per session across the weekend',
+                      year: selectedYear,
+                      event: selectedEventName,
+                    })
+                  }
+                  isExporting={isExportingEvolution}
+                />
               </h3>
               <div className="h-[430px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -479,10 +510,25 @@ const TeamPaceAnalysis = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* 2. Pace Gap Analysis */}
-              <div className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]">
+              <div
+                ref={paceGapRef}
+                className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <h3 className="text-xl font-black uppercase italic text-white flex items-center gap-2">
                     Pace <span className="text-red-600">Gap</span>
+                    <ChartExportMenu
+                      onExport={(format) =>
+                        exportPaceGap(format, {
+                          title: 'Pace Gap',
+                          subtitle: `Gap to leader — ${selectedSession}`,
+                          year: selectedYear,
+                          event: selectedEventName,
+                          session: selectedSession,
+                        })
+                      }
+                      isExporting={isExportingPaceGap}
+                    />
                   </h3>
 
                   {/* Session Selector */}
@@ -598,9 +644,24 @@ const TeamPaceAnalysis = () => {
               </div>
 
               {/* 3. Scatter Plot */}
-              <div className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]">
+              <div
+                ref={scatterRef}
+                className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]"
+              >
                 <h3 className="text-xl font-black uppercase italic text-white mb-6 flex items-center gap-2">
                   Peak <span className="text-gray-600">vs</span> Consistent
+                  <ChartExportMenu
+                    onExport={(format) =>
+                      exportScatter(format, {
+                        title: 'Peak vs Consistent',
+                        subtitle: 'Fastest lap vs median pace',
+                        year: selectedYear,
+                        event: selectedEventName,
+                      })
+                    }
+                    isExporting={isExportingScatter}
+                    className="ml-auto"
+                  />
                 </h3>
                 <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
