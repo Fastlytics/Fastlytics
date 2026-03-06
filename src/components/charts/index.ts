@@ -1,5 +1,5 @@
 export { BrakeChart } from './BrakeChart';
-export { ChartExportButton } from './ChartExportButton';
+export { ChartExportMenu } from './ChartExportMenu';
 export { CircuitComparisonChart } from './CircuitComparisonChart';
 export { DRSChart } from './DRSChart';
 export { GapToLeaderChart } from './GapToLeaderChart';

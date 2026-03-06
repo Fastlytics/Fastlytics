@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface CircuitComparisonChartProps {
   className?: string;
@@ -471,18 +471,18 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
           <h3 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
             {title || 'Track Dominance'}
           </h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: title || 'Track Dominance',
-              subtitle: 'Sector-by-sector comparison between drivers',
-              year,
-              event,
-              session,
-              drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: title || 'Track Dominance',
+                subtitle: 'Sector-by-sector comparison between drivers',
+                year,
+                event,
+                session,
+                drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
         </div>
 

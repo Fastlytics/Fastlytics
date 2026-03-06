@@ -29,7 +29,7 @@ import { PlusSignCircleIcon, CancelCircleIcon } from 'hugeicons-react';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface PaceChartDataPoint extends PaceDistributionData {
   iqr: [number, number];
@@ -213,18 +213,18 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
           <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
             Race Pace Distribution
           </h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Race Pace Distribution',
-              subtitle: 'Lap time distribution comparison across drivers',
-              year,
-              event,
-              session,
-              drivers: selectedDrivers,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Race Pace Distribution',
+                subtitle: 'Lap time distribution comparison across drivers',
+                year,
+                event,
+                session,
+                drivers: selectedDrivers,
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
         </div>
 

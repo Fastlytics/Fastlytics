@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 const formatGap = (gap: number | null): string => {
   if (gap === null || isNaN(gap)) {
@@ -461,18 +461,18 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-black uppercase text-white tracking-wider">Gap to Leader</h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Gap to Leader',
-              subtitle: 'Cumulative gap to race leader over laps',
-              year,
-              event,
-              session,
-              drivers: driversToDisplay,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Gap to Leader',
+                subtitle: 'Cumulative gap to race leader over laps',
+                year,
+                event,
+                session,
+                drivers: driversToDisplay,
+              })
+            }
             isExporting={isExporting}
-            variant="compact"
           />
         </div>
         {!staticData && availableDrivers && (

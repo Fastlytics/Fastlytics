@@ -17,7 +17,7 @@ import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon, ThermometerIcon } from 'hugeicons-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 // Helper function to format seconds into MM:SS.mmm (can be shared if needed)
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -264,15 +264,16 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
           <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
             <ThermometerIcon className="w-5 h-5 text-orange-400" /> Track Evolution & Temperature
           </CardTitle>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title: 'Track Evolution & Temperature',
-              subtitle: 'Track and air temperature evolution over the session',
-              year,
-              event,
-              session,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Track Evolution & Temperature',
+                subtitle: 'Track and air temperature evolution over the session',
+                year,
+                event,
+                session,
+              })
+            }
             isExporting={isExporting}
           />
         </div>

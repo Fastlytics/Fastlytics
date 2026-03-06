@@ -17,7 +17,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
-import ChartExportButton from '@/components/charts/ChartExportButton';
+import ChartExportMenu from '@/components/charts/ChartExportMenu';
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -190,19 +190,19 @@ const TelemetryChartWrapper = <T,>({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-black uppercase tracking-wider text-white">{title}</h3>
-          <ChartExportButton
-            onClick={exportChart}
-            meta={{
-              title,
-              subtitle: selectedDriver
-                ? `${selectedDriver} — ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
-                : undefined,
-              year,
-              event,
-              session,
-              drivers: selectedDriver ? [selectedDriver] : undefined,
-              extra: selectedLap !== 'fastest' ? { Lap: String(selectedLap) } : undefined,
-            }}
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title,
+                subtitle: selectedDriver
+                  ? `${selectedDriver} — ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
+                  : undefined,
+                year,
+                event,
+                session,
+                drivers: selectedDriver ? [selectedDriver] : undefined,
+              })
+            }
             isExporting={isExporting}
           />
         </div>
