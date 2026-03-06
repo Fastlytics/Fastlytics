@@ -29,19 +29,15 @@ const MobileAuth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
   const navigate = useNavigate();
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { trackEvent } = useAnalytics();
 
-  // Redirect logged-in users: onboarding if incomplete, otherwise dashboard
+  // Redirect to dashboard if already logged in
   useEffect(() => {
     if (!loading && user) {
-      if (profile && !profile.onboarding_completed) {
-        navigate('/onboarding', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);
