@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LockKeyIcon } from 'hugeicons-react';
 
@@ -23,6 +24,10 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   children,
   className = '',
 }) => {
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
+  const authHref = `/auth?returnTo=${encodeURIComponent(returnTo)}`;
+
   return (
     <div
       className={`relative flex items-center justify-center bg-black border border-white/10 py-8 md:py-12 ${className}`}
@@ -77,7 +82,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
             size="lg"
             className="bg-red-600 hover:bg-red-700 text-white font-black uppercase italic tracking-widest h-12 md:h-14 px-6 md:px-8 text-sm md:text-base border-2 border-transparent hover:border-white transition-all transform hover:-translate-y-1 hover:shadow-lg rounded-none skew-x-[-10deg]"
           >
-            <a href="/auth" className="skew-x-[10deg]">
+            <a href={authHref} className="skew-x-[10deg]">
               Sign In to Unlock
             </a>
           </Button>

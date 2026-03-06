@@ -453,7 +453,7 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
                 }}
                 className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors border border-transparent hover:border-white"
               >
-                Results
+                OPEN
               </button>
             ) : (
               <div className="space-y-0.5">
@@ -1358,8 +1358,9 @@ const MobileRace: React.FC = () => {
     );
   }
 
-  // Schedule View (No Results Yet)
-  if (availableSessions.length === 0 && sessionSchedule) {
+  // Schedule View (No Race Results Yet)
+  const hasRaceData = availableSessions.some((s) => s.type === 'R');
+  if (!hasRaceData && sessionSchedule) {
     const upcomingSession = sessionSchedule.sessions.find((s) => new Date(s.date) > now);
     const nextSession =
       upcomingSession || sessionSchedule.sessions[sessionSchedule.sessions.length - 1];
@@ -1397,7 +1398,33 @@ const MobileRace: React.FC = () => {
               const isNext = nextSession === session && sessionDate > now;
               const isLive =
                 sessionDate <= now && new Date(sessionDate.getTime() + 2 * 60 * 60 * 1000) > now; // Approx 2h duration
-              const isAvailable = false; // No results in this view
+
+              // Map session name to type for available check
+              let sessionType = '';
+              const lowerName = session.name.toLowerCase();
+              if (lowerName.includes('practice 1')) sessionType = 'FP1';
+              else if (lowerName.includes('practice 2')) sessionType = 'FP2';
+              else if (lowerName.includes('practice 3')) sessionType = 'FP3';
+              else if (
+                lowerName.includes('sprint qualifying') ||
+                lowerName.includes('sprint shootout')
+              )
+                sessionType = 'SQ';
+              else if (lowerName.includes('sprint') && !lowerName.includes('qualifying'))
+                sessionType = 'Sprint';
+              else if (lowerName.includes('qualifying') && !lowerName.includes('sprint'))
+                sessionType = 'Q';
+              else if (lowerName === 'race') sessionType = 'R';
+
+              const isAvailable = availableSessions.some((s) => {
+                if (sessionType === 'Q')
+                  return s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3';
+                if (sessionType === 'SQ')
+                  return (
+                    s.type === 'SQ' || s.type === 'SQ1' || s.type === 'SQ2' || s.type === 'SQ3'
+                  );
+                return s.type === sessionType;
+              });
 
               return (
                 <ScheduleSessionCard
@@ -1407,8 +1434,23 @@ const MobileRace: React.FC = () => {
                   isLive={isLive}
                   isAvailable={isAvailable}
                   is24Hour={is24Hour}
-                  onViewResults={(sessionName) => {
-                    trackInteraction('view_results_clicked', { session: sessionName });
+                  onViewResults={() => {
+                    let targetSession = sessionType;
+                    if (sessionType === 'Q' && !availableSessions.some((s) => s.type === 'Q')) {
+                      if (availableSessions.some((s) => s.type === 'Q3')) targetSession = 'Q3';
+                      else if (availableSessions.some((s) => s.type === 'Q2')) targetSession = 'Q2';
+                      else if (availableSessions.some((s) => s.type === 'Q1')) targetSession = 'Q1';
+                    }
+                    if (sessionType === 'SQ' && !availableSessions.some((s) => s.type === 'SQ')) {
+                      if (availableSessions.some((s) => s.type === 'SQ3')) targetSession = 'SQ3';
+                      else if (availableSessions.some((s) => s.type === 'SQ2'))
+                        targetSession = 'SQ2';
+                      else if (availableSessions.some((s) => s.type === 'SQ1'))
+                        targetSession = 'SQ1';
+                    }
+                    setSelectedSession(targetSession);
+                    setShowAnalysisView(true);
+                    trackInteraction('view_results_clicked', { session: targetSession });
                   }}
                 />
               );

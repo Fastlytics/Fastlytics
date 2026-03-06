@@ -977,7 +977,8 @@ const Race = () => {
   }
 
   const hasProcessedSessions = availableSessions.length > 0;
-  const shouldShowSchedule = !hasProcessedSessions && !showAnalysis;
+  const hasRaceData = availableSessions.some((s) => s.type === 'R');
+  const shouldShowSchedule = !hasRaceData && !showAnalysis;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
@@ -1003,7 +1004,7 @@ const Race = () => {
               variant="ghost"
               className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
               onClick={() => {
-                if (showAnalysis && !hasProcessedSessions) {
+                if (showAnalysis && !hasRaceData) {
                   setShowAnalysis(false);
                 } else {
                   navigate(-1);
@@ -1011,7 +1012,7 @@ const Race = () => {
               }}
             >
               <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
-              {showAnalysis && !hasProcessedSessions ? 'Back to Schedule' : 'Back'}
+              {showAnalysis && !hasRaceData ? 'Back to Schedule' : 'Back'}
             </Button>
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
               {eventName}
