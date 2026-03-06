@@ -977,7 +977,9 @@ const Race = () => {
   }
 
   const hasProcessedSessions = availableSessions.length > 0;
-  const hasRaceData = availableSessions.some((s) => s.type === 'R');
+  const hasRaceData = isTestingEvent
+    ? availableSessions.length > 0
+    : availableSessions.some((s) => s.type === 'R');
   const shouldShowSchedule = !hasRaceData && !showAnalysis;
 
   return (
