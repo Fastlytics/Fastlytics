@@ -829,6 +829,16 @@ export const fetchTeamPaceEvent = async (
   return request<TeamPaceEvent>(`/api/team-pace/event?${params.toString()}`);
 };
 
+/** Fetches team pace analysis for a specific session (cache-first on backend). */
+export const fetchTeamPaceSession = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<TeamPaceResponse> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<TeamPaceResponse>(`/api/team-pace/session?${params.toString()}`);
+};
+
 /** Fetches lap-by-lap position data for a race session. */
 export const fetchLapPositions = async (
   year: number,

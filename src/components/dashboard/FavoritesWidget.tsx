@@ -6,7 +6,7 @@ import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
-import { getDriverImage, getCarImage } from '@/utils/imageMapping';
+import { getDriverImage } from '@/utils/imageMapping';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -299,11 +299,11 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
             >
               <div className="flex items-center gap-4">
                 <div className="h-12 w-16 flex items-center justify-center bg-white/5 rounded p-2 border border-gray-700">
-                  {getCarImage(favoriteTeam.team, selectedYear) ? (
+                  {getTeamLogo(favoriteTeam.team) ? (
                     <img
-                      src={getCarImage(favoriteTeam.team, selectedYear)!}
+                      src={getTeamLogo(favoriteTeam.team)!}
                       alt={favoriteTeam.team}
-                      className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] [mix-blend-mode:lighten]"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <UserGroupIcon className="w-6 h-6 text-gray-400" />
