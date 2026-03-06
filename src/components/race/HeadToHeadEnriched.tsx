@@ -253,80 +253,66 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                   {drv}
                 </span>
               </div>
-              <div className="flex h-14 overflow-hidden border border-gray-700">
+              <div className="flex flex-col gap-1 border border-gray-800 bg-gray-900/40 p-1 rounded-sm">
                 {stints.map((stint) => (
                   <div
                     key={stint.stintNum}
-                    className="relative flex items-center justify-center group cursor-pointer transition-all hover:brightness-150 active:scale-[0.98]"
-                    style={{
-                      width: `${totalLaps > 0 ? (stint.lapCount / totalLaps) * 100 : 0}%`,
-                      backgroundColor: (COMPOUND_COLORS[stint.compound] || '#666') + '20',
-                      borderRight: '1px solid #444',
-                    }}
+                    className="flex justify-between items-center bg-black px-3 py-2 border border-gray-800 transition-colors hover:bg-gray-800/50 group"
                   >
-                    <div
-                      className="absolute bottom-0 left-0 right-0 h-1.5"
-                      style={{ backgroundColor: COMPOUND_COLORS[stint.compound] || '#666' }}
-                    />
-                    <div className="flex flex-col items-center z-10">
-                      <span
-                        className="text-sm font-black"
-                        style={{ color: COMPOUND_COLORS[stint.compound] || '#FFF' }}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-6 flex items-center justify-center rounded-[3px] shadow-sm"
+                        style={{ backgroundColor: COMPOUND_COLORS[stint.compound] || '#666' }}
                       >
-                        {stint.compound[0]}
-                      </span>
-                      <span className="text-xs text-white font-mono font-bold">
-                        L{stint.startLap}–{stint.endLap}
-                      </span>
+                        <span className="text-black font-black text-xs uppercase tracking-wider">
+                          {stint.compound[0]}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                        <span className="text-sm text-white font-mono font-black">
+                          L{stint.startLap}–{stint.endLap}
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-gray-400 font-mono font-bold">
+                          ({stint.lapCount} LAPS)
+                        </span>
+                      </div>
                     </div>
-                    {/* Hover tooltip */}
-                    <div className="absolute bottom-full mb-1 hidden group-hover:flex flex-col bg-black border border-gray-600 p-3 shadow-xl z-50 whitespace-nowrap min-w-[200px]">
-                      <span
-                        className="text-sm font-black mb-1"
-                        style={{ color: COMPOUND_COLORS[stint.compound] || '#FFF' }}
-                      >
-                        {stint.compound}
-                      </span>
-                      <span className="text-sm font-mono text-white font-bold">
-                        Laps {stint.startLap}–{stint.endLap} ({stint.lapCount} laps)
-                      </span>
-                      {stint.avgTime != null && (
-                        <span className="text-sm font-mono text-white mt-1 font-black">
-                          Avg Pace: {formatLapTime(stint.avgTime)}
+
+                    <div className="flex items-center gap-4 text-right">
+                      <div className="hidden sm:flex flex-col items-end">
+                        {stint.avgTime != null && (
+                          <span className="text-xs font-mono text-gray-300">
+                            Avg:{' '}
+                            <span className="text-white font-black">
+                              {formatLapTime(stint.avgTime)}
+                            </span>
+                          </span>
+                        )}
+                        {stint.bestTime != null && (
+                          <span className="text-[10px] font-mono text-gray-500">
+                            Best:{' '}
+                            <span className="text-gray-300 font-bold">
+                              {formatLapTime(stint.bestTime)}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end min-w-[70px]">
+                        <span
+                          className={`text-[10px] font-mono uppercase font-black ${
+                            stint.freshTyre ? 'text-green-400' : 'text-yellow-400'
+                          }`}
+                        >
+                          {stint.freshTyre ? '● NEW' : '● USED'}
                         </span>
-                      )}
-                      {stint.bestTime != null && (
-                        <span className="text-sm font-mono text-white font-black">
-                          Best Lap: {formatLapTime(stint.bestTime)}
-                        </span>
-                      )}
-                      {stint.tyreLifeEnd != null && (
-                        <span className="text-sm font-mono text-gray-300 mt-1 font-bold">
-                          Tyre Life: {stint.tyreLifeEnd} laps
-                        </span>
-                      )}
-                      <span
-                        className={`text-sm font-mono mt-0.5 font-black ${stint.freshTyre ? 'text-green-400' : 'text-yellow-400'}`}
-                      >
-                        {stint.freshTyre ? '● New Tyre' : '● Used Tyre'}
-                      </span>
+                        {stint.tyreLifeEnd != null && (
+                          <span className="text-[10px] font-mono text-gray-500 font-bold mt-0.5">
+                            Life: {stint.tyreLifeEnd}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              {/* Stint avg inline */}
-              <div className="flex">
-                {stints.map((stint) => (
-                  <div
-                    key={stint.stintNum}
-                    className="text-center"
-                    style={{ width: `${totalLaps > 0 ? (stint.lapCount / totalLaps) * 100 : 0}%` }}
-                  >
-                    {stint.avgTime != null && (
-                      <span className="text-xs font-mono text-white font-black">
-                        avg {formatLapTime(stint.avgTime)}
-                      </span>
-                    )}
                   </div>
                 ))}
               </div>
