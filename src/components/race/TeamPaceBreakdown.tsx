@@ -1,10 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useQueries, useQuery } from '@tanstack/react-query';
-import { fetchLapTimes, fetchSessionDrivers, EnrichedLapRecord } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import {
+  fetchTeamPaceSession,
+  CompoundPace,
+  DriverPace,
+  SectorPace,
+  TeamPaceSession,
+} from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { driverColor } from '@/lib/driverColor';
-import { groupDriversByTeam } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
 interface TeamPaceBreakdownProps {
@@ -53,251 +58,69 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [selectedCompound, setSelectedCompound] = useState<string | null>(null);
 
-  // Fetch all session drivers
-  const { data: sessionDrivers } = useQuery({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
+  // Single query — backend handles all computation and caching
+  const {
+    data: paceData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ['teamPaceSession', year, event, session],
+    queryFn: () => fetchTeamPaceSession(year, event, session),
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
-
-  const allDriverCodes = useMemo(() => (sessionDrivers || []).map((d) => d.code), [sessionDrivers]);
-
-  // Group drivers by team
-  const teamGroups = useMemo(
-    () => groupDriversByTeam(allDriverCodes, year),
-    [allDriverCodes, year]
-  );
-
-  // Batch by team: each team's drivers fetched as one query (2 drivers each, leverages existing cache)
-  const teamEntries = useMemo(
-    () => Object.entries(teamGroups).filter(([, d]) => d.length > 0),
-    [teamGroups]
-  );
-
-  const teamQueries = useQueries({
-    queries: teamEntries.map(([team, drivers]) => ({
-      queryKey: ['teamPaceLaps', year, event, session, drivers.sort().join(',')],
-      queryFn: () => fetchLapTimes(year, event, session, drivers),
-      enabled: drivers.length > 0,
-      staleTime: 5 * 60 * 1000,
-    })),
-  });
-
-  const isLoading = teamQueries.some((q) => q.isLoading);
-  const isError = teamQueries.every((q) => q.isError);
-
-  // Merge all per-team results into a single driverLapDetails map
-  const driverLapDetails = useMemo(() => {
-    const merged: Record<string, EnrichedLapRecord[]> = {};
-    teamQueries.forEach((q) => {
-      if (q.data?.driverLapDetails) {
-        Object.entries(q.data.driverLapDetails).forEach(([drv, records]) => {
-          merged[drv] = records;
-        });
-      }
-    });
-    return Object.keys(merged).length > 0 ? merged : null;
-  }, [teamQueries]);
-
-  // Helper: filter valid race laps (non-deleted, has lapTime, skip lap 1 outliers)
-  const validLaps = (records: EnrichedLapRecord[]) =>
-    records.filter(
-      (l) => l.lapTime != null && !l.deleted && l.lapNumber != null && l.lapNumber > 1
-    );
-
-  // IQR-based outlier filter
-  const removeOutliers = (times: number[]): number[] => {
-    if (times.length < 4) return times;
-    const sorted = [...times].sort((a, b) => a - b);
-    const q1 = sorted[Math.floor(sorted.length * 0.25)];
-    const q3 = sorted[Math.floor(sorted.length * 0.75)];
-    const iqr = q3 - q1;
-    const lower = q1 - 1.5 * iqr;
-    const upper = q3 + 1.5 * iqr;
-    return times.filter((t) => t >= lower && t <= upper);
-  };
 
   // ──────────────────────────────────────────
-  // COMPOUND PACE DATA
+  // COMPOUND PACE DATA (from backend)
   // ──────────────────────────────────────────
   const compoundData = useMemo(() => {
-    if (!driverLapDetails)
-      return {
-        compounds: [] as string[],
-        teamData: [] as {
-          team: string;
-          compound: string;
-          avgPace: number;
-          lapCount: number;
-          color: string;
-        }[],
-      };
-    const compounds = new Set<string>();
-    const rows: {
-      team: string;
-      compound: string;
-      avgPace: number;
-      lapCount: number;
-      color: string;
-    }[] = [];
-
-    Object.entries(teamGroups).forEach(([team, drivers]) => {
-      // Gather all valid laps for this team
-      const teamLaps = drivers.flatMap((drv) => validLaps(driverLapDetails[drv] || []));
-      // Group by compound
-      const byCompound = new Map<string, number[]>();
-      teamLaps.forEach((l) => {
-        if (l.compound && l.lapTime != null) {
-          if (!byCompound.has(l.compound)) byCompound.set(l.compound, []);
-          byCompound.get(l.compound)!.push(l.lapTime!);
-        }
-      });
-      byCompound.forEach((times, comp) => {
-        compounds.add(comp);
-        const cleaned = removeOutliers(times);
-        if (cleaned.length > 0) {
-          const avg = cleaned.reduce((a, b) => a + b, 0) / cleaned.length;
-          rows.push({
-            team,
-            compound: comp,
-            avgPace: avg,
-            lapCount: cleaned.length,
-            color: getTeamColor(team),
-          });
-        }
-      });
+    if (!paceData?.compoundPace)
+      return { compounds: [] as string[], teamData: [] as (CompoundPace & { color: string })[] };
+    const compounds = [...new Set(paceData.compoundPace.map((d) => d.compound))].sort((a, b) => {
+      const order = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'];
+      return order.indexOf(a) - order.indexOf(b);
     });
-
-    return {
-      compounds: Array.from(compounds).sort((a, b) => {
-        const order = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'];
-        return order.indexOf(a) - order.indexOf(b);
-      }),
-      teamData: rows,
-    };
-  }, [driverLapDetails, teamGroups]);
+    const teamData = paceData.compoundPace.map((d) => ({
+      ...d,
+      color: d.teamColor ? getTeamColor(d.teamName) : getTeamColor(d.teamName),
+    }));
+    return { compounds, teamData };
+  }, [paceData]);
 
   // ──────────────────────────────────────────
-  // SECTOR DOMINANCE DATA
+  // SECTOR DOMINANCE DATA (from backend)
   // ──────────────────────────────────────────
   const sectorData = useMemo(() => {
-    if (!driverLapDetails)
-      return [] as { team: string; s1: number; s2: number; s3: number; color: string }[];
-    const rows: { team: string; s1: number; s2: number; s3: number; color: string }[] = [];
-
-    Object.entries(teamGroups).forEach(([team, drivers]) => {
-      const teamLaps = drivers.flatMap((drv) => validLaps(driverLapDetails[drv] || []));
-      const s1Times = removeOutliers(
-        teamLaps.filter((l) => l.sector1 != null).map((l) => l.sector1!)
-      );
-      const s2Times = removeOutliers(
-        teamLaps.filter((l) => l.sector2 != null).map((l) => l.sector2!)
-      );
-      const s3Times = removeOutliers(
-        teamLaps.filter((l) => l.sector3 != null).map((l) => l.sector3!)
-      );
-
-      if (s1Times.length > 0 && s2Times.length > 0 && s3Times.length > 0) {
-        rows.push({
-          team,
-          s1: s1Times.reduce((a, b) => a + b, 0) / s1Times.length,
-          s2: s2Times.reduce((a, b) => a + b, 0) / s2Times.length,
-          s3: s3Times.reduce((a, b) => a + b, 0) / s3Times.length,
-          color: getTeamColor(team),
-        });
-      }
+    if (!paceData?.sectorPace) return [] as SectorPace[];
+    return [...paceData.sectorPace].sort((a, b) => {
+      const totalA = (a.sector1Median ?? 999) + (a.sector2Median ?? 999) + (a.sector3Median ?? 999);
+      const totalB = (b.sector1Median ?? 999) + (b.sector2Median ?? 999) + (b.sector3Median ?? 999);
+      return totalA - totalB;
     });
-
-    return rows.sort((a, b) => a.s1 + a.s2 + a.s3 - (b.s1 + b.s2 + b.s3));
-  }, [driverLapDetails, teamGroups]);
+  }, [paceData]);
 
   // ──────────────────────────────────────────
-  // DRIVER BREAKDOWN DATA
+  // DRIVER BREAKDOWN DATA (from backend)
   // ──────────────────────────────────────────
-  const driverBreakdown = useMemo(() => {
-    if (!driverLapDetails)
-      return {} as Record<
-        string,
-        {
-          driver: string;
-          avgPace: number;
-          bestLap: number;
-          laps: number;
-          compounds: Record<string, { avg: number; count: number }>;
-          sectors: { s1: number; s2: number; s3: number };
-        }[]
-      >;
-    const result: Record<
-      string,
-      {
-        driver: string;
-        avgPace: number;
-        bestLap: number;
-        laps: number;
-        compounds: Record<string, { avg: number; count: number }>;
-        sectors: { s1: number; s2: number; s3: number };
-      }[]
-    > = {};
-
-    Object.entries(teamGroups).forEach(([team, drivers]) => {
-      result[team] = drivers
-        .map((drv) => {
-          const laps = validLaps(driverLapDetails[drv] || []);
-          const times = removeOutliers(
-            laps.filter((l) => l.lapTime != null).map((l) => l.lapTime!)
-          );
-          const s1 = removeOutliers(laps.filter((l) => l.sector1 != null).map((l) => l.sector1!));
-          const s2 = removeOutliers(laps.filter((l) => l.sector2 != null).map((l) => l.sector2!));
-          const s3 = removeOutliers(laps.filter((l) => l.sector3 != null).map((l) => l.sector3!));
-
-          // Per-compound
-          const byComp: Record<string, { avg: number; count: number }> = {};
-          const compMap = new Map<string, number[]>();
-          laps.forEach((l) => {
-            if (l.compound && l.lapTime != null) {
-              if (!compMap.has(l.compound)) compMap.set(l.compound, []);
-              compMap.get(l.compound)!.push(l.lapTime!);
-            }
-          });
-          compMap.forEach((t, c) => {
-            const cl = removeOutliers(t);
-            if (cl.length > 0)
-              byComp[c] = { avg: cl.reduce((a, b) => a + b, 0) / cl.length, count: cl.length };
-          });
-
-          return {
-            driver: drv,
-            avgPace: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
-            bestLap: times.length > 0 ? Math.min(...times) : 0,
-            laps: times.length,
-            compounds: byComp,
-            sectors: {
-              s1: s1.length > 0 ? s1.reduce((a, b) => a + b, 0) / s1.length : 0,
-              s2: s2.length > 0 ? s2.reduce((a, b) => a + b, 0) / s2.length : 0,
-              s3: s3.length > 0 ? s3.reduce((a, b) => a + b, 0) / s3.length : 0,
-            },
-          };
-        })
-        .sort((a, b) => a.avgPace - b.avgPace);
+  const driversByTeam = useMemo(() => {
+    if (!paceData?.driverPace) return {} as Record<string, DriverPace[]>;
+    const grouped: Record<string, DriverPace[]> = {};
+    paceData.driverPace.forEach((d) => {
+      if (!grouped[d.teamName]) grouped[d.teamName] = [];
+      grouped[d.teamName].push(d);
     });
+    // Sort drivers within each team by median time
+    Object.values(grouped).forEach((drivers) =>
+      drivers.sort((a, b) => a.medianTime - b.medianTime)
+    );
+    return grouped;
+  }, [paceData]);
 
-    return result;
-  }, [driverLapDetails, teamGroups]);
-
-  // Overall team ranking by avg pace
+  // Overall team ranking
   const teamRanking = useMemo(() => {
-    if (!driverLapDetails) return [] as { team: string; avgPace: number; color: string }[];
-    return Object.entries(teamGroups)
-      .map(([team, drivers]) => {
-        const teamLaps = drivers.flatMap((drv) => validLaps(driverLapDetails[drv] || []));
-        const times = removeOutliers(
-          teamLaps.filter((l) => l.lapTime != null).map((l) => l.lapTime!)
-        );
-        const avg = times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : Infinity;
-        return { team, avgPace: avg, color: getTeamColor(team) };
-      })
-      .filter((t) => t.avgPace < Infinity)
-      .sort((a, b) => a.avgPace - b.avgPace);
-  }, [driverLapDetails, teamGroups]);
+    if (!paceData?.teamPace) return [] as TeamPaceSession[];
+    return [...paceData.teamPace].sort((a, b) => a.medianTime - b.medianTime);
+  }, [paceData]);
 
   if (isLoading) {
     return (
@@ -306,18 +129,21 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
       </div>
     );
   }
-  if (isError || !driverLapDetails) return null;
+  if (isError || !paceData) return null;
 
   // Determine active compound or default to first
   const activeCompound = selectedCompound || compoundData.compounds[0] || 'MEDIUM';
   const compoundBars = compoundData.teamData
     .filter((d) => d.compound === activeCompound)
-    .sort((a, b) => a.avgPace - b.avgPace);
+    .sort((a, b) => a.medianTime - b.medianTime);
 
   // Sector best values (for heatmap coloring)
-  const bestS1 = sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.s1)) : 0;
-  const bestS2 = sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.s2)) : 0;
-  const bestS3 = sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.s3)) : 0;
+  const bestS1 =
+    sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.sector1Median ?? 999)) : 0;
+  const bestS2 =
+    sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.sector2Median ?? 999)) : 0;
+  const bestS3 =
+    sectorData.length > 0 ? Math.min(...sectorData.map((d) => d.sector3Median ?? 999)) : 0;
 
   const sectorHeatColor = (val: number, best: number): string => {
     const delta = val - best;
@@ -328,7 +154,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
     return '#ef4444'; // red - slowest
   };
 
-  const refPace = compoundBars.length > 0 ? compoundBars[0].avgPace : 0;
+  const refPace = compoundBars.length > 0 ? compoundBars[0].medianTime : 0;
 
   return (
     <div className="space-y-0">
@@ -384,15 +210,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
             ))}
           </div>
 
-          {/* Bar Chart: Team avg pace on selected compound */}
+          {/* Bar Chart: Team median pace on selected compound */}
           {compoundBars.length > 0 ? (
             <div className="px-4 py-3">
               <ResponsiveContainer width="100%" height={Math.max(200, compoundBars.length * 48)}>
                 <BarChart
                   data={compoundBars.map((d) => ({
                     ...d,
-                    gap: d.avgPace - refPace,
-                    displayTime: formatLapTime(d.avgPace),
+                    gap: d.medianTime - refPace,
+                    displayTime: formatLapTime(d.medianTime),
+                    team: d.teamName,
+                    color: getTeamColor(d.teamName),
                   }))}
                   layout="vertical"
                   margin={{ top: 0, right: 80, left: 10, bottom: 0 }}
@@ -431,7 +259,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                             {d.team}
                           </div>
                           <div className="text-sm font-mono text-white font-bold">
-                            Avg: {formatLapTime(d.avgPace)}
+                            Median: {formatLapTime(d.medianTime)}
                           </div>
                           <div className="text-sm font-mono text-gray-300">
                             Gap: {d.gap === 0 ? 'LEADER' : `+${d.gap.toFixed(3)}s`}
@@ -455,12 +283,16 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                       fontFamily: 'Geist Mono',
                       formatter: (_: number, __: unknown, index: number) => {
                         const item = compoundBars[index as number];
-                        return item ? formatLapTime(item.avgPace) : '';
+                        return item ? formatLapTime(item.medianTime) : '';
                       },
                     }}
                   >
                     {compoundBars.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.color} fillOpacity={idx === 0 ? 1 : 0.7} />
+                      <Cell
+                        key={idx}
+                        fill={getTeamColor(entry.teamName)}
+                        fillOpacity={idx === 0 ? 1 : 0.7}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -501,22 +333,31 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                 </thead>
                 <tbody>
                   {sectorData.map((row, idx) => {
-                    const total = row.s1 + row.s2 + row.s3;
-                    const bestTotal = sectorData[0].s1 + sectorData[0].s2 + sectorData[0].s3;
+                    const s1 = row.sector1Median ?? 0;
+                    const s2 = row.sector2Median ?? 0;
+                    const s3 = row.sector3Median ?? 0;
+                    const total = s1 + s2 + s3;
+                    const bestTotal =
+                      (sectorData[0].sector1Median ?? 0) +
+                      (sectorData[0].sector2Median ?? 0) +
+                      (sectorData[0].sector3Median ?? 0);
                     const totalDelta = total - bestTotal;
+                    const teamColor = row.teamColor
+                      ? getTeamColor(row.teamName)
+                      : getTeamColor(row.teamName);
                     return (
                       <tr
-                        key={row.team}
+                        key={row.teamName}
                         className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: row.color }}
+                              style={{ backgroundColor: teamColor }}
                             />
                             <span className="text-sm font-black font-mono text-white">
-                              {row.team}
+                              {row.teamName}
                             </span>
                           </div>
                         </td>
@@ -524,19 +365,21 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                           <div className="inline-flex flex-col items-center">
                             <span
                               className="text-sm font-black font-mono"
-                              style={{ color: sectorHeatColor(row.s1, bestS1) }}
+                              style={{ color: sectorHeatColor(s1, bestS1) }}
                             >
-                              {row.s1.toFixed(3)}
+                              {s1.toFixed(3)}
                             </span>
-                            {row.s1 - bestS1 > 0.001 && (
+                            {s1 - bestS1 > 0.001 && (
                               <span className="text-xs font-mono text-gray-500">
-                                +{(row.s1 - bestS1).toFixed(3)}
+                                +{(s1 - bestS1).toFixed(3)}
                               </span>
                             )}
-                            {row.s1 - bestS1 < 0.001 &&
+                            {s1 - bestS1 < 0.001 &&
                               idx ===
                                 sectorData.findIndex(
-                                  (r) => r.s1 === Math.min(...sectorData.map((s) => s.s1))
+                                  (r) =>
+                                    (r.sector1Median ?? 999) ===
+                                    Math.min(...sectorData.map((s) => s.sector1Median ?? 999))
                                 ) && (
                                 <span className="text-[10px] font-black text-green-400">BEST</span>
                               )}
@@ -546,19 +389,21 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                           <div className="inline-flex flex-col items-center">
                             <span
                               className="text-sm font-black font-mono"
-                              style={{ color: sectorHeatColor(row.s2, bestS2) }}
+                              style={{ color: sectorHeatColor(s2, bestS2) }}
                             >
-                              {row.s2.toFixed(3)}
+                              {s2.toFixed(3)}
                             </span>
-                            {row.s2 - bestS2 > 0.001 && (
+                            {s2 - bestS2 > 0.001 && (
                               <span className="text-xs font-mono text-gray-500">
-                                +{(row.s2 - bestS2).toFixed(3)}
+                                +{(s2 - bestS2).toFixed(3)}
                               </span>
                             )}
-                            {row.s2 - bestS2 < 0.001 &&
+                            {s2 - bestS2 < 0.001 &&
                               idx ===
                                 sectorData.findIndex(
-                                  (r) => r.s2 === Math.min(...sectorData.map((s) => s.s2))
+                                  (r) =>
+                                    (r.sector2Median ?? 999) ===
+                                    Math.min(...sectorData.map((s) => s.sector2Median ?? 999))
                                 ) && (
                                 <span className="text-[10px] font-black text-green-400">BEST</span>
                               )}
@@ -568,19 +413,21 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                           <div className="inline-flex flex-col items-center">
                             <span
                               className="text-sm font-black font-mono"
-                              style={{ color: sectorHeatColor(row.s3, bestS3) }}
+                              style={{ color: sectorHeatColor(s3, bestS3) }}
                             >
-                              {row.s3.toFixed(3)}
+                              {s3.toFixed(3)}
                             </span>
-                            {row.s3 - bestS3 > 0.001 && (
+                            {s3 - bestS3 > 0.001 && (
                               <span className="text-xs font-mono text-gray-500">
-                                +{(row.s3 - bestS3).toFixed(3)}
+                                +{(s3 - bestS3).toFixed(3)}
                               </span>
                             )}
-                            {row.s3 - bestS3 < 0.001 &&
+                            {s3 - bestS3 < 0.001 &&
                               idx ===
                                 sectorData.findIndex(
-                                  (r) => r.s3 === Math.min(...sectorData.map((s) => s.s3))
+                                  (r) =>
+                                    (r.sector3Median ?? 999) ===
+                                    Math.min(...sectorData.map((s) => s.sector3Median ?? 999))
                                 ) && (
                                 <span className="text-[10px] font-black text-green-400">BEST</span>
                               )}
@@ -616,31 +463,35 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
       {viewMode === 'drivers' && (
         <div className="bg-black border-x border-b border-gray-700">
           {teamRanking.map((teamEntry, teamIdx) => {
-            const drivers = driverBreakdown[teamEntry.team] || [];
-            const isExpanded = expandedTeam === teamEntry.team;
-            const teamBestPace = drivers.length > 0 ? drivers[0].avgPace : 0;
+            const drivers = driversByTeam[teamEntry.teamName] || [];
+            const isExpanded = expandedTeam === teamEntry.teamName;
+            const teamBestPace = drivers.length > 0 ? drivers[0].medianTime : 0;
+            const teamColor = getTeamColor(teamEntry.teamName);
 
             return (
-              <div key={teamEntry.team} className={teamIdx > 0 ? 'border-t border-gray-700' : ''}>
+              <div
+                key={teamEntry.teamName}
+                className={teamIdx > 0 ? 'border-t border-gray-700' : ''}
+              >
                 {/* Team Row — clickable */}
                 <button
-                  onClick={() => setExpandedTeam(isExpanded ? null : teamEntry.team)}
+                  onClick={() => setExpandedTeam(isExpanded ? null : teamEntry.teamName)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800/40 transition-colors text-left"
                 >
                   <span className="text-sm font-black text-gray-500 w-6">{teamIdx + 1}</span>
                   <div
                     className="w-3.5 h-3.5 rounded-full"
-                    style={{ backgroundColor: teamEntry.color }}
+                    style={{ backgroundColor: teamColor }}
                   />
                   <span className="text-sm font-black font-mono text-white flex-1">
-                    {teamEntry.team}
+                    {teamEntry.teamName}
                   </span>
                   <span className="text-sm font-mono font-bold text-white">
-                    {formatLapTime(teamEntry.avgPace)}
+                    {formatLapTime(teamEntry.medianTime)}
                   </span>
                   {teamIdx > 0 && (
                     <span className="text-xs font-mono font-bold text-gray-400">
-                      +{(teamEntry.avgPace - teamRanking[0].avgPace).toFixed(3)}
+                      +{(teamEntry.medianTime - teamRanking[0].medianTime).toFixed(3)}
                     </span>
                   )}
                   {teamIdx === 0 && (
@@ -653,13 +504,22 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                 {isExpanded && (
                   <div className="bg-gray-950 border-t border-gray-800 px-4 py-3">
                     {drivers.map((drv, drvIdx) => {
-                      const drvColor = driverColor(drv.driver, year);
-                      const headshot = getDriverImage(drv.driver, year);
-                      const intraGap = drv.avgPace - teamBestPace;
+                      const drvColor = driverColor(drv.driverCode, year);
+                      const headshot = getDriverImage(drv.driverCode, year);
+                      const intraGap = drv.medianTime - teamBestPace;
+
+                      // Find this driver's compound breakdown from backend data
+                      const driverCompounds =
+                        paceData?.compoundPace?.filter(
+                          (cp) => cp.teamName === teamEntry.teamName
+                        ) || [];
+
+                      // Find this driver's sector data (approximate from team-level)
+                      const teamSector = sectorData.find((s) => s.teamName === teamEntry.teamName);
 
                       return (
                         <div
-                          key={drv.driver}
+                          key={drv.driverCode}
                           className={`${drvIdx > 0 ? 'mt-3 pt-3 border-t border-gray-800' : ''}`}
                         >
                           <div className="flex items-center gap-3 mb-2">
@@ -670,12 +530,12 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                               {headshot ? (
                                 <img
                                   src={headshot}
-                                  alt={drv.driver}
+                                  alt={drv.driverCode}
                                   className="w-full h-full object-cover object-top"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
-                                  {drv.driver[0]}
+                                  {drv.driverCode[0]}
                                 </div>
                               )}
                             </div>
@@ -683,10 +543,10 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                               className="text-sm font-black font-mono"
                               style={{ color: drvColor }}
                             >
-                              {drv.driver}
+                              {drv.driverCode}
                             </span>
                             <span className="text-sm font-mono font-bold text-white">
-                              {formatLapTime(drv.avgPace)}
+                              {formatLapTime(drv.medianTime)}
                             </span>
                             {intraGap > 0.001 && (
                               <span className="text-xs font-mono text-red-400">
@@ -694,51 +554,61 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                               </span>
                             )}
                             <span className="text-xs font-mono text-gray-500 ml-auto">
-                              {drv.laps} laps
+                              {drv.lapCount} laps
                             </span>
                           </div>
 
-                          {/* Compound breakdown */}
-                          <div className="flex gap-2 flex-wrap mb-2">
-                            {Object.entries(drv.compounds).map(([comp, data]) => (
-                              <div
-                                key={comp}
-                                className="flex items-center gap-1.5 border border-gray-800 px-2.5 py-1"
-                              >
-                                <span
-                                  className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: COMPOUND_COLORS[comp] || '#666' }}
-                                />
-                                <span
-                                  className="text-xs font-black"
-                                  style={{ color: COMPOUND_COLORS[comp] || '#FFF' }}
+                          {/* Compound breakdown (team-level from backend) */}
+                          {driverCompounds.length > 0 && (
+                            <div className="flex gap-2 flex-wrap mb-2">
+                              {driverCompounds.map((cp) => (
+                                <div
+                                  key={cp.compound}
+                                  className="flex items-center gap-1.5 border border-gray-800 px-2.5 py-1"
                                 >
-                                  {comp[0]}
-                                </span>
-                                <span className="text-xs font-mono text-white font-bold">
-                                  {formatLapTime(data.avg)}
-                                </span>
-                                <span className="text-[10px] font-mono text-gray-500">
-                                  ({data.count})
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{
+                                      backgroundColor: COMPOUND_COLORS[cp.compound] || '#666',
+                                    }}
+                                  />
+                                  <span
+                                    className="text-xs font-black"
+                                    style={{ color: COMPOUND_COLORS[cp.compound] || '#FFF' }}
+                                  >
+                                    {cp.compound[0]}
+                                  </span>
+                                  <span className="text-xs font-mono text-white font-bold">
+                                    {formatLapTime(cp.medianTime)}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-gray-500">
+                                    ({cp.lapCount})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Sector splits */}
-                          {drv.sectors.s1 > 0 && (
+                          {teamSector && teamSector.sector1Median && (
                             <div className="flex gap-4">
                               <span className="text-xs font-mono text-gray-300 font-bold">
-                                S1 <span className="text-white">{drv.sectors.s1.toFixed(3)}</span>
+                                S1{' '}
+                                <span className="text-white">
+                                  {teamSector.sector1Median?.toFixed(3)}
+                                </span>
                               </span>
                               <span className="text-xs font-mono text-gray-300 font-bold">
-                                S2 <span className="text-white">{drv.sectors.s2.toFixed(3)}</span>
+                                S2{' '}
+                                <span className="text-white">
+                                  {teamSector.sector2Median?.toFixed(3)}
+                                </span>
                               </span>
                               <span className="text-xs font-mono text-gray-300 font-bold">
-                                S3 <span className="text-white">{drv.sectors.s3.toFixed(3)}</span>
-                              </span>
-                              <span className="text-xs font-mono text-gray-400">
-                                Best: {formatLapTime(drv.bestLap)}
+                                S3{' '}
+                                <span className="text-white">
+                                  {teamSector.sector3Median?.toFixed(3)}
+                                </span>
                               </span>
                             </div>
                           )}

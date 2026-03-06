@@ -199,8 +199,8 @@ export const getTeamLogo = (teamName: string | undefined): string | null => {
   if (normalizedName.includes('alpine')) return '/logos/alpine.svg';
   if (normalizedName.includes('williams')) return '/logos/williams.png';
   if (normalizedName.includes('haas')) return '/logos/haas.png';
-  if (normalizedName.includes('audi')) return '/logos/audi.svg';
-  if (normalizedName.includes('cadillac')) return '/logos/cadillac.svg';
+  if (normalizedName.includes('audi')) return '/logos/Audi.svg';
+  if (normalizedName.includes('cadillac')) return '/logos/Cadillac.svg';
   if (normalizedName.includes('sauber') || normalizedName.includes('kick'))
     return '/logos/kick-sauber.png';
   if (
