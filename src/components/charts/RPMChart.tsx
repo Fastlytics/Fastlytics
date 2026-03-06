@@ -68,7 +68,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
               <div className="flex flex-col">
                 <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
                 <span className="text-[10px] text-gray-500 font-mono">
-                  DIST: {Math.round(label)}m
+                  DIST: {Math.round(Number(label))}m
                 </span>
               </div>
             </div>

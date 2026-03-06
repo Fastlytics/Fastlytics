@@ -4,6 +4,7 @@ export type ChartPayloadEntry<TData> = {
   name?: string;
   value?: TData;
   color?: string;
+  payload?: TData;
 };
 
 export type CustomTooltipProps<TData> = {
