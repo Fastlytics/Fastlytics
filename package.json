@@ -33,7 +33,7 @@
     "@fortawesome/react-fontawesome": "^3.1.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
-    "@hugeicons/core-free-icons": "^2.0.0",
+    "@hugeicons/core-free-icons": "^4.0.0",
     "@hugeicons/react": "^1.1.4",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
