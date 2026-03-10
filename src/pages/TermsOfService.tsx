@@ -1,91 +1,102 @@
 import React from 'react';
-import Navbar from '@/components/Navbar'; // Assuming a standard Navbar
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import LandingNavbar from '@/components/layout/LandingNavbar';
+import LandingFooter from '@/components/layout/LandingFooter';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileTermsOfService } from '@/components/mobile';
 
 const TermsOfService = () => {
-  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileTermsOfService />;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
-      <Navbar />
-      <div className="container mx-auto px-4 md:px-8 py-12 max-w-4xl">
-         <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-20 left-4 md:left-8 text-gray-300 hover:bg-gray-800 hover:text-white z-10"
-          onClick={() => navigate(-1)} // Go back to previous page
+    <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
+      <LandingNavbar />
+
+      <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
         >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic mb-12">
+            Terms of <span className="text-red-600">Service</span>
+          </h1>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-white tracking-tight">Terms of Service</h1>
+          <div className="prose prose-invert prose-lg max-w-none space-y-8 text-gray-300">
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">1. Agreement to Terms</h2>
+              <p>
+                By accessing our website, you agree to be bound by these Terms of Service and to
+                comply with all applicable laws and regulations. If you do not agree with these
+                terms, you are prohibited from using or accessing this site.
+              </p>
+            </section>
 
-        <div className="prose prose-invert prose-lg mx-auto bg-gray-900/50 p-6 md:p-8 rounded-lg border border-gray-700/80">
-          <p>Last updated: {new Date().toLocaleDateString()}</p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">2. Use License</h2>
+              <p>
+                Permission is granted to temporarily download one copy of the materials (information
+                or software) on Fastlytics' website for personal, non-commercial transitory viewing
+                only. This is the grant of a license, not a transfer of title, and under this
+                license you may not:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 mt-4">
+                <li>modify or copy the materials;</li>
+                <li>
+                  use the materials for any commercial purpose, or for any public display
+                  (commercial or non-commercial);
+                </li>
+                <li>
+                  attempt to decompile or reverse engineer any software contained on Fastlytics'
+                  website;
+                </li>
+                <li>remove any copyright or other proprietary notations from the materials; or</li>
+                <li>
+                  transfer the materials to another person or "mirror" the materials on any other
+                  server.
+                </li>
+              </ul>
+            </section>
 
-          <h2>1. Agreement to Terms</h2>
-          <p>
-            By using Fastlytics (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, then you do not have permission to access the Service.
-          </p>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">3. Disclaimer</h2>
+              <p>
+                The materials on Fastlytics' website are provided on an 'as is' basis. Fastlytics
+                makes no warranties, expressed or implied, and hereby disclaims and negates all
+                other warranties including, without limitation, implied warranties or conditions of
+                merchantability, fitness for a particular purpose, or non-infringement of
+                intellectual property or other violation of rights.
+              </p>
+            </section>
 
-          <h2>2. Accounts</h2>
-          <p>
-            When you create an account with us, you guarantee that the information you provide us is accurate, complete, and current at all times. Inaccurate, incomplete, or obsolete information may result in the immediate termination of your account on the Service. You are responsible for maintaining the confidentiality of your account and password.
-          </p>
-
-          <h2>3. Intellectual Property</h2>
-          <p>
-            The Service and its original content (excluding Content provided by users), features and functionality are and will remain the exclusive property of Fastlytics and its licensors. The Service is protected by copyright, trademark, and other laws of both the [Your Country] and foreign countries. Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of Fastlytics.
-          </p>
-           <p>
-            Formula 1 related data is sourced from publicly available APIs (e.g., FastF1 library) and is subject to their respective terms and conditions. Fastlytics is not affiliated with Formula One group companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing B.V.
-          </p>
-
-          <h2>4. User Content</h2>
-          <p>
-            Our Service may allow you to post, link, store, share and otherwise make available certain information, text, graphics, videos, or other material ("Content"). You are responsible for the Content that you post on or through the Service, including its legality, reliability, and appropriateness.
-          </p>
-
-          <h2>5. Prohibited Uses</h2>
-          <p>
-            You may use the Service only for lawful purposes and in accordance with Terms. You agree not to use the Service in any way that violates any applicable national or international law or regulation.
-          </p>
-
-          <h2>6. Termination</h2>
-          <p>
-            We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, under our sole discretion, for any reason whatsoever and without limitation, including but not limited to a breach of the Terms.
-          </p>
-
-          <h2>7. Limitation Of Liability</h2>
-          <p>
-            In no event shall Fastlytics, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
-          </p>
-
-          <h2>8. Disclaimer</h2>
-          <p>
-            Your use of the Service is at your sole risk. The Service is provided on an "AS IS" and "AS AVAILABLE" basis. The Service is provided without warranties of any kind, whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, non-infringement or course of performance. Data accuracy is dependent on upstream sources and is not guaranteed.
-          </p>
-
-          <h2>9. Governing Law</h2>
-          <p>
-            These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions.
-          </p>
-
-          <h2>10. Changes</h2>
-          <p>
-            We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide notice of any changes by posting the new Terms of Service on this page.
-          </p>
-
-          <h2>11. Contact Us</h2>
-          <p>
-            If you have any questions about these Terms, please contact us at contact@fastlytics.app
-          </p>
-        </div>
-      </div>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">4. Limitations</h2>
+              <p>
+                In no event shall Fastlytics or its suppliers be liable for any damages (including,
+                without limitation, damages for loss of data or profit, or due to business
+                interruption) arising out of the use or inability to use the materials on
+                Fastlytics' website, even if Fastlytics or a Fastlytics authorized representative
+                has been notified orally or in writing of the possibility of such damage.
+              </p>
+            </section>
+            <section>
+              <h2 className="text-2xl font-bold text-white mb-4">5. F1 Trademark Disclaimer</h2>
+              <p className="text-sm text-zinc-500 italic">
+                This website is unofficial and is not associated in any way with the Formula 1
+                companies. F1, FORMULA ONE, FORMULA 1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND
+                PRIX and related marks are trade marks of Formula One Licensing B.V.
+              </p>
+            </section>
+          </div>
+        </motion.div>
+      </main>
     </div>
   );
 };
 
+export { TermsOfService };
 export default TermsOfService;
