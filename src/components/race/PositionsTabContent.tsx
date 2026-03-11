@@ -80,10 +80,10 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
+      <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5 h-[500px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin"></div>
-          <div className="text-gray-500 font-mono text-xs animate-pulse uppercase">
+          <div className="w-8 h-8 border-2 border-neutral-800 border-t-red-600 rounded-full animate-spin"></div>
+          <div className="text-neutral-500 font-mono text-xs animate-pulse uppercase">
             Loading Position Data...
           </div>
         </div>
@@ -93,11 +93,11 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isError || !lapPositionsData || !sessionResultsData) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
+      <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5 h-[500px] flex items-center justify-center">
         <div className="text-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mx-auto mb-3" />
-          <p className="font-black uppercase tracking-wider text-lg">Error Loading Data</p>
-          <p className="text-xs text-gray-500 mt-2 font-mono">
+          <p className="font-semibold text-lg">Error Loading Data</p>
+          <p className="text-xs text-neutral-500 mt-2 font-mono">
             {combinedError?.message || 'Could not fetch position data.'}
           </p>
         </div>
@@ -117,17 +117,17 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
         value={activeTab}
       >
         <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-6 shrink-0">
-          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+          <TabsList className="bg-neutral-900 p-0.5 h-auto rounded-lg border border-neutral-800 gap-0.5">
             <TabsTrigger
               value="overview"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
             >
               <ChartLineData01Icon className="w-3 h-3 mr-2" />
               Chart
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
             >
               <Menu01Icon className="w-3 h-3 mr-2" />
               Analysis

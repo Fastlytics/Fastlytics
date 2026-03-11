@@ -59,9 +59,9 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
       renderChart={(data, color, selectedDriver) => {
         return (
-          <div className="relative w-full h-[350px] flex items-center justify-center bg-black border border-gray-700 overflow-hidden">
+          <div className="relative w-full h-[350px] flex items-center justify-center bg-black border border-neutral-800 overflow-hidden">
             {/* Legend */}
-            <div className="absolute top-4 right-4 flex flex-col gap-1 z-10 bg-black p-2 border border-gray-700">
+            <div className="absolute top-4 right-4 flex flex-col gap-1 z-10 bg-black p-2 border border-neutral-800">
               {gearColors.map((c, i) => {
                 const gear = i + 1;
                 const isHovered = hoveredGear === gear;
@@ -74,7 +74,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                     onMouseLeave={() => setHoveredGear(null)}
                   >
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c }}></div>
-                    <span className="text-[10px] font-mono text-gray-300">GEAR {gear}</span>
+                    <span className="text-[10px] font-mono text-neutral-300">GEAR {gear}</span>
                   </div>
                 );
               })}
@@ -117,7 +117,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
 
             {/* Tooltip for Hovered Gear */}
             {hoveredGear && (
-              <div className="absolute bottom-4 left-4 bg-black/80 border border-gray-700 p-2 rounded backdrop-blur text-xs font-mono text-white pointer-events-none transition-all duration-200">
+              <div className="absolute bottom-4 left-4 bg-black/80 border border-neutral-800 p-2 rounded backdrop-blur text-xs font-mono text-white pointer-events-none transition-all duration-200">
                 Current Gear:{' '}
                 <span
                   style={{ color: getGearColor(hoveredGear) }}
@@ -132,10 +132,10 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       }}
       renderStats={(data) => {
         return (
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-neutral-800 pt-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+              <div className="flex flex-col gap-1 p-3 bg-black border border-neutral-800">
+                <span className="text-[9px] text-neutral-500 uppercase font-mono tracking-wider">
                   Most Used
                 </span>
                 <span
@@ -146,8 +146,8 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                 </span>
               </div>
               {data.stats.avgGear != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 bg-black border border-neutral-800">
+                  <span className="text-[9px] text-neutral-500 uppercase font-mono tracking-wider">
                     Avg Gear
                   </span>
                   <span className="text-lg font-black text-white font-mono">
@@ -156,8 +156,8 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                 </div>
               )}
               {data.lapNumber != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 bg-black border border-neutral-800">
+                  <span className="text-[9px] text-neutral-500 uppercase font-mono tracking-wider">
                     Lap
                   </span>
                   <span className="text-lg font-black text-white font-mono">{data.lapNumber}</span>

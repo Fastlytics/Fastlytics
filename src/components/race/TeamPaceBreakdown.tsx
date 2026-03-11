@@ -172,7 +172,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
       {/* Provisional data disclaimer — race sessions only */}
       {isRaceSession && isProvisional && (
         <div className="flex items-center gap-2 px-4 py-2.5 border border-yellow-500/40 bg-yellow-500/10 text-yellow-400">
-          <span className="text-xs font-black uppercase tracking-wider bg-yellow-500/20 px-1.5 py-0.5 rounded">
+          <span className="text-xs font-semibold bg-yellow-500/20 px-1.5 py-0.5 rounded">
             Provisional
           </span>
           <p className="text-xs leading-relaxed">
@@ -182,7 +182,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
         </div>
       )}
       {/* View Mode Tabs with Export */}
-      <div className="flex border border-gray-700 bg-black" data-export-ignore>
+      <div className="flex border border-neutral-800 bg-black" data-export-ignore>
         {(
           [
             ['compound', 'Compound Pace'],
@@ -193,17 +193,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
-            className={`flex-1 py-3 text-sm font-black uppercase tracking-wider transition-all ${
+            className={`flex-1 py-3 text-sm font-semibold transition-all ${
               viewMode === mode
                 ? 'bg-white text-black'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
             {label}
           </button>
         ))}
         {/* Export Button inside the tabs box */}
-        <div className="flex items-center justify-center px-4 border-l border-gray-700">
+        <div className="flex items-center justify-center px-4 border-l border-neutral-800">
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -226,11 +226,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
 
       {/* ── COMPOUND PACE VIEW ── */}
       {viewMode === 'compound' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="bg-black border-x border-b border-neutral-800">
           {/* Methodology */}
-          <div className="px-4 py-3 border-b border-gray-800 bg-gray-950">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              <span className="text-gray-300 font-bold">How this is calculated:</span> We take the{' '}
+          <div className="px-4 py-3 border-b border-neutral-800 bg-gray-950">
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              <span className="text-neutral-300 font-bold">How this is calculated:</span> We take the{' '}
               <span className="text-white font-semibold">median lap time</span> for each team on
               each tyre compound, using all representative laps from the session. Outliers (in/out
               laps, slow laps behind traffic, and cool-down laps) are excluded. Median is used
@@ -241,15 +241,15 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
             </p>
           </div>
           {/* Compound Selector */}
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-neutral-800">
             {compoundData.compounds.map((comp) => (
               <button
                 key={comp}
                 onClick={() => setSelectedCompound(comp)}
-                className={`flex-1 py-2.5 text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                   activeCompound === comp
                     ? 'border-b-2 text-white'
-                    : 'text-gray-500 hover:text-white'
+                    : 'text-neutral-500 hover:text-white'
                 }`}
                 style={
                   activeCompound === comp
@@ -310,17 +310,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                       if (!active || !payload?.length) return null;
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-black border border-gray-600 p-3 shadow-xl min-w-[200px]">
+                        <div className="bg-black border border-neutral-700 p-3 shadow-xl min-w-[200px]">
                           <div className="text-sm font-black mb-1.5" style={{ color: d.color }}>
                             {d.team}
                           </div>
                           <div className="text-sm font-mono text-white font-bold">
                             Median: {formatLapTime(d.medianTime)}
                           </div>
-                          <div className="text-sm font-mono text-gray-300">
+                          <div className="text-sm font-mono text-neutral-300">
                             Gap: {d.gap === 0 ? 'LEADER' : `+${d.gap.toFixed(3)}s`}
                           </div>
-                          <div className="text-xs font-mono text-gray-400 mt-1">
+                          <div className="text-xs font-mono text-neutral-400 mt-1">
                             {d.lapCount} laps on {d.compound}
                           </div>
                         </div>
@@ -357,7 +357,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 font-mono text-sm">
+            <div className="flex items-center justify-center h-32 text-neutral-500 font-mono text-sm">
               No data for {activeCompound}
             </div>
           )}
@@ -366,11 +366,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
 
       {/* ── SECTOR DOMINANCE VIEW ── */}
       {viewMode === 'sector' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="bg-black border-x border-b border-neutral-800">
           {/* Methodology */}
-          <div className="px-4 py-3 border-b border-gray-800 bg-gray-950">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              <span className="text-gray-300 font-bold">How this is calculated:</span> Each team's{' '}
+          <div className="px-4 py-3 border-b border-neutral-800 bg-gray-950">
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              <span className="text-neutral-300 font-bold">How this is calculated:</span> Each team's{' '}
               <span className="text-white font-semibold">median sector time</span> is calculated
               across all representative laps (excluding in/out laps and outliers). The heatmap
               colours show how each team compares to the fastest in that sector. Teams may
@@ -382,20 +382,20 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left px-4 py-3 text-sm font-black uppercase text-gray-400 w-[140px]">
+                  <tr className="border-b border-neutral-800">
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-neutral-400 w-[140px]">
                       Team
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-neutral-400">
                       Sector 1
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-neutral-400">
                       Sector 2
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-neutral-400">
                       Sector 3
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="text-center px-4 py-3 text-sm font-semibold text-neutral-400">
                       Total
                     </th>
                   </tr>
@@ -417,7 +417,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                     return (
                       <tr
                         key={row.teamName}
-                        className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors"
+                        className="border-b border-neutral-800 hover:bg-neutral-800/30 transition-colors"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -439,7 +439,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                               {s1.toFixed(3)}
                             </span>
                             {s1 - bestS1 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-xs font-mono text-neutral-500">
                                 +{(s1 - bestS1).toFixed(3)}
                               </span>
                             )}
@@ -463,7 +463,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                               {s2.toFixed(3)}
                             </span>
                             {s2 - bestS2 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-xs font-mono text-neutral-500">
                                 +{(s2 - bestS2).toFixed(3)}
                               </span>
                             )}
@@ -487,7 +487,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                               {s3.toFixed(3)}
                             </span>
                             {s3 - bestS3 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-xs font-mono text-neutral-500">
                                 +{(s3 - bestS3).toFixed(3)}
                               </span>
                             )}
@@ -508,7 +508,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                               {formatLapTime(total)}
                             </span>
                             {totalDelta > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-xs font-mono text-neutral-500">
                                 +{totalDelta.toFixed(3)}
                               </span>
                             )}
@@ -521,7 +521,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
               </table>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 font-mono text-sm">
+            <div className="flex items-center justify-center h-32 text-neutral-500 font-mono text-sm">
               No sector data available
             </div>
           )}
@@ -530,11 +530,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
 
       {/* ── DRIVER BREAKDOWN VIEW ── */}
       {viewMode === 'drivers' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="bg-black border-x border-b border-neutral-800">
           {/* Methodology */}
-          <div className="px-4 py-3 border-b border-gray-800 bg-gray-950">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              <span className="text-gray-300 font-bold">How this is calculated:</span> Each driver's{' '}
+          <div className="px-4 py-3 border-b border-neutral-800 bg-gray-950">
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              <span className="text-neutral-300 font-bold">How this is calculated:</span> Each driver's{' '}
               <span className="text-white font-semibold">median lap time</span> across all
               representative laps in the session. Compound breakdown shows team-level median pace on
               each tyre. In practice sessions, drivers run different programmes — one driver may
@@ -552,14 +552,14 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
             return (
               <div
                 key={teamEntry.teamName}
-                className={teamIdx > 0 ? 'border-t border-gray-700' : ''}
+                className={teamIdx > 0 ? 'border-t border-neutral-800' : ''}
               >
                 {/* Team Row — clickable */}
                 <button
                   onClick={() => setExpandedTeam(isExpanded ? null : teamEntry.teamName)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800/40 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-800/40 transition-colors text-left"
                 >
-                  <span className="text-sm font-black text-gray-500 w-6">{teamIdx + 1}</span>
+                  <span className="text-sm font-black text-neutral-500 w-6">{teamIdx + 1}</span>
                   <div
                     className="w-3.5 h-3.5 rounded-full"
                     style={{ backgroundColor: teamColor }}
@@ -571,19 +571,19 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                     {formatLapTime(teamEntry.medianTime)}
                   </span>
                   {teamIdx > 0 && (
-                    <span className="text-xs font-mono font-bold text-gray-400">
+                    <span className="text-xs font-mono font-bold text-neutral-400">
                       +{(teamEntry.medianTime - teamRanking[0].medianTime).toFixed(3)}
                     </span>
                   )}
                   {teamIdx === 0 && (
                     <span className="text-xs font-black text-green-400">FASTEST</span>
                   )}
-                  <span className="text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                  <span className="text-neutral-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
                 </button>
 
                 {/* Expanded driver detail */}
                 {isExpanded && (
-                  <div className="bg-gray-950 border-t border-gray-800 px-4 py-3">
+                  <div className="bg-gray-950 border-t border-neutral-800 px-4 py-3">
                     {drivers.map((drv, drvIdx) => {
                       const drvColor = driverColor(drv.driverCode, year);
                       const headshot = getDriverImage(drv.driverCode, year);
@@ -602,11 +602,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                       return (
                         <div
                           key={drv.driverCode}
-                          className={`${drvIdx > 0 ? 'mt-3 pt-3 border-t border-gray-800' : ''}`}
+                          className={`${drvIdx > 0 ? 'mt-3 pt-3 border-t border-neutral-800' : ''}`}
                         >
                           <div className="flex items-center gap-3 mb-2">
                             <div
-                              className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
+                              className="w-8 h-8 rounded-full bg-neutral-800 overflow-hidden border-2 shrink-0"
                               style={{ borderColor: drvColor }}
                             >
                               {headshot ? (
@@ -616,7 +616,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                                   className="w-full h-full object-cover object-top"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-400 font-mono font-bold">
                                   {drv.driverCode[0]}
                                 </div>
                               )}
@@ -635,7 +635,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                                 +{intraGap.toFixed(3)}
                               </span>
                             )}
-                            <span className="text-xs font-mono text-gray-500 ml-auto">
+                            <span className="text-xs font-mono text-neutral-500 ml-auto">
                               {drv.lapCount} laps
                             </span>
                           </div>
@@ -646,7 +646,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                               {driverCompounds.map((cp) => (
                                 <div
                                   key={cp.compound}
-                                  className="flex items-center gap-1.5 border border-gray-800 px-2.5 py-1"
+                                  className="flex items-center gap-1.5 border border-neutral-800 px-2.5 py-1"
                                 >
                                   <span
                                     className="w-2 h-2 rounded-full"
@@ -663,7 +663,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                                   <span className="text-xs font-mono text-white font-bold">
                                     {formatLapTime(cp.medianTime)}
                                   </span>
-                                  <span className="text-[10px] font-mono text-gray-500">
+                                  <span className="text-[10px] font-mono text-neutral-500">
                                     ({cp.lapCount})
                                   </span>
                                 </div>
@@ -674,19 +674,19 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({
                           {/* Sector splits */}
                           {driverSector.sector1Median != null && (
                             <div className="flex gap-4">
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-xs font-mono text-neutral-300 font-bold">
                                 S1{' '}
                                 <span className="text-white">
                                   {driverSector.sector1Median?.toFixed(3)}
                                 </span>
                               </span>
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-xs font-mono text-neutral-300 font-bold">
                                 S2{' '}
                                 <span className="text-white">
                                   {driverSector.sector2Median?.toFixed(3)}
                                 </span>
                               </span>
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-xs font-mono text-neutral-300 font-bold">
                                 S3{' '}
                                 <span className="text-white">
                                   {driverSector.sector3Median?.toFixed(3)}

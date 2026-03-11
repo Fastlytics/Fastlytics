@@ -210,6 +210,7 @@ const SessionResultsTable: React.FC<{
   isTestingSplitSession?: boolean;
   testingWindow?: 'full' | 'morning' | 'afternoon';
   eventName?: string;
+  year?: number | null;
 }> = ({
   results,
   sessionType,
@@ -219,6 +220,7 @@ const SessionResultsTable: React.FC<{
   isTestingSplitSession = false,
   testingWindow = 'full',
   eventName,
+  year,
 }) => {
   const isPractice = sessionType.startsWith('FP') || isTestingSession;
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
@@ -265,83 +267,92 @@ const SessionResultsTable: React.FC<{
     [sortedResults, getPracticeLaps]
   );
 
-  // Calculate circuit length for distance conversion (for testing sessions)
   const circuitLength = useMemo(() => getCircuitLength(eventName), [eventName]);
 
-  // Calculate leader distance in km
-  const leaderDistance = useMemo(
-    () => calculateDistance(leaderLaps, circuitLength),
-    [leaderLaps, circuitLength]
-  );
-
-  const columns: {
-    key:
-      | keyof DetailedRaceResult
-      | 'driver'
-      | 'team'
-      | 'displayPosition'
-      | 'mileage'
-      | 'reliability';
-    label: string;
-    className?: string;
-  }[] = [
-    {
-      key: 'displayPosition',
-      label: 'POS',
-      className: 'w-[60px] text-center font-mono font-black text-gray-400',
-    },
-    { key: 'driver', label: 'DRIVER' },
-    { key: 'team', label: 'TEAM' },
-  ];
-
-  if (isRaceOrSprint) {
-    columns.push({ key: 'time', label: 'TIME/GAP', className: 'text-right font-mono' });
-    columns.push({
-      key: 'driverFastestLapTime',
-      label: 'FASTEST LAP',
-      className: 'text-right font-mono',
-    });
-    columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
-    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-black text-red-500' });
-  } else if (isQualifying) {
-    columns.push({
-      key: 'fastestLapTime',
-      label: 'FASTEST LAP',
-      className: 'text-right font-mono',
-    });
-  } else if (isPractice) {
-    columns.push({
-      key: 'fastestLapTime',
-      label: 'FASTEST LAP',
-      className: 'text-right font-mono',
-    });
-    columns.push({ key: 'lapsCompleted', label: 'LAPS', className: 'text-center font-mono' });
-    if (isTestingSession) {
-      columns.push({ key: 'mileage', label: 'MILEAGE', className: 'text-right font-mono' });
-      columns.push({
-        key: 'reliability',
-        label: 'RELIABILITY',
-        className: 'text-right font-mono',
-      });
-    }
-  }
+  // Compute gap to leader for practice/qualifying
+  const leaderTime = useMemo(() => {
+    if (!sortedResults?.length) return Infinity;
+    return parseLapTime(getPracticeLapTime(sortedResults[0]));
+  }, [sortedResults, getPracticeLapTime]);
 
   return (
-    <div className="bg-black border border-gray-700 overflow-hidden">
+    <div className="bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden">
       <Table>
-        <TableHeader className="bg-black border-b border-gray-700">
-          <TableRow className="border-gray-700 hover:bg-transparent">
-            {columns.map((col) => (
-              <TableHead
-                key={String(col.key)}
-                className={cn(
-                  'text-gray-400 font-black uppercase tracking-wider text-xs py-4',
-                  col.className
+        <TableHeader>
+          <TableRow className="border-neutral-800 hover:bg-transparent bg-neutral-900/50">
+            <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 w-[52px] text-center">
+              Pos
+            </TableHead>
+            <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3">
+              Driver
+            </TableHead>
+            {isRaceOrSprint && (
+              <>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Time / Gap
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Fastest Lap
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-center">
+                  Grid
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-center">
+                  Laps
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-center">
+                  Pts
+                </TableHead>
+              </>
+            )}
+            {isQualifying && (
+              <>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Best Lap
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Gap
+                </TableHead>
+                {results?.[0]?.q1Time !== undefined && (
+                  <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right hidden lg:table-cell">
+                    Q1
+                  </TableHead>
                 )}
-              >
-                {col.label}
-              </TableHead>
-            ))}
+                {results?.[0]?.q2Time !== undefined && (
+                  <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right hidden lg:table-cell">
+                    Q2
+                  </TableHead>
+                )}
+                {results?.[0]?.q3Time !== undefined && (
+                  <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right hidden lg:table-cell">
+                    Q3
+                  </TableHead>
+                )}
+              </>
+            )}
+            {isPractice && (
+              <>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Best Lap
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right">
+                  Gap
+                </TableHead>
+                <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-center">
+                  Laps
+                </TableHead>
+                {isTestingSession && (
+                  <>
+                    <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right hidden lg:table-cell">
+                      Mileage
+                    </TableHead>
+                    <TableHead className="text-neutral-400 font-semibold uppercase tracking-wider text-[11px] py-3 text-right hidden lg:table-cell">
+                      Reliability
+                    </TableHead>
+                  </>
+                )}
+              </>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -350,63 +361,108 @@ const SessionResultsTable: React.FC<{
               favoriteDriver &&
               (res.driverCode === favoriteDriver ||
                 res.fullName.toLowerCase().includes(favoriteDriver.toLowerCase()));
+            const displayPos = isPractice || isQualifying ? index + 1 : (res.position ?? '-');
+            const teamColor = getTeamColorClass(res.team);
+            const imageUrl = year ? getDriverImage(res.driverCode, year) : '';
+
+            // Position change for race (grid → finish)
+            const posChange = isRaceOrSprint && res.gridPosition && res.position
+              ? res.gridPosition - res.position
+              : null;
+
+            const hasFastestLap = (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
+              (!fastestLapHolder && res.isFastestLap);
+
+            // Gap to leader for practice/qualifying
+            const currentTime = parseLapTime(getPracticeLapTime(res));
+            const gapToLeader = (isPractice || isQualifying) && index > 0 && currentTime !== Infinity && leaderTime !== Infinity
+              ? `+${(currentTime - leaderTime).toFixed(3)}`
+              : null;
+
             return (
               <TableRow
                 key={res.driverCode}
                 className={cn(
-                  'border-gray-700/50 transition-colors group',
+                  'border-neutral-800/50 transition-colors group',
                   isFavorite
-                    ? 'bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600'
-                    : 'hover:bg-gray-800/30'
+                    ? 'bg-red-500/[0.06] hover:bg-red-500/10'
+                    : 'hover:bg-neutral-900/80'
                 )}
               >
-                {columns.map((col) => (
-                  <TableCell
-                    key={`${res.driverCode}-${String(col.key)}`}
-                    className={cn('py-3', col.className)}
-                  >
-                    {col.key === 'displayPosition' ? (
-                      isPractice || isQualifying ? (
-                        index + 1
-                      ) : (
-                        (res.position ?? '-')
-                      )
-                    ) : col.key === 'driver' ? (
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-white group-hover:text-red-500 transition-colors">
+                {/* Position */}
+                <TableCell className="py-2.5 text-center w-[52px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className={cn(
+                      'font-mono font-bold text-sm',
+                      displayPos === 1 ? 'text-amber-400' :
+                      displayPos === 2 ? 'text-neutral-300' :
+                      displayPos === 3 ? 'text-amber-600' :
+                      'text-neutral-400'
+                    )}>
+                      {displayPos}
+                    </span>
+                    {posChange !== null && posChange !== 0 && (
+                      <span className={cn(
+                        'text-[10px] font-mono font-semibold',
+                        posChange > 0 ? 'text-green-400' : 'text-red-400'
+                      )}>
+                        {posChange > 0 ? `▲${posChange}` : `▼${Math.abs(posChange)}`}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+
+                {/* Driver with headshot and team */}
+                <TableCell className="py-2.5">
+                  <div className="flex items-center gap-3">
+                    {/* Team color bar */}
+                    <div className={cn('w-0.5 h-10 rounded-full shrink-0', `bg-f1-${teamColor}`)} />
+
+                    {/* Headshot */}
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={res.fullName}
+                        className="w-8 h-8 rounded-full object-cover object-top bg-neutral-900 border border-neutral-800 shrink-0"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 shrink-0 flex items-center justify-center">
+                        <span className="text-[10px] font-mono text-neutral-500">{res.driverCode}</span>
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white text-sm truncate">
                           {res.fullName}
                         </span>
-                        {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
-                          (!fastestLapHolder && res.isFastestLap)) && (
-                          <Clock01Icon className="w-3 h-3 text-purple-500" />
-                        )}
-                      </div>
-                    ) : col.key === 'team' ? (
-                      <span className="flex items-center gap-2 text-sm text-gray-400">
-                        <span
-                          className={cn(
-                            'w-1.5 h-1.5 rounded-full',
-                            `bg-f1-${getTeamColorClass(res.team)}`
-                          )}
-                        ></span>
-                        {res.team}
-                      </span>
-                    ) : col.key === 'points' ? (
-                      <span
-                        className={cn(
-                          'flex items-center justify-end gap-2 font-black',
-                          res.isProvisional ? 'text-yellow-500' : 'text-red-500'
-                        )}
-                      >
-                        {res.points !== null ? res.points : '-'}
-                        {res.isProvisional && (
-                          <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">
-                            Prov
+                        {hasFastestLap && (
+                          <span className="shrink-0 w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center" title="Fastest Lap">
+                            <Clock01Icon className="w-2.5 h-2.5 text-purple-400" />
                           </span>
                         )}
-                      </span>
-                    ) : col.key === 'time' ? (
-                      <span className="text-gray-300">
+                        {isFavorite && (
+                          <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 font-semibold uppercase tracking-wider">
+                            Fav
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] text-neutral-400 truncate">
+                          {res.team}
+                        </span>
+                        <span className="text-neutral-600 text-[10px] font-mono">{res.driverCode}</span>
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+
+                {/* Race/Sprint columns */}
+                {isRaceOrSprint && (
+                  <>
+                    <TableCell className="py-2.5 text-right">
+                      <span className="font-mono text-sm text-white">
                         {(() => {
                           const isLapped = res.status.includes('Lap');
                           const isFinished =
@@ -418,68 +474,134 @@ const SessionResultsTable: React.FC<{
                             return '-';
                           }
                           return (
-                            <span className="text-red-500 font-black uppercase text-[10px]">
+                            <span className="text-red-400 font-semibold uppercase text-[10px] tracking-wider">
                               {res.status}
                             </span>
                           );
                         })()}
                       </span>
-                    ) : col.key === 'laps' ? (
-                      <span className="text-gray-500">{res.laps ?? '-'}</span>
-                    ) : col.key === 'fastestLapTime' && isPractice ? (
-                      <span className="text-gray-300">{getPracticeLapTime(res) ?? '-'}</span>
-                    ) : col.key === 'lapsCompleted' && isPractice ? (
-                      <span className="text-gray-500">{getPracticeLaps(res) || '-'}</span>
-                    ) : col.key === 'mileage' ? (
-                      <span className="text-gray-300">
-                        {(() => {
-                          const laps = getPracticeLaps(res);
-                          const distance = calculateDistance(laps, circuitLength);
-                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
-                          return `${formatDistance(distance)} (${pct}%)`;
-                        })()}
-                      </span>
-                    ) : col.key === 'reliability' ? (
-                      <span
-                        className={cn(
-                          'font-black',
-                          (() => {
-                            const laps = getPracticeLaps(res);
-                            const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
-                            if (pct >= 90) return 'text-green-400';
-                            if (pct >= 75) return 'text-yellow-400';
-                            return 'text-red-400';
-                          })()
-                        )}
-                      >
-                        {(() => {
-                          const laps = getPracticeLaps(res);
-                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
-                          if (pct >= 90) return 'HIGH';
-                          if (pct >= 75) return 'MEDIUM';
-                          return 'LOW';
-                        })()}
-                      </span>
-                    ) : col.key === 'driverFastestLapTime' ? (
-                      res.driverFastestLapTime ? (
-                        <span
-                          className={cn(
-                            (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
-                              (!fastestLapHolder && res.isFastestLap)
-                              ? 'text-purple-400 font-black'
-                              : 'text-gray-400'
-                          )}
-                        >
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right">
+                      {res.driverFastestLapTime ? (
+                        <span className={cn(
+                          'font-mono text-sm',
+                          hasFastestLap ? 'text-purple-400 font-semibold' : 'text-neutral-300'
+                        )}>
                           {res.driverFastestLapTime}
                         </span>
                       ) : (
-                        '-'
-                      )
-                    ) : (
-                      (res[col.key as keyof DetailedRaceResult] ?? '-')
+                        <span className="text-neutral-600 text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-center">
+                      <span className="font-mono text-sm text-neutral-400">
+                        {res.gridPosition ?? '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-center">
+                      <span className="font-mono text-sm text-neutral-400">{res.laps ?? '-'}</span>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-center">
+                      <span className={cn(
+                        'font-mono text-sm font-bold',
+                        res.points && res.points > 0 ? 'text-white' : 'text-neutral-600',
+                        res.isProvisional && 'text-yellow-400'
+                      )}>
+                        {res.points !== null && res.points !== undefined ? res.points : '-'}
+                      </span>
+                    </TableCell>
+                  </>
+                )}
+
+                {/* Qualifying columns */}
+                {isQualifying && (
+                  <>
+                    <TableCell className="py-2.5 text-right">
+                      <span className={cn(
+                        'font-mono text-sm',
+                        index === 0 ? 'text-white font-semibold' : 'text-neutral-200'
+                      )}>
+                        {getPracticeLapTime(res) ?? '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right">
+                      <span className="font-mono text-sm text-neutral-400">
+                        {index === 0 ? '-' : (gapToLeader ?? '-')}
+                      </span>
+                    </TableCell>
+                    {results?.[0]?.q1Time !== undefined && (
+                      <TableCell className="py-2.5 text-right hidden lg:table-cell">
+                        <span className="font-mono text-xs text-neutral-400">{res.q1Time ?? '-'}</span>
+                      </TableCell>
                     )}
-                  </TableCell>
-                ))}
+                    {results?.[0]?.q2Time !== undefined && (
+                      <TableCell className="py-2.5 text-right hidden lg:table-cell">
+                        <span className="font-mono text-xs text-neutral-400">{res.q2Time ?? '-'}</span>
+                      </TableCell>
+                    )}
+                    {results?.[0]?.q3Time !== undefined && (
+                      <TableCell className="py-2.5 text-right hidden lg:table-cell">
+                        <span className="font-mono text-xs text-neutral-400">{res.q3Time ?? '-'}</span>
+                      </TableCell>
+                    )}
+                  </>
+                )}
+
+                {/* Practice columns */}
+                {isPractice && (
+                  <>
+                    <TableCell className="py-2.5 text-right">
+                      <span className={cn(
+                        'font-mono text-sm',
+                        index === 0 ? 'text-white font-semibold' : 'text-neutral-200'
+                      )}>
+                        {getPracticeLapTime(res) ?? '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right">
+                      <span className="font-mono text-sm text-neutral-400">
+                        {index === 0 ? '-' : (gapToLeader ?? '-')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-center">
+                      <span className="font-mono text-sm text-neutral-400">{getPracticeLaps(res) || '-'}</span>
+                    </TableCell>
+                    {isTestingSession && (
+                      <>
+                        <TableCell className="py-2.5 text-right hidden lg:table-cell">
+                          <span className="font-mono text-xs text-neutral-300">
+                            {(() => {
+                              const laps = getPracticeLaps(res);
+                              const distance = calculateDistance(laps, circuitLength);
+                              const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                              return `${formatDistance(distance)} (${pct}%)`;
+                            })()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-2.5 text-right hidden lg:table-cell">
+                          <span className={cn(
+                            'text-xs font-semibold',
+                            (() => {
+                              const laps = getPracticeLaps(res);
+                              const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                              if (pct >= 90) return 'text-green-400';
+                              if (pct >= 75) return 'text-yellow-400';
+                              return 'text-red-400';
+                            })()
+                          )}>
+                            {(() => {
+                              const laps = getPracticeLaps(res);
+                              const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                              if (pct >= 90) return 'HIGH';
+                              if (pct >= 75) return 'MED';
+                              return 'LOW';
+                            })()}
+                          </span>
+                        </TableCell>
+                      </>
+                    )}
+                  </>
+                )}
               </TableRow>
             );
           })}
@@ -496,9 +618,9 @@ const SectionHeader = ({
   title: string;
   icon?: React.ComponentType<{ className?: string }>;
 }) => (
-  <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
-    {Icon && <Icon className="w-6 h-6 text-red-600" />}
-    <h2 className="text-2xl font-black uppercase tracking-wider text-white">{title}</h2>
+  <div className="flex items-center gap-3 mb-6 pb-3 border-b border-neutral-800">
+    {Icon && <Icon className="w-5 h-5 text-neutral-400" />}
+    <h2 className="text-lg font-semibold tracking-tight text-white">{title}</h2>
   </div>
 );
 
@@ -518,13 +640,13 @@ const NavItem = ({
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      'w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium transition-all duration-200 rounded-md text-left',
       active
-        ? 'border-red-600 bg-red-600/10 text-white'
-        : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
+        ? 'bg-neutral-800 text-white'
+        : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
     )}
   >
-    <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-gray-600')} />
+    <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-neutral-500')} />
     {label}
   </button>
 );
@@ -970,9 +1092,9 @@ const Race = () => {
     return (
       <div className="min-h-screen bg-black text-white font-sans flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
-          <div className="text-gray-500 font-mono text-sm animate-pulse">
-            LOADING SESSION DATA...
+          <div className="w-10 h-10 border-2 border-neutral-800 border-t-red-500 rounded-full animate-spin"></div>
+          <div className="text-neutral-400 font-mono text-xs tracking-wider">
+            LOADING SESSION DATA
           </div>
         </div>
       </div>
@@ -1001,13 +1123,13 @@ const Race = () => {
       />
       <DashboardNavbar />
 
-      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-700 pb-8">
-          <div className="space-y-2">
+        <header className="flex flex-col md:flex-row justify-between md:items-end mb-10 gap-6 border-b border-neutral-800 pb-6">
+          <div className="space-y-3">
             <Button
               variant="ghost"
-              className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
+              className="pl-0 text-neutral-500 hover:text-white hover:bg-transparent -ml-2 mb-1 text-sm"
               onClick={() => {
                 if (showAnalysis && !hasRaceData) {
                   setShowAnalysis(false);
@@ -1016,18 +1138,21 @@ const Race = () => {
                 }
               }}
             >
-              <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
+              <ArrowLeft01Icon className="mr-1.5 h-3.5 w-3.5" />{' '}
               {showAnalysis && !hasRaceData ? 'Back to Schedule' : 'Back'}
             </Button>
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
               {eventName}
             </h1>
-            <div className="flex items-center gap-4 text-gray-400 font-mono text-sm">
-              <span className="bg-black px-2 py-1 border border-gray-700">{year} SEASON</span>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-neutral-400 font-mono">{year}</span>
               {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
-                <span className="text-red-500 font-black uppercase">
-                  {availableSessions.find((s) => s.type === selectedSession)?.name}
-                </span>
+                <>
+                  <span className="text-neutral-600">·</span>
+                  <span className="text-neutral-200 font-medium">
+                    {availableSessions.find((s) => s.type === selectedSession)?.name}
+                  </span>
+                </>
               )}
             </div>
           </div>
@@ -1036,15 +1161,15 @@ const Race = () => {
             availableSessions.length > 0 &&
             (isTestingEvent ? (
               <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[300px] bg-red-900/20 border border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
-                  <SelectValue placeholder="SELECT SESSION" />
+                <SelectTrigger className="w-[280px] bg-neutral-900 border border-neutral-700 text-white font-medium h-11 text-sm rounded-lg hover:border-neutral-600 transition-colors">
+                  <SelectValue placeholder="Select session" />
                 </SelectTrigger>
-                <SelectContent className="bg-black border border-gray-700 text-white">
+                <SelectContent className="bg-neutral-900 border border-neutral-700 text-white rounded-lg">
                   <SelectItem
                     value="Summary"
-                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-700"
+                    className="font-semibold text-red-400 focus:bg-neutral-800 focus:text-red-400 py-2.5 border-b border-neutral-800"
                   >
-                    3-DAY TESTING SUMMARY
+                    3-Day Testing Summary
                   </SelectItem>
                   {availableSessions
                     .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
@@ -1052,7 +1177,7 @@ const Race = () => {
                       <SelectItem
                         key={s.type}
                         value={s.type}
-                        className="uppercase font-black focus:bg-gray-800 focus:text-white py-2"
+                        className="font-medium focus:bg-neutral-800 focus:text-white py-2"
                       >
                         {s.name}
                       </SelectItem>
@@ -1061,17 +1186,17 @@ const Race = () => {
               </Select>
             ) : (
               <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[200px] bg-black border border-gray-700 text-white font-black uppercase tracking-wider h-12">
-                  <SelectValue placeholder="SESSION" />
+                <SelectTrigger className="w-[200px] bg-neutral-900 border border-neutral-700 text-white font-medium h-10 text-sm rounded-lg hover:border-neutral-600 transition-colors">
+                  <SelectValue placeholder="Session" />
                 </SelectTrigger>
-                <SelectContent className="bg-black border border-gray-700 text-white">
+                <SelectContent className="bg-neutral-900 border border-neutral-700 text-white rounded-lg">
                   {availableSessions
                     .filter((s) => s.type !== 'Q')
                     .map((s) => (
                       <SelectItem
                         key={s.type}
                         value={s.type}
-                        className="uppercase font-black focus:bg-gray-800 focus:text-red-500"
+                        className="font-medium focus:bg-neutral-800 focus:text-white"
                       >
                         {s.name}
                       </SelectItem>
@@ -1084,25 +1209,25 @@ const Race = () => {
         {shouldShowSchedule ? (
           sessionSchedule ? (
             // --- UPCOMING RACE DISPLAY ---
-            <div className="space-y-12">
+            <div className="space-y-10">
               {/* Hero Countdown Section */}
-              <div className="bg-black/30 border border-gray-700 p-8 md:p-12 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Flag01Icon className="w-64 h-64" />
+              <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-8 md:p-10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Flag01Icon className="w-48 h-48" />
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
                   <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-red-500 font-black uppercase tracking-widest text-sm">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-red-400 font-medium text-xs tracking-widest uppercase">
                         Upcoming Session
                       </span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white mb-2">
-                      Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">
+                      {nextSession ? nextSession.name : 'Race Weekend'}
                     </h2>
-                    <div className="text-gray-400 font-mono text-lg">
+                    <div className="text-neutral-400 text-sm">
                       {nextSession
                         ? new Date(nextSession.date).toLocaleDateString(undefined, {
                             weekday: 'long',
@@ -1114,25 +1239,25 @@ const Race = () => {
                   </div>
 
                   {countdown ? (
-                    <div className="flex gap-4 md:gap-8 text-center">
+                    <div className="flex gap-6 md:gap-8 text-center">
                       {[
-                        { label: 'DAYS', value: countdown.days },
-                        { label: 'HRS', value: countdown.hours },
-                        { label: 'MIN', value: countdown.minutes },
-                        { label: 'SEC', value: countdown.seconds },
+                        { label: 'Days', value: countdown.days },
+                        { label: 'Hrs', value: countdown.hours },
+                        { label: 'Min', value: countdown.minutes },
+                        { label: 'Sec', value: countdown.seconds },
                       ].map((item, i) => (
                         <div key={i} className="flex flex-col items-center">
-                          <div className="text-4xl md:text-6xl font-mono font-black text-white tracking-tighter leading-none">
+                          <div className="text-3xl md:text-5xl font-mono font-bold text-white tracking-tighter leading-none tabular-nums">
                             {item.value.toString().padStart(2, '0')}
                           </div>
-                          <div className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
+                          <div className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mt-2">
                             {item.label}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                    <div className="text-2xl md:text-4xl font-mono font-bold text-white tracking-tight">
                       SESSION IN PROGRESS
                     </div>
                   )}
@@ -1140,20 +1265,20 @@ const Race = () => {
               </div>
 
               {/* Schedule Section */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-700 pb-4">
-                  <h3 className="text-2xl font-black uppercase tracking-wider text-white">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+                  <h3 className="text-lg font-semibold tracking-tight text-white">
                     Weekend Schedule
                   </h3>
-                  <div className="flex items-center gap-2 bg-black p-1 border border-gray-700">
+                  <div className="flex items-center bg-neutral-900 rounded-md p-0.5 border border-neutral-800">
                     <button
                       onClick={() => {
                         setIs24Hour(true);
                         trackInteraction('time_format_changed', { format: '24h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-black transition-colors',
-                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-medium transition-colors rounded-sm',
+                        is24Hour ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'
                       )}
                     >
                       24H
@@ -1164,8 +1289,8 @@ const Race = () => {
                         trackInteraction('time_format_changed', { format: '12h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-black transition-colors',
-                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                        'px-3 py-1 text-xs font-medium transition-colors rounded-sm',
+                        !is24Hour ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'
                       )}
                     >
                       12H
@@ -1173,14 +1298,11 @@ const Race = () => {
                   </div>
                 </div>
 
-                <div className="grid gap-px bg-gray-800 border border-gray-700 overflow-hidden">
-                  {/* Table Header */}
-                  {/* Table Header Removed as per request */}
+                <div className="bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden divide-y divide-neutral-800/50">
 
                   {/* Table Body */}
                   {sessionSchedule.sessions.map((session, idx) => {
                     const isNext = nextSession && session.name === nextSession.name;
-                    // Map session name to type for available check (simplified mapping)
                     let sessionType = '';
                     const lowerName = session.name.toLowerCase();
                     if (lowerName.includes('practice 1')) sessionType = 'FP1';
@@ -1216,25 +1338,23 @@ const Race = () => {
                       <div
                         key={idx}
                         className={cn(
-                          'grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center',
+                          'grid grid-cols-1 md:grid-cols-4 px-5 py-4 gap-3 transition-colors items-center',
                           isNext
-                            ? 'bg-red-900/10 hover:bg-red-900/20'
-                            : 'bg-black hover:bg-gray-800/30'
+                            ? 'bg-red-500/[0.04] hover:bg-red-500/[0.08]'
+                            : 'hover:bg-neutral-900/50'
                         )}
                       >
                         {/* Date Column */}
-                        <div className="flex flex-col justify-center border-r border-gray-700 pr-4">
-                          <div
-                            className={cn(
-                              'font-mono text-xl font-black',
-                              isNext ? 'text-white' : 'text-gray-300'
-                            )}
-                          >
+                        <div className="flex flex-col justify-center">
+                          <div className={cn(
+                            'font-mono text-base font-semibold',
+                            isNext ? 'text-white' : 'text-neutral-200'
+                          )}>
                             {new Date(session.date)
                               .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                               .toUpperCase()}
                           </div>
-                          <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                          <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-0.5">
                             {new Date(session.date).toLocaleDateString(undefined, {
                               weekday: 'short',
                             })}
@@ -1242,25 +1362,23 @@ const Race = () => {
                         </div>
 
                         {/* Session Name */}
-                        <div className="flex flex-col justify-center pl-2">
-                          <div
-                            className={cn(
-                              'font-black text-lg uppercase tracking-tight mb-1',
-                              isNext ? 'text-red-500' : 'text-white'
-                            )}
-                          >
+                        <div className="flex flex-col justify-center">
+                          <div className={cn(
+                            'font-semibold text-sm',
+                            isNext ? 'text-red-400' : 'text-white'
+                          )}>
                             {session.name}
                           </div>
                         </div>
 
-                        {/* Local Time (Hidden if Results available) */}
+                        {/* Local Time */}
                         <div className="hidden md:flex flex-col justify-center">
                           {!isAvailable && (
                             <>
-                              <div className="font-mono text-gray-300 text-lg">
+                              <div className="font-mono text-neutral-300 text-sm">
                                 {formatTimeStr(session.localTime)}
                               </div>
-                              <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                              <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-0.5">
                                 Local
                               </div>
                             </>
@@ -1270,28 +1388,25 @@ const Race = () => {
                         {/* Your Time / Results Button / LIVE Indicator */}
                         <div className="hidden md:flex flex-col justify-center items-end md:items-start">
                           {(() => {
-                            // Check if session is LIVE
                             const sessionDate = new Date(session.date);
                             const now = new Date();
                             const diffMs = now.getTime() - sessionDate.getTime();
                             const diffMins = diffMs / (1000 * 60);
 
-                            // Define durations (in minutes)
-                            let duration = 60; // Default 1 hour
-                            if (sessionType === 'R')
-                              duration = 180; // Race: 3 hours
-                            else if (sessionType === 'Sprint') duration = 60; // Sprint: 1 hour
+                            let duration = 60;
+                            if (sessionType === 'R') duration = 180;
+                            else if (sessionType === 'Sprint') duration = 60;
 
                             const isLive = diffMins >= 0 && diffMins < duration;
 
                             if (isLive) {
                               return (
-                                <div className="flex items-center gap-2 text-red-500 animate-pulse">
-                                  <div className="relative flex h-3 w-3">
+                                <div className="flex items-center gap-2 text-red-400">
+                                  <div className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                                   </div>
-                                  <span className="font-black uppercase tracking-wider text-sm">
+                                  <span className="font-semibold uppercase tracking-wider text-xs">
                                     LIVE
                                   </span>
                                 </div>
@@ -1303,7 +1418,7 @@ const Race = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-black tracking-wider w-full md:w-auto"
+                                  className="border-neutral-700 text-white hover:bg-neutral-800 hover:text-white font-medium text-xs rounded-md w-full md:w-auto"
                                   onClick={() => {
                                     let targetSession = sessionType;
                                     if (
@@ -1335,22 +1450,20 @@ const Race = () => {
                                     });
                                   }}
                                 >
-                                  Results
+                                  View Results
                                 </Button>
                               );
                             }
 
                             return (
                               <>
-                                <div
-                                  className={cn(
-                                    'font-mono text-lg',
-                                    isNext ? 'text-white' : 'text-gray-300'
-                                  )}
-                                >
+                                <div className={cn(
+                                  'font-mono text-sm',
+                                  isNext ? 'text-white' : 'text-neutral-300'
+                                )}>
                                   {formatDate(session.date)}
                                 </div>
-                                <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                                <div className="text-[10px] text-neutral-500 uppercase tracking-wider mt-0.5">
                                   Your Time
                                 </div>
                               </>
@@ -1365,16 +1478,16 @@ const Race = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64">
-              <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
+              <div className="w-10 h-10 border-2 border-neutral-800 border-t-red-500 rounded-full animate-spin"></div>
             </div>
           )
         ) : (
           // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
-          <div className="flex flex-col lg:flex-row gap-12">
+          <div className="flex flex-col lg:flex-row gap-10">
             {/* Sticky Sidebar */}
             {selectedSession !== 'Summary' && (
-              <aside className="hidden lg:block w-64 shrink-0">
-                <div className="sticky top-32 space-y-1">
+              <aside className="hidden lg:block w-56 shrink-0">
+                <div className="sticky top-32 space-y-0.5 bg-neutral-950 border border-neutral-800 rounded-lg p-2">
                   <NavItem
                     id="overview"
                     label="Overview"
@@ -1447,16 +1560,16 @@ const Race = () => {
             )}
 
             {/* Main Content Stream */}
-            <div className="flex-1 space-y-8">
+            <div className="flex-1 min-w-0 space-y-8">
               {/* 1. Overview Section (Includes Results) */}
               {activeSection === 'overview' && (
-                <div className="space-y-12 animate-in fade-in duration-500">
+                <div className="space-y-10 animate-in fade-in duration-500">
                   <section id="overview">
                     <SectionHeader
                       title={`${availableSessions.find((s) => s.type === selectedSession)?.name || 'Race'} Overview`}
                       icon={ChampionIcon}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {selectedSession === 'R' || selectedSession === 'Sprint' ? (
                         <>
                           {raceWinner && (
@@ -1542,7 +1655,7 @@ const Race = () => {
                     {isTestingSession &&
                       !isTestingSplitSession &&
                       selectedSession !== 'Summary' && (
-                        <div className="mb-6 flex items-center gap-2 bg-black border border-gray-700 p-2 w-fit">
+                        <div className="mb-5 flex items-center bg-neutral-900 rounded-md p-0.5 border border-neutral-800 w-fit">
                           {(
                             [
                               ['full', 'Full Day'],
@@ -1557,10 +1670,10 @@ const Race = () => {
                                 trackInteraction('testing_window_toggled', { window: value });
                               }}
                               className={cn(
-                                'px-3 py-1 text-xs font-black uppercase tracking-wider transition-colors border',
+                                'px-3 py-1.5 text-xs font-medium transition-colors rounded-sm',
                                 testingWindow === value
-                                  ? 'bg-white border-white text-black'
-                                  : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                                  ? 'bg-neutral-700 text-white'
+                                  : 'text-neutral-400 hover:text-white'
                               )}
                             >
                               {label}
@@ -1571,25 +1684,25 @@ const Race = () => {
 
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
-                      <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
-                        <Alert02Icon className="h-4 w-4" />
-                        <AlertTitle className="font-black uppercase tracking-wider">
+                      <Alert className="mb-5 border-yellow-500/30 bg-yellow-500/5 text-yellow-200 rounded-lg">
+                        <Alert02Icon className="h-4 w-4 text-yellow-400" />
+                        <AlertTitle className="font-semibold text-yellow-300 text-sm">
                           Provisional Results
                         </AlertTitle>
-                        <AlertDescription>
-                          Official race results are still being processed. Points and positions
+                        <AlertDescription className="text-yellow-200/80 text-sm">
+                          Official results are still being processed. Points and positions
                           shown are provisional and subject to confirmation.
                         </AlertDescription>
                       </Alert>
                     )}
 
                     {isTestingSession && selectedSession !== 'Summary' && (
-                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                      <Alert className="mb-5 border-blue-500/30 bg-blue-500/5 text-blue-200 rounded-lg">
                         <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                        <AlertTitle className="font-semibold text-blue-300 text-sm">
                           Testing Focus
                         </AlertTitle>
-                        <AlertDescription>
+                        <AlertDescription className="text-blue-200/80 text-sm">
                           Results are sorted by fastest lap. Mileage and reliability columns
                           highlight long-run robustness.
                         </AlertDescription>
@@ -1597,12 +1710,12 @@ const Race = () => {
                     )}
 
                     {isTestingSession && selectedSession === 'Summary' && (
-                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                      <Alert className="mb-5 border-blue-500/30 bg-blue-500/5 text-blue-200 rounded-lg">
                         <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                        <AlertTitle className="font-semibold text-blue-300 text-sm">
                           3-Day Testing Summary
                         </AlertTitle>
-                        <AlertDescription>
+                        <AlertDescription className="text-blue-200/80 text-sm">
                           Aggregated data from all pre-season testing sessions. Total mileage and
                           fastest laps are combined.
                         </AlertDescription>
@@ -1619,6 +1732,7 @@ const Race = () => {
                         isTestingSplitSession={isTestingSplitSession}
                         testingWindow={testingWindow}
                         eventName={eventName}
+                        year={year}
                       />
                     )}
                   </section>
@@ -1678,22 +1792,22 @@ const Race = () => {
                       className="w-full"
                     >
                       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
-                        <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+                        <TabsList className="bg-neutral-900 p-0.5 h-auto rounded-lg border border-neutral-800 gap-0.5">
                           <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
                           >
                             Lap History
                           </TabsTrigger>
                           <TabsTrigger
                             value="pace"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
                           >
                             Pace Distribution
                           </TabsTrigger>
                           <TabsTrigger
                             value="gap"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
                           >
                             Gap to Leader
                           </TabsTrigger>
@@ -2041,13 +2155,13 @@ const Race = () => {
                   description="Experience immersive race telemetry with real-time car positions and data overlays"
                 >
                   <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="bg-black border border-gray-700 overflow-hidden h-[80vh] relative">
+                    <div className="bg-black border border-neutral-800 overflow-hidden rounded-lg h-[80vh] relative">
                       <React.Suspense
                         fallback={
                           <div className="h-full flex items-center justify-center">
                             <div className="text-center">
-                              <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
-                              <div className="text-xs text-gray-500 font-mono">LOADING REPLAY MODULE...</div>
+                              <div className="w-8 h-8 border-2 border-neutral-800 border-t-red-500 rounded-full animate-spin mx-auto mb-2"></div>
+                              <div className="text-xs text-neutral-500 font-mono">Loading replay...</div>
                             </div>
                           </div>
                         }

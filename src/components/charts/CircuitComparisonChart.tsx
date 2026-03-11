@@ -230,15 +230,15 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[450px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="w-full h-[450px] flex flex-col items-center justify-center bg-black border border-neutral-800 gap-4">
+          <p className="text-neutral-400 font-mono text-sm uppercase">Select drivers to compare</p>
         </div>
       );
     }
 
     if (isLoading) {
       return (
-        <div className="w-full h-[500px] flex items-center justify-center bg-black border border-gray-700">
+        <div className="w-full h-[500px] flex items-center justify-center bg-black border border-neutral-800">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -248,8 +248,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
       return (
         <div className="w-full h-[500px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading comparison data</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-semibold">Error loading comparison data</p>
+          <p className="text-xs text-neutral-500 mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
           {selectedDriver1 === selectedDriver2 && (
@@ -260,15 +260,15 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     }
 
     return (
-      <div className="relative w-full h-[400px] bg-black border border-gray-700 p-4 overflow-hidden group/chart">
+      <div className="relative w-full h-[400px] bg-neutral-950 border border-neutral-800 rounded-lg p-3 overflow-hidden group/chart">
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver1Color }}></div>
-            <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver1}</span>
+            <span className="text-xs font-black text-neutral-300 font-mono">{selectedDriver1}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver2Color }}></div>
-            <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver2}</span>
+            <span className="text-xs font-black text-neutral-300 font-mono">{selectedDriver2}</span>
           </div>
         </div>
 
@@ -317,7 +317,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         {comparisonData && (
           <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
             <div className="flex items-center justify-end gap-2">
-              <span className="text-xs font-mono text-gray-500 uppercase">
+              <span className="text-xs font-mono text-neutral-500 uppercase">
                 Lap {comparisonData.driver1LapNumber}
               </span>
               <span className="text-xs font-mono text-white font-black">
@@ -326,7 +326,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver1Color }} />
             </div>
             <div className="flex items-center justify-end gap-2">
-              <span className="text-xs font-mono text-gray-500 uppercase">
+              <span className="text-xs font-mono text-neutral-500 uppercase">
                 Lap {comparisonData.driver2LapNumber}
               </span>
               <span className="text-xs font-mono text-white font-black">
@@ -340,12 +340,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         {/* Hover Tooltip */}
         {hoveredSection && (
           <div
-            className="fixed z-50 bg-black border border-gray-700 p-4 shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] min-w-[200px]"
+            className="fixed z-50 bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] min-w-[200px]"
             style={{ left: hoveredSection.x, top: hoveredSection.y }}
           >
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-gray-500 uppercase font-mono tracking-wider">
+                <span className="text-[10px] text-neutral-500 uppercase font-mono tracking-wider">
                   Sector
                 </span>
                 <span className="text-sm font-black text-white font-mono">
@@ -353,12 +353,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 </span>
               </div>
 
-              <div className="h-px w-full bg-gray-700" />
+              <div className="h-px w-full bg-neutral-700" />
 
               {/* Driver 1 Stats */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                     {(() => {
                       const headshot = getDriverImage(selectedDriver1, year);
                       return headshot ? (
@@ -368,23 +368,23 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                           className="w-full h-full object-cover object-top"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                        <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                           {selectedDriver1[0]}
                         </div>
                       );
                     })()}
                   </div>
-                  <span className="text-xs font-mono text-gray-300 font-black">
+                  <span className="text-xs font-mono text-neutral-300 font-black">
                     {selectedDriver1}
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
                   {hoveredSection.driver1AvgSpeed && (
                     <div className="flex flex-col items-end">
-                      <span className="text-[8px] text-gray-500 uppercase font-mono">
+                      <span className="text-[8px] text-neutral-500 uppercase font-mono">
                         Avg Speed
                       </span>
-                      <span className="text-[10px] text-gray-400 font-mono">
+                      <span className="text-[10px] text-neutral-400 font-mono">
                         {Math.round(hoveredSection.driver1AvgSpeed)} km/h
                       </span>
                     </div>
@@ -395,7 +395,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               {/* Driver 2 Stats */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                     {(() => {
                       const headshot = getDriverImage(selectedDriver2, year);
                       return headshot ? (
@@ -405,23 +405,23 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                           className="w-full h-full object-cover object-top"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                        <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                           {selectedDriver2[0]}
                         </div>
                       );
                     })()}
                   </div>
-                  <span className="text-xs font-mono text-gray-300 font-black">
+                  <span className="text-xs font-mono text-neutral-300 font-black">
                     {selectedDriver2}
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
                   {hoveredSection.driver2AvgSpeed && (
                     <div className="flex flex-col items-end">
-                      <span className="text-[8px] text-gray-500 uppercase font-mono">
+                      <span className="text-[8px] text-neutral-500 uppercase font-mono">
                         Avg Speed
                       </span>
-                      <span className="text-[10px] text-gray-400 font-mono">
+                      <span className="text-[10px] text-neutral-400 font-mono">
                         {Math.round(hoveredSection.driver2AvgSpeed)} km/h
                       </span>
                     </div>
@@ -429,7 +429,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 </div>
               </div>
 
-              <div className="h-px w-full bg-gray-700" />
+              <div className="h-px w-full bg-neutral-700" />
 
               <div className="flex items-center gap-2">
                 {hoveredSection.advantage !== 0 ? (
@@ -448,7 +448,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                     </span>
                   </>
                 ) : (
-                  <span className="text-xs font-mono text-gray-400">Equal Pace</span>
+                  <span className="text-xs font-mono text-neutral-400">Equal Pace</span>
                 )}
               </div>
             </div>
@@ -464,11 +464,11 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         chartRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('bg-black border border-gray-700 p-6', className)}
+      className={cn('bg-neutral-950 border border-neutral-800 rounded-lg p-5', className)}
     >
-      <div className="flex flex-col gap-6 mb-6 border-b border-gray-700 pb-4">
+      <div className="flex flex-col gap-6 mb-6 border-b border-neutral-800 pb-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
+          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
             {title || 'Track Dominance'}
           </h3>
           <ChartExportMenu
@@ -490,7 +490,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         <div className="flex flex-col gap-4">
           {/* Driver 1 Selector */}
           <div className="flex items-center gap-4">
-            <span className="text-xs font-black text-gray-400 uppercase w-16">Driver 1</span>
+            <span className="text-xs font-black text-neutral-400 uppercase w-16">Driver 1</span>
             <Select
               value={selectedDriver1}
               onValueChange={(value) => {
@@ -500,18 +500,18 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               }}
               disabled={isLoadingDrivers || !availableDrivers}
             >
-              <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
+              <SelectTrigger className="w-[200px] bg-black border-neutral-800 text-white text-xs h-10 rounded-md focus:ring-red-600">
                 <div className="flex items-center gap-2 w-full">
                   {(() => {
                     const driver = availableDrivers?.find((d) => d.code === selectedDriver1);
                     const headshot = getDriverImage(selectedDriver1, year);
                     const color = driverColor(selectedDriver1, year);
 
-                    if (!driver) return <span className="text-gray-500">Select Driver</span>;
+                    if (!driver) return <span className="text-neutral-500">Select Driver</span>;
 
                     return (
                       <>
-                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                           {headshot ? (
                             <img
                               src={headshot}
@@ -519,7 +519,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               className="w-full h-full object-cover object-top"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                            <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                               {driver.code[0]}
                             </div>
                           )}
@@ -536,9 +536,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                   })()}
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[300px]">
+              <SelectContent className="bg-black border-neutral-800 text-white rounded-md max-h-[300px]">
                 <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase">
+                  <SelectLabel className="text-xs text-neutral-500 uppercase">
                     Select Driver
                   </SelectLabel>
                   {availableDrivers?.map((driver) => {
@@ -551,10 +551,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                         key={`d1-${driver.code}`}
                         value={driver.code}
                         disabled={isDisabled}
-                        className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
+                        className="text-xs font-mono focus:bg-neutral-900 focus:text-white pl-2"
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                             {headshot ? (
                               <img
                                 src={headshot}
@@ -562,7 +562,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                                 className="w-full h-full object-cover object-top"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                                 {driver.code[0]}
                               </div>
                             )}
@@ -588,21 +588,21 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               }}
               disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
             >
-              <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">
+              <SelectTrigger className="w-[100px] bg-transparent border-b border-neutral-800 text-white text-xs h-10 rounded-md focus:ring-0 focus:border-red-600 hover:bg-neutral-900/50 transition-colors ml-auto px-2">
                 <div className="flex flex-col items-start leading-none gap-1">
-                  <span className="text-[8px] text-gray-500 uppercase font-black">Lap</span>
+                  <span className="text-[8px] text-neutral-500 uppercase font-black">Lap</span>
                   <span className="font-mono font-black text-red-500">
                     {selectedLap1 === 'fastest' ? 'FASTEST' : selectedLap1}
                   </span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+              <SelectContent className="bg-black border-neutral-800 text-white rounded-md max-h-[200px]">
                 <SelectGroup>
                   {lapOptions1.map((lapOpt) => (
                     <SelectItem
                       key={`d1-lap-${lapOpt}`}
                       value={String(lapOpt)}
-                      className="text-xs font-mono focus:bg-gray-900 focus:text-red-500"
+                      className="text-xs font-mono focus:bg-neutral-900 focus:text-red-500"
                     >
                       {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
                     </SelectItem>
@@ -614,7 +614,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
 
           {/* Driver 2 Selector */}
           <div className="flex items-center gap-4">
-            <span className="text-xs font-black text-gray-400 uppercase w-16">Driver 2</span>
+            <span className="text-xs font-black text-neutral-400 uppercase w-16">Driver 2</span>
             <Select
               value={selectedDriver2}
               onValueChange={(value) => {
@@ -624,18 +624,18 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               }}
               disabled={isLoadingDrivers || !availableDrivers}
             >
-              <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
+              <SelectTrigger className="w-[200px] bg-black border-neutral-800 text-white text-xs h-10 rounded-md focus:ring-red-600">
                 <div className="flex items-center gap-2 w-full">
                   {(() => {
                     const driver = availableDrivers?.find((d) => d.code === selectedDriver2);
                     const headshot = getDriverImage(selectedDriver2, year);
                     const color = driverColor(selectedDriver2, year);
 
-                    if (!driver) return <span className="text-gray-500">Select Driver</span>;
+                    if (!driver) return <span className="text-neutral-500">Select Driver</span>;
 
                     return (
                       <>
-                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                           {headshot ? (
                             <img
                               src={headshot}
@@ -643,7 +643,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                               className="w-full h-full object-cover object-top"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                            <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                               {driver.code[0]}
                             </div>
                           )}
@@ -660,9 +660,9 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                   })()}
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[300px]">
+              <SelectContent className="bg-black border-neutral-800 text-white rounded-md max-h-[300px]">
                 <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase">
+                  <SelectLabel className="text-xs text-neutral-500 uppercase">
                     Select Driver
                   </SelectLabel>
                   {availableDrivers?.map((driver) => {
@@ -675,10 +675,10 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                         key={`d2-${driver.code}`}
                         value={driver.code}
                         disabled={isDisabled}
-                        className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
+                        className="text-xs font-mono focus:bg-neutral-900 focus:text-white pl-2"
                       >
                         <div className="flex items-center gap-2 w-full">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                             {headshot ? (
                               <img
                                 src={headshot}
@@ -686,7 +686,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                                 className="w-full h-full object-cover object-top"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                                 {driver.code[0]}
                               </div>
                             )}
@@ -712,21 +712,21 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               }}
               disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
             >
-              <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">
+              <SelectTrigger className="w-[100px] bg-transparent border-b border-neutral-800 text-white text-xs h-10 rounded-md focus:ring-0 focus:border-red-600 hover:bg-neutral-900/50 transition-colors ml-auto px-2">
                 <div className="flex flex-col items-start leading-none gap-1">
-                  <span className="text-[8px] text-gray-500 uppercase font-black">Lap</span>
+                  <span className="text-[8px] text-neutral-500 uppercase font-black">Lap</span>
                   <span className="font-mono font-black text-red-500">
                     {selectedLap2 === 'fastest' ? 'FASTEST' : selectedLap2}
                   </span>
                 </div>
               </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+              <SelectContent className="bg-black border-neutral-800 text-white rounded-md max-h-[200px]">
                 <SelectGroup>
                   {lapOptions2.map((lapOpt) => (
                     <SelectItem
                       key={`d2-lap-${lapOpt}`}
                       value={String(lapOpt)}
-                      className="text-xs font-mono focus:bg-gray-900 focus:text-red-500"
+                      className="text-xs font-mono focus:bg-neutral-900 focus:text-red-500"
                     >
                       {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
                     </SelectItem>

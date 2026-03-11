@@ -126,10 +126,10 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
     .sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
 
   const renderPlacesChanged = (change: number | null, gridPos: number | undefined) => {
-    if (gridPos === 0) return <span className="text-gray-500 text-xs italic">PIT</span>;
+    if (gridPos === 0) return <span className="text-neutral-500 text-xs italic">PIT</span>;
     if (change === null || change === 0) {
       return (
-        <span className="text-gray-600 flex items-center justify-center font-mono">
+        <span className="text-neutral-500 flex items-center justify-center font-mono">
           <MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0
         </span>
       );
@@ -149,31 +149,31 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
   };
 
   return (
-    <div className="bg-black border border-gray-700">
-      <div className="p-4 border-b border-gray-700">
-        <h4 className="text-sm font-black uppercase tracking-wider text-white">
+    <div className="bg-black border border-neutral-800">
+      <div className="p-4 border-b border-neutral-800">
+        <h4 className="text-sm font-semibold text-white">
           Places Gained/Lost
         </h4>
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-black border-b border-gray-700">
-            <TableRow className="border-gray-700 hover:bg-transparent">
-              <TableHead className="w-[50px] text-center text-gray-400 font-black uppercase text-xs">
+          <TableHeader className="bg-black border-b border-neutral-800">
+            <TableRow className="border-neutral-800 hover:bg-transparent">
+              <TableHead className="w-[50px] text-center text-neutral-400 font-semibold text-xs">
                 Pos
               </TableHead>
-              <TableHead className="text-gray-400 font-black uppercase text-xs">Driver</TableHead>
-              <TableHead className="text-gray-400 font-black uppercase text-xs">Team</TableHead>
-              <TableHead className="w-[90px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="text-neutral-400 font-semibold text-xs">Driver</TableHead>
+              <TableHead className="text-neutral-400 font-semibold text-xs">Team</TableHead>
+              <TableHead className="w-[90px] text-center text-neutral-400 font-semibold text-xs">
                 Change
               </TableHead>
-              <TableHead className="w-[120px] text-right text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[120px] text-right text-neutral-400 font-semibold text-xs">
                 Time
               </TableHead>
-              <TableHead className="w-[60px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[60px] text-center text-neutral-400 font-semibold text-xs">
                 Laps
               </TableHead>
-              <TableHead className="w-[70px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[70px] text-center text-neutral-400 font-semibold text-xs">
                 Grid
               </TableHead>
             </TableRow>
@@ -182,9 +182,9 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
             {calculatedResults.map((res) => (
               <TableRow
                 key={res.driverCode}
-                className="border-gray-700/50 hover:bg-gray-800/30 transition-colors group"
+                className="border-neutral-800/50 hover:bg-neutral-800/30 transition-colors group"
               >
-                <TableCell className="text-center font-mono font-black text-gray-400 group-hover:text-white">
+                <TableCell className="text-center font-mono font-black text-neutral-400 group-hover:text-white">
                   {res.position ?? '-'}
                 </TableCell>
                 <TableCell>
@@ -205,19 +205,19 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
                         `bg-f1-${getTeamColorClass(res.team)}`
                       )}
                     ></span>
-                    <span className="text-xs text-gray-400 uppercase">{res.team}</span>
+                    <span className="text-xs text-neutral-400 uppercase">{res.team}</span>
                   </span>
                 </TableCell>
                 <TableCell className="text-center text-xs">
                   {renderPlacesChanged(res.placesChanged, res.gridPosition)}
                 </TableCell>
-                <TableCell className="text-right text-sm font-mono text-gray-500">
+                <TableCell className="text-right text-sm font-mono text-neutral-500">
                   {formatRaceTime(res.time, res.position === 1)}
                 </TableCell>
-                <TableCell className="text-center font-mono text-gray-500">
+                <TableCell className="text-center font-mono text-neutral-500">
                   {res.laps ?? '-'}
                 </TableCell>
-                <TableCell className="text-center font-mono text-gray-500">
+                <TableCell className="text-center font-mono text-neutral-500">
                   {res.gridPosition === 0 ? 'PL' : (res.gridPosition ?? '-')}
                 </TableCell>
               </TableRow>

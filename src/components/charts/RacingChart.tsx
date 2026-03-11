@@ -269,14 +269,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
       return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-neutral-800 gap-4">
+          <p className="text-neutral-400 font-mono text-sm uppercase">Select drivers to compare</p>
           <Button
             onClick={() => {
               trackInteraction('chart_data_loaded', { chart: 'lap_time', year, event, session });
               setShouldLoadChart(true);
             }}
-            className="bg-white hover:bg-gray-200 text-black font-black uppercase tracking-wider rounded-none"
+            className="bg-white hover:bg-gray-200 text-black font-semibold rounded-md"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
             <Analytics01Icon className="w-4 h-4 mr-2" />
@@ -288,7 +288,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-gray-700">
+        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-neutral-800">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -297,8 +297,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
       return (
         <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading lap times</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-semibold">Error loading lap times</p>
+          <p className="text-xs text-neutral-500 mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
           {!staticData && (
@@ -306,7 +306,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-black"
+              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-md uppercase font-black"
             >
               Back
             </Button>
@@ -316,14 +316,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
     }
     if (lapData.length === 0) {
       return (
-        <div className="w-full h-[300px] bg-black border border-gray-700 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[300px] bg-black border border-neutral-800 flex flex-col items-center justify-center text-neutral-500 font-mono uppercase">
           <p>No common lap data found.</p>
           {!staticData && (
             <Button
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-gray-700 hover:bg-gray-800 rounded-none"
+              className="mt-4 border-neutral-800 hover:bg-neutral-800 rounded-md"
             >
               Back
             </Button>
@@ -363,8 +363,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 );
 
                 return (
-                  <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[600px] z-50">
-                    <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                  <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl max-w-[600px] z-50">
+                    <div className="text-white font-semibold border-b border-neutral-800 pb-2 mb-2 font-mono text-sm">
                       Lap {lapNumber}
                     </div>
                     <div className="space-y-2">
@@ -391,10 +391,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         return (
                           <div
                             key={driverCode}
-                            className="border-b border-gray-700/50 pb-2 last:border-0 last:pb-0"
+                            className="border-b border-neutral-800/50 pb-2 last:border-0 last:pb-0"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
+                              <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-neutral-800">
                                 {headshot ? (
                                   <img
                                     src={headshot}
@@ -402,7 +402,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                     className="w-full h-full object-cover object-top"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500">
                                     {driverCode[0]}
                                   </div>
                                 )}
@@ -410,7 +410,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                               <span className="text-xs font-black font-mono" style={{ color }}>
                                 {formatLapTime(time as number)}
                               </span>
-                              <span className="text-xs font-mono text-gray-400 font-black">
+                              <span className="text-xs font-mono text-neutral-400 font-black">
                                 {driverCode}
                               </span>
                               {lapDetail?.compound && (
@@ -426,12 +426,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 </span>
                               )}
                               {lapDetail?.tyreLife != null && (
-                                <span className="text-[10px] text-gray-500 font-mono">
+                                <span className="text-[10px] text-neutral-500 font-mono">
                                   L{lapDetail.tyreLife}
                                 </span>
                               )}
                               {lapDetail?.position != null && (
-                                <span className="text-[10px] text-gray-600 font-mono">
+                                <span className="text-[10px] text-neutral-500 font-mono">
                                   P{lapDetail.position}
                                 </span>
                               )}
@@ -448,25 +448,25 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 lapDetail.sector3 != null) && (
                                 <div className="flex gap-3 mt-1 ml-8">
                                   {lapDetail.sector1 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] font-mono text-neutral-500">
                                       S1{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-neutral-300">
                                         {lapDetail.sector1.toFixed(3)}
                                       </span>
                                     </span>
                                   )}
                                   {lapDetail.sector2 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] font-mono text-neutral-500">
                                       S2{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-neutral-300">
                                         {lapDetail.sector2.toFixed(3)}
                                       </span>
                                     </span>
                                   )}
                                   {lapDetail.sector3 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] font-mono text-neutral-500">
                                       S3{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-neutral-300">
                                         {lapDetail.sector3.toFixed(3)}
                                       </span>
                                     </span>
@@ -561,8 +561,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
         {/* Weather Banner */}
         {weatherData && (
-          <div className="flex items-center gap-4 px-4 py-2 bg-black border border-gray-700 text-xs font-mono text-white mb-4">
-            <span className="font-black text-gray-400 uppercase tracking-wider">CONDITIONS</span>
+          <div className="flex items-center gap-4 px-4 py-2 bg-black border border-neutral-800 text-xs font-mono text-white mb-4">
+            <span className="font-black text-neutral-400 uppercase tracking-wider">CONDITIONS</span>
             <span>
               AIR <span className="text-white font-black">{weatherData.airTemp.toFixed(1)}°C</span>
             </span>
@@ -582,42 +582,42 @@ const RacingChart: React.FC<RacingChartProps> = ({
         )}
 
         {/* Fastest Laps Table — enriched */}
-        <div className="border-t border-gray-700 pt-6">
+        <div className="border-t border-neutral-800 pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Time01Icon className="w-5 h-5 text-red-600" />
-            <h4 className="text-sm font-black uppercase tracking-wider text-white">
+            <h4 className="text-sm font-semibold text-white">
               Fastest Laps (Selection)
             </h4>
           </div>
-          <div className="overflow-x-auto border border-gray-700 bg-black">
+          <div className="overflow-x-auto border border-neutral-800 bg-black">
             <Table>
               <TableHeader className="bg-black">
-                <TableRow className="border-gray-700 hover:bg-transparent">
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8">
+                <TableRow className="border-neutral-800 hover:bg-transparent">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8">
                     Driver
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     Time
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-center">
                     Lap
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     Gap
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-center">
                     Tyre
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     S1
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     S2
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     S3
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-xs font-black text-neutral-400 uppercase tracking-wider h-8 text-right">
                     ST
                   </TableHead>
                 </TableRow>
@@ -644,22 +644,22 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   return (
                     <TableRow
                       key={stat.driver}
-                      className="border-b border-gray-700/50 hover:bg-gray-800/30"
+                      className="border-b border-neutral-800/50 hover:bg-neutral-800/30"
                     >
                       <TableCell className="py-2 font-mono font-black" style={{ color }}>
                         {stat.driver}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-gray-300">
+                      <TableCell className="py-2 text-right font-mono text-neutral-300">
                         {formatLapTime(stat.fastestTime)}
                       </TableCell>
-                      <TableCell className="py-2 text-center font-mono text-gray-500 text-xs">
+                      <TableCell className="py-2 text-center font-mono text-neutral-500 text-xs">
                         {stat.lapNumber !== -1 ? `L${stat.lapNumber}` : '-'}
                       </TableCell>
                       <TableCell className="py-2 text-right font-mono text-xs">
                         {index === 0 ? (
                           <span className="text-purple-400 font-black">FASTEST</span>
                         ) : (
-                          <span className="text-gray-500">
+                          <span className="text-neutral-500">
                             {gap !== null ? `+${gap.toFixed(3)}s` : '-'}
                           </span>
                         )}
@@ -680,16 +680,16 @@ const RacingChart: React.FC<RacingChartProps> = ({
                           '-'
                         )}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-2 text-right font-mono text-xs text-neutral-400">
                         {lapDetail?.sector1 != null ? lapDetail.sector1.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-2 text-right font-mono text-xs text-neutral-400">
                         {lapDetail?.sector2 != null ? lapDetail.sector2.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-2 text-right font-mono text-xs text-neutral-400">
                         {lapDetail?.sector3 != null ? lapDetail.sector3.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-2 text-right font-mono text-xs text-neutral-400">
                         {lapDetail?.speedST != null ? `${lapDetail.speedST.toFixed(0)}` : '-'}
                       </TableCell>
                     </TableRow>
@@ -702,7 +702,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
         {/* Deleted Laps & Speed Traps Summary */}
         {driverLapDetails && (
-          <div className="flex flex-col gap-0 border-t border-gray-700">
+          <div className="flex flex-col gap-0 border-t border-neutral-800">
             {/* Deleted Laps */}
             {(() => {
               const deletedLaps = driversToDisplay.flatMap((drv) =>
@@ -712,8 +712,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
               );
               if (deletedLaps.length === 0) return null;
               return (
-                <div className="px-4 py-3 border-r border-gray-700">
-                  <h4 className="text-base font-black uppercase italic text-white mb-2">
+                <div className="px-4 py-3 border-r border-neutral-800">
+                  <h4 className="text-base font-semibold italic text-white mb-2">
                     Deleted Laps ({deletedLaps.length})
                   </h4>
                   <div className="space-y-1">
@@ -737,7 +737,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       </div>
                     ))}
                     {deletedLaps.length > 10 && (
-                      <span className="text-xs text-gray-400 font-bold">
+                      <span className="text-xs text-neutral-400 font-bold">
                         +{deletedLaps.length - 10} more
                       </span>
                     )}
@@ -775,7 +775,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               const chartHeight = Math.max(100, speedData.length * 50);
               return (
                 <div className="px-4 py-3">
-                  <h4 className="text-base font-black uppercase italic text-white mb-2">
+                  <h4 className="text-base font-semibold italic text-white mb-2">
                     Speed Trap (km/h)
                   </h4>
                   <ResponsiveContainer width="100%" height={chartHeight}>
@@ -816,8 +816,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-black border border-gray-700 p-3 shadow-xl min-w-[150px]">
-                                <p className="text-white font-black font-mono border-b border-gray-700 pb-1 mb-2 text-base">
+                              <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl min-w-[150px]">
+                                <p className="text-white font-black font-mono border-b border-neutral-800 pb-1 mb-2 text-base">
                                   {label}
                                 </p>
                                 {payload.map((entry, index) => (
@@ -832,7 +832,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                         opacity: entry.name === 'Max Speed' ? 0.9 : 0.3,
                                       }}
                                     />
-                                    <p className="text-sm font-bold text-gray-300 flex-1">
+                                    <p className="text-sm font-bold text-neutral-300 flex-1">
                                       {entry.name}:
                                     </p>
                                     <span className="text-white font-black font-mono">
@@ -900,9 +900,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
         {/* Tyre Strategy & Degradation */}
         {driverLapDetails && (
-          <div className="border-t border-gray-700">
+          <div className="border-t border-neutral-800">
             <div className="px-4 py-3">
-              <h4 className="text-base font-black uppercase italic text-white mb-3">
+              <h4 className="text-base font-semibold italic text-white mb-3">
                 Tyre Strategy & Stint Pace
               </h4>
               <div className="space-y-2">
@@ -932,10 +932,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   const stintEntries = Array.from(stintMap.entries());
 
                   return (
-                    <div key={drv} className="border border-gray-700 bg-black">
+                    <div key={drv} className="border border-neutral-800 bg-black">
                       <div className="flex items-center gap-2 px-3 py-2">
                         <div
-                          className="w-7 h-7 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
+                          className="w-7 h-7 rounded-full bg-neutral-800 overflow-hidden border-2 shrink-0"
                           style={{ borderColor: color }}
                         >
                           {headshot ? (
@@ -945,7 +945,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                               className="w-full h-full object-cover object-top"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-400 font-mono font-bold">
                               {drv[0]}
                             </div>
                           )}
@@ -953,11 +953,11 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         <span className="text-sm font-mono font-black" style={{ color }}>
                           {drv}
                         </span>
-                        <span className="text-xs font-mono text-gray-400 font-bold">
+                        <span className="text-xs font-mono text-neutral-400 font-bold">
                           {stintEntries.length} stint{stintEntries.length !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <div className="flex flex-col border-t border-gray-700 divide-y divide-gray-800/50 bg-black/20">
+                      <div className="flex flex-col border-t border-neutral-800 divide-y divide-gray-800/50 bg-black/20">
                         {stintEntries.map(([stintNum, laps]) => {
                           const compound = laps[0]?.compound || '?';
                           const lapCount = laps.length;
@@ -974,7 +974,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                           return (
                             <div
                               key={stintNum}
-                              className="flex items-center justify-between px-3 py-2 relative overflow-hidden group hover:bg-gray-800/30 transition-colors"
+                              className="flex items-center justify-between px-3 py-2 relative overflow-hidden group hover:bg-neutral-800/30 transition-colors"
                             >
                               <div
                                 className="absolute left-0 top-0 bottom-0 w-1.5"
@@ -989,7 +989,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 </span>
                                 <span className="text-xs text-white font-mono font-bold">
                                   Laps {laps[0]?.lapNumber}–{laps[laps.length - 1]?.lapNumber}{' '}
-                                  <span className="text-gray-500">({lapCount} laps)</span>
+                                  <span className="text-neutral-500">({lapCount} laps)</span>
                                 </span>
                               </div>
                               <div className="flex items-center gap-6 text-right">
@@ -1001,7 +1001,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                   </span>
                                 )}
                                 {tyreLifeEnd != null && (
-                                  <span className="text-xs font-mono text-gray-400 font-bold hidden md:inline-block">
+                                  <span className="text-xs font-mono text-neutral-400 font-bold hidden md:inline-block">
                                     Life: {tyreLifeEnd}
                                   </span>
                                 )}
@@ -1011,12 +1011,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                       Avg: {formatLapTime(avgTime)}
                                     </span>
                                   ) : (
-                                    <span className="text-xs font-mono text-gray-500 font-black">
+                                    <span className="text-xs font-mono text-neutral-500 font-black">
                                       Avg: N/A
                                     </span>
                                   )}
                                   {bestTime != null && (
-                                    <span className="text-[10px] font-mono text-gray-400 font-bold">
+                                    <span className="text-[10px] font-mono text-neutral-400 font-bold">
                                       Best: {formatLapTime(bestTime)}
                                     </span>
                                   )}
@@ -1047,9 +1047,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
+      <div className="flex flex-col gap-4 mb-6 border-b border-neutral-800 pb-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase text-white tracking-wider">Lap Times</h3>
+          <h3 className="text-lg font-semibold text-white tracking-wider">Lap Times</h3>
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -1066,7 +1066,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
             isExporting={isExporting}
           />
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-gray-400 uppercase">Fuel Corrected</span>
+            <span className="text-xs font-bold text-neutral-400 uppercase">Fuel Corrected</span>
             <Switch
               checked={fuelCorrectionEnabled}
               onCheckedChange={(checked) => {
@@ -1085,21 +1085,21 @@ const RacingChart: React.FC<RacingChartProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-gray-500 hover:text-white"
+                  className="h-6 w-6 p-0 text-neutral-500 hover:text-white"
                 >
                   <InformationCircleIcon className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 bg-gray-900 border-gray-800 text-gray-300">
+              <PopoverContent className="w-80 bg-neutral-900 border-neutral-800 text-neutral-300">
                 <div className="space-y-2">
                   <div className="font-bold text-white uppercase text-sm">Fuel Correction</div>
                   <div className="text-xs space-y-1">
                     <p>Applies correction for fuel weight (0.03s per kg)</p>
-                    <p className="text-gray-500">
+                    <p className="text-neutral-500">
                       Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
                     </p>
-                    <p className="text-gray-500">Applied to first 60% of laps only</p>
-                    <p className="text-gray-500 mt-2 italic">
+                    <p className="text-neutral-500">Applied to first 60% of laps only</p>
+                    <p className="text-neutral-500 mt-2 italic">
                       Formula: corrected = raw - (fuelLoad × 0.03)
                     </p>
                   </div>
@@ -1122,12 +1122,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   className={cn(
                     'flex items-center gap-2 px-2 py-1 border transition-all duration-200 group',
                     isSelected
-                      ? 'bg-gray-900 border-gray-700 hover:border-gray-500'
-                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-900'
+                      ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
+                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-neutral-900'
                   )}
                   style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
                 >
-                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-neutral-800 overflow-hidden border border-neutral-800 shrink-0">
                     {headshot ? (
                       <img
                         src={headshot}
@@ -1135,7 +1135,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         className="w-full h-full object-cover object-top"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                         {driver.code[0]}
                       </div>
                     )}
@@ -1143,7 +1143,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   <span
                     className={cn(
                       'text-xs font-mono font-bold',
-                      isSelected ? 'text-white' : 'text-gray-500'
+                      isSelected ? 'text-white' : 'text-neutral-500'
                     )}
                   >
                     {driver.code}

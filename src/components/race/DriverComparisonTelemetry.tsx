@@ -388,11 +388,11 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="w-full h-[400px] bg-black border border-gray-700 p-4 relative group"
+      className="w-full h-[400px] bg-neutral-950 border border-neutral-800 rounded-lg p-3 relative group"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-black uppercase text-white tracking-wider">{title}</h3>
+          <h3 className="text-lg font-semibold text-white tracking-wider">{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           <ChartExportMenu
@@ -441,8 +441,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-black border border-gray-700 p-3 shadow-xl z-50">
-                      <div className="text-gray-400 text-xs font-mono mb-2 border-b border-gray-700 pb-1">
+                    <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl z-50">
+                      <div className="text-neutral-400 text-xs font-mono mb-2 border-b border-neutral-800 pb-1">
                         {Math.round(Number(label))}m
                       </div>
                       {payload.map((entry: TooltipPayloadEntry, index: number) => {
@@ -462,7 +462,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                                 <span className="text-xs font-black text-white font-mono">
                                   {driver1} vs {driver2}:
                                 </span>
-                                <span className="text-xs font-mono text-gray-300">
+                                <span className="text-xs font-mono text-neutral-300">
                                   {value > 0 ? '+' : ''}
                                   {value.toFixed(3)}s
                                 </span>
@@ -479,7 +479,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                               style={{ backgroundColor: color }}
                             ></div>
                             <span className="text-xs font-black text-white font-mono">{name}:</span>
-                            <span className="text-xs font-mono text-gray-300">
+                            <span className="text-xs font-mono text-neutral-300">
                               {typeof value === 'number'
                                 ? value.toFixed(telemetryType === 'rpm' ? 0 : 2)
                                 : value}

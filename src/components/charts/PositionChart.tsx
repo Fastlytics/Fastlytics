@@ -128,7 +128,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const renderContent = () => {
     if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
       return (
-        <div className="w-full h-[400px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[400px] bg-black border border-neutral-800 flex items-center justify-center text-neutral-500 font-mono uppercase">
           No position data found or provided.
         </div>
       );
@@ -186,8 +186,8 @@ const PositionChart: React.FC<PositionChartProps> = ({
               });
 
               return (
-                <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[500px] z-50">
-                  <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl max-w-[500px] z-50">
+                  <div className="text-white font-semibold border-b border-neutral-800 pb-2 mb-2 font-mono text-sm">
                     Lap {label}
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
@@ -207,7 +207,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                           >
                             P{position}
                           </span>
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
+                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-neutral-800">
                             {headshot ? (
                               <img
                                 src={headshot}
@@ -215,12 +215,12 @@ const PositionChart: React.FC<PositionChartProps> = ({
                                 className="w-full h-full object-cover object-top"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500">
                                 {driverCode[0]}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs font-mono text-gray-300 font-black">
+                          <span className="text-xs font-mono text-neutral-300 font-black">
                             {driverCode}
                           </span>
                         </div>
@@ -356,10 +356,10 @@ const PositionChart: React.FC<PositionChartProps> = ({
       className={cn('bg-black p-0', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-neutral-800 pb-2">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black uppercase tracking-wider text-white">
+            <h3 className="text-lg font-semibold text-white">
               Lap-by-Lap Position Changes
             </h3>
             <ChartExportMenu
@@ -374,7 +374,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
               isExporting={isExporting}
             />
           </div>
-          <p className="text-xs text-gray-400 font-mono uppercase">
+          <p className="text-xs text-neutral-400 font-mono uppercase">
             Track driver positions throughout the race.
           </p>
         </div>
@@ -385,7 +385,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={isPopoverOpen}
-                className="w-[180px] justify-between text-xs h-8 bg-black border-gray-700 text-white hover:bg-gray-800 hover:text-white rounded-none uppercase font-black tracking-wider"
+                className="w-[180px] justify-between text-xs h-8 bg-black border-neutral-800 text-white hover:bg-neutral-800 hover:text-white rounded-md uppercase font-black tracking-wider"
                 disabled={driverCodes.length === 0}
               >
                 {selectedDrivers.length === driverCodes.length
@@ -396,19 +396,19 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 <ArrowUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 bg-black border border-gray-700 text-white rounded-none">
-              <div className="p-2 border-b border-gray-700 flex justify-between bg-black">
+            <PopoverContent className="w-[200px] p-0 bg-black border border-neutral-800 text-white rounded-md">
+              <div className="p-2 border-b border-neutral-800 flex justify-between bg-black">
                 <Button
                   variant="link"
                   onClick={handleSelectAll}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
+                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-semibold"
                 >
                   All
                 </Button>
                 <Button
                   variant="link"
                   onClick={handleSelectNone}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
+                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-semibold"
                 >
                   None
                 </Button>
@@ -424,7 +424,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                       <Label
                         key={driverCode}
                         className={cn(
-                          'flex items-center space-x-2 p-2 hover:bg-gray-800/30 cursor-pointer transition-colors',
+                          'flex items-center space-x-2 p-2 hover:bg-neutral-800/30 cursor-pointer transition-colors',
                           isFavorite && 'bg-red-900/20 border-l-2 border-red-600',
                           focusedDriver && focusedDriver !== driverCode && 'opacity-30'
                         )}
@@ -435,7 +435,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                           id={`driver-${driverCode}`}
                           checked={selectedDrivers.includes(driverCode)}
                           onCheckedChange={() => handleDriverSelectionChange(driverCode)}
-                          className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-gray-600 rounded-none"
+                          className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-neutral-700 rounded-md"
                         />
                         <div className="flex items-center gap-3">
                           {headshot ? (
@@ -445,7 +445,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                               className="w-6 h-6 object-cover object-top rounded-full bg-black"
                             />
                           ) : (
-                            <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-[10px] font-black text-gray-500">
+                            <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-[10px] font-black text-neutral-500">
                               {driverCode.substring(0, 1)}
                             </div>
                           )}

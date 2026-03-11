@@ -163,7 +163,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Driver
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -181,7 +181,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
         accessorKey: 'stintNumber',
         header: 'Stint',
         cell: ({ row }) => (
-          <span className="text-center block font-mono text-gray-400">
+          <span className="text-center block font-mono text-neutral-400">
             {row.original.stintNumber}
           </span>
         ),
@@ -197,7 +197,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
               style={{ backgroundColor: row.original.compoundColor }}
               title={row.original.compound}
             ></span>
-            <span className="hidden md:inline font-black text-xs uppercase text-gray-300">
+            <span className="hidden md:inline font-black text-xs uppercase text-neutral-300">
               {row.original.compound}
             </span>
           </div>
@@ -210,7 +210,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Length
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -219,7 +219,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span className="font-mono text-white">{row.original.stintLength} Laps</span>
-            <span className="text-[10px] text-gray-600 font-mono">
+            <span className="text-[10px] text-neutral-500 font-mono">
               L{row.original.startLap} - L{row.original.endLap}
             </span>
           </div>
@@ -233,7 +233,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Fastest
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -253,14 +253,14 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Average
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-mono text-gray-300">{formatLapTime(row.original.avgLapTime)}</span>
+          <span className="font-mono text-neutral-300">{formatLapTime(row.original.avgLapTime)}</span>
         ),
         sortingFn: 'basic',
         enableSorting: true,
@@ -274,14 +274,14 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Consist. (σ)
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-mono text-gray-400">
+          <span className="font-mono text-neutral-400">
             {row.original.consistency?.toFixed(3) ?? 'N/A'}
           </span>
         ),
@@ -294,7 +294,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="p-0 hover:bg-transparent hover:text-white text-gray-500 font-black uppercase tracking-wider text-xs"
+            className="p-0 hover:bg-transparent hover:text-white text-neutral-500 font-semibold text-xs"
           >
             Degr. (Δ/lap)
             <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
@@ -335,7 +335,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
 
   if (isLoading) {
     return (
-      <div className="mt-6 bg-black border border-gray-700 p-8 flex items-center justify-center">
+      <div className="mt-6 bg-black border border-neutral-800 p-8 flex items-center justify-center">
         <LoadingSpinnerF1 />
       </div>
     );
@@ -345,8 +345,8 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
     return (
       <div className="mt-6 bg-black border border-red-600 p-6 flex flex-col items-center justify-center text-red-500">
         <AlertCircleIcon className="w-8 h-8 mb-2" />
-        <p className="font-black uppercase">Error Loading Stint Analysis</p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="font-semibold">Error Loading Stint Analysis</p>
+        <p className="text-xs text-neutral-500 mt-1">
           {(error as Error)?.message || 'Could not fetch stint analysis data.'}
         </p>
       </div>
@@ -355,7 +355,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
 
   if (!processedData || processedData.length === 0) {
     return (
-      <div className="mt-6 bg-black border border-gray-700 p-6 text-center text-gray-500 font-mono uppercase">
+      <div className="mt-6 bg-neutral-950 border border-neutral-800 rounded-lg p-5 text-center text-neutral-500 font-mono uppercase">
         No stint data available for analysis in this session.
       </div>
     );
@@ -387,7 +387,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="border-b border-gray-700/50 hover:bg-white/5 transition-colors"
+                  className="border-b border-neutral-800/50 hover:bg-white/5 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-4 py-3 text-sm font-mono">
@@ -400,7 +400,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center text-gray-500 font-mono uppercase"
+                  className="h-24 text-center text-neutral-500 font-mono uppercase"
                 >
                   No stint data available.
                 </TableCell>
@@ -409,17 +409,17 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({ year, event, se
           </TableBody>
         </Table>
       </div>
-      <div className="px-4 py-3 mt-4 border-t border-gray-700">
-        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">
+      <div className="px-4 py-3 mt-4 border-t border-neutral-800">
+        <h4 className="text-xs font-black text-neutral-400 uppercase tracking-wider mb-2">
           Metric Definitions:
         </h4>
-        <ul className="space-y-1 text-[10px] text-gray-500 font-mono">
+        <ul className="space-y-1 text-[10px] text-neutral-500 font-mono">
           <li className={cn(session !== 'R' && session !== 'Sprint' && 'opacity-50')}>
-            <span className="text-gray-300">CONSISTENCY (σ):</span> Standard Deviation of lap times.
+            <span className="text-neutral-300">CONSISTENCY (σ):</span> Standard Deviation of lap times.
             Lower is better.
           </li>
           <li className={cn(session !== 'R' && session !== 'Sprint' && 'opacity-50')}>
-            <span className="text-gray-300">DEGRADATION (Δ/lap):</span> Lap time loss per lap.
+            <span className="text-neutral-300">DEGRADATION (Δ/lap):</span> Lap time loss per lap.
             Positive = Slower over time.
           </li>
         </ul>

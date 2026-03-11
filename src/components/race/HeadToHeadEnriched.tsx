@@ -203,8 +203,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
     <div className="space-y-0">
       {/* Weather Strip */}
       {weatherData && (
-        <div className="flex items-center gap-5 px-4 py-2 bg-black border border-gray-700 text-sm font-mono text-white font-black">
-          <span className="text-xs font-black text-gray-400 uppercase tracking-wider mr-1">
+        <div className="flex items-center gap-5 px-4 py-2 bg-black border border-neutral-800 text-sm font-mono text-white font-black">
+          <span className="text-xs font-black text-neutral-400 uppercase tracking-wider mr-1">
             CONDITIONS
           </span>
           <span>
@@ -224,8 +224,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       )}
 
       {/* Strategy Timeline */}
-      <div className="bg-black border-x border-gray-700 px-4 py-3">
-        <h4 className="text-base font-black uppercase italic text-white mb-3">Tyre Strategy</h4>
+      <div className="bg-black border-x border-neutral-800 px-4 py-3">
+        <h4 className="text-base font-semibold italic text-white mb-3">Tyre Strategy</h4>
         {drivers.map((drv, drvIdx) => {
           const stints = driverStints[drv] || [];
           const drvColor = driverColor(drv, year);
@@ -234,7 +234,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
             <div key={drv} className={drvIdx > 0 ? 'mt-2' : ''}>
               <div className="flex items-center gap-2 mb-1">
                 <div
-                  className="w-7 h-7 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
+                  className="w-7 h-7 rounded-full bg-neutral-800 overflow-hidden border-2 shrink-0"
                   style={{ borderColor: drvColor }}
                 >
                   {headshot ? (
@@ -244,7 +244,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                       className="w-full h-full object-cover object-top"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-400 font-mono font-bold">
                       {drv[0]}
                     </div>
                   )}
@@ -253,11 +253,11 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                   {drv}
                 </span>
               </div>
-              <div className="flex flex-col gap-1 border border-gray-800 bg-gray-900/40 p-1 rounded-sm">
+              <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-900/40 p-1 rounded-sm">
                 {stints.map((stint) => (
                   <div
                     key={stint.stintNum}
-                    className="flex justify-between items-center bg-black px-3 py-2 border border-gray-800 transition-colors hover:bg-gray-800/50 group"
+                    className="flex justify-between items-center bg-black px-3 py-2 border border-neutral-800 transition-colors hover:bg-neutral-800/50 group"
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -272,7 +272,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                         <span className="text-sm text-white font-mono font-black">
                           L{stint.startLap}–{stint.endLap}
                         </span>
-                        <span className="text-[10px] sm:text-xs text-gray-400 font-mono font-bold">
+                        <span className="text-[10px] sm:text-xs text-neutral-400 font-mono font-bold">
                           ({stint.lapCount} LAPS)
                         </span>
                       </div>
@@ -281,7 +281,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                     <div className="flex items-center gap-4 text-right">
                       <div className="hidden sm:flex flex-col items-end">
                         {stint.avgTime != null && (
-                          <span className="text-xs font-mono text-gray-300">
+                          <span className="text-xs font-mono text-neutral-300">
                             Avg:{' '}
                             <span className="text-white font-black">
                               {formatLapTime(stint.avgTime)}
@@ -289,9 +289,9 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                           </span>
                         )}
                         {stint.bestTime != null && (
-                          <span className="text-[10px] font-mono text-gray-500">
+                          <span className="text-[10px] font-mono text-neutral-500">
                             Best:{' '}
-                            <span className="text-gray-300 font-bold">
+                            <span className="text-neutral-300 font-bold">
                               {formatLapTime(stint.bestTime)}
                             </span>
                           </span>
@@ -307,7 +307,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                           {stint.freshTyre ? '● NEW' : '● USED'}
                         </span>
                         {stint.tyreLifeEnd != null && (
-                          <span className="text-[10px] font-mono text-gray-500 font-bold mt-0.5">
+                          <span className="text-[10px] font-mono text-neutral-500 font-bold mt-0.5">
                             Life: {stint.tyreLifeEnd}
                           </span>
                         )}
@@ -323,8 +323,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Race Pace — interactive */}
       {paceData.length > 0 && (
-        <div className="bg-black border-x border-gray-700 px-4 py-3">
-          <h4 className="text-base font-black uppercase italic text-white mb-2">Race Pace</h4>
+        <div className="bg-black border-x border-neutral-800 px-4 py-3">
+          <h4 className="text-base font-semibold italic text-white mb-2">Race Pace</h4>
           <ResponsiveContainer width="100%" height={320}>
             <LineChart
               data={paceData}
@@ -362,8 +362,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                   if (!active || !payload || !payload.length) return null;
                   const lapNum = label as number;
                   return (
-                    <div className="bg-black border border-gray-600 p-3 shadow-xl min-w-[220px]">
-                      <div className="text-white font-black text-sm mb-2 border-b border-gray-700 pb-1">
+                    <div className="bg-black border border-neutral-700 p-3 shadow-xl min-w-[220px]">
+                      <div className="text-white font-black text-sm mb-2 border-b border-neutral-800 pb-1">
                         Lap {lapNum}
                       </div>
                       {payload.map((entry) => {
@@ -396,12 +396,12 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                                 </span>
                               )}
                               {detail?.tyreLife != null && (
-                                <span className="text-xs font-bold text-gray-300 font-mono">
+                                <span className="text-xs font-bold text-neutral-300 font-mono">
                                   L{detail.tyreLife}
                                 </span>
                               )}
                               {detail?.position != null && (
-                                <span className="text-xs font-bold text-gray-400 font-mono">
+                                <span className="text-xs font-bold text-neutral-400 font-mono">
                                   P{detail.position}
                                 </span>
                               )}
@@ -418,17 +418,17 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                                 detail.sector3 != null) && (
                                 <div className="flex gap-3 ml-0 mt-0.5">
                                   {detail.sector1 != null && (
-                                    <span className="text-xs font-mono text-gray-300 font-bold">
+                                    <span className="text-xs font-mono text-neutral-300 font-bold">
                                       S1 {detail.sector1.toFixed(3)}
                                     </span>
                                   )}
                                   {detail.sector2 != null && (
-                                    <span className="text-xs font-mono text-gray-300 font-bold">
+                                    <span className="text-xs font-mono text-neutral-300 font-bold">
                                       S2 {detail.sector2.toFixed(3)}
                                     </span>
                                   )}
                                   {detail.sector3 != null && (
-                                    <span className="text-xs font-mono text-gray-300 font-bold">
+                                    <span className="text-xs font-mono text-neutral-300 font-bold">
                                       S3 {detail.sector3.toFixed(3)}
                                     </span>
                                   )}
@@ -473,14 +473,14 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
           </ResponsiveContainer>
           {/* Click-to-inspect detail */}
           {activeLap && activeLapDetails && (
-            <div className="mt-0 bg-gray-950 border border-gray-700 px-4 py-3">
+            <div className="mt-0 bg-gray-950 border border-neutral-800 px-4 py-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-black text-white font-mono">
                   LAP {activeLap} DETAIL
                 </span>
                 <button
                   onClick={() => setActiveLap(null)}
-                  className="text-xs font-bold text-gray-500 hover:text-white transition"
+                  className="text-xs font-bold text-neutral-500 hover:text-white transition"
                 >
                   CLOSE ✕
                 </button>
@@ -489,7 +489,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                 {activeLapDetails.map(({ driver, record }) => {
                   const drvColor = driverColor(driver, year);
                   return (
-                    <div key={driver} className="border border-gray-700 p-3 bg-black">
+                    <div key={driver} className="border border-neutral-800 p-3 bg-black">
                       <div
                         className="text-sm font-black font-mono mb-1.5"
                         style={{ color: drvColor }}
@@ -555,7 +555,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500 font-bold">No data</span>
+                        <span className="text-sm text-neutral-500 font-bold">No data</span>
                       )}
                     </div>
                   );
@@ -568,8 +568,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Speed Trap Bar Chart */}
       {speedTrapData.length > 0 && (
-        <div className="bg-black border-x border-gray-700 px-4 py-3">
-          <h4 className="text-base font-black uppercase italic text-white mb-2">Speed Trap</h4>
+        <div className="bg-black border-x border-neutral-800 px-4 py-3">
+          <h4 className="text-base font-semibold italic text-white mb-2">Speed Trap</h4>
           <ResponsiveContainer width="100%" height={110}>
             <BarChart
               data={speedTrapData}
@@ -655,8 +655,8 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Deleted Laps */}
       {deletedLaps.length > 0 && (
-        <div className="bg-black border-x border-b border-gray-700 px-4 py-3">
-          <h4 className="text-base font-black uppercase italic text-white mb-2">
+        <div className="bg-black border-x border-b border-neutral-800 px-4 py-3">
+          <h4 className="text-base font-semibold italic text-white mb-2">
             Deleted Laps ({deletedLaps.length})
           </h4>
           <div className="space-y-1">
@@ -677,7 +677,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
               </div>
             ))}
             {deletedLaps.length > 10 && (
-              <span className="text-xs text-gray-400 font-bold">
+              <span className="text-xs text-neutral-400 font-bold">
                 +{deletedLaps.length - 10} more
               </span>
             )}

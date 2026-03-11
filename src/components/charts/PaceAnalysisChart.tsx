@@ -56,22 +56,22 @@ const CustomTooltip: React.FC<PaceTooltipProps> = ({ active, payload, label }) =
       <div className="bg-black/90 border border-white/20 p-3 rounded shadow-lg backdrop-blur-md z-50">
         <p className="text-white font-bold mb-2">{label}</p>
         <div className="space-y-1 text-sm">
-          <p className="text-gray-300">
+          <p className="text-neutral-300">
             Fastest: <span className="text-white font-mono">{formatTime(data.min)}</span>
           </p>
-          <p className="text-gray-300">
+          <p className="text-neutral-300">
             Q1 (25%): <span className="text-white font-mono">{formatTime(data.q1)}</span>
           </p>
           <p className="text-red-500 font-bold">
             Median: <span className="font-mono">{formatTime(data.median)}</span>
           </p>
-          <p className="text-gray-300">
+          <p className="text-neutral-300">
             Q3 (75%): <span className="text-white font-mono">{formatTime(data.q3)}</span>
           </p>
-          <p className="text-gray-300">
+          <p className="text-neutral-300">
             Slowest: <span className="text-white font-mono">{formatTime(data.max)}</span>
           </p>
-          <p className="text-gray-400 text-xs mt-2">Laps: {data.count}</p>
+          <p className="text-neutral-400 text-xs mt-2">Laps: {data.count}</p>
         </div>
       </div>
     );
@@ -238,7 +238,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                 'px-2 py-1 text-xs font-bold rounded border transition-all',
                 selectedDrivers.includes(driver.code)
                   ? 'bg-white text-black border-white'
-                  : 'bg-transparent text-gray-500 border-gray-800 hover:border-gray-600'
+                  : 'bg-transparent text-neutral-500 border-neutral-800 hover:border-neutral-700'
               )}
               style={{
                 borderColor: selectedDrivers.includes(driver.code)
@@ -257,7 +257,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
       </div>
 
       {selectedDrivers.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-gray-500 border border-dashed border-gray-800 rounded-lg">
+        <div className="h-64 flex items-center justify-center text-neutral-500 border border-dashed border-neutral-800 rounded-lg">
           Select drivers to compare pace distribution
         </div>
       ) : isLoading ? (
@@ -332,7 +332,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               />
             </ComposedChart>
           </ResponsiveContainer>
-          <div className="mt-4 text-xs text-center text-gray-500">
+          <div className="mt-4 text-xs text-center text-neutral-500">
             Box represents the middle 50% of laps (Interquartile Range).
             <span className="mx-2 text-white">■ Median</span>
             <span className="mx-2 text-green-500">▲ Fastest</span>

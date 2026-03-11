@@ -91,17 +91,17 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="w-full h-[400px] flex items-center justify-center bg-gray-900/50 rounded-lg">
+        <div className="w-full h-[400px] flex items-center justify-center bg-neutral-900/50 rounded-lg">
           <LoadingSpinnerF1 />
         </div>
       );
     }
     if (isError || !data) {
       return (
-        <div className="w-full h-[400px] bg-gray-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
+        <div className="w-full h-[400px] bg-neutral-900/80 border border-red-500/30 rounded-lg flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-semibold">Error loading track evolution data</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-neutral-500 mt-1">
             {(error as Error)?.message || 'Could not fetch analysis.'}
           </p>
         </div>
@@ -109,7 +109,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     }
     if (chartData.length === 0 || data.drivers.length === 0) {
       return (
-        <div className="w-full h-[400px] bg-gray-900/80 border border-gray-700/50 rounded-lg flex items-center justify-center text-gray-500">
+        <div className="w-full h-[400px] bg-neutral-900/80 border border-neutral-800/50 rounded-lg flex items-center justify-center text-neutral-500">
           Not enough data available for track evolution analysis.
         </div>
       );
@@ -255,7 +255,7 @@ const TrackEvolutionChart: React.FC<TrackEvolutionChartProps> = ({
     <Card
       ref={exportRef}
       className={cn(
-        'chart-container bg-gray-900/70 border border-gray-700/80 backdrop-blur-sm',
+        'chart-container bg-neutral-900/70 border border-neutral-800/80 backdrop-blur-sm',
         className
       )}
     >

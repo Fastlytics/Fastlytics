@@ -227,8 +227,8 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
       return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-neutral-800 gap-4">
+          <p className="text-neutral-400 font-mono text-sm uppercase">Select drivers to compare</p>
           <Button
             onClick={() => {
               trackInteraction('chart_data_loaded', {
@@ -239,7 +239,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               });
               setShouldLoadChart(true);
             }}
-            className="bg-white hover:bg-gray-200 text-black font-black uppercase tracking-wider rounded-none"
+            className="bg-white hover:bg-gray-200 text-black font-semibold rounded-md"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
             <Analytics01Icon className="w-4 h-4 mr-2" />
@@ -251,7 +251,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-gray-700">
+        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-neutral-800">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -261,8 +261,8 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       return (
         <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading lap times</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-semibold">Error loading lap times</p>
+          <p className="text-xs text-neutral-500 mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
           {!staticData && (
@@ -270,7 +270,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-bold"
+              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-md uppercase font-bold"
             >
               Back
             </Button>
@@ -281,14 +281,14 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     if (lapData.length === 0 || gapData.length === 0) {
       return (
-        <div className="w-full h-[300px] bg-black border border-gray-700 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[300px] bg-black border border-neutral-800 flex flex-col items-center justify-center text-neutral-500 font-mono uppercase">
           <p>No common lap data found.</p>
           {!staticData && (
             <Button
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-gray-700 hover:bg-gray-800 rounded-none"
+              className="mt-4 border-neutral-800 hover:bg-neutral-800 rounded-md"
             >
               Back
             </Button>
@@ -325,8 +325,8 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               );
 
               return (
-                <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[500px] z-50">
-                  <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl max-w-[500px] z-50">
+                  <div className="text-white font-semibold border-b border-neutral-800 pb-2 mb-2 font-mono text-sm">
                     Lap {label}
                   </div>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2">
@@ -340,7 +340,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
                       return (
                         <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
+                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-neutral-800">
                             {headshot ? (
                               <img
                                 src={headshot}
@@ -348,7 +348,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                                 className="w-full h-full object-cover object-top"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
+                              <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500">
                                 {driverCode[0]}
                               </div>
                             )}
@@ -356,7 +356,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                           <span className="text-xs font-black font-mono" style={{ color }}>
                             {formatGap(gap as number)}
                           </span>
-                          <span className="text-xs font-mono text-gray-400 font-black">
+                          <span className="text-xs font-mono text-neutral-400 font-black">
                             {driverCode}
                           </span>
                         </div>
@@ -458,9 +458,9 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       className={cn('space-y-6 relative', className)}
       style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
+      <div className="flex flex-col gap-4 mb-6 border-b border-neutral-800 pb-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase text-white tracking-wider">Gap to Leader</h3>
+          <h3 className="text-lg font-semibold text-white tracking-wider">Gap to Leader</h3>
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -489,12 +489,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   className={cn(
                     'flex items-center gap-2 px-2 py-1 border transition-all duration-200 group',
                     isSelected
-                      ? 'bg-black border-gray-700 hover:border-gray-500'
-                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-800'
+                      ? 'bg-black border-neutral-800 hover:border-neutral-700'
+                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-neutral-800'
                   )}
                   style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
                 >
-                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-neutral-800 overflow-hidden border border-neutral-800 shrink-0">
                     {headshot ? (
                       <img
                         src={headshot}
@@ -502,7 +502,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                         className="w-full h-full object-cover object-top"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
+                      <div className="w-full h-full flex items-center justify-center text-[8px] text-neutral-500 font-mono">
                         {driver.code[0]}
                       </div>
                     )}
@@ -510,7 +510,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   <span
                     className={cn(
                       'text-xs font-mono font-bold',
-                      isSelected ? 'text-white' : 'text-gray-500'
+                      isSelected ? 'text-white' : 'text-neutral-500'
                     )}
                   >
                     {driver.code}

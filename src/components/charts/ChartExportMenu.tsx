@@ -134,7 +134,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
         title="Export chart"
         className={cn(
           'flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider',
-          'bg-transparent border border-gray-700 text-gray-400',
+          'bg-transparent border border-neutral-800 text-neutral-400',
           'hover:border-red-600 hover:text-white hover:bg-red-600/10',
           'transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed'
         )}
@@ -184,7 +184,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[200px] bg-black/95 border border-gray-700 backdrop-blur-md shadow-xl">
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[200px] bg-black/95 border border-neutral-800 backdrop-blur-md shadow-xl">
             {FORMAT_OPTIONS.map((opt) => {
               const disabled = opt.requiresData && !hasData;
               return (
@@ -200,12 +200,12 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
                     disabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'
                   )}
                 >
-                  <span className="text-gray-400">{opt.icon}</span>
+                  <span className="text-neutral-400">{opt.icon}</span>
                   <div className="min-w-0">
                     <div className="text-[11px] font-bold text-white tracking-wider">
                       {opt.label}
                     </div>
-                    <div className="text-[9px] text-gray-500 leading-tight">{opt.description}</div>
+                    <div className="text-[9px] text-neutral-500 leading-tight">{opt.description}</div>
                   </div>
                 </button>
               );

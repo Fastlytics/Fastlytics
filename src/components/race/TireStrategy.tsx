@@ -116,8 +116,8 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
         <div className="space-y-4 pt-4 animate-pulse">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex gap-4">
-              <div className="w-16 h-8 bg-gray-800 rounded-sm" />
-              <div className="flex-1 h-8 bg-gray-800 rounded-sm" />
+              <div className="w-16 h-8 bg-neutral-800 rounded-sm" />
+              <div className="flex-1 h-8 bg-neutral-800 rounded-sm" />
             </div>
           ))}
         </div>
@@ -136,7 +136,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     }
     if (!strategyData || strategyData.length === 0) {
       return (
-        <div className="w-full min-h-[200px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
+        <div className="w-full min-h-[200px] bg-black border border-neutral-800 flex items-center justify-center text-neutral-500 p-4 mt-4 font-mono uppercase tracking-widest">
           No tire strategy data found
         </div>
       );
@@ -146,7 +146,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       <TooltipProvider delayDuration={0}>
         <div className="pt-6">
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-800 pb-6">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-neutral-800 pb-6">
             {Object.entries(tireCompoundColors).map(
               ([compound, colorClass]) =>
                 compound !== 'UNKNOWN' && (
@@ -157,7 +157,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                         colorClass
                       )}
                     ></span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
                       {compound}
                     </span>
                   </div>
@@ -172,10 +172,10 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
               {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
                 <div
                   key={tick}
-                  className="h-full border-l border-gray-800/30 absolute"
+                  className="h-full border-l border-neutral-800/30 absolute"
                   style={{ left: `${tick * 100}%` }}
                 >
-                  <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-mono text-gray-600">
+                  <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-mono text-neutral-500">
                     L{Math.round(tick * maxLaps)}
                   </span>
                 </div>
@@ -201,7 +201,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                         driverData.driver.includes(favoriteDriver)) &&
                       !focusedDriver
                       ? 'bg-red-900/20 border border-red-600/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
-                      : 'hover:bg-gray-900/50'
+                      : 'hover:bg-neutral-900/50'
                   )}
                   onClick={() => toggleDriverFocus(driverData.driver)}
                 >
@@ -217,13 +217,13 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                       {driverData.driver}
                     </span>
                     {positionText && (
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                         {positionText}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex-grow h-8 bg-gray-900/50 relative flex rounded-sm overflow-hidden ring-1 ring-gray-800 group-hover:ring-gray-600 transition-all">
+                  <div className="flex-grow h-8 bg-neutral-900/50 relative flex rounded-sm overflow-hidden ring-1 ring-gray-800 group-hover:ring-gray-600 transition-all">
                     {driverData.stints.map((stint, index) => {
                       const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
                       const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
@@ -249,16 +249,16 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                           </TooltipTrigger>
                           <TooltipContent
                             side="top"
-                            className="bg-black/90 backdrop-blur-xl border border-gray-700 text-white p-3 rounded-none shadow-2xl"
+                            className="bg-black/90 backdrop-blur-xl border border-neutral-800 text-white p-3 rounded-md shadow-2xl"
                           >
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-2">
+                              <div className="flex items-center gap-2 border-b border-neutral-800 pb-2 mb-2">
                                 <span className={cn('w-2 h-2 rounded-full', bgColorClass)}></span>
                                 <span className="font-bold uppercase tracking-wider text-sm">
                                   {stint.compound}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-gray-300">
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-neutral-300">
                                 <span>Laps:</span>
                                 <span className="text-white text-right">
                                   {stint.startLap} - {stint.endLap}
@@ -301,16 +301,16 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             }
             isExporting={isExporting}
           />
-          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto">
+          <TabsList className="bg-neutral-900 p-0.5 h-auto rounded-lg border border-neutral-800 gap-0.5 w-full sm:w-auto">
             <TabsTrigger
               value="overview"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="flex-1 sm:flex-none data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="analysis"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
+              className="flex-1 sm:flex-none data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-400 text-xs font-medium py-2 px-4 rounded-md transition-all hover:text-white"
             >
               Stint Detail
             </TabsTrigger>

@@ -66,12 +66,12 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
   }
 
   return (
-    <div className="bg-black border border-gray-700 p-6 mt-4">
-      <div className="flex items-center gap-2 mb-4 border-b border-gray-700 pb-2">
+    <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5 mt-4">
+      <div className="flex items-center gap-2 mb-4 border-b border-neutral-800 pb-2">
         <FlashIcon className="w-5 h-5 text-red-600" />
         <div>
-          <h3 className="text-lg font-black uppercase tracking-wider text-white">Key Moments</h3>
-          <p className="text-xs text-gray-400 font-mono uppercase">
+          <h3 className="text-lg font-semibold text-white">Key Moments</h3>
+          <p className="text-xs text-neutral-400 font-mono uppercase">
             Largest single-lap position changes.
           </p>
         </div>
@@ -83,23 +83,23 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
             <div className="absolute top-0 right-0 p-2 opacity-10">
               <ArrowUp01Icon className="w-16 h-16 text-green-500" />
             </div>
-            <p className="font-black uppercase tracking-wider text-green-500 flex items-center gap-2 mb-2">
+            <p className="font-semibold text-green-500 flex items-center gap-2 mb-2">
               <ArrowUp01Icon className="w-4 h-4" /> Biggest Gain
             </p>
             <div className="text-2xl font-black text-white mb-1">
               {biggestGain.driver} <span className="text-green-500">+{biggestGain.change}</span>
             </div>
-            <p className="text-xs text-gray-500 font-mono uppercase">
-              P{biggestGain.from} <span className="text-gray-700">→</span> P{biggestGain.to} • Lap{' '}
+            <p className="text-xs text-neutral-500 font-mono uppercase">
+              P{biggestGain.from} <span className="text-neutral-600">→</span> P{biggestGain.to} • Lap{' '}
               {biggestGain.lap}
             </p>
           </div>
         ) : (
-          <div className="bg-black border border-gray-700 p-4 opacity-50">
-            <p className="font-black uppercase tracking-wider text-gray-500 flex items-center gap-2 mb-1">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 opacity-50">
+            <p className="font-semibold text-neutral-500 flex items-center gap-2 mb-1">
               No Significant Gains
             </p>
-            <p className="text-xs text-gray-600 font-mono">
+            <p className="text-xs text-neutral-500 font-mono">
               No driver gained {'>'}1 position in a lap.
             </p>
           </div>
@@ -110,23 +110,23 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
             <div className="absolute top-0 right-0 p-2 opacity-10">
               <ArrowDown01Icon className="w-16 h-16 text-red-500" />
             </div>
-            <p className="font-black uppercase tracking-wider text-red-500 flex items-center gap-2 mb-2">
+            <p className="font-semibold text-red-500 flex items-center gap-2 mb-2">
               <ArrowDown01Icon className="w-4 h-4" /> Biggest Loss
             </p>
             <div className="text-2xl font-black text-white mb-1">
               {biggestLoss.driver} <span className="text-red-500">{biggestLoss.change}</span>
             </div>
-            <p className="text-xs text-gray-500 font-mono uppercase">
-              P{biggestLoss.from} <span className="text-gray-700">→</span> P{biggestLoss.to} • Lap{' '}
+            <p className="text-xs text-neutral-500 font-mono uppercase">
+              P{biggestLoss.from} <span className="text-neutral-600">→</span> P{biggestLoss.to} • Lap{' '}
               {biggestLoss.lap}
             </p>
           </div>
         ) : (
-          <div className="bg-black border border-gray-700 p-4 opacity-50">
-            <p className="font-black uppercase tracking-wider text-gray-500 flex items-center gap-2 mb-1">
+          <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 opacity-50">
+            <p className="font-semibold text-neutral-500 flex items-center gap-2 mb-1">
               No Significant Losses
             </p>
-            <p className="text-xs text-gray-600 font-mono">
+            <p className="text-xs text-neutral-500 font-mono">
               No driver lost {'>'}1 position in a lap.
             </p>
           </div>

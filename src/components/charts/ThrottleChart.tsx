@@ -49,10 +49,10 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
       const color = driverColor(selectedDriver, year);
 
       return (
-        <div className="bg-black border border-gray-700 p-4 shadow-xl min-w-[200px]">
+        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 shadow-xl min-w-[200px]">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
+            <div className="flex items-center gap-2 border-b border-neutral-800 pb-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-neutral-800 shrink-0">
                 {headshot ? (
                   <img
                     src={headshot}
@@ -60,25 +60,25 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
                     className="w-full h-full object-cover object-top"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-500 font-mono">
                     {selectedDriver[0]}
                   </div>
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-xs font-black text-neutral-300 font-mono">{selectedDriver}</span>
+                <span className="text-[10px] text-neutral-500 font-mono">
                   DIST: {Math.round(label)}m
                 </span>
               </div>
             </div>
 
             <div className="flex flex-col">
-              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+              <span className="text-[9px] text-neutral-500 uppercase font-mono tracking-wider">
                 Throttle
               </span>
               <span className="text-xl font-black text-white font-mono" style={{ color: color }}>
-                {Math.round(data.Throttle)} <span className="text-xs text-gray-500">%</span>
+                {Math.round(data.Throttle)} <span className="text-xs text-neutral-500">%</span>
               </span>
             </div>
           </div>
@@ -157,16 +157,16 @@ const ThrottleChart: React.FC<ThrottleChartProps> = ({
         const fullThrottlePercentage = (fullThrottle / throttles.length) * 100;
 
         return (
-          <div className="border-t border-gray-700 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-black border border-gray-700">
+          <div className="border-t border-neutral-800 pt-4">
+            <div className="flex flex-col gap-2 p-3 bg-black border border-neutral-800">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                  <span className="text-[9px] text-neutral-500 uppercase font-mono tracking-wider">
                     Full Throttle
                   </span>
                   <span className="text-lg font-black text-white font-mono">
                     {Math.round(fullThrottlePercentage)}{' '}
-                    <span className="text-[10px] text-gray-500">%</span>
+                    <span className="text-[10px] text-neutral-500">%</span>
                   </span>
                 </div>
               </div>
