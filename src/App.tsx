@@ -18,7 +18,7 @@ import TeamPaceAnalysis from './pages/TeamPaceAnalysis';
 
 import NotFound from './pages/NotFound';
 import PrivacyPolicy from './pages/PrivacyPolicy';
-import SessionReplayPage from './pages/SessionReplayPage';
+
 import TermsOfService from './pages/TermsOfService';
 import FAQ from './pages/FAQ';
 import RefundPolicy from './pages/RefundPolicy';
@@ -219,15 +219,6 @@ const App = () => (
                 />
               </Route>
 
-              {/* Fully Gated Routes - show login page for unauthenticated users */}
-              <Route
-                path="/replay/:year/:event/:session"
-                element={
-                  <DashboardLayout>
-                    <SessionReplayPage />
-                  </DashboardLayout>
-                }
-              />
 
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />

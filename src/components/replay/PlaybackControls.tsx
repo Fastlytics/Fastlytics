@@ -1,195 +1,206 @@
-import React from 'react';
-import { Play, Pause, Gauge, Maximize, Minimize, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { TrackStatusSegment } from './replay-utils';
+import React, { useCallback, useMemo, useRef } from 'react';
+import { formatReplayTime, getTrackStatusColor, getTrackStatusLabel, PLAYBACK_SPEEDS, SKIP_AMOUNTS } from './replay-utils';
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
-  currentTime: number;
   playbackSpeed: number;
-  activeTotalDuration: number;
-  isFullscreen: boolean;
-  hasStarted: boolean;
-  showSpeedHeatmap: boolean;
-  seekbarStatusSegments: TrackStatusSegment[];
-  hoverTime: number | null;
-  hoverPos: number | null;
-  /** Available laps for lap-based seeking */
-  availableLaps: number[];
-  /** Current lap number (of leader or selected driver) */
+  currentTime: number;
+  totalDuration: number;
   currentLap: number;
-  formatTime: (seconds: number) => string;
-  onPlayPause: () => void;
+  totalLaps: number;
+  trackStatus: string;
+  isFullscreen: boolean;
+  onPlay: () => void;
+  onPause: () => void;
+  onTogglePlay: () => void;
+  onSpeedChange: (speed: number) => void;
   onSeek: (time: number) => void;
-  onSpeedChange: () => void;
-  onToggleFullscreen: () => void;
-  onToggleHeatmap: () => void;
-  onHoverMove: (time: number, pos: number) => void;
-  onHoverLeave: () => void;
-  /** Jump to a specific lap */
-  onSeekToLap: (lap: number) => void;
+  onSkip: (seconds: number) => void;
+  onLapJump: (lap: number) => void;
+  onFullscreen: () => void;
 }
 
-const PlaybackControls: React.FC<PlaybackControlsProps> = ({
+export function PlaybackControls({
   isPlaying,
-  currentTime,
   playbackSpeed,
-  activeTotalDuration,
-  isFullscreen,
-  hasStarted,
-  showSpeedHeatmap,
-  seekbarStatusSegments,
-  hoverTime,
-  hoverPos,
-  availableLaps,
+  currentTime,
+  totalDuration,
   currentLap,
-  formatTime,
-  onPlayPause,
-  onSeek,
+  totalLaps,
+  trackStatus,
+  isFullscreen,
+  onTogglePlay,
   onSpeedChange,
-  onToggleFullscreen,
-  onToggleHeatmap,
-  onHoverMove,
-  onHoverLeave,
-  onSeekToLap,
-}) => {
+  onSeek,
+  onSkip,
+  onLapJump,
+  onFullscreen,
+}: PlaybackControlsProps) {
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  // Progress percentage
+  const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
+
+  // Cycle to next speed
+  const handleSpeedCycle = useCallback(() => {
+    const currentIdx = PLAYBACK_SPEEDS.indexOf(playbackSpeed);
+    const nextIdx = (currentIdx + 1) % PLAYBACK_SPEEDS.length;
+    onSpeedChange(PLAYBACK_SPEEDS[nextIdx]);
+  }, [playbackSpeed, onSpeedChange]);
+
+  // Click on progress bar to seek
+  const handleProgressClick = useCallback((e: React.MouseEvent) => {
+    if (!progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onSeek(ratio * totalDuration);
+  }, [totalDuration, onSeek]);
+
+  // Lap options for the dropdown
+  const lapOptions = useMemo(() => {
+    const laps: number[] = [];
+    for (let i = 1; i <= totalLaps; i++) laps.push(i);
+    return laps;
+  }, [totalLaps]);
+
+  const statusColor = getTrackStatusColor(trackStatus);
+  const statusLabel = getTrackStatusLabel(trackStatus);
+
   return (
-    <div
-      className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-all duration-500 ${hasStarted ? (isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto') : 'translate-y-full opacity-0'}`}
-    >
-      <div className="w-full bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 pointer-events-auto">
-        <div className="max-w-7xl mx-auto flex flex-col gap-4">
-          {/* Slider Container with Tooltip */}
-          <div className="relative group/slider w-full">
-            {/* Track Status Overlay Segments */}
-            {seekbarStatusSegments.length > 0 && (
-              <div className="absolute inset-0 flex items-center pointer-events-none z-10">
-                {seekbarStatusSegments.map((seg, i) => (
-                  <div
-                    key={`status-seg-${i}`}
-                    className="absolute h-2 rounded-sm"
-                    style={{
-                      left: `${seg.startPct * 100}%`,
-                      width: `${(seg.endPct - seg.startPct) * 100}%`,
-                      backgroundColor: seg.color,
-                      opacity: 0.6,
-                    }}
-                    title={seg.label}
-                  />
-                ))}
-              </div>
-            )}
-            {hoverTime !== null && hoverPos !== null && (
-              <div
-                className="absolute bottom-4 -translate-x-1/2 bg-black/90 text-white text-xs font-mono font-bold py-1 px-2 rounded border border-gray-700 pointer-events-none z-50 whitespace-nowrap"
-                style={{ left: `${hoverPos}px` }}
-              >
-                {formatTime(hoverTime)}
-              </div>
-            )}
-            <input
-              type="range"
-              min={0}
-              max={activeTotalDuration}
-              step={0.1}
-              value={currentTime}
-              onChange={(e) => onSeek(parseFloat(e.target.value))}
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const width = rect.width;
-                const pct = Math.max(0, Math.min(1, x / width));
-                const time = pct * activeTotalDuration;
-                onHoverMove(time, x);
-              }}
-              onMouseLeave={onHoverLeave}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 block"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            {/* Left Controls */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onPlayPause}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-              </button>
-
-              <span className="font-mono text-xl font-bold tabular-nums min-w-[5ch]">
-                {formatTime(currentTime)}
-              </span>
-
-              {/* Lap-Based Seeking */}
-              {availableLaps.length > 0 && (
-                <div className="flex items-center gap-1 ml-2 bg-white/5 rounded-lg px-2 py-1">
-                  <button
-                    onClick={() => {
-                      const idx = availableLaps.indexOf(currentLap);
-                      if (idx > 0) onSeekToLap(availableLaps[idx - 1]);
-                    }}
-                    disabled={availableLaps.indexOf(currentLap) <= 0}
-                    className="p-0.5 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-mono text-gray-300 min-w-[5ch] text-center">
-                    L{currentLap}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const idx = availableLaps.indexOf(currentLap);
-                      if (idx < availableLaps.length - 1) onSeekToLap(availableLaps[idx + 1]);
-                    }}
-                    disabled={availableLaps.indexOf(currentLap) >= availableLaps.length - 1}
-                    className="p-0.5 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Right - Speed & Fullscreen */}
-            <div className="flex items-center gap-2">
-              {/* Speed Heatmap Toggle */}
-              <button
-                onClick={onToggleHeatmap}
-                className={cn(
-                  'p-2 rounded-full transition-colors text-xs',
-                  showSpeedHeatmap
-                    ? 'bg-emerald-600/80 text-white hover:bg-emerald-500/80'
-                    : 'hover:bg-white/10 text-white/60'
-                )}
-                title={
-                  showSpeedHeatmap
-                    ? 'Hide speed heatmap'
-                    : 'Show speed heatmap (select a driver first)'
-                }
-              >
-                <Gauge size={18} />
-              </button>
-
-              <button
-                onClick={onSpeedChange}
-                className="font-mono text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3ch] text-center"
-              >
-                {playbackSpeed}x
-              </button>
-
-              <button
-                onClick={onToggleFullscreen}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-              </button>
-            </div>
-          </div>
+    <div className="bg-[#111111] border-t border-gray-800 px-4 py-2 flex-shrink-0">
+      {/* Progress Bar */}
+      <div
+        ref={progressBarRef}
+        className="w-full h-1.5 bg-gray-800 rounded-full cursor-pointer mb-3 group relative"
+        onClick={handleProgressClick}
+      >
+        <div
+          className="h-full bg-red-600 rounded-full transition-all duration-75 relative"
+          style={{ width: `${progress}%` }}
+        >
+          {/* Knob */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
+      </div>
+
+      {/* Controls Row */}
+      <div className="flex items-center gap-3 text-gray-300">
+        {/* Skip Backward Buttons */}
+        <div className="hidden md:flex items-center gap-1">
+          {SKIP_AMOUNTS.filter(s => s.seconds < 0).map((skip) => (
+            <button
+              key={skip.label}
+              onClick={() => onSkip(skip.seconds)}
+              className="px-1.5 py-0.5 text-[10px] font-mono text-gray-500 hover:text-gray-300 hover:bg-gray-800 rounded transition-colors"
+              title={skip.label}
+            >
+              {skip.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Play/Pause */}
+        <button
+          onClick={onTogglePlay}
+          className="w-9 h-9 flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-full transition-colors"
+          title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+        >
+          {isPlaying ? (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <polygon points="5,3 19,12 5,21" />
+            </svg>
+          )}
+        </button>
+
+        {/* Skip Forward Buttons */}
+        <div className="hidden md:flex items-center gap-1">
+          {SKIP_AMOUNTS.filter(s => s.seconds > 0).map((skip) => (
+            <button
+              key={skip.label}
+              onClick={() => onSkip(skip.seconds)}
+              className="px-1.5 py-0.5 text-[10px] font-mono text-gray-500 hover:text-gray-300 hover:bg-gray-800 rounded transition-colors"
+              title={skip.label}
+            >
+              {skip.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-gray-700 hidden md:block" />
+
+        {/* Time Display */}
+        <div className="font-mono text-xs text-gray-400 min-w-[80px]">
+          {formatReplayTime(currentTime)}
+          <span className="text-gray-600"> / {formatReplayTime(totalDuration)}</span>
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-gray-700 hidden md:block" />
+
+        {/* Lap Display + Selector */}
+        {totalLaps > 0 && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-mono text-gray-500">LAP</span>
+            <select
+              value={currentLap}
+              onChange={(e) => onLapJump(Number(e.target.value))}
+              className="bg-gray-800 text-gray-300 text-xs font-mono rounded px-1 py-0.5 border border-gray-700 focus:outline-none focus:border-gray-500 cursor-pointer"
+            >
+              {lapOptions.map((lap) => (
+                <option key={lap} value={lap}>
+                  {lap}/{totalLaps}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Track Status */}
+        <div className="flex items-center gap-1.5">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: statusColor }}
+          />
+          <span className="text-[10px] font-mono" style={{ color: statusColor }}>
+            {statusLabel}
+          </span>
+        </div>
+
+        {/* Speed */}
+        <button
+          onClick={handleSpeedCycle}
+          className="px-2 py-0.5 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded border border-gray-700 transition-colors min-w-[42px] text-center"
+          title="Playback Speed"
+        >
+          {playbackSpeed}x
+        </button>
+
+        {/* Fullscreen */}
+        <button
+          onClick={onFullscreen}
+          className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+          title="Fullscreen (F)"
+        >
+          {isFullscreen ? (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+            </svg>
+          )}
+        </button>
       </div>
     </div>
   );
-};
-
-export default PlaybackControls;
+}

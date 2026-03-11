@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SessionReplay } from '@/components/replay/SessionReplay';
+
 import {
   ArrowLeft01Icon,
   ChampionIcon,
@@ -76,6 +76,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
 import TireIcon from '@/components/mobile/tireicon';
 import { GatedRoute } from '@/components/common/GatedRoute';
+
+// Lazy-loaded replay component for code splitting
+const SessionReplay = React.lazy(() => import('@/components/replay/SessionReplay').then(m => ({ default: m.SessionReplay })));
 
 // --- Helper Functions ---
 
@@ -2030,7 +2033,8 @@ const Race = () => {
                 </GatedRoute>
               )}
 
-              {/* 7. Replay Section */}
+
+              {/* Replay Section */}
               {activeSection === 'replay' && year && eventSlug && selectedSession && (
                 <GatedRoute
                   featureName="Session Replay"
@@ -2043,37 +2047,33 @@ const Race = () => {
                           <div className="h-full flex items-center justify-center">
                             <div className="text-center">
                               <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
-                              <div className="text-xs text-gray-500 font-mono">
-                                LOADING REPLAY MODULE...
-                              </div>
+                              <div className="text-xs text-gray-500 font-mono">LOADING REPLAY MODULE...</div>
                             </div>
                           </div>
                         }
                       >
-                        {(() => {
-                          let replaySessionTarget = analysisSession;
-                          if (isTestingSession) {
-                            if (isTestingSplitSession && testingSessionAlias) {
-                              replaySessionTarget = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
-                            } else if (testingWindow !== 'full') {
-                              replaySessionTarget = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                        <SessionReplay
+                          year={parseInt(String(year))}
+                          event={eventSlug}
+                          session={(() => {
+                            let s = analysisSession;
+                            if (isTestingSession) {
+                              if (isTestingSplitSession && testingSessionAlias) {
+                                s = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
+                              } else if (testingWindow !== 'full') {
+                                s = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                              }
                             }
-                          }
-
-                          return (
-                            <SessionReplay
-                              year={year}
-                              event={eventSlug}
-                              session={replaySessionTarget}
-                              className="h-full"
-                            />
-                          );
-                        })()}
+                            return s;
+                          })()}
+                          className="h-full"
+                        />
                       </React.Suspense>
                     </div>
                   </div>
                 </GatedRoute>
               )}
+
             </div>
           </div>
         )}

@@ -1055,158 +1055,146 @@ export const fetchPaceDistribution = async (
   return request<PaceDistributionResponse>(`/api/telemetry/pace-distribution?${params.toString()}`);
 };
 
-// --- Session Replay Inteface (Columnar Optimization) ---
-// Old row-based (Frame[]) structure replaced with Columnar (Struct of Arrays)
-export interface ReplayDriverData {
+// --- Session Replay Interface (Frame-based Model) ---
+
+/** Per-driver state within a single replay frame */
+export interface ReplayDriverState {
+  abbr: string;
+  x: number;
+  y: number;
+  position: number | null;
+  gap: string | null;
+  interval: string | null;
+  compound: string | null;
+  tyre_life: number | null;
+  tyre_history: string[];
+  pit_stops: number;
+  grid_position: number | null;
+  speed: number;
+  gear: number;
+  drs: number;
+  in_pit: boolean;
+  retired: boolean;
+  has_fastest_lap: boolean;
+  flag: string | null; // "investigation" | "penalty" | null
+}
+
+/** Race control message within a frame */
+export interface ReplayRaceControl {
+  message: string;
+  flag: string;
+  category: string;
+}
+
+/** Weather data within a frame */
+export interface ReplayWeather {
+  air_temp: number | null;
+  track_temp: number | null;
+  humidity: number | null;
+  rainfall: boolean;
+  wind_speed: number | null;
+  wind_direction: number | null;
+}
+
+/** A single replay frame (one per 0.5s interval) */
+export interface ReplayFrame {
+  timestamp: number;
+  lap: number;
+  total_laps: number;
+  track_status: string; // "green" | "yellow" | "sc" | "vsc" | "red"
+  drivers: ReplayDriverState[];
+  weather?: ReplayWeather;
+  race_control?: ReplayRaceControl[];
+}
+
+/** Track layout data */
+export interface ReplayTrack {
   x: number[];
   y: number[];
-  dist: number[];
-  rel_dist: number[];
-  speed: number[];
-  gear: number[];
-  drs: number[];
-  rpm: number[];
-  lap: number[];
-  tyre: number[];
-  throttle: number[];
-  brake: number[];
+  rotation: number;
+  sector_boundaries: {
+    s1_end: number;
+    s2_end: number;
+    total: number;
+  } | null;
+  norm: { x_min: number; y_min: number; scale: number };
 }
 
-export interface ReplayDriversMap {
-  [code: string]: ReplayDriverData;
+/** Session info */
+export interface ReplaySessionInfo {
+  year: number;
+  event: string;
+  session_type: string;
+  total_laps: number;
+  is_race: boolean;
+  circuit_name: string;
+  event_name: string;
 }
 
-export interface SessionReplayData {
-  time: number[]; // Shared timeline
-  drivers: ReplayDriversMap;
-  driver_colors: { [code: string]: string };
-  driver_grid_positions: Record<string, number>;
-  driver_info?: Record<
-    string,
-    {
-      team: string;
-      team_color: string;
-      number: number | string;
-      full_name: string;
-      country_code: string;
-    }
-  >;
-  session_results?: Record<
-    string,
-    {
-      position: number | null;
-      classified_position: string | null;
-      status: string;
-      points: number;
-      time: number | null;
-    }
-  >;
-  track_statuses: { status: string; start_time: number; end_time: number | null }[];
-  race_control_messages: {
-    time: number;
-    category: string;
-    message: string;
-    flag?: string;
-    sector?: number | null;
-  }[];
-  circuit_layout: string;
-  circuit_points?: number[][];
-  circuit_distances?: number[];
-  pit_intervals?: Record<string, { start: number; end: number }[]>;
-  driver_end_times?: Record<string, number>;
-  completed_laps?: {
-    driver: string;
-    lap: number;
-    time_str: string;
-    seconds: number;
-    timestamp: number;
-    compound: string;
-    s1?: number | null;
-    s2?: number | null;
-    s3?: number | null;
-    is_personal_best?: boolean;
-    tyre_life?: number | null;
-    speed_i1?: number | null;
-    speed_i2?: number | null;
-    speed_fl?: number | null;
-    speed_st?: number | null;
-  }[];
-  weather?: {
-    time: number;
-    air_temp: number | null;
-    track_temp: number | null;
-    humidity: number | null;
-    pressure: number | null;
-    wind_speed: number | null;
-    wind_direction: number | null;
-    rainfall: boolean;
-  }[];
-  circuit_metadata?: {
-    circuit_name?: string;
-    official_event_name?: string;
-    country?: string;
-    location?: string;
-    event_format?: string;
-    total_laps?: number;
-    circuit_length_m?: number;
-    session_date?: string;
-  };
-  sector_boundaries?: {
-    index: number;
-    x: number;
-    y: number;
-    label: string;
-    distance?: number;
-  }[];
-  fastest_sectors?: {
-    s1: number | null;
-    s2: number | null;
-    s3: number | null;
-  };
-  driver_stints?: Record<
-    string,
-    {
-      compound: string;
-      start_lap: number;
-      end_lap: number;
-      laps: number;
-      tyre_age_at_start: number;
-    }[]
-  >;
-  start_time?: number;
-  session_info: { name: string; year: number; session: string };
+/** Driver info */
+export interface ReplayDriverInfo {
+  abbr: string;
+  full_name: string;
+  team: string;
+  color: string;
+  number: string;
 }
 
-/** Fetches full session replay data. */
-export const fetchSessionReplay = async (
-  year: number,
-  event: string,
-  session: string
-): Promise<SessionReplayData> => {
-  const params = new URLSearchParams({ year: year.toString(), event, session });
-  return request<SessionReplayData>(`/api/replay/session?${params.toString()}`);
-};
+/** Completed lap entry */
+export interface ReplayCompletedLap {
+  driver: string;
+  lap: number;
+  time_str: string;
+  seconds: number;
+  timestamp: number;
+  compound: string;
+}
 
-/** Fetches session replay metadata. */
-export const fetchSessionReplayMetadata = async (
-  year: number,
-  event: string,
-  session: string
-): Promise<SessionReplayData> => {
-  const params = new URLSearchParams({ year: year.toString(), event, session });
-  return request<SessionReplayData>(`/api/replay/metadata?${params.toString()}`);
-};
+/** Chunk manifest entry */
+export interface ReplayChunkManifest {
+  id: number;
+  start: number;
+  end: number;
+  count: number;
+}
 
+/** Replay metadata response (from /api/replay/metadata) */
+export interface ReplayMetadata {
+  track: ReplayTrack;
+  session_info: ReplaySessionInfo;
+  drivers: Record<string, ReplayDriverInfo>;
+  driver_colors: Record<string, string>;
+  completed_laps: ReplayCompletedLap[];
+  chunk_manifest: ReplayChunkManifest[];
+  total_duration: number;
+}
+
+/** Replay chunk response (from /api/replay/chunk) */
 export interface ReplayChunk {
   chunk_id: number;
   start_time: number;
   end_time: number;
-  time: number[];
-  drivers: ReplayDriversMap;
+  frames: ReplayFrame[];
 }
 
-/** Fetches a session replay chunk. */
-export const fetchSessionReplayChunk = async (
+/** Replay progress response (from /api/replay/progress) */
+export interface ReplayProgress {
+  message: string;
+  progress: number;
+}
+
+/** Fetches session replay metadata (track layout, driver info, chunk manifest). */
+export const fetchReplayMetadata = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<ReplayMetadata> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<ReplayMetadata>(`/api/replay/metadata?${params.toString()}`);
+};
+
+/** Fetches a specific replay chunk of frames. */
+export const fetchReplayChunk = async (
   year: number,
   event: string,
   session: string,
@@ -1219,4 +1207,14 @@ export const fetchSessionReplayChunk = async (
     chunk_id: chunkId.toString(),
   });
   return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`);
+};
+
+/** Fetches replay processing progress. */
+export const fetchReplayProgress = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<ReplayProgress> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<ReplayProgress>(`/api/replay/progress?${params.toString()}`);
 };
