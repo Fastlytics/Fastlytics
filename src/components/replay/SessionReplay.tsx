@@ -66,7 +66,7 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
       setLoadingChunk(true);
       try {
         const chunk = await fetchReplayChunk(year, event, session, nextChunkId);
-        
+
         // Append frames
         allFramesRef.current = [...allFramesRef.current, ...chunk.frames];
         setLoadedChunks((prev) => new Set([...prev, nextChunkId]));
@@ -94,51 +94,57 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
   }, [metadata, loadedChunks, loadingChunk]);
 
   // --- Current Frame ---
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadedChunks.size forces recalc when new frames arrive in allFramesRef
   const frameData = useMemo(() => {
     const frames = allFramesRef.current;
     if (!frames.length) return { current: null, next: null };
 
     // Binary search for the frame closest to or exactly at currentTime
-    let lo = 0, hi = frames.length - 1;
+    let lo = 0,
+      hi = frames.length - 1;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
       if (frames[mid].timestamp <= currentTime) lo = mid;
       else hi = mid - 1;
     }
     currentFrameIdxRef.current = lo;
-    
+
     return {
       current: frames[lo],
-      next: frames[lo < frames.length - 1 ? lo + 1 : lo]
+      next: frames[lo < frames.length - 1 ? lo + 1 : lo],
     };
-  }, [currentTime]);
+  }, [currentTime, loadedChunks.size]);
 
   const currentFrame = frameData.current;
   const nextFrame = frameData.next;
 
   // --- Playback Engine ---
-  const tick = useCallback((now: number) => {
-    if (!isPlaying) return;
+  const tick = useCallback(
+    (now: number) => {
+      if (!isPlaying) return;
 
-    const delta = (now - lastTickRef.current) / 1000; // seconds elapsed
-    lastTickRef.current = now;
+      const delta = (now - lastTickRef.current) / 1000; // seconds elapsed
+      lastTickRef.current = now;
 
-    if (delta > 0 && delta < 1) { // Guard against large jumps
-      const frames = allFramesRef.current;
-      const maxTime = frames.length ? frames[frames.length - 1].timestamp : 0;
-      
-      setCurrentTime((prev) => {
-        const next = prev + delta * playbackSpeed;
-        if (next >= maxTime) {
-          setIsPlaying(false);
-          return maxTime;
-        }
-        return next;
-      });
-    }
+      if (delta > 0 && delta < 1) {
+        // Guard against large jumps
+        const frames = allFramesRef.current;
+        const maxTime = frames.length ? frames[frames.length - 1].timestamp : 0;
 
-    animFrameRef.current = requestAnimationFrame(tick);
-  }, [isPlaying, playbackSpeed]);
+        setCurrentTime((prev) => {
+          const next = prev + delta * playbackSpeed;
+          if (next >= maxTime) {
+            setIsPlaying(false);
+            return maxTime;
+          }
+          return next;
+        });
+      }
+
+      animFrameRef.current = requestAnimationFrame(tick);
+    },
+    [isPlaying, playbackSpeed]
+  );
 
   useEffect(() => {
     if (isPlaying) {
@@ -165,9 +171,12 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
     setCurrentTime(Math.max(0, Math.min(time, maxTime)));
   }, []);
 
-  const handleSkip = useCallback((seconds: number) => {
-    handleSeek(currentTime + seconds);
-  }, [currentTime, handleSeek]);
+  const handleSkip = useCallback(
+    (seconds: number) => {
+      handleSeek(currentTime + seconds);
+    },
+    [currentTime, handleSeek]
+  );
 
   const handleLapJump = useCallback((targetLap: number) => {
     const frames = allFramesRef.current;
@@ -269,7 +278,7 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
       {/* Main Content: Track + Leaderboard side-by-side */}
       <div className="flex-1 flex min-h-0">
         {/* Track Canvas */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-w-0 overflow-hidden">
           <TrackCanvas
             track={metadata.track}
             currentFrame={currentFrame}
@@ -311,6 +320,9 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
             selectedDriver={selectedDriver}
             onSelectDriver={setSelectedDriver}
             isRace={metadata.session_info.is_race}
+            year={year}
+            currentLap={currentFrame?.lap}
+            totalLaps={currentFrame?.total_laps ?? metadata.session_info.total_laps}
           />
         </div>
       </div>
@@ -321,8 +333,6 @@ export function SessionReplay({ year, event, session, className = '' }: SessionR
         playbackSpeed={playbackSpeed}
         currentTime={currentTime}
         totalDuration={metadata.total_duration}
-        currentLap={currentFrame?.lap ?? 0}
-        totalLaps={currentFrame?.total_laps ?? metadata.session_info.total_laps}
         trackStatus={currentFrame?.track_status ?? 'green'}
         isFullscreen={isFullscreen}
         onPlay={handlePlay}

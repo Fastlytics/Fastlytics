@@ -74,12 +74,13 @@ export function TrackCanvas({
     const availH = canvasSize.height - padding * 2;
 
     // Track data is already normalized to [0, ~1] range
-    const trackRange = Math.max(
-      Math.max(...track.x) - Math.min(...track.x),
-      Math.max(...track.y) - Math.min(...track.y)
-    ) || 1;
+    const trackRange =
+      Math.max(
+        Math.max(...track.x) - Math.min(...track.x),
+        Math.max(...track.y) - Math.min(...track.y)
+      ) || 1;
 
-    const scale = Math.min(availW, availH) / trackRange * zoom;
+    const scale = (Math.min(availW, availH) / trackRange) * zoom;
     const centerX = canvasSize.width / 2 + panOffset.x;
     const centerY = canvasSize.height / 2 + panOffset.y;
 
@@ -158,7 +159,10 @@ export function TrackCanvas({
 
     // --- Draw Driver Dots ---
     const { currentFrame: cFrame, nextFrame: nFrame, currentTime: cTime } = timeInfoRef.current;
-    if (!cFrame) return;
+    if (!cFrame) {
+      rafRef.current = requestAnimationFrame(render);
+      return;
+    }
 
     // Calculate exact interpolation parameter `t`
     let t = 0;
@@ -271,65 +275,90 @@ export function TrackCanvas({
   // --- Mouse Interactions ---
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom((prev) => Math.max(0.5, Math.min(10, prev * delta)));
+
+    // Normalize delta: typical mousewheel delta is ~100, normalize to ~1
+    const normalizedDelta = e.deltaY / 100;
+
+    // Dampen the zoom change significantly
+    // Use 0.2 as factor - each wheel tick zooms minimally
+    const zoomFactor = 1 - normalizedDelta * 0.2;
+
+    // Clamp zoom between 0.3x and 8x
+    setZoom((prev) => Math.max(0.3, Math.min(8, prev * zoomFactor)));
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 0) { // Left click
-      setIsPanning(true);
-      panStartRef.current = { x: e.clientX, y: e.clientY };
-      panOffsetStartRef.current = { ...panOffset };
-    }
-  }, [panOffset]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button === 0) {
+        // Left click
+        setIsPanning(true);
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        panOffsetStartRef.current = { ...panOffset };
+      }
+    },
+    [panOffset]
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isPanning) return;
-    const dx = e.clientX - panStartRef.current.x;
-    const dy = e.clientY - panStartRef.current.y;
-    setPanOffset({
-      x: panOffsetStartRef.current.x + dx,
-      y: panOffsetStartRef.current.y + dy,
-    });
-  }, [isPanning]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isPanning) return;
+
+      const dx = e.clientX - panStartRef.current.x;
+      const dy = e.clientY - panStartRef.current.y;
+
+      // Calculate pan bounds based on canvas size and zoom
+      // Allow panning up to half the canvas size (centered)
+      const maxPanX = canvasSize.width / 2;
+      const maxPanY = canvasSize.height / 2;
+
+      setPanOffset({
+        x: Math.max(-maxPanX, Math.min(maxPanX, panOffsetStartRef.current.x + dx)),
+        y: Math.max(-maxPanY, Math.min(maxPanY, panOffsetStartRef.current.y + dy)),
+      });
+    },
+    [isPanning, canvasSize]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
   }, []);
 
   // Click to select driver
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const { currentFrame: cFrame } = timeInfoRef.current;
-    if (!cFrame || !canvasRef.current) return;
-    
-    // ...
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const { currentFrame: cFrame } = timeInfoRef.current;
+      if (!cFrame || !canvasRef.current) return;
 
-    const { toCanvasX, toCanvasY } = getTransform();
-    const states = driverStatesRef.current;
+      // ...
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
 
-    let closestDriver: string | null = null;
-    let closestDist = Infinity;
+      const { toCanvasX, toCanvasY } = getTransform();
+      const states = driverStatesRef.current;
 
-    for (const drv of cFrame.drivers) {
-      const state = states.get(drv.abbr);
-      if (!state || drv.retired) continue;
+      let closestDriver: string | null = null;
+      let closestDist = Infinity;
 
-      const cx = toCanvasX(state.x);
-      const cy = toCanvasY(state.y);
-      const dist = Math.sqrt((clickX - cx) ** 2 + (clickY - cy) ** 2);
-      
-      if (dist < 20 && dist < closestDist) {
-        closestDist = dist;
-        closestDriver = drv.abbr;
+      for (const drv of cFrame.drivers) {
+        const state = states.get(drv.abbr);
+        if (!state || drv.retired) continue;
+
+        const cx = toCanvasX(state.x);
+        const cy = toCanvasY(state.y);
+        const dist = Math.sqrt((clickX - cx) ** 2 + (clickY - cy) ** 2);
+
+        if (dist < 20 && dist < closestDist) {
+          closestDist = dist;
+          closestDriver = drv.abbr;
+        }
       }
-    }
 
-    onSelectDriver(closestDriver === selectedDriver ? null : closestDriver);
-  }, [currentFrame, selectedDriver, onSelectDriver, getTransform]);
+      onSelectDriver(closestDriver === selectedDriver ? null : closestDriver);
+    },
+    [currentFrame, selectedDriver, onSelectDriver, getTransform]
+  );
 
   return (
     <div
@@ -339,7 +368,7 @@ export function TrackCanvas({
     >
       <canvas
         ref={canvasRef}
-        style={{ width: canvasSize.width, height: canvasSize.height }}
+        className="w-full h-full block"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

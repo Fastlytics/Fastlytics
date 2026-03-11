@@ -77,13 +77,11 @@ export function RaceControlMessages({ frame }: RaceControlMessagesProps) {
             key={msg.id}
             className={`
               ${style.bg} ${style.text} border ${style.border}
-              backdrop-blur-sm rounded-md px-3 py-2 text-xs font-mono
+              backdrop-blur-sm rounded-md px-3 py-2 text-xs font-sans
               animate-in slide-in-from-right duration-300
             `}
           >
-            {msg.flag && (
-              <div className="text-[9px] opacity-70 mb-0.5">{msg.flag}</div>
-            )}
+            {msg.flag && <div className="text-[9px] opacity-70 mb-0.5">{msg.flag}</div>}
             <div className="leading-tight">{msg.message}</div>
           </div>
         );
