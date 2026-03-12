@@ -1,69 +1,108 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { 
-  ArrowLeft, Trophy, MinusCircle, Award, 
-  AlertCircle, ArrowUp, ArrowDown, ChevronDown,
-  Building, Shield
-} from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import { Button } from "@/components/ui/button";
-import { fetchTeamStandings, TeamStanding } from '@/lib/api';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { motion, useInView } from 'framer-motion';
+import {
+  ArrowLeft01Icon,
+  ChampionIcon,
+  MinusSignCircleIcon,
+  Award01Icon,
+  AlertCircleIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+  UserGroupIcon,
+  Flag01Icon,
+  Medal01Icon,
+  Clock01Icon,
+  CrownIcon,
+  FlashIcon,
+} from 'hugeicons-react';
+import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import { Button } from '@/components/ui/button';
+import {
+  fetchTeamStandings,
+  TeamStanding,
+  fetchSchedule,
+  fetchRaceResults,
+  ScheduleEvent,
+  RaceResult,
+} from '@/lib/api';
+import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+} from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getTeamLogo } from '@/lib/teamUtils';
+import { getCarImage } from '@/utils/imageMapping';
 import { useSeason } from '@/contexts/SeasonContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileTeamStandings } from '@/components/mobile';
 
-// Animation variants
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-};
-
-const staggerChildren = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1
-    }
-  }
-};
+const isTestingEvent = (event: ScheduleEvent): boolean =>
+  Boolean(event.EventFormat?.toLowerCase().includes('test') || event.RoundNumber === 0);
 
 const TeamStandings = () => {
+  const [now] = useState(() => Date.now());
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
+  const { trackEvent, trackPageView } = useAnalytics();
   const standingsRef = useRef(null);
-  const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.2 });
-  
-  // Get scroll progress for parallax effects
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-  // Fetch Team Standings for the selected year
-  const { data: teamStandings, isLoading, error, isError } = useQuery<TeamStanding[]>({
+  useEffect(() => {
+    trackPageView('team_standings', { year: selectedYear });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const isStandingsInView = useInView(standingsRef, { once: true, amount: 0.1 });
+
+  // Fetch Team Standings
+  const {
+    data: teamStandings,
+    isLoading: isLoadingStandings,
+    error: standingsError,
+    isError: isStandingsError,
+  } = useQuery<TeamStanding[]>({
     queryKey: ['teamStandings', selectedYear],
     queryFn: () => fetchTeamStandings(selectedYear),
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
-    gcTime: 1000 * 60 * 120,
-    retry: 1,
   });
+
+  // Fetch Schedule for championship calculation
+  const { data: schedule } = useQuery<ScheduleEvent[]>({
+    queryKey: ['schedule', selectedYear],
+    queryFn: () => fetchSchedule(selectedYear),
+  });
+
+  const hasCompletedRaceEventsInSchedule = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
+  // Fetch Race Results for championship calculation
+  const { data: raceResults } = useQuery<RaceResult[]>({
+    queryKey: ['raceResults', selectedYear],
+    queryFn: () => fetchRaceResults(selectedYear),
+    enabled: hasCompletedRaceEventsInSchedule,
+  });
+
+  const isLoading = isLoadingStandings;
+  const isError = isStandingsError;
+  const error = standingsError;
 
   // Function to determine change indicator color and icon
   const getChangeIndicator = (change: number | undefined) => {
-    if (change === undefined) {
-       return null;
-    }
-    if (change > 0) {
-      return { color: 'text-green-500', icon: <ArrowUp className="h-4 w-4" /> };
-    } else if (change < 0) {
-      return { color: 'text-red-500', icon: <ArrowDown className="h-4 w-4" /> };
-    } else {
-      return { color: 'text-gray-500', icon: <MinusCircle className="h-4 w-4" /> };
-    }
+    if (change === undefined) return null;
+    if (change > 0) return { color: 'text-green-500', icon: <ArrowUp01Icon className="h-4 w-4" /> };
+    if (change < 0) return { color: 'text-red-500', icon: <ArrowDown01Icon className="h-4 w-4" /> };
+    return { color: 'text-gray-500', icon: <MinusSignCircleIcon className="h-4 w-4" /> };
   };
 
   // Helper to get team color class
@@ -78,269 +117,379 @@ const TeamStandings = () => {
     if (simpleName.includes('astonmartin')) return 'astonmartin';
     if (simpleName.includes('williams')) return 'williams';
     if (simpleName.includes('haas')) return 'haas';
-    if (simpleName.includes('sauber')) return 'alfaromeo';
-    if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
+    if (simpleName.includes('audi')) return 'audi';
+    if (simpleName.includes('cadillac')) return 'cadillac';
+    if (simpleName.includes('sauber')) return 'kicksauber';
+    if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri'))
+      return 'racingbulls';
     return 'gray';
+  };
+
+  const isPreSeason = teamStandings && teamStandings.length > 0 && teamStandings[0].points === 0;
+  const top3 = isPreSeason ? [] : teamStandings?.slice(0, 3) || [];
+  const rest = isPreSeason ? teamStandings || [] : teamStandings?.slice(3) || [];
+
+  // Calculate Championship Status
+  let championshipStatus: 'leader' | 'champion' = 'leader';
+  if (teamStandings && teamStandings.length >= 2 && schedule && raceResults) {
+    const p1Points = teamStandings[0].points;
+    const p2Points = teamStandings[1].points;
+    const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'team', selectedYear);
+    championshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
+  }
+
+  // Render mobile version (after all hooks)
+  if (isMobile) {
+    return <MobileTeamStandings />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white overflow-hidden">
-      <Navbar />
-      
-      {/* Background Elements - decorative circuit lines */}
-      <div className="fixed inset-0 w-full h-full z-0 overflow-hidden pointer-events-none">
-        <motion.div 
-          className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-red-600/0 via-red-600/20 to-red-600/0" 
-          style={{ y }}
-        />
-        <motion.div 
-          className="absolute top-0 right-1/3 w-px h-full bg-gradient-to-b from-red-600/0 via-red-600/10 to-red-600/0" 
-          style={{ y: useTransform(scrollYProgress, [0, 1], [0, -30]) }} 
-        />
-        <div className="absolute -top-64 -left-64 w-[500px] h-[500px] rounded-full bg-red-900/10 blur-3xl" />
-        <div className="absolute top-1/4 -right-32 w-[300px] h-[300px] rounded-full bg-red-900/10 blur-3xl" />
-      </div>
-      
-      <div className="px-4 md:px-8 py-8 mx-auto relative z-10" ref={standingsRef}>
-        {/* Header */}
-        <motion.header 
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 md:mb-12"
-          initial="hidden"
-          animate="visible"
-          variants={staggerChildren}
-        >
-          <motion.div 
-            variants={fadeInUp}
-            className="flex items-center"
-          >
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="mr-3 text-gray-300 hover:bg-gray-800 hover:text-white" 
-              onClick={() => navigate('/dashboard')}
-              data-umami-event="TeamStandings Back Button"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-1">
-                Constructor Standings
-              </h1>
-              <p className="text-sm md:text-base text-gray-400">
-                {selectedYear} Season Overview
-              </p>
-            </div>
-          </motion.div>
-          
-          {/* Season Selector - Styled like Races page */}
-          <motion.div 
-            className="flex items-center gap-4"
-            variants={fadeInUp}
-          >
-            <div className="relative group">
-              <Select
-                value={String(selectedYear)}
-                onValueChange={(value) => setSelectedYear(Number(value))}
-              >
-                <SelectTrigger className="w-[180px] bg-gray-900/70 border border-red-500/20 text-white hover:bg-gray-800/80 hover:border-red-500/40 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:ring-offset-0 transition-all duration-200 py-2.5 backdrop-blur-md rounded-xl shadow-[0_4px_12px_rgba(153,27,27,0.15)] pr-8 pl-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 bg-red-500/20 rounded-full p-1.5 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                      <Trophy className="w-4 h-4 text-red-400" />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">{selectedYear}</span>
-                      <div className="ml-2 text-xs bg-red-600/70 text-white px-1.5 py-0.5 rounded-full">
-                        F1
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 opacity-70 transition-transform duration-200 group-hover:opacity-100 group-data-[state=open]:rotate-180" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900/95 backdrop-blur-xl border-gray-700/50 border-red-500/20 text-white rounded-xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)]">
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <SelectGroup>
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
-                        <SelectLabel className="text-gray-400 text-xs uppercase tracking-wider">Season</SelectLabel>
-                        <span className="text-xs text-gray-500">{availableYears.length} seasons</span>
-                      </div>
-                      <div className="py-1 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        {availableYears.map((year) => (
-                          <SelectItem
-                            key={year}
-                            value={String(year)}
-                            className="text-base py-2.5 pl-10 pr-3 focus:bg-red-600/20 data-[state=checked]:bg-red-600/30 data-[state=checked]:text-white relative"
-                          >
-                            <div className="flex items-center w-full">
-                              <span className="w-12 text-gray-400 font-mono text-sm">{year}</span>
-                              <span className="font-medium ml-2">Formula 1</span>
-                              {selectedYear === year && (
-                                <div className="ml-auto h-2 w-2 rounded-full bg-red-500"></div>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </div>
-                    </SelectGroup>
-                  </motion.div>
-                </SelectContent>
-              </Select>
-            </div>
-          </motion.div>
-        </motion.header>
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+      <DashboardNavbar />
 
-        {/* Standings List with modern styling */}
-        <motion.div 
-          initial="hidden" 
-          animate={isStandingsInView ? "visible" : "hidden"}
-          variants={staggerChildren}
-          className="w-full"
-        >
+      <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" ref={standingsRef}>
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b-2 border-gray-800 pb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-500 hover:text-white hover:bg-gray-800"
+                onClick={() => navigate('/dashboard')}
+              >
+                <ArrowLeft01Icon className="h-6 w-6" />
+              </Button>
+              <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter">
+                Constructor <span className="text-red-600">Standings</span>
+              </h1>
+            </div>
+            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest ml-14">
+              {selectedYear} Season Overview
+            </p>
+          </div>
+
+          {/* Season Selector */}
+          <div className="relative">
+            <Select
+              value={String(selectedYear)}
+              onValueChange={(value) => {
+                setSelectedYear(Number(value));
+                trackEvent('season_changed', { page: 'team_standings', year: Number(value) });
+              }}
+            >
+              <SelectTrigger className="w-[180px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest h-12">
+                <div className="flex items-center gap-2">
+                  <ChampionIcon className="w-4 h-4 text-red-600" />
+                  <span>{selectedYear} Season</span>
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-black border-2 border-gray-800 text-white rounded-none">
+                <SelectGroup>
+                  <SelectLabel className="text-gray-500 text-xs uppercase tracking-wider px-2 py-2">
+                    Select Season
+                  </SelectLabel>
+                  {availableYears.map((year) => (
+                    <SelectItem
+                      key={year}
+                      value={String(year)}
+                      className="text-sm font-bold uppercase tracking-widest focus:bg-red-600 focus:text-white cursor-pointer rounded-none"
+                    >
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="w-full">
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(10)].map((_, i) => (
-                <motion.div 
+                <div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Skeleton className="h-[96px] bg-gray-800/50 rounded-xl"/>
-                </motion.div>
+                  className="h-24 bg-gray-900/50 animate-pulse border-2 border-gray-800"
+                ></div>
               ))}
             </div>
           ) : isError ? (
-            <motion.div 
-              variants={fadeInUp}
-              className="text-center py-10 text-red-400 bg-gray-900/30 rounded-xl border border-red-500/20 p-8"
-            >
-              <AlertCircle className="w-10 h-10 mx-auto mb-2" />
-              Error loading standings for {selectedYear}. <br/>
-              <span className="text-xs text-gray-500">
+            <div className="text-center py-20 border-2 border-red-600/50 border-dashed bg-red-900/10">
+              <AlertCircleIcon className="w-12 h-12 mx-auto mb-4 text-red-600" />
+              <h3 className="text-xl font-bold uppercase mb-2">Data Unavailable</h3>
+              <p className="text-gray-500 font-mono text-sm">
                 {(error as Error)?.message || 'Please try again later.'}
-              </span>
-            </motion.div>
+              </p>
+            </div>
           ) : teamStandings && teamStandings.length > 0 ? (
-            <div className="space-y-4">
-              {teamStandings.map((team, index) => {
-                const indicator = getChangeIndicator(team.points_change);
-                const rank = team.rank || index + 1;
-                const teamColor = team.teamColor || getTeamColorClass(team.team);
-                
-                // Determine podium/trophy backgrounds
-                const isOnPodium = rank <= 3;
-                const podiumBackground = 
-                  rank === 1 ? 'bg-yellow-500/10 border-yellow-500/30'
-                  : rank === 2 ? 'bg-gray-300/10 border-gray-300/30'
-                  : rank === 3 ? 'bg-amber-700/10 border-amber-700/30'
-                  : '';
-                
-                return (
+            <>
+              {/* Podium Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 items-end">
+                {/* P2 */}
+                {top3[1] && (
                   <motion.div
-                    key={team.shortName || team.team}
-                    initial="hidden"
-                    animate={isStandingsInView ? "visible" : "hidden"}
-                    custom={{ delay: index * 0.07 }}
-                    variants={{
-                      hidden: { opacity: 0, y: 30 },
-                      visible: { 
-                        opacity: 1, 
-                        y: 0, 
-                        transition: { duration: 0.6, ease: "easeOut", delay: index * 0.07 }
-                      }
-                    }}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="order-2 md:order-1 relative group"
                   >
-                    <Card
-                      className={cn(
-                        "bg-gray-900/70 border border-gray-800 hover:border-red-500/40",
-                        "backdrop-blur-sm rounded-xl overflow-hidden",
-                        "transition-all duration-300 ease-in-out",
-                        "hover:bg-gray-900/90 hover:shadow-[0_8px_30px_rgb(185,28,28,0.15)]",
-                        isOnPodium ? podiumBackground : ""
-                      )}
-                    >
-                      <div className="p-5 flex items-center gap-5 relative">
-                        {/* Team color accent bar */}
-                        <div className={cn("absolute top-0 left-0 h-full w-1.5", `bg-f1-${teamColor}`)}></div>
-                        
-                        {/* Rank */}
-                        <div className="text-center w-14">
-                          <div className={cn(
-                            "text-3xl md:text-4xl font-bold",
-                            rank === 1 ? "text-yellow-400" : 
-                            rank === 2 ? "text-gray-300" : 
-                            rank === 3 ? "text-amber-600" : 
-                            "text-gray-500"
-                          )}>
-                            {rank}
+                    <div className="bg-black border-2 border-gray-800 hover:border-gray-500 transition-colors p-6 relative overflow-hidden">
+                      <div
+                        className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[1].team)}`}
+                      />
+                      <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">
+                        2
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-4">
+                          {getCarImage(top3[1].team, selectedYear) && (
+                            <img
+                              src={getCarImage(top3[1].team, selectedYear)!}
+                              alt={top3[1].team}
+                              className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                            />
+                          )}
+                          <h2 className="text-2xl font-bold uppercase leading-none">
+                            {top3[1].team}
+                          </h2>
+                        </div>
+                        <div className="flex items-end gap-2 mb-6">
+                          <span className="text-4xl font-black text-white">{top3[1].points}</span>
+                          <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <span className="text-xl font-bold text-white leading-none">
+                              {top3[1].wins}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">
+                              Wins
+                            </span>
                           </div>
-                          <div className="text-xs font-medium uppercase text-gray-500 mt-1">P{rank}</div>
-                        </div>
-                        
-                        {/* Team logo/icon */}
-                        <div className={cn(
-                          "w-12 h-12 rounded-lg flex items-center justify-center",
-                          `bg-f1-${teamColor}/20 text-f1-${teamColor}`
-                        )}>
-                          <Building className="w-6 h-6" />
-                        </div>
-                        
-                        {/* Team details */}
-                        <div className="flex-grow">
-                          <h2 className="text-xl font-bold text-white">{team.team}</h2>
-                          <div className="mt-1 flex items-center gap-4">
-                            {/* Wins */}
-                            <div className="flex items-center gap-1 text-sm text-gray-400">
-                              <Trophy className="w-4 h-4 text-yellow-500" />
-                              <span className="font-medium">{team.wins || 0}</span>
-                              <span className="text-xs text-gray-600">wins</span>
-                            </div>
-                            
-                            {/* Podiums */}
-                            <div className="flex items-center gap-1 text-sm text-gray-400">
-                              <Award className="w-4 h-4 text-amber-500" />
-                              <span className="font-medium">{team.podiums || 0}</span>
-                              <span className="text-xs text-gray-600">podiums</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Points */}
-                        <div className="flex flex-col items-end">
-                          <div className="font-bold text-2xl md:text-3xl text-white">{team.points}</div>
-                          <div className="flex items-center text-sm">
-                            <span className="text-gray-500 mr-1.5">POINTS</span>
-                            {indicator && (
-                              <div className={cn("flex items-center gap-0.5", indicator.color)}>
-                                {indicator.icon}
-                                <span className="font-medium">
-                                  {team.points_change !== 0 ? Math.abs(team.points_change ?? 0) : '-'}
-                                </span>
-                              </div>
-                            )}
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <span className="text-xl font-bold text-white leading-none">
+                              {top3[1].podiums}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">
+                              Podiums
+                            </span>
                           </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   </motion.div>
-                );
-              })}
-            </div>
+                )}
+
+                {/* P1 */}
+                {top3[0] && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0 }}
+                    className="order-1 md:order-2 relative group transform md:-translate-y-8"
+                  >
+                    <div className="bg-black border-2 border-yellow-500 p-8 relative overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)]">
+                      <div
+                        className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[0].team)}`}
+                      />
+                      <div className="absolute -top-4 -right-4 text-yellow-500/10">
+                        <CrownIcon className="w-32 h-32" />
+                      </div>
+                      <div className="relative z-10 text-center">
+                        <div className="inline-block px-3 py-1 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest mb-4 shadow-[0_0_10px_rgba(234,179,8,0.4)]">
+                          {championshipStatus === 'champion'
+                            ? "Constructors' Champion"
+                            : "Constructors' Leader"}
+                        </div>
+                        <div className="flex flex-col items-center gap-4 mb-6">
+                          {getCarImage(top3[0].team, selectedYear) && (
+                            <img
+                              src={getCarImage(top3[0].team, selectedYear)!}
+                              alt={top3[0].team}
+                              className="h-20 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                            />
+                          )}
+                          <h2 className="text-3xl md:text-4xl font-black uppercase leading-none">
+                            {top3[0].team}
+                          </h2>
+                        </div>
+                        <div className="flex justify-center items-end gap-2 mb-8">
+                          <span className="text-6xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                            {top3[0].points}
+                          </span>
+                          <span className="text-lg font-mono text-gray-500 mb-2">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 w-full">
+                          <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
+                            <span className="text-3xl font-black text-white leading-none">
+                              {top3[0].wins}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">
+                              Wins
+                            </span>
+                          </div>
+                          <div className="bg-gradient-to-br from-yellow-500/20 to-black border border-yellow-500/30 p-3 rounded flex flex-col items-center justify-center">
+                            <span className="text-3xl font-black text-white leading-none">
+                              {top3[0].podiums}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-widest text-yellow-500/80 mt-1 font-bold">
+                              Podiums
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* P3 */}
+                {top3[2] && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="order-3 relative group"
+                  >
+                    <div className="bg-black border-2 border-gray-800 hover:border-amber-700 transition-colors p-6 relative overflow-hidden">
+                      <div
+                        className={`absolute top-0 left-0 w-full h-1 bg-f1-${getTeamColorClass(top3[2].team)}`}
+                      />
+                      <div className="text-6xl font-black text-gray-800 absolute top-4 right-4 opacity-50">
+                        3
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-4">
+                          {getCarImage(top3[2].team, selectedYear) && (
+                            <img
+                              src={getCarImage(top3[2].team, selectedYear)!}
+                              alt={top3[2].team}
+                              className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                            />
+                          )}
+                          <h2 className="text-2xl font-bold uppercase leading-none">
+                            {top3[2].team}
+                          </h2>
+                        </div>
+                        <div className="flex items-end gap-2 mb-6">
+                          <span className="text-4xl font-black text-white">{top3[2].points}</span>
+                          <span className="text-sm font-mono text-gray-500 mb-1">PTS</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 w-full">
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <span className="text-xl font-bold text-white leading-none">
+                              {top3[2].wins}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">
+                              Wins
+                            </span>
+                          </div>
+                          <div className="bg-gray-900/50 border border-gray-800 p-2 rounded flex flex-col items-center justify-center group-hover:border-gray-600 transition-colors">
+                            <span className="text-xl font-bold text-white leading-none">
+                              {top3[2].podiums}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">
+                              Podiums
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Rest of the Grid */}
+              <div className="space-y-2">
+                {rest.map((team, index) => {
+                  const indicator = getChangeIndicator(team.points_change);
+                  const teamColor = getTeamColorClass(team.team);
+
+                  return (
+                    <motion.div
+                      key={team.team}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={isStandingsInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="group"
+                    >
+                      <div className="flex items-center justify-between p-4 md:p-6 bg-black border-2 border-gray-800 hover:border-red-600 transition-all duration-300 relative overflow-hidden">
+                        {/* Hover Effect */}
+                        <div className="absolute inset-0 bg-red-600/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
+
+                        {/* Team Color Bar */}
+                        <div
+                          className={cn('absolute left-0 top-0 bottom-0 w-2', `bg-f1-${teamColor}`)}
+                        />
+
+                        <div className="flex items-center gap-6 md:gap-12 pl-4 relative z-10">
+                          <div className="w-12 text-center">
+                            <span className="text-3xl md:text-4xl font-black italic tracking-tighter text-white">
+                              {team.rank}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            {getCarImage(team.team, selectedYear) && (
+                              <img
+                                src={getCarImage(team.team, selectedYear)!}
+                                alt={team.team}
+                                className="h-10 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
+                              />
+                            )}
+                            <h3 className="text-xl md:text-2xl font-bold uppercase tracking-tight">
+                              {team.team}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-8 md:gap-16 pr-4 relative z-10">
+                          <div className="hidden md:block text-right">
+                            <div className="text-2xl font-bold">{team.wins}</div>
+                            <div className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                              Wins
+                            </div>
+                          </div>
+                          <div className="hidden md:block text-right">
+                            <div className="text-2xl font-bold">{team.podiums}</div>
+                            <div className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                              Podiums
+                            </div>
+                          </div>
+                          <div className="text-right min-w-[80px]">
+                            <div className="text-3xl font-black text-white">{team.points}</div>
+                            <div className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                              <span>PTS</span>
+                              {indicator && (
+                                <span className={cn('flex items-center gap-0.5', indicator.color)}>
+                                  {indicator.icon}
+                                  {team.points_change !== undefined && team.points_change !== 0 && (
+                                    <span>{Math.abs(team.points_change)}</span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
-            <motion.p
-              variants={fadeInUp}
-              className="text-center text-gray-500 py-10 bg-gray-900/30 rounded-xl border border-gray-700 p-8"
-            >
-              No standings data available for {selectedYear}.
-            </motion.p>
+            <div className="text-center py-20 border-2 border-gray-800 border-dashed">
+              <p className="text-gray-500 font-mono">No standings found for {selectedYear}.</p>
+            </div>
           )}
-        </motion.div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };
 
+export { TeamStandings };
 export default TeamStandings;

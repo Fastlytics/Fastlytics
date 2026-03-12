@@ -1,125 +1,330 @@
-// Base URL for your backend API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-// API Key from environment variable (Vite specific)
-const API_KEY = import.meta.env.VITE_FASTLYTICS_API_KEY;
-const API_KEY_HEADER = 'X-API-Key';
+import { request } from './api-client';
+import { logger } from './logger';
+import { getDriverImage } from '@/utils/imageMapping';
 
-// --- Helper to get headers ---
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'; // Keep for constructing URLs not using request() yet?
+// Ideally we move everything to use request() which handles base URL.
+// But we need to update functions to pass relative path.
+
+// --- Helper to get headers --- (DEPRECATED: Use request())
 const getHeaders = (): HeadersInit => {
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-    };
-    if (API_KEY) {
-        headers[API_KEY_HEADER] = API_KEY;
-    } else {
-        console.warn("VITE_FASTLYTICS_API_KEY is not set. API requests will be sent without authentication.");
-    }
-    return headers;
+  // Kept for legacy functions until fully migrated
+  const API_KEY = import.meta.env.VITE_FASTLYTICS_API_KEY;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  if (API_KEY) {
+    headers['X-API-Key'] = API_KEY;
+  }
+  return headers;
 };
 
 // --- Data Structures (Exported) ---
 export interface LapTimeDataPoint {
-    LapNumber: number;
-    [driverCode: string]: number | null; // Allow null for missed laps
+  LapNumber: number;
+  [driverCode: string]: number | null; // Allow null for missed laps
 }
-export interface SpeedDataPoint { Distance: number; Speed: number; }
-export interface GearMapDataPoint { X: number; Y: number; nGear: number; }
-export interface ThrottleDataPoint { Distance: number; Throttle: number; }
-export interface BrakeDataPoint { Distance: number; Brake: number; }
-export interface RPMDataPoint { Distance: number; RPM: number; }
-export interface DRSDataPoint { Distance: number; DRS: number; }
-export interface TireStint { compound: string; startLap: number; endLap: number; lapCount: number; }
-export interface DriverStrategy { driver: string; stints: TireStint[]; }
-export interface SessionDriver { code: string; name: string; team: string; }
-export interface DriverStanding { rank: number; code: string; name: string; team: string; points: number; wins: number; podiums: number; points_change?: number; teamColor?: string; } // Use points_change?
-export interface TeamStanding { rank: number; team: string; points: number; wins: number; podiums: number; points_change?: number; teamColor?: string; shortName?: string; } // Use points_change?
-export interface RaceResult { year: number; event: string; round: number; driver: string; team: string; teamColor: string; date?: string; location?: string; } // Added date and location
+
+export interface EnrichedLapRecord {
+  lapNumber: number | null;
+  lapTime: number | null;
+  sector1: number | null;
+  sector2: number | null;
+  sector3: number | null;
+  compound: string | null;
+  tyreLife: number | null;
+  freshTyre: boolean | null;
+  stint: number | null;
+  position: number | null;
+  trackStatus: string | null;
+  deleted: boolean;
+  deletedReason: string | null;
+  isPersonalBest: boolean;
+  speedI1: number | null;
+  speedI2: number | null;
+  speedFL: number | null;
+  speedST: number | null;
+}
+
+export interface WeatherSummary {
+  airTemp: number;
+  trackTemp: number;
+  humidity: number;
+  rainfall: boolean;
+  windSpeed: number;
+}
+
+export interface LapTimesEnrichedResponse {
+  lapComparison: LapTimeDataPoint[];
+  driverLapDetails: Record<string, EnrichedLapRecord[]>;
+  weather: WeatherSummary | null;
+}
+export interface SpeedDataPoint {
+  Distance: number;
+  Speed: number;
+  Throttle?: number;
+  Brake?: number;
+  DRS?: number;
+  nGear?: number;
+  RPM?: number;
+}
+export interface LapMeta {
+  lapNumber?: number;
+  lapTime?: number;
+  compound?: string;
+  tyreLife?: number;
+  freshTyre?: boolean;
+  stint?: number;
+  position?: number;
+  trackStatus?: string;
+  isPersonalBest?: boolean;
+  deleted?: boolean;
+  deletedReason?: string;
+  sector1Time?: number;
+  sector2Time?: number;
+  sector3Time?: number;
+  speedI1?: number;
+  speedI2?: number;
+  speedFL?: number;
+  speedST?: number;
+}
+export interface SpeedTraceResponse {
+  trace: SpeedDataPoint[];
+  lapMeta: LapMeta;
+}
+export interface GearMapDataPoint {
+  X: number;
+  Y: number;
+  nGear: number;
+  Z?: number;
+  Status?: string;
+  Speed?: number;
+  DriverAhead?: string;
+  DistanceToDriverAhead?: number;
+}
+export interface GearMapResponse {
+  points: GearMapDataPoint[];
+  lapMeta: LapMeta;
+}
+export interface GearShiftMapData {
+  circuitLayout: string;
+  segments: { gear: number; path: string }[];
+  driverCode: string;
+  lapNumber: number;
+  stats: { avgGear: number; mostUsedGear: number };
+}
+export interface ThrottleDataPoint {
+  Distance: number;
+  Throttle: number;
+}
+export interface BrakeDataPoint {
+  Distance: number;
+  Brake: number;
+}
+export interface RPMDataPoint {
+  Distance: number;
+  RPM: number;
+}
+export interface DRSDataPoint {
+  Distance: number;
+  DRS: number;
+}
+export interface TireStint {
+  compound: string;
+  startLap: number;
+  endLap: number;
+  lapCount: number;
+  tyreLifeStart?: number | null;
+  tyreLifeEnd?: number | null;
+  freshTyre?: boolean | null;
+  avgLapTime?: number | null;
+  bestLapTime?: number | null;
+  positionStart?: number | null;
+  positionEnd?: number | null;
+}
+export interface DriverStrategy {
+  driver: string;
+  stints: TireStint[];
+}
+export interface PitStop {
+  driver: string;
+  stopNumber: number;
+  lap: number;
+  duration: number | null;
+  tyreFrom: string;
+  tyreTo: string;
+}
+export interface RaceControlMessage {
+  time: number | string | null;
+  lap: number | null;
+  message: string | null;
+  category: string;
+  flag: string | null;
+}
+export interface TireStrategyResponse {
+  stints: DriverStrategy[];
+  pitStops: PitStop[];
+  raceControl: RaceControlMessage[];
+  weather: WeatherSummary | null;
+}
+export interface SessionDriver {
+  code: string;
+  name: string;
+  team: string;
+  headshotUrl?: string;
+  countryCode?: string;
+  driverNumber?: string;
+  teamColor?: string;
+}
+export interface DriverStanding {
+  rank: number;
+  code: string;
+  name: string;
+  team: string;
+  points: number;
+  wins: number;
+  podiums: number;
+  points_change?: number;
+  teamColor?: string;
+  headshotUrl?: string | null;
+  countryCode?: string | null;
+  avgGridPosition?: number | null;
+  bestGridPosition?: number | null;
+  bestFinish?: number | null;
+  dnfs?: number;
+  lapsCompleted?: number;
+  fastestLaps?: number;
+}
+export interface TeamStanding {
+  rank: number;
+  team: string;
+  points: number;
+  wins: number;
+  podiums: number;
+  points_change?: number;
+  teamColor?: string;
+  shortName?: string;
+} // Use points_change?
+export interface RaceResult {
+  year: number;
+  event: string;
+  round: number;
+  driver: string;
+  team: string;
+  teamColor: string;
+  date?: string;
+  location?: string;
+  podium?: { position: number; driver: string; team: string; teamColor: string }[];
+} // Added date, location, and podium
 export interface DetailedRaceResult {
-    position: number | null;
-    driverCode: string;
-    fullName: string;
-    team: string;
-    points: number;
-    status: string;
-    gridPosition?: number | null; // Optional for non-race/sprint
-    teamColor: string;
-    isFastestLap?: boolean; // Optional, mainly for Race/Sprint
-    // Fields for specific session types
-    fastestLapTime?: string | null; // For Practice
-    lapsCompleted?: number | null; // For Practice
-    q1Time?: string | null; // For Qualifying
-    q2Time?: string | null; // For Qualifying
-    q3Time?: string | null; // For Qualifying
-    // Added fields for specific lap times from processor
-    poleLapTimeValue?: string | null; // Formatted pole time (MM:SS.ms)
-    fastestLapTimeValue?: string | null; // Formatted fastest lap time (MM:SS.ms)
-    time?: string | null; // Race finish time for winner, gap for others (e.g., "+5.123" or "1:32:15.456")
-    laps?: number | null; // Number of laps completed (for race sessions)
-    // Individual driver fastest lap data for race sessions
-    driverFastestLapTime?: string | null; // Individual driver's fastest lap time in race
-    driverFastestLapNumber?: number | null; // Lap number when driver set their fastest lap
+  position: number | null;
+  driverCode: string;
+  fullName: string;
+  team: string;
+  points: number | null;
+  isProvisional?: boolean;
+  status: string;
+  gridPosition?: number | null;
+  teamColor: string;
+  isFastestLap?: boolean;
+  fastestLapTime?: string | null;
+  lapsCompleted?: number | null;
+  morningFastestLapTime?: string | null;
+  morningLapsCompleted?: number | null;
+  afternoonFastestLapTime?: string | null;
+  afternoonLapsCompleted?: number | null;
+  q1Time?: string | null;
+  q2Time?: string | null;
+  q3Time?: string | null;
+  poleLapTimeValue?: string | null;
+  fastestLapTimeValue?: string | null;
+  time?: string | null;
+  laps?: number | null;
+  driverFastestLapTime?: string | null;
+  driverFastestLapNumber?: number | null;
+  // Enriched fields
+  headshotUrl?: string | null;
+  countryCode?: string | null;
+  fastestLapSector1?: string | null;
+  fastestLapSector2?: string | null;
+  fastestLapSector3?: string | null;
+  deletedLapsCount?: number;
+  totalStints?: number | null;
+  maxSpeedTrap?: number | null;
 }
 export interface LapPositionDataPoint {
-    LapNumber: number;
-    [driverCode: string]: number | null; // Position for each driver, null if DNF/not available
+  LapNumber: number;
+  [driverCode: string]: number | null; // Position for each driver, null if DNF/not available
 }
 
 export interface AvailableSession {
-    name: string;
-    type: string;
-    startTime: string; // Note: This might not be directly available from the schedule endpoint
+  name: string;
+  type: string;
+  startTime?: string; // Note: This might not be directly available from the schedule endpoint
+  sourceSession?: string; // Testing alias source (e.g. FP1)
+  testingWindow?: 'morning' | 'afternoon' | 'full';
 }
 
 export interface SessionScheduleInfo {
-    name: string;
-    date: string; // ISO Date string
-    localTime: string | null; // HH:MM format
+  name: string;
+  date: string; // ISO Date string
+  localTime: string | null; // HH:MM format
 }
 
 export interface EventSessionSchedule {
-    eventName: string;
-    location: string;
-    country: string;
-    eventFormat: string;
-    sessions: SessionScheduleInfo[];
+  eventName: string;
+  location: string;
+  country: string;
+  eventFormat: string;
+  sessions: SessionScheduleInfo[];
 }
 
 // --- Stint Analysis Interfaces ---
 export interface LapDetail {
-    lapNumber: number;
-    lapTime: number; // Lap time in seconds
+  lapNumber: number;
+  lapTime: number;
+  sector1?: number;
+  sector2?: number;
+  sector3?: number;
+  tyreLife?: number;
+  position?: number;
+  speedI1?: number;
+  speedI2?: number;
+  speedFL?: number;
+  speedST?: number;
 }
 
 export interface StintAnalysisData {
-    driverCode: string;
-    stintNumber: number;
-    compound: string;
-    startLap: number;
-    endLap: number;
-    lapDetails: LapDetail[]; // Array of {lapNumber, lapTime} objects
+  driverCode: string;
+  stintNumber: number;
+  compound: string;
+  startLap: number;
+  endLap: number;
+  freshTyre?: boolean | null;
+  tyreDegradation?: number | null; // seconds per lap slope
+  lapDetails: LapDetail[];
 }
 
 // --- Schedule Interface ---
 export interface ScheduleEvent {
-    RoundNumber: number;
-    Country: string;
-    Location: string;
-    EventName: string;
-    EventDate: string; // ISO Date string
-    EventFormat: string;
-    Session1: string;
-    Session1Date: string; // ISO Date string
-    Session2: string;
-    Session2Date: string; // ISO Date string
-    Session3: string;
-    Session3Date: string; // ISO Date string
-    Session4: string | null; // Can be null
-    Session4Date: string | null; // Can be null
-    Session5: string | null; // Can be null
-    Session5Date: string | null; // Can be null
-    F1ApiSupport: boolean;
+  RoundNumber: number;
+  Country: string;
+  Location: string;
+  EventName: string;
+  EventDate: string; // ISO Date string
+  EventFormat: string;
+  Session1: string;
+  Session1Date: string; // ISO Date string
+  Session2: string;
+  Session2Date: string; // ISO Date string
+  Session3: string;
+  Session3Date: string; // ISO Date string
+  Session4: string | null; // Can be null
+  Session4Date: string | null; // Can be null
+  Session5: string | null; // Can be null
+  Session5Date: string | null; // Can be null
+  F1ApiSupport: boolean;
 }
-
 
 // --- Driver/Team Detail Interfaces ---
 export interface DriverDetails {
@@ -129,7 +334,11 @@ export interface DriverDetails {
   dateOfBirth: string; // ISO string format ideally
   bio?: string; // Optional
   imageUrl?: string; // Optional URL for the large photo
-  careerStats?: { // Optional stats block
+  headshot_url?: string;
+  team_colour?: string;
+  team_name?: string;
+  careerStats?: {
+    // Optional stats block
     wins?: number;
     podiums?: number;
     poles?: number;
@@ -146,7 +355,8 @@ export interface TeamDetails {
   firstEntry?: number; // Optional
   bio?: string; // Optional
   imageUrl?: string; // Optional URL for the large photo/logo
-  careerStats?: { // Optional stats block
+  careerStats?: {
+    // Optional stats block
     wins?: number;
     podiums?: number;
     poles?: number;
@@ -168,6 +378,23 @@ export interface DriverEvolutionData {
   rollingAverageLaps: RollingLapDataPoint[];
 }
 
+export interface ChampionshipProgressionRound {
+  round: number;
+  event: string;
+  country: string;
+}
+
+export interface ChampionshipProgressionDriver {
+  name: string;
+  team: string;
+  points_history: number[];
+}
+
+export interface ChampionshipProgressionData {
+  rounds: ChampionshipProgressionRound[];
+  drivers: { [key: string]: ChampionshipProgressionDriver };
+}
+
 export interface TrackTemperatureDataPoint {
   lap: number;
   temp: number | null; // Track temperature in Celsius
@@ -185,12 +412,18 @@ export interface TrackSection {
   type: 'straight' | 'corner' | 'sector';
   path: string; // SVG path data
   driver1Advantage?: number; // Positive means driver1 is faster, negative means driver2 is faster
+  driver1AvgSpeed?: number;
+  driver2AvgSpeed?: number;
 }
 
 export interface SectorComparisonData {
   sections: TrackSection[];
   driver1Code: string;
   driver2Code: string;
+  driver1LapNumber?: number;
+  driver1LapTime?: string;
+  driver2LapNumber?: number;
+  driver2LapTime?: string;
   circuitLayout: string; // SVG path data for the main track outline
 }
 
@@ -200,417 +433,454 @@ export interface SessionIncident {
   endLap: number;
 }
 
-// Type definition for the Team Pace data returned by the new endpoint
-export interface TeamPaceData {
-    rank: number;
-    teamName: string;
-    medianTime: number; // seconds
-    averageTime: number; // seconds
-    stdDev: number;
+// --- Team Pace Analysis Interfaces ---
+export interface TeamPaceSession {
+  teamName: string;
+  medianTime: number;
+  averageTime: number;
+  fastestLapTime?: number;
+  stdDev: number;
+  lapCount: number;
+  teamColor: string;
+  rank: number;
+}
+
+export interface CompoundPace {
+  teamName: string;
+  compound: string;
+  medianTime: number;
+  averageTime: number;
+  lapCount: number;
+  teamColor: string;
+}
+
+export interface DriverPace {
+  driverCode: string;
+  teamName: string;
+  medianTime: number;
+  averageTime: number;
+  stdDev: number;
+  lapCount: number;
+  teamColor: string;
+  compounds?: { compound: string; medianTime: number; lapCount: number }[];
+  sector1Median?: number | null;
+  sector2Median?: number | null;
+  sector3Median?: number | null;
+}
+
+export interface SectorPace {
+  teamName: string;
+  teamColor: string;
+  sector1Median?: number | null;
+  sector1Best?: number | null;
+  sector2Median?: number | null;
+  sector2Best?: number | null;
+  sector3Median?: number | null;
+  sector3Best?: number | null;
+}
+
+export interface WeatherSummary {
+  airTemp: number;
+  trackTemp: number;
+  humidity: number;
+  rainfall: boolean;
+  windSpeed: number;
+  windDirection?: number;
+}
+
+export interface TeamPaceResponse {
+  teamPace: TeamPaceSession[];
+  compoundPace: CompoundPace[];
+  driverPace: DriverPace[];
+  sectorPace: SectorPace[];
+  weather: WeatherSummary | null;
+}
+
+export interface TeamPaceEvent {
+  year: number;
+  round: number;
+  eventName: string;
+  sessions: Record<string, TeamPaceSession[]>;
+}
+
+export interface TeamPaceSummary {
+  round: number;
+  eventName: string;
+  bestRacePaceTeam: string;
 }
 
 // --- API Fetch Functions ---
 
 /** Fetches available sessions for a given event */
-export const fetchAvailableSessions = async (year: number, event: string): Promise<AvailableSession[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event });
-    const url = `${API_BASE_URL}/api/sessions?${params.toString()}`;
-    console.log(`Fetching available sessions from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: AvailableSession[] = await response.json();
-        console.log(`Successfully fetched ${data.length} available sessions.`);
-        return data;
-    } catch (error) { console.error("Error fetching available sessions:", error); throw error; }
+/** Fetches available sessions for a given event */
+export const fetchAvailableSessions = async (
+  year: number,
+  event: string
+): Promise<AvailableSession[]> => {
+  const params = new URLSearchParams({ year: year.toString(), event });
+  // Use request helper: passes relative path
+  return request<AvailableSession[]>(`/api/sessions?${params.toString()}`);
 };
 
 /** Fetches the list of drivers for a given session. */
-export const fetchSessionDrivers = async (year: number, event: string, session: string): Promise<SessionDriver[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/session/drivers?${params.toString()}`;
-    console.log(`Fetching session drivers from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: SessionDriver[] = await response.json();
-        console.log(`Successfully fetched ${data.length} session drivers.`);
-        return data;
-    } catch (error) { console.error("Error fetching session drivers:", error); throw error; }
+export const fetchSessionDrivers = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<SessionDriver[]> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<SessionDriver[]>(`/api/session/drivers?${params.toString()}`);
 };
 
-/** Fetches lap time comparison data for multiple drivers (2 or 3). */
-export const fetchLapTimes = async (year: number, event: string, session: string, drivers: string[]): Promise<LapTimeDataPoint[]> => {
-    const params = new URLSearchParams();
-    params.append('year', year.toString()); params.append('event', event); params.append('session', session);
-    drivers.forEach(driver => params.append('drivers', driver));
-    const url = `${API_BASE_URL}/api/laptimes?${params.toString()}`;
-    console.log(`Fetching lap times from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: LapTimeDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} lap time records for ${drivers.join(', ')}.`);
-        return data;
-    } catch (error) { console.error("Error fetching lap times:", error); throw error; }
+/** Fetches enriched lap time comparison data for multiple drivers. */
+export const fetchLapTimes = async (
+  year: number,
+  event: string,
+  session: string,
+  drivers: string[]
+): Promise<LapTimesEnrichedResponse> => {
+  const params = new URLSearchParams();
+  params.append('year', year.toString());
+  params.append('event', event);
+  params.append('session', session);
+  drivers.forEach((driver) => params.append('drivers', driver));
+  return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
 };
 
 /** Fetches speed telemetry data for a specific lap. */
-export const fetchTelemetrySpeed = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<SpeedDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/speed?${params.toString()}`;
-    console.log(`Fetching speed telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: SpeedDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} speed telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching speed telemetry:", error); throw error; }
+export const fetchTelemetrySpeed = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<SpeedTraceResponse> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<SpeedTraceResponse>(`/api/telemetry/speed?${params.toString()}`);
 };
 
 /** Fetches gear map telemetry data for a specific lap. */
-export const fetchTelemetryGear = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<GearMapDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/gear?${params.toString()}`;
-    console.log(`Fetching gear telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: GearMapDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} gear telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching gear telemetry:", error); throw error; }
+export const fetchTelemetryGear = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<GearMapResponse> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<GearMapResponse>(`/api/telemetry/gear?${params.toString()}`);
+};
+
+/** Fetches gear shift map data (SVG paths) for a specific lap. */
+export const fetchGearShiftMap = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<GearShiftMapData> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<GearShiftMapData>(`/api/telemetry/gear-map?${params.toString()}`);
 };
 
 /** Fetches throttle telemetry data for a specific lap. */
-export const fetchTelemetryThrottle = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<ThrottleDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/throttle?${params.toString()}`;
-    console.log(`Fetching throttle telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: ThrottleDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} throttle telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching throttle telemetry:", error); throw error; }
+export const fetchTelemetryThrottle = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<ThrottleDataPoint[]> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<ThrottleDataPoint[]>(`/api/telemetry/throttle?${params.toString()}`);
 };
 
 /** Fetches brake telemetry data for a specific lap. */
-export const fetchTelemetryBrake = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<BrakeDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/brake?${params.toString()}`;
-    console.log(`Fetching brake telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: BrakeDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} brake telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching brake telemetry:", error); throw error; }
+export const fetchTelemetryBrake = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<BrakeDataPoint[]> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<BrakeDataPoint[]>(`/api/telemetry/brake?${params.toString()}`);
 };
 
 /** Fetches RPM telemetry data for a specific lap. */
-export const fetchTelemetryRPM = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<RPMDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/rpm?${params.toString()}`;
-    console.log(`Fetching RPM telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: RPMDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} RPM telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching RPM telemetry:", error); throw error; }
+export const fetchTelemetryDRS = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<DRSDataPoint[]> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<DRSDataPoint[]>(`/api/telemetry/drs?${params.toString()}`);
 };
 
-/** Fetches DRS telemetry data for a specific lap. */
-export const fetchTelemetryDRS = async (year: number, event: string, session: string, driver: string, lap: string | number): Promise<DRSDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session, driver, lap: String(lap) });
-    const url = `${API_BASE_URL}/api/telemetry/drs?${params.toString()}`;
-    console.log(`Fetching DRS telemetry from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: DRSDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} DRS telemetry records.`);
-        return data;
-    } catch (error) { console.error("Error fetching DRS telemetry:", error); throw error; }
+/** Fetches RPM telemetry data for a specific lap. */
+export const fetchTelemetryRPM = async (
+  year: number,
+  event: string,
+  session: string,
+  driver: string,
+  lap: string | number
+): Promise<RPMDataPoint[]> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    driver,
+    lap: String(lap),
+  });
+  return request<RPMDataPoint[]>(`/api/telemetry/rpm?${params.toString()}`);
 };
 
 /** Fetches tire strategy data for all drivers in a session. */
-export const fetchTireStrategy = async (year: number, event: string, session: string): Promise<DriverStrategy[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/strategy?${params.toString()}`;
-    console.log(`Fetching tire strategy from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: DriverStrategy[] = await response.json();
-        console.log(`Successfully fetched strategy for ${data.length} drivers.`);
-        return data;
-    } catch (error) { console.error("Error fetching tire strategy:", error); throw error; }
+export const fetchTireStrategy = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<TireStrategyResponse> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<TireStrategyResponse>(`/api/strategy?${params.toString()}`);
 };
 
 /** Fetches driver standings for a given year. */
 export const fetchDriverStandings = async (year: number): Promise<DriverStanding[]> => {
-    const params = new URLSearchParams({ year: year.toString() });
-    const url = `${API_BASE_URL}/api/standings/drivers?${params.toString()}`;
-    console.log(`Fetching driver standings from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: DriverStanding[] = await response.json();
-        console.log(`Successfully fetched driver standings for ${year}.`);
-        return data;
-    } catch (error) { console.error(`Error fetching driver standings for ${year}:`, error); throw error; }
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<DriverStanding[]>(`/api/standings/drivers?${params.toString()}`);
 };
-
-/** Fetches team standings for a given year. */
 export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> => {
-    const params = new URLSearchParams({ year: year.toString() });
-    const url = `${API_BASE_URL}/api/standings/teams?${params.toString()}`;
-    console.log(`Fetching team standings from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: TeamStanding[] = await response.json();
-        console.log(`Successfully fetched team standings for ${year}.`);
-        return data;
-    } catch (error) { console.error(`Error fetching team standings for ${year}:`, error); throw error; }
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<TeamStanding[]>(`/api/standings/teams?${params.toString()}`);
 };
 
 /** Fetches race results summary (winners) for a given year. */
 export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
-    const params = new URLSearchParams({ year: year.toString() });
-    const url = `${API_BASE_URL}/api/results/races?${params.toString()}`;
-    console.log(`Fetching race results summary from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: RaceResult[] = await response.json();
-        console.log(`Successfully fetched ${data.length} race results summary for ${year}.`);
-        return data;
-    } catch (error) { console.error(`Error fetching race results for ${year}:`, error); throw error; }
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<RaceResult[]>(`/api/results/races?${params.toString()}`);
 };
-
-/** Fetches detailed race results for a specific event and session. */
-export const fetchSpecificRaceResults = async (year: number, eventSlug: string, session: string): Promise<DetailedRaceResult[]> => {
-    // Add the session as a query parameter
-    const params = new URLSearchParams({ session });
-    const url = `${API_BASE_URL}/api/results/race/${year}/${eventSlug}?${params.toString()}`;
-    console.log(`Fetching detailed race results from: ${url}`); // Log includes session now
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: DetailedRaceResult[] = await response.json();
-        console.log(`Successfully fetched detailed results for ${year} ${eventSlug} session ${session}.`);
-        return data;
-    } catch (error) {
-        console.error(`Error fetching detailed race results for ${year} ${eventSlug} session ${session}:`, error);
-        throw error;
-    }
+export const fetchSpecificRaceResults = async (
+  year: number,
+  eventSlug: string,
+  session: string
+): Promise<DetailedRaceResult[]> => {
+  const params = new URLSearchParams({ session });
+  return request<DetailedRaceResult[]>(
+    `/api/results/race/${year}/${eventSlug}?${params.toString()}`
+  );
 };
 
 /** Fetches track evolution data */
-export const fetchTrackEvolution = async (year: number, event: string, session: string): Promise<TrackEvolutionResponse> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/track-evolution?${params.toString()}`;
-    console.log(`Fetching track evolution from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: TrackEvolutionResponse = await response.json();
-        console.log(`Successfully fetched track evolution data.`);
-        return data;
-    } catch (error) { console.error("Error fetching track evolution data:", error); throw error; }
+export const fetchTrackEvolution = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<TrackEvolutionResponse> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<TrackEvolutionResponse>(`/api/track-evolution?${params.toString()}`);
+};
+export const fetchChampionshipProgression = async (
+  year: number
+): Promise<ChampionshipProgressionData> => {
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<ChampionshipProgressionData>(`/api/standings/progression?${params.toString()}`);
 };
 
 /** Fetches the event schedule for a given year. */
 export const fetchSchedule = async (year: number): Promise<ScheduleEvent[]> => {
-    const url = `${API_BASE_URL}/api/schedule/${year}`;
-    console.log(`Fetching schedule from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error fetching schedule for ${year}: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: ScheduleEvent[] = await response.json();
-        console.log(`Successfully fetched schedule for ${year} with ${data.length} events.`);
-        return data;
-    } catch (error) {
-        console.error(`Error fetching schedule for ${year}:`, error);
-        throw error;
+  return request<ScheduleEvent[]>(`/api/schedule/${year}`);
+};
+
+// --- Circuit Lengths (in kilometers) ---
+// Used for calculating distance from laps in testing sessions
+const CIRCUIT_LENGTHS: Record<string, number> = {
+  // 2026 Circuits
+  'bahrain-grand-prix': 5.412,
+  bahrain: 5.412,
+  sakhir: 5.412,
+  'jeddah-grand-prix': 6.174,
+  jeddah: 6.174,
+  'australian-grand-prix': 5.278,
+  melbourne: 5.278,
+  'chinese-grand-prix': 5.451,
+  shanghai: 5.451,
+  'japanese-grand-prix': 5.807,
+  suzuka: 5.807,
+  'miami-grand-prix': 5.41,
+  miami: 5.41,
+  'monaco-grand-prix': 3.337,
+  monaco: 3.337,
+  'spanish-grand-prix': 4.657,
+  barcelona: 4.657,
+  'canadian-grand-prix': 4.361,
+  montreal: 4.361,
+  'austrian-grand-prix': 4.318,
+  'red-bull-ring': 4.318,
+  spielberg: 4.318,
+  'british-grand-prix': 5.891,
+  silverstone: 5.891,
+  'hungarian-grand-prix': 4.381,
+  hungaroring: 4.381,
+  'belgian-grand-prix': 7.004,
+  spa: 7.004,
+  'dutch-grand-prix': 4.259,
+  zandvoort: 4.259,
+  'italian-grand-prix': 5.757,
+  monza: 5.757,
+  'azerbaijan-grand-prix': 6.003,
+  baku: 6.003,
+  'singapore-grand-prix': 4.94,
+  singapore: 4.94,
+  'qatar-grand-prix': 5.38,
+  losail: 5.38,
+  'united-states-grand-prix': 5.513,
+  austin: 5.513,
+  'mexican-grand-prix': 4.304,
+  'mexico-city': 4.304,
+  'brazilian-grand-prix': 4.309,
+  interlagos: 4.309,
+  'las-vegas-grand-prix': 6.201,
+  'las-vegas': 6.201,
+  'abu-dhabi-grand-prix': 5.281,
+  'yas-marina': 5.281,
+  // Legacy/Alternative names
+  'pre-season-testing': 5.412,
+  'bahrain-pre-season-testing': 5.412,
+};
+
+export const getCircuitLength = (eventName?: string, location?: string): number => {
+  if (!eventName && !location) return 5.0;
+
+  const normalizedEventName = eventName?.toLowerCase().replace(/\s+/g, '-') ?? '';
+  const normalizedLocation = location?.toLowerCase().replace(/\s+/g, '-') ?? '';
+
+  if (normalizedEventName && CIRCUIT_LENGTHS[normalizedEventName]) {
+    return CIRCUIT_LENGTHS[normalizedEventName];
+  }
+
+  if (normalizedLocation && CIRCUIT_LENGTHS[normalizedLocation]) {
+    return CIRCUIT_LENGTHS[normalizedLocation];
+  }
+
+  for (const [key, length] of Object.entries(CIRCUIT_LENGTHS)) {
+    if (normalizedEventName.includes(key) || normalizedLocation.includes(key)) {
+      return length;
     }
+  }
+
+  return 5.0;
+};
+
+export const calculateDistance = (laps: number, circuitLengthKm: number): number => {
+  return laps * circuitLengthKm;
+};
+
+export const formatDistance = (distanceKm: number): string => {
+  return `${distanceKm.toFixed(1)} km`;
+};
+
+/** Fetches team pace summary for a given year. */
+export const fetchTeamPaceSummary = async (year: number): Promise<TeamPaceSummary[]> => {
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<TeamPaceSummary[]>(`/api/team-pace/summary?${params.toString()}`);
+};
+
+/** Fetches detailed team pace data for a specific event. */
+export const fetchTeamPaceEvent = async (
+  year: number,
+  eventSlug: string
+): Promise<TeamPaceEvent> => {
+  const params = new URLSearchParams({ year: year.toString(), event_slug: eventSlug });
+  return request<TeamPaceEvent>(`/api/team-pace/event?${params.toString()}`);
+};
+
+/** Fetches team pace analysis for a specific session (cache-first on backend). */
+export const fetchTeamPaceSession = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<TeamPaceResponse> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<TeamPaceResponse>(`/api/team-pace/session?${params.toString()}`);
 };
 
 /** Fetches lap-by-lap position data for a race session. */
-export const fetchLapPositions = async (year: number, event: string, session: string): Promise<LapPositionDataPoint[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/lapdata/positions?${params.toString()}`;
-    console.log(`Fetching lap positions from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: LapPositionDataPoint[] = await response.json();
-        console.log(`Successfully fetched ${data.length} lap position records.`);
-        return data;
-    } catch (error) { console.error("Error fetching lap positions:", error); throw error; }
+export const fetchLapPositions = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<LapPositionDataPoint[]> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<LapPositionDataPoint[]>(`/api/lapdata/positions?${params.toString()}`);
 };
 
 /** Fetches detailed information for a specific driver. */
 export const getDriverDetails = async (driverId: string): Promise<DriverDetails> => {
-    const url = `${API_BASE_URL}/api/driver/${driverId}`;
-    console.log(`Fetching driver details from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error fetching driver ${driverId}: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: DriverDetails = await response.json();
-        console.log(`Successfully fetched details for driver ${driverId}.`);
-        // TODO: Potentially add mock data here if API returns 404 during development
-        // if (!data && MOCK_ENABLED) return MOCK_DRIVER_DETAILS[driverId];
-        return data;
-    } catch (error) {
-        console.error(`Error fetching driver details for ${driverId}:`, error);
-        // TODO: Potentially return mock data on error during development
-        // if (MOCK_ENABLED) return MOCK_DRIVER_DETAILS[driverId];
-        throw error;
-    }
+  const data = await request<DriverDetails>(`/api/driver/${driverId}`);
+
+  const localImage = getDriverImage(driverId, new Date().getFullYear());
+  if (localImage) {
+    data.headshot_url = localImage;
+    data.imageUrl = localImage;
+  }
+
+  return data;
 };
 
 /** Fetches detailed information for a specific team. */
 export const getTeamDetails = async (teamId: string): Promise<TeamDetails> => {
-    // Team ID might contain spaces or special chars, ensure it's encoded for the URL path part
-    const encodedTeamId = encodeURIComponent(teamId);
-    const url = `${API_BASE_URL}/api/team/${encodedTeamId}`;
-    console.log(`Fetching team details from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error fetching team ${teamId}: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: TeamDetails = await response.json();
-        console.log(`Successfully fetched details for team ${teamId}.`);
-        // TODO: Potentially add mock data here if API returns 404 during development
-        return data;
-    } catch (error) {
-        console.error(`Error fetching team details for ${teamId}:`, error);
-        // TODO: Potentially return mock data on error during development
-    throw error;
-  }
+  // Team ID might contain spaces or special chars, ensure it's encoded for the URL path part
+  const encodedTeamId = encodeURIComponent(teamId);
+  const data = await request<TeamDetails>(`/api/team/${encodedTeamId}`);
+  // TODO: Potentially add mock data here if API returns 404 during development
+  return data;
 };
 
 /** Fetches session schedule for a specific event. */
-export const fetchEventSessionSchedule = async (year: number, event: string): Promise<EventSessionSchedule> => {
-  const url = `${API_BASE_URL}/api/schedule/${year}/${event}/sessions`;
-  console.log(`Fetching event session schedule from: ${url}`);
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-      console.error(`API Error: ${errorDetail}`);
-      throw new Error(errorDetail);
-    }
-    const data: EventSessionSchedule = await response.json();
-    console.log(`Successfully fetched session schedule for ${year} ${event}.`);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching session schedule for ${year} ${event}:`, error);
-    throw error;
-  }
+export const fetchEventSessionSchedule = async (
+  year: number,
+  event: string
+): Promise<EventSessionSchedule> => {
+  return request<EventSessionSchedule>(`/api/schedule/${year}/${event}/sessions`);
 };
 
 /** Fetches available lap numbers for a specific driver in a session. */
@@ -625,38 +895,22 @@ export const fetchDriverLapNumbers = async (
     return [];
   }
   const params = new URLSearchParams({ year: year.toString(), event, session, driver });
-  const url = `${API_BASE_URL}/api/laps/driver?${params.toString()}`;
-  console.log(`Fetching lap numbers from: ${url}`);
-  try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-      console.error(`API Error fetching lap numbers for ${driver}: ${errorDetail}`);
-      throw new Error(errorDetail);
-    }
-    const data: { laps: number[] } = await response.json();
-    console.log(`Successfully fetched ${data.laps.length} lap numbers for ${driver}.`);
-    return data.laps || []; // Ensure we return an array
-  } catch (error) {
-    console.error(`Error fetching lap numbers for ${driver}:`, error);
-    throw error;
-  }
+  const data = await request<{ laps: number[] }>(`/api/laps/driver?${params.toString()}`);
+  return data.laps || []; // Ensure we return an array
 };
-
 
 /** Fetches sector comparison data for two drivers for specific laps. */
 export const fetchSectorComparison = async (
-  year: number, 
-  event: string, 
+  year: number,
+  event: string,
   session: string,
   driver1: string,
   driver2: string,
   lap1: string | number = 'fastest', // Add lap1 parameter with default
-  lap2: string | number = 'fastest'  // Add lap2 parameter with default
+  lap2: string | number = 'fastest' // Add lap2 parameter with default
 ): Promise<SectorComparisonData> => {
   if (!driver1 || !driver2) {
-    throw new Error("Both drivers must be specified");
+    throw new Error('Both drivers must be specified');
   }
 
   const params = new URLSearchParams({
@@ -666,146 +920,301 @@ export const fetchSectorComparison = async (
     driver1,
     driver2,
     lap1: String(lap1), // Pass lap identifiers
-    lap2: String(lap2)  // Pass lap identifiers
+    lap2: String(lap2), // Pass lap identifiers
   });
 
-  // Correct endpoint and all parameters as query params
-  const url = `${API_BASE_URL}/api/comparison/sectors?${params.toString()}`;
-  console.log(`Fetching sector comparison from: ${url}`); // Log includes laps now
-  
   try {
-    const response = await fetch(url, { headers: getHeaders() });
-    if (!response.ok) {
-      let errorDetail = `HTTP error! status: ${response.status}`;
-      try { 
-        const errorData = await response.json(); 
-        errorDetail = errorData.detail || errorDetail; 
-      } catch (e) { /* Ignore */ }
-      console.error(`API Error: ${errorDetail}`);
-      throw new Error(errorDetail);
-    }
-    const data: SectorComparisonData = await response.json();
-    console.log(`Successfully fetched sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}) in ${year} ${event} ${session}`);
-    return data;
+    return await request<SectorComparisonData>(`/api/comparison/sectors?${params.toString()}`);
   } catch (error) {
-    console.error(`Error fetching sector comparison for ${driver1} (Lap ${lap1}) vs ${driver2} (Lap ${lap2}):`, error);
-    
     // For development/demo, return mock data if real API isn't available
     if (process.env.NODE_ENV === 'development') {
       // Generate mock sector comparison data
       const mockData: SectorComparisonData = {
         driver1Code: driver1,
         driver2Code: driver2,
-        circuitLayout: "M100,250 C150,100 250,50 400,50 C550,50 650,100 700,250 C750,400 650,450 400,450 C250,450 150,400 100,250 Z",
+        circuitLayout:
+          'M100,250 C150,100 250,50 400,50 C550,50 650,100 700,250 C750,400 650,450 400,450 C250,450 150,400 100,250 Z',
         sections: [
           {
-            id: "s1",
-            name: "Turn 1",
-            type: "corner",
-            path: "M380,50 C420,50 460,50 500,70 C540,90 560,130 560,170",
-            driver1Advantage: Math.random() * 0.2 - 0.1
+            id: 's1',
+            name: 'Turn 1',
+            type: 'corner',
+            path: 'M380,50 C420,50 460,50 500,70 C540,90 560,130 560,170',
+            driver1Advantage: Math.random() * 0.2 - 0.1,
           },
           {
-            id: "s2",
-            name: "Back Straight",
-            type: "straight",
-            path: "M560,170 C590,240 620,310 650,380",
-            driver1Advantage: Math.random() * 0.2 - 0.1
+            id: 's2',
+            name: 'Back Straight',
+            type: 'straight',
+            path: 'M560,170 C590,240 620,310 650,380',
+            driver1Advantage: Math.random() * 0.2 - 0.1,
           },
           {
-            id: "s3",
-            name: "Chicane",
-            type: "corner",
-            path: "M650,380 C630,420 580,440 520,440",
-            driver1Advantage: Math.random() * 0.2 - 0.1
+            id: 's3',
+            name: 'Chicane',
+            type: 'corner',
+            path: 'M650,380 C630,420 580,440 520,440',
+            driver1Advantage: Math.random() * 0.2 - 0.1,
           },
           {
-            id: "s4",
-            name: "Final Corner",
-            type: "corner",
-            path: "M520,440 C400,450 280,430 200,370",
-            driver1Advantage: Math.random() * 0.2 - 0.1
+            id: 's4',
+            name: 'Final Corner',
+            type: 'corner',
+            path: 'M520,440 C400,450 280,430 200,370',
+            driver1Advantage: Math.random() * 0.2 - 0.1,
           },
           {
-            id: "s5",
-            name: "Start/Finish",
-            type: "straight",
-            path: "M200,370 C150,320 120,260 110,200 C100,140 120,90 180,60 C240,30 310,50 380,50",
-            driver1Advantage: Math.random() * 0.2 - 0.1
-          }
-        ]
+            id: 's5',
+            name: 'Start/Finish',
+            type: 'straight',
+            path: 'M200,370 C150,320 120,260 110,200 C100,140 120,90 180,60 C240,30 310,50 380,50',
+            driver1Advantage: Math.random() * 0.2 - 0.1,
+          },
+        ],
       };
       return mockData;
     }
-    
+
     throw error;
   }
 };
 
 /** Fetches detailed stint analysis data including lap times. */
-export const fetchStintAnalysis = async (year: number, event: string, session: string): Promise<StintAnalysisData[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/stint-analysis?${params.toString()}`;
-    console.log(`Fetching stint analysis from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error: ${errorDetail}`);
-            throw new Error(errorDetail);
-        }
-        const data: StintAnalysisData[] = await response.json();
-        console.log(`Successfully fetched ${data.length} stint records for analysis.`);
-        return data;
-    } catch (error) { console.error("Error fetching stint analysis:", error); throw error; }
+export const fetchStintAnalysis = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<StintAnalysisData[]> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<StintAnalysisData[]>(`/api/stint-analysis?${params.toString()}`);
 };
 
 /** Fetches incident periods (SC/VSC, Red Flag) for a session. */
-export const fetchSessionIncidents = async (year: number, event: string, session: string): Promise<SessionIncident[]> => {
-    const params = new URLSearchParams({ year: year.toString(), event, session });
-    const url = `${API_BASE_URL}/api/incidents?${params.toString()}`;
-    console.log(`Fetching session incidents from: ${url}`);
-    try {
-        const response = await fetch(url, { headers: getHeaders() });
-        if (!response.ok) {
-            let errorDetail = `HTTP error! status: ${response.status}`;
-            try { const errorData = await response.json(); errorDetail = errorData.detail || errorDetail; } catch (e) { /* Ignore */ }
-            console.error(`API Error fetching incidents: ${errorDetail}`);
-            // Return empty array on error to prevent breaking UI that expects an array
-            return [];
-            // Alternatively, throw new Error(errorDetail); if you want query hook to handle error state
-        }
-        const data: SessionIncident[] = await response.json();
-        console.log(`Successfully fetched ${data.length} incident periods.`);
-        return data;
-    } catch (error) {
-        console.error("Error fetching session incidents:", error);
-        // Return empty array on network/other errors
-        return [];
-        // Alternatively, throw error;
-    }
+export const fetchSessionIncidents = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<SessionIncident[]> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  try {
+    return await request<SessionIncident[]>(`/api/incidents?${params.toString()}`);
+  } catch (error) {
+    // Return empty array on error to prevent breaking UI that expects an array
+    logger.error('Error fetching incidents:', error);
+    return [];
+    // Alternatively, throw error; if you want query hook to handle error state
+  }
 };
 
-// Function to fetch team pace analysis data
-export const fetchTeamPace = async (
-    year: number,
-    event: string,
-    session: string
-): Promise<TeamPaceData[]> => {
-    const url = `/api/pace/teams?year=${year}&event=${encodeURIComponent(event)}&session=${session}`;
-    console.log("Fetching team pace data from:", url);
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-            throw new Error(`Failed to fetch team pace data: ${response.status} ${errorData.detail || response.statusText}`);
-        }
-        const data: TeamPaceData[] = await response.json();
-        console.log("Successfully fetched team pace data:", data.length);
-        return data;
-    } catch (error) {
-        console.error("Error fetching team pace data:", error);
-        throw error; // Re-throw to be caught by React Query
-    }
+export interface PaceDistributionData {
+  driverCode: string;
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+  count: number;
+}
+
+export interface CompoundPaceDistribution {
+  driverCode: string;
+  compound: string;
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+  count: number;
+}
+
+export interface SectorStats {
+  driverCode: string;
+  sector1Best?: number;
+  sector1Median?: number;
+  sector2Best?: number;
+  sector2Median?: number;
+  sector3Best?: number;
+  sector3Median?: number;
+}
+
+export interface PaceDistributionResponse {
+  overall: PaceDistributionData[];
+  byCompound: CompoundPaceDistribution[];
+  sectorStats: SectorStats[];
+}
+
+/** Fetches pace distribution statistics for selected drivers. */
+export const fetchPaceDistribution = async (
+  year: number,
+  event: string,
+  session: string,
+  drivers: string[]
+): Promise<PaceDistributionResponse> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  params.append('drivers', drivers.join(','));
+  return request<PaceDistributionResponse>(`/api/telemetry/pace-distribution?${params.toString()}`);
+};
+
+// --- Session Replay Interface (Frame-based Model) ---
+
+/** Per-driver state within a single replay frame */
+export interface ReplayDriverState {
+  abbr: string;
+  x: number;
+  y: number;
+  position: number | null;
+  gap: string | null;
+  interval: string | null;
+  compound: string | null;
+  tyre_life: number | null;
+  tyre_history: string[];
+  pit_stops: number;
+  grid_position: number | null;
+  speed: number;
+  gear: number;
+  drs: number;
+  in_pit: boolean;
+  retired: boolean;
+  has_fastest_lap: boolean;
+  flag: string | null; // "investigation" | "penalty" | null
+}
+
+/** Race control message within a frame */
+export interface ReplayRaceControl {
+  message: string;
+  flag: string;
+  category: string;
+}
+
+/** Weather data within a frame */
+export interface ReplayWeather {
+  air_temp: number | null;
+  track_temp: number | null;
+  humidity: number | null;
+  rainfall: boolean;
+  wind_speed: number | null;
+  wind_direction: number | null;
+}
+
+/** A single replay frame (one per 0.5s interval) */
+export interface ReplayFrame {
+  timestamp: number;
+  lap: number;
+  total_laps: number;
+  track_status: string; // "green" | "yellow" | "sc" | "vsc" | "red"
+  drivers: ReplayDriverState[];
+  weather?: ReplayWeather;
+  race_control?: ReplayRaceControl[];
+}
+
+/** Track layout data */
+export interface ReplayTrack {
+  x: number[];
+  y: number[];
+  rotation: number;
+  sector_boundaries: {
+    s1_end: number;
+    s2_end: number;
+    total: number;
+  } | null;
+  norm: { x_min: number; y_min: number; scale: number };
+}
+
+/** Session info */
+export interface ReplaySessionInfo {
+  year: number;
+  event: string;
+  session_type: string;
+  total_laps: number;
+  is_race: boolean;
+  circuit_name: string;
+  event_name: string;
+}
+
+/** Driver info */
+export interface ReplayDriverInfo {
+  abbr: string;
+  full_name: string;
+  team: string;
+  color: string;
+  number: string;
+}
+
+/** Completed lap entry */
+export interface ReplayCompletedLap {
+  driver: string;
+  lap: number;
+  time_str: string;
+  seconds: number;
+  timestamp: number;
+  compound: string;
+}
+
+/** Chunk manifest entry */
+export interface ReplayChunkManifest {
+  id: number;
+  start: number;
+  end: number;
+  count: number;
+}
+
+/** Replay metadata response (from /api/replay/metadata) */
+export interface ReplayMetadata {
+  track: ReplayTrack;
+  session_info: ReplaySessionInfo;
+  drivers: Record<string, ReplayDriverInfo>;
+  driver_colors: Record<string, string>;
+  completed_laps: ReplayCompletedLap[];
+  chunk_manifest: ReplayChunkManifest[];
+  total_duration: number;
+}
+
+/** Replay chunk response (from /api/replay/chunk) */
+export interface ReplayChunk {
+  chunk_id: number;
+  start_time: number;
+  end_time: number;
+  frames: ReplayFrame[];
+}
+
+/** Replay progress response (from /api/replay/progress) */
+export interface ReplayProgress {
+  message: string;
+  progress: number;
+}
+
+/** Fetches session replay metadata (track layout, driver info, chunk manifest). */
+export const fetchReplayMetadata = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<ReplayMetadata> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<ReplayMetadata>(`/api/replay/metadata?${params.toString()}`);
+};
+
+/** Fetches a specific replay chunk of frames. */
+export const fetchReplayChunk = async (
+  year: number,
+  event: string,
+  session: string,
+  chunkId: number
+): Promise<ReplayChunk> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    chunk_id: chunkId.toString(),
+  });
+  return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`);
+};
+
+/** Fetches replay processing progress. */
+export const fetchReplayProgress = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<ReplayProgress> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<ReplayProgress>(`/api/replay/progress?${params.toString()}`);
 };
