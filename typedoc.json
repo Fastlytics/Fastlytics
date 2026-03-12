@@ -1,0 +1,11 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/lib", "src/hooks", "src/components"],
+  "exclude": ["src/components/ui/**/*"],
+  "entryPointStrategy": "expand",
+  "out": "docs/frontend",
+  "plugin": ["typedoc-plugin-markdown"],
+  "theme": "default",
+  "name": "Fastlytics Frontend",
+  "includeVersion": true
+}
