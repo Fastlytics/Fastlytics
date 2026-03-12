@@ -1,0 +1,33 @@
+# Dependabot Configuration
+# This file configures Dependabot to automatically check for dependency updates
+# and create pull requests for version updates and security patches.
+version: 2
+updates:
+  # NPM Package Updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "/"
+    reviewers:
+      - "subhashhhhhh"
+    assignees:
+      - "subhashhhhhh"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Group updates by type
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
