@@ -1,6 +1,8 @@
+import { logger } from '@/lib/logger';
+
 export const clearDonationPopupSettings = () => {
   localStorage.removeItem('kofiDonationDontShow');
   localStorage.removeItem('kofiDonationRemindLater');
   sessionStorage.removeItem('kofiPopupShownThisSession');
-  console.log('Donation popup settings cleared.');
+  logger.debug('Donation popup settings cleared.');
 };

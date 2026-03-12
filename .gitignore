@@ -15,6 +15,17 @@
 /.vite
 *.local
 
+# Generated Documentation (re-generate with `npm run typedoc` / `mkdocs build`)
+/docs/frontend/
+/backend-api/site/
+/.vite
+*.local
+
+# Cloudflare Workers
+workers/.wrangler/
+workers/dist/
+workers/node_modules
+
 # TypeScript
 *.tsbuildinfo
 
@@ -73,3 +84,19 @@ SECURITY.md
 
 # Blog post about building Fastlytics
 building-fastlytics.md
+JIRA_SETUP.md
+.env.local
+
+# Garage Server Guide
+GARAGE_SERVER_SETUP.md
+CAR_HARDWARE_SPECS.md
+SECURITY_AUDIT_REPORT.md
+FIX_PLAN.sh
+
+.sisyphus
+.pytest_cache/
+.ruff_cache/
+docs
+telemetry_data
+reports
+replay-projects
