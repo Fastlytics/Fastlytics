@@ -1,0 +1,20 @@
+name = "fastlytics-api-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+BACKEND_API_URL = "https://data.fastlytics.app"
+
+[[routes]]
+pattern = "https://api.fastlytics.app/*"
+zone_name = "fastlytics.app"
+
+[[routes]]
+pattern = "https://fastlytics.app/sitemap.xml"
+zone_name = "fastlytics.app"
+
+[[routes]]
+pattern = "https://www.fastlytics.app/sitemap.xml"
+zone_name = "fastlytics.app"
