@@ -1,8 +1,357 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Geist Font Faces - Local */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-font/Geist/webfonts/Geist-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Geist Mono Font Faces - Local */
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Custom fonts - Geist */
+  --font-sans: 'Geist', sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-pulse-glow: pulse-glow 2s infinite;
+  --animate-telemetry-in: telemetry-in 0.6s ease-out forwards;
+  --animate-slide-in-right: slide-in-right 0.5s ease-out forwards;
+  --animate-slide-in-left: slide-in-left 0.5s ease-out forwards;
+  --animate-fade-in: fade-in 0.5s ease-out forwards;
+  --animate-loading-track: loading-track 2s ease-in-out forwards;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-pulse-glow-red: pulse-glow-red 2s ease-in-out infinite;
+  --animate-shimmer: shimmer 3s linear infinite;
+  --animate-rotate: rotate 20s linear infinite;
+  --animate-dash: dash 2s linear forwards;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 40, 0, 0);
+    }
+    50% {
+      box-shadow: 0 0 15px 3px rgba(255, 40, 0, 0.6);
+    }
+  }
+  @keyframes telemetry-in {
+    0% {
+      transform: scaleX(0);
+      opacity: 0;
+      transform-origin: left;
+    }
+    100% {
+      transform: scaleX(1);
+      opacity: 1;
+      transform-origin: left;
+    }
+  }
+  @keyframes slide-in-right {
+    0% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in-left {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes loading-track {
+    0% {
+      stroke-dashoffset: 100;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes pulse-glow-red {
+    0%,
+    100% {
+      box-shadow: 0 0 5px 0 rgba(255, 40, 0, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 25px 5px rgba(255, 40, 0, 0.6);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes dash {
+    from {
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* F1 team colors */
+  --color-f1-ferrari: #ff2800;
+  --color-f1-mercedes: #6c779f;
+  --color-f1-mclaren: #ff8700;
+  --color-f1-redbull: #1e41ff;
+  --color-f1-astonmartin: #00594f;
+  --color-f1-alpine: #0090ff;
+  --color-f1-williams: #0093d0;
+  --color-f1-haas: #ffffff;
+  --color-f1-alfaromeo: #900000;
+  --color-f1-alphatauri: #4e7c9b;
+  --color-f1-gray: #666666;
+
+  /* Tire compounds */
+  --color-tire-soft: #ff2800;
+  --color-tire-medium: #ffcc00;
+  --color-tire-hard: #ffffff;
+  --color-tire-intermediate: #43b02a;
+  --color-tire-wet: #0067ad;
+
+  --image-carbon-fiber: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23151515' fill-opacity='0.7' fill-rule='evenodd'%3E%3Cpath d='M0 20L20 0h10L0 30zM30 0L0 30v10L40 0zM0 0h10L0 10z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
 
 @layer base {
   :root {
@@ -40,15 +389,36 @@
   * {
     @apply border-border selection:bg-primary/20 selection:text-white;
   }
-  
+
+  html {
+    font-family: 'Geist', sans-serif;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: linear-gradient(to bottom, rgba(10,10,10,0.97), rgba(10,10,10,0.97)), var(--tw-gradient-stops);
+    font-family: 'Geist', sans-serif;
+    background-image:
+      linear-gradient(to bottom, rgba(10, 10, 10, 0.97), rgba(10, 10, 10, 0.97)),
+      var(--tw-gradient-stops);
     background-attachment: fixed;
   }
 
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: 'Geist Mono', monospace;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
   .carbon-fiber-bg {
-    @apply bg-carbon-fiber;
+    background-image: var(--image-carbon-fiber);
   }
 
   .team-stripe {
@@ -66,31 +436,31 @@
   }
 
   .team-stripe.ferrari::before {
-    background-color: theme('colors.f1.ferrari');
+    background-color: var(--color-f1-ferrari);
   }
 
   .team-stripe.mercedes::before {
-    background-color: theme('colors.f1.mercedes');
+    background-color: var(--color-f1-mercedes);
   }
 
   .team-stripe.mclaren::before {
-    background-color: theme('colors.f1.mclaren');
+    background-color: var(--color-f1-mclaren);
   }
 
   .team-stripe.redbull::before {
-    background-color: theme('colors.f1.redbull');
+    background-color: var(--color-f1-redbull);
   }
 
   .team-stripe.astonmartin::before {
-    background-color: theme('colors.f1.astonmartin');
+    background-color: var(--color-f1-astonmartin);
   }
 
   .team-stripe.alpine::before {
-    background-color: theme('colors.f1.alpine');
+    background-color: var(--color-f1-alpine);
   }
 
   .team-stripe.williams::before {
-    background-color: theme('colors.f1.williams');
+    background-color: var(--color-f1-williams);
   }
 
   /* Tire compound styles */
@@ -111,20 +481,20 @@
   }
 
   .tire-indicator.soft::before {
-    background-color: theme('colors.tire.soft');
+    background-color: var(--color-tire-soft);
   }
 
   .tire-indicator.medium::before {
-    background-color: theme('colors.tire.medium');
+    background-color: var(--color-tire-medium);
   }
 
   .tire-indicator.hard::before {
-    background-color: theme('colors.tire.hard');
+    background-color: var(--color-tire-hard);
   }
 
   /* Racing button styles */
   .racing-button {
-    @apply relative bg-secondary/80 text-white px-6 py-3 rounded-md 
+    @apply relative bg-secondary/80 text-white px-6 py-3 rounded-md
            transition-all overflow-hidden border border-secondary/50
            hover:border-primary hover:bg-secondary hover:shadow-[0_0_12px_#ff2800];
   }
@@ -173,21 +543,21 @@
   .team-card:hover::after {
     transform: scaleX(1);
   }
-  
+
   .team-card.ferrari::after {
-    background-color: theme('colors.f1.ferrari');
+    background-color: var(--color-f1-ferrari);
   }
-  
+
   .team-card.mercedes::after {
-    background-color: theme('colors.f1.mercedes');
+    background-color: var(--color-f1-mercedes);
   }
-  
+
   .team-card.mclaren::after {
-    background-color: theme('colors.f1.mclaren');
+    background-color: var(--color-f1-mclaren);
   }
-  
+
   .team-card.redbull::after {
-    background-color: theme('colors.f1.redbull');
+    background-color: var(--color-f1-redbull);
   }
 }
 
@@ -200,158 +570,15 @@
   }
 }
 
-@keyframes accordion-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(--radix-accordion-content-height);
-  }
-}
-
-@keyframes accordion-up {
-  from {
-    height: var(--radix-accordion-content-height);
-  }
-  to {
-    height: 0;
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 40, 0, 0);
-  }
-  50% {
-    box-shadow: 0 0 15px 3px rgba(255, 40, 0, 0.6);
-  }
-}
-
-@keyframes telemetry-in {
-  0% {
-    transform: scaleX(0);
-    opacity: 0;
-    transform-origin: left;
-  }
-  100% {
-    transform: scaleX(1);
-    opacity: 1;
-    transform-origin: left;
-  }
-}
-
-@keyframes slide-in-right {
-  0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-left {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes loading-track {
-  0% {
-    transform: scaleX(0);
-  }
-  100% {
-    transform: scaleX(1);
-  }
-}
-
-/* Add new animations for modern landing page */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-glow-red {
-  0%, 100% {
-    box-shadow: 0 0 5px 0 rgba(255, 40, 0, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 25px 5px rgba(255, 40, 0, 0.6);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes dash {
-  from {
-    stroke-dashoffset: 1000;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-pulse-glow-red {
-  animation: pulse-glow-red 2s ease-in-out infinite;
-}
-
 .animate-shimmer {
   animation: shimmer 3s linear infinite;
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
   background-size: 1000px 100%;
-}
-
-.animate-rotate {
-  animation: rotate 20s linear infinite;
-}
-
-.animate-dash {
-  animation: dash 2s linear forwards;
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s infinite ease-in-out;
 }
 
 /* Site-wide styles */
@@ -465,4 +692,110 @@
 /* Specific override for cards containing charts */
 .chart-card {
   overflow: visible !important;
+}
+
+/* ============================================
+   Mobile-specific styles
+   ============================================ */
+
+/* Safe area for iOS devices with notch/home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Hide scrollbar but allow scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Remove tap highlight on mobile */
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile touch feedback */
+@media (max-width: 767px) {
+  button,
+  a,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Fix for 100vh on mobile browsers */
+  .mobile-full-height {
+    height: 100dvh;
+  }
+
+  /* Pull-to-refresh prevention when not needed */
+  body {
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Active states for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .active\:scale-95:active {
+    transform: scale(0.95);
+  }
+
+  .active\:scale-98:active {
+    transform: scale(0.98);
+  }
+
+  .active\:bg-gray-800:active {
+    background-color: rgb(31 41 55);
+  }
+
+  .active\:bg-gray-900\/50:active {
+    background-color: rgb(17 24 39 / 0.5);
+  }
+}
+
+/* Snap scroll for horizontal carousels */
+.snap-x {
+  scroll-snap-type: x mandatory;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+.snap-mandatory {
+  scroll-snap-type: x mandatory;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
