@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "dom"],
+    "moduleResolution": "bundler",
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

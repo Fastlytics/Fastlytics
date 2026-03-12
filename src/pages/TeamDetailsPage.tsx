@@ -4,11 +4,13 @@ import { getTeamDetails, TeamDetails as TeamDetailsType } from '@/lib/api'; // I
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1'; // Corrected import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Local interface removed, using TeamDetailsType from api.ts
 
 const TeamDetailsPage: React.FC = () => {
   const { teamId } = useParams<{ teamId: string }>();
+  const { trackEvent } = useAnalytics();
   const [teamDetails, setTeamDetails] = useState<TeamDetailsType | null>(null); // Use imported type
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,10 @@ const TeamDetailsPage: React.FC = () => {
         // Use actual API call - teamId from params is already decoded by react-router
         const data = await getTeamDetails(teamId);
         setTeamDetails(data);
+        trackEvent('team_profile_view', {
+          team_id: teamId,
+          team_name: data.name
+        });
       } catch (err) {
         console.error('Error fetching team details:', err);
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
@@ -56,7 +62,7 @@ const TeamDetailsPage: React.FC = () => {
     // Handle potential multi-word team names for initials
     const parts = name.split(' ');
     if (parts.length > 1) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
   };
@@ -65,17 +71,17 @@ const TeamDetailsPage: React.FC = () => {
     <div className="container mx-auto p-4 md:p-8">
       <Card className="overflow-hidden">
         <CardHeader className="bg-muted/40 p-4 md:p-6 flex flex-row items-center gap-4">
-           <Avatar className="h-20 w-20 md:h-32 md:w-32 border-4 border-primary">
-             {/* Use optional chaining and provide fallback image */}
-             <AvatarImage src={teamDetails.imageUrl || '/placeholder.svg'} alt={teamDetails.name} className="object-contain p-1" />
-             <AvatarFallback>{getInitials(teamDetails.name)}</AvatarFallback>
-           </Avatar>
-           <div className="grid gap-1">
-             <CardTitle className="text-2xl md:text-4xl font-bold">{teamDetails.name || 'N/A'}</CardTitle>
-             <p className="text-sm md:text-base text-muted-foreground">{teamDetails.nationality || 'N/A'}</p>
-             <p className="text-sm md:text-base text-muted-foreground">Base: {teamDetails.base || 'N/A'}</p>
-             <p className="text-sm md:text-base text-muted-foreground">First Entry: {teamDetails.firstEntry || 'N/A'}</p>
-           </div>
+          <Avatar className="h-20 w-20 md:h-32 md:w-32 border-4 border-primary">
+            {/* Use optional chaining and provide fallback image */}
+            <AvatarImage src={teamDetails.imageUrl || '/placeholder.svg'} alt={teamDetails.name} className="object-contain p-1" />
+            <AvatarFallback>{getInitials(teamDetails.name)}</AvatarFallback>
+          </Avatar>
+          <div className="grid gap-1">
+            <CardTitle className="text-2xl md:text-4xl font-bold">{teamDetails.name || 'N/A'}</CardTitle>
+            <p className="text-sm md:text-base text-muted-foreground">{teamDetails.nationality || 'N/A'}</p>
+            <p className="text-sm md:text-base text-muted-foreground">Base: {teamDetails.base || 'N/A'}</p>
+            <p className="text-sm md:text-base text-muted-foreground">First Entry: {teamDetails.firstEntry || 'N/A'}</p>
+          </div>
         </CardHeader>
         <CardContent className="p-4 md:p-6 grid gap-6">
           {/* Conditionally render Team History if available */}
@@ -106,7 +112,7 @@ const TeamDetailsPage: React.FC = () => {
                   <p className="text-2xl md:text-3xl font-bold">{teamDetails.careerStats.constructorsChampionships ?? '-'}</p>
                   <p className="text-xs md:text-sm text-muted-foreground">Constructors' Titles</p>
                 </div>
-                 <div className="bg-muted p-3 rounded-lg">
+                <div className="bg-muted p-3 rounded-lg">
                   <p className="text-2xl md:text-3xl font-bold">{teamDetails.careerStats.driversChampionships ?? '-'}</p>
                   <p className="text-xs md:text-sm text-muted-foreground">Drivers' Titles</p>
                 </div>
@@ -120,4 +126,5 @@ const TeamDetailsPage: React.FC = () => {
   );
 };
 
+export { TeamDetailsPage };
 export default TeamDetailsPage;
