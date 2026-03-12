@@ -1,25 +1,60 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Trophy, Flag, BarChart2, Clock, Cpu, ArrowRightLeft, Gauge, User, Lock, AlertCircle, Zap, Calendar, MapPin, Users, Timer, TrendingUp, Map } from 'lucide-react'; // Removed Sparkles
-import Navbar from '@/components/Navbar';
-import RacingChart from '@/components/RacingChart';
-import TireStrategy from '@/components/TireStrategy';
-import SpeedTraceChart from '@/components/SpeedTraceChart';
-import GearMapChart from '@/components/GearMapChart';
-import PositionChart from '@/components/PositionChart';
-// Import TrackEvolutionChart for merging with Lap Times
-// import TrackEvolutionChart from '@/components/TrackEvolutionChart';
-// Import the new CircuitComparisonChart component
-import CircuitComparisonChart from '@/components/CircuitComparisonChart';
-import DriverComparisonTelemetry from '@/components/DriverComparisonTelemetry';
-import F1Card from '@/components/F1Card';
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fetchSpecificRaceResults, fetchAvailableSessions, fetchEventSessionSchedule, DetailedRaceResult, AvailableSession, EventSessionSchedule } from '@/lib/api';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { SEO } from '@/components/layout/SEO';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SessionReplay } from '@/components/replay/SessionReplay';
+import {
+  ArrowLeft01Icon,
+  ChampionIcon,
+  Flag01Icon,
+  Analytics01Icon,
+  Clock01Icon,
+  FlashIcon,
+  Calendar01Icon,
+  Location01Icon,
+  UserGroupIcon,
+  Time01Icon,
+  TradeUpIcon,
+  MapsLocation01Icon,
+  ChartLineData01Icon,
+  GitCompareIcon,
+  PlayCircle02Icon,
+} from 'hugeicons-react';
+import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
+import { RacingChart } from '@/components/charts/RacingChart';
+import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
+import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
+import { TireStrategy } from '@/components/race/TireStrategy';
+import { SpeedTraceChart } from '@/components/charts/SpeedTraceChart';
+import { GearMapChart } from '@/components/charts/GearMapChart';
+import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
+import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
+import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
+import { TeamPaceBreakdown } from '@/components/race/TeamPaceBreakdown';
+import { F1Card } from '@/components/race/F1Card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert02Icon } from 'hugeicons-react';
+import {
+  fetchSpecificRaceResults,
+  fetchAvailableSessions,
+  fetchEventSessionSchedule,
+  DetailedRaceResult,
+  AvailableSession,
+  EventSessionSchedule,
+  getCircuitLength,
+  calculateDistance,
+  formatDistance,
+} from '@/lib/api';
+import { getDriverImage } from '@/utils/imageMapping';
 import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -27,133 +62,114 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1'; // Import spinner
-import ThrottleChart from '@/components/ThrottleChart';
-import BrakeChart from '@/components/BrakeChart';
-import RPMChart from '@/components/RPMChart';
-import DRSChart from '@/components/DRSChart';
-import PositionsTabContent from '@/components/PositionsTabContent';
+import ThrottleChart from '@/components/charts/ThrottleChart';
+import BrakeChart from '@/components/charts/BrakeChart';
+import RPMChart from '@/components/charts/RPMChart';
+import DRSChart from '@/components/charts/DRSChart';
+import PositionsTabContent from '@/components/race/PositionsTabContent';
+import posthog from 'posthog-js';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileRace } from '@/components/mobile';
+import TireIcon from '@/components/mobile/tireicon';
+import { GatedRoute } from '@/components/common/GatedRoute';
 
-// Helper to get team color class
-const getTeamColorClass = (teamName: string | undefined): string => {
-    if (!teamName) return 'gray';
-    const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (simpleName.includes('mclaren')) return 'mclaren';
-    if (simpleName.includes('mercedes')) return 'mercedes';
-    if (simpleName.includes('redbull')) return 'redbull';
-    if (simpleName.includes('ferrari')) return 'ferrari';
-    if (simpleName.includes('alpine')) return 'alpine';
-    if (simpleName.includes('astonmartin')) return 'astonmartin';
-    if (simpleName.includes('williams')) return 'williams';
-    if (simpleName.includes('haas')) return 'haas';
-    if (simpleName.includes('sauber')) return 'alfaromeo';
-    if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
-    return 'gray';
-}
+// --- Helper Functions ---
 
-// Define rookies by season year
-const rookiesByYear: { [year: string]: string[] } = {
-  '2025': ['ANT', 'BOR', 'DOO', 'BEA', 'HAD', 'LAW', 'COL'], // Antonelli, Bortoleto, Doohan, Bearman, Hadjar, Lawson, Colapinto
-  '2024': ['BEA', 'COL'], // Bearman, Colapinto
-  '2023': ['PIA', 'SAR', 'DEV'], // Piastri, Sargeant, De Vries
-  '2022': ['ZHO'], // Zhou
-  '2021': ['MSC', 'MAZ', 'TSU'], // Mick Schumacher, Mazepin, Tsunoda
-  '2020': ['LAT'], // Latifi
-  '2019': ['NOR', 'RUS', 'ALB'] // Norris, Russell, Albon
+type TeamColorClass =
+  | 'ferrari'
+  | 'mercedes'
+  | 'mclaren'
+  | 'redbull'
+  | 'astonmartin'
+  | 'alpine'
+  | 'williams'
+  | 'haas'
+  | 'alfaromeo'
+  | 'alphatauri'
+  | 'gray';
+
+const getTeamColorClass = (teamName: string | undefined): TeamColorClass => {
+  if (!teamName) return 'gray';
+  const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (simpleName.includes('mclaren')) return 'mclaren';
+  if (simpleName.includes('mercedes')) return 'mercedes';
+  if (simpleName.includes('redbull')) return 'redbull';
+  if (simpleName.includes('ferrari')) return 'ferrari';
+  if (simpleName.includes('alpine')) return 'alpine';
+  if (simpleName.includes('astonmartin')) return 'astonmartin';
+  if (simpleName.includes('williams')) return 'williams';
+  if (simpleName.includes('haas')) return 'haas';
+  if (simpleName.includes('sauber')) return 'alfaromeo';
+  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
+  return 'gray';
 };
 
-// Define F2 drivers who participated in F1 practice sessions by season year
-const f2DriversByYear: { [year: string]: string[] } = {
-  '2025': ['HIR', 'DRU', 'BEG', 'IWA', 'VES', 'BRO'], 
-  '2024': ['HAD', 'BRO', 'DRU', 'IWA', 'CRA', 'ARO', 'BOR', 'LEL'], // Hadjar, Colapinto, Bearman, Browning, Drugovich, Leclerc, Iwasa, Crawford, Aron, Bortoleto
-  '2023': ['POU', 'VES', 'DOO', 'SHW', 'DRU', 'MAR', 'HAD', 'BEA'], // Pourchaire, Vesti, Doohan, Shwartzman, Drugovich, Martins, Hadjar, Bearman
-  '2022': ['POU', 'DOO', 'SAR', 'LAW', 'VIP', 'SHW'], // Pourchaire, Doohan, Sargeant, Lawson, Vips, Shwartzman
-  '2021': ['SHW', 'ZHO', 'ILO'], // Shwartzman, Zhou, Ilott
-  '2020': ['SHW', 'ILO', 'ZHO'], // Shwartzman, Ilott, Zhou
-  '2019': ['LAT', 'GHI', 'MAZ'] // Latifi, Ghiotto, Mazepin
-};
-
-// Helper function to check if a driver is a rookie in a given year
-const isRookie = (driverCode: string, year: number): boolean => {
-  const yearStr = year.toString();
-  return rookiesByYear[yearStr]?.includes(driverCode) || false;
-};
-
-// Helper function to check if a driver is an F2 driver participating in F1 session
-const isF2Driver = (driverCode: string, year: number): boolean => {
-  const yearStr = year.toString();
-  return f2DriversByYear[yearStr]?.includes(driverCode) || false;
-};
-
-// Helper function to parse lap time string (e.g., "1:30.123") to seconds
 const parseLapTime = (timeStr: string | null | undefined): number => {
-  if (!timeStr) return Infinity; // Treat null/undefined as slowest
+  if (!timeStr) return Infinity;
   try {
     const parts = timeStr.split(/[:.]/);
-    if (parts.length === 3) { // MM:SS.ms
-      const minutes = parseInt(parts[0], 10);
-      const seconds = parseInt(parts[1], 10);
-      const milliseconds = parseInt(parts[2], 10);
-      return minutes * 60 + seconds + milliseconds / 1000;
-    } else if (parts.length === 2) { // SS.ms - less likely but handle
-      const seconds = parseInt(parts[0], 10);
-      const milliseconds = parseInt(parts[1], 10);
-      return seconds + milliseconds / 1000;
+    if (parts.length === 3) {
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10) + parseInt(parts[2], 10) / 1000;
+    } else if (parts.length === 2) {
+      return parseInt(parts[0], 10) + parseInt(parts[1], 10) / 1000;
     }
   } catch (e) {
     console.error(`Error parsing lap time: ${timeStr}`, e);
   }
-  return Infinity; // Return Infinity if parsing fails
+  return Infinity;
 };
 
-// Helper function to format race time for display
+const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
+
+const parseTestingSessionAlias = (
+  sessionType: string
+): { day: number; window: 'morning' | 'afternoon' } | null => {
+  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
+  if (!match) return null;
+  return {
+    day: Number(match[1]),
+    window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
+  };
+};
+
+const resolveSessionForAnalysis = (sessionType: string): string => {
+  const parsed = parseTestingSessionAlias(sessionType);
+  if (!parsed) return sessionType;
+  return `FP${parsed.day}`;
+};
+
 const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
   if (!timeStr) return '-';
-  
-  // For winner's absolute time, convert "MMM:SS.ms" to "H:MM:SS.ms"
   if (isWinner) {
     try {
-      const parts = timeStr.split(/[:.]/); 
-      if (parts.length === 3) { // MMM:SS.ms format
+      const parts = timeStr.split(/[:.]/);
+      if (parts.length === 3) {
         const totalMinutes = parseInt(parts[0], 10);
         const seconds = parseInt(parts[1], 10);
         const milliseconds = parts[2];
-        
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
         return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
       }
     } catch (e) {
-      return timeStr; // Return original if parsing fails
+      return timeStr;
     }
     return timeStr;
   }
-  
-  // Handle status strings (DNF, Lapped, etc.)
-  if (timeStr.match(/^[A-Za-z]/)) {
-    return timeStr; // Return status as-is
-  }
-  
-  // For all non-winner times, ensure they have a + prefix and are in seconds.milliseconds format
-  let processedTime = timeStr;
-  
-  // Remove existing + if present
-  if (processedTime.startsWith('+')) {
-    processedTime = processedTime.substring(1);
-  }
-  
+  if (timeStr.match(/^[A-Za-z]/)) return timeStr;
+
+  const processedTime = timeStr.startsWith('+') ? timeStr.substring(1) : timeStr;
   try {
-    const parts = processedTime.split(/[:.]/); 
-    if (parts.length === 3) { // MM:SS.ms format - convert to total seconds, then format appropriately
+    const parts = processedTime.split(/[:.]/);
+    if (parts.length === 3) {
       const minutes = parseInt(parts[0], 10);
       const seconds = parseInt(parts[1], 10);
       const milliseconds = parts[2];
       const totalSeconds = minutes * 60 + seconds;
-      
-      // If total is 60+ seconds, show as +M:SS.ms, otherwise +SS.ms
       if (totalSeconds >= 60) {
         const displayMinutes = Math.floor(totalSeconds / 60);
         const displaySeconds = totalSeconds % 60;
@@ -161,552 +177,1182 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
       } else {
         return `+${totalSeconds}.${milliseconds}`;
       }
-    } else if (parts.length === 2) { // SS.ms format
+    } else if (parts.length === 2) {
       const seconds = parseFloat(processedTime);
       if (seconds >= 60) {
         const displayMinutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
-        const milliseconds = Math.round((seconds % 1) * 1000).toString().padStart(3, '0');
+        const milliseconds = Math.round((seconds % 1) * 1000)
+          .toString()
+          .padStart(3, '0');
         return `+${displayMinutes}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds}`;
       } else {
         return `+${processedTime}`;
       }
     }
   } catch (e) {
-    // If parsing fails, just add + prefix if it's numeric
-    if (processedTime.match(/^\d/)) {
-      return `+${processedTime}`;
-    }
+    if (processedTime.match(/^\d/)) return `+${processedTime}`;
   }
-  
-  return timeStr; // Return as-is for other cases
-};// Component for rendering the results table dynamically
-const SessionResultsTable: React.FC<{ results: DetailedRaceResult[], sessionType: string, year: number }> = ({ results, sessionType, year }) => {
-  const isPractice = sessionType.startsWith('FP');
+  return timeStr;
+};
+
+// --- Components ---
+
+const SessionResultsTable: React.FC<{
+  results: DetailedRaceResult[];
+  sessionType: string;
+  favoriteDriver?: string | null;
+  fastestLapHolder?: DetailedRaceResult | null;
+  isTestingSession?: boolean;
+  isTestingSplitSession?: boolean;
+  testingWindow?: 'full' | 'morning' | 'afternoon';
+  eventName?: string;
+}> = ({
+  results,
+  sessionType,
+  favoriteDriver,
+  fastestLapHolder,
+  isTestingSession = false,
+  isTestingSplitSession = false,
+  testingWindow = 'full',
+  eventName,
+}) => {
+  const isPractice = sessionType.startsWith('FP') || isTestingSession;
   const isQualifying = sessionType.startsWith('Q') || sessionType.startsWith('SQ');
   const isRaceOrSprint = sessionType === 'R' || sessionType === 'Sprint';
 
-  // Sort results for Practice or Qualifying sessions by fastest lap time
-  const sortedResults = useMemo(() => {
-    // Sort if Practice OR Qualifying
-    if ((isPractice || isQualifying) && results) {
-      // Create a copy before sorting to avoid mutating the prop
-      return [...results].sort((a, b) => {
-        const timeA = parseLapTime(a.fastestLapTime);
-        const timeB = parseLapTime(b.fastestLapTime);
-        return timeA - timeB;
-      });
-    } 
-    // For other sessions, assume backend provides sorted data or default order is fine
-    return results;
-  }, [results, isPractice, isQualifying]);
+  const getPracticeLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
 
-  // Determine columns based on session type
-  const columns: { key: keyof DetailedRaceResult | 'driver' | 'team' | 'displayPosition', label: string, className?: string }[] = [
-    // Use 'displayPosition' key for the first column
-    { key: 'displayPosition', label: 'Pos', className: 'w-[50px] text-center' },
-    { key: 'driver', label: 'Driver' }, // Combine name/code later
-    { key: 'team', label: 'Team' }, // Combine color/name later
+  const getPracticeLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession) return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const sortedResults = useMemo(() => {
+    if ((isPractice || isQualifying) && results) {
+      return [...results].sort((a, b) => {
+        const lapDelta = parseLapTime(getPracticeLapTime(a)) - parseLapTime(getPracticeLapTime(b));
+        if (lapDelta !== 0) return lapDelta;
+        return getPracticeLaps(b) - getPracticeLaps(a);
+      });
+    }
+    return results;
+  }, [results, isPractice, isQualifying, getPracticeLapTime, getPracticeLaps]);
+
+  const leaderLaps = useMemo(
+    () => sortedResults.reduce((max, res) => Math.max(max, getPracticeLaps(res)), 0),
+    [sortedResults, getPracticeLaps]
+  );
+
+  // Calculate circuit length for distance conversion (for testing sessions)
+  const circuitLength = useMemo(() => getCircuitLength(eventName), [eventName]);
+
+  // Calculate leader distance in km
+  const leaderDistance = useMemo(
+    () => calculateDistance(leaderLaps, circuitLength),
+    [leaderLaps, circuitLength]
+  );
+
+  const columns: {
+    key:
+      | keyof DetailedRaceResult
+      | 'driver'
+      | 'team'
+      | 'displayPosition'
+      | 'mileage'
+      | 'reliability';
+    label: string;
+    className?: string;
+  }[] = [
+    {
+      key: 'displayPosition',
+      label: 'POS',
+      className: 'w-[60px] text-center font-mono font-black text-gray-400',
+    },
+    { key: 'driver', label: 'DRIVER' },
+    { key: 'team', label: 'TEAM' },
   ];
 
   if (isRaceOrSprint) {
-    columns.push({ key: 'time', label: 'Time', className: 'text-right text-sm' });
-    columns.push({ key: 'laps', label: 'Laps', className: 'text-center' });
-    columns.push({ key: 'gridPosition', label: 'Grid', className: 'text-center' });
-    columns.push({ key: 'driverFastestLapTime', label: 'Fastest Lap', className: 'text-right text-sm' });
-    columns.push({ key: 'points', label: 'Points', className: 'text-right font-bold' });
+    columns.push({ key: 'time', label: 'TIME/GAP', className: 'text-right font-mono' });
+    columns.push({
+      key: 'driverFastestLapTime',
+      label: 'FASTEST LAP',
+      className: 'text-right font-mono',
+    });
+    columns.push({ key: 'laps', label: 'LAPS', className: 'text-center font-mono' });
+    columns.push({ key: 'points', label: 'PTS', className: 'text-right font-black text-red-500' });
   } else if (isQualifying) {
-    // Remove Q1, Q2, Q3 columns
-    // if (sessionType === 'Q1' || sessionType === 'Q' || sessionType === 'SQ1' || sessionType === 'SQ') columns.push({ key: 'q1Time', label: 'Q1', className: 'text-right font-mono text-sm' });
-    // if (sessionType === 'Q2' || sessionType === 'Q' || sessionType === 'SQ2' || sessionType === 'SQ') columns.push({ key: 'q2Time', label: 'Q2', className: 'text-right font-mono text-sm' });
-    // if (sessionType === 'Q3' || sessionType === 'Q' || sessionType === 'SQ3' || sessionType === 'SQ') columns.push({ key: 'q3Time', label: 'Q3', className: 'text-right font-mono text-sm' });
-    
-    // Add Fastest Lap column for Qualifying instead
-    columns.push({ key: 'fastestLapTime', label: 'Fastest Lap', className: 'text-right font-mono text-sm' });
+    columns.push({
+      key: 'fastestLapTime',
+      label: 'FASTEST LAP',
+      className: 'text-right font-mono',
+    });
   } else if (isPractice) {
-    columns.push({ key: 'fastestLapTime', label: 'Fastest Lap', className: 'text-right font-mono text-sm' });
-    columns.push({ key: 'lapsCompleted', label: 'Laps', className: 'text-center' });
+    columns.push({
+      key: 'fastestLapTime',
+      label: 'FASTEST LAP',
+      className: 'text-right font-mono',
+    });
+    columns.push({ key: 'lapsCompleted', label: 'LAPS', className: 'text-center font-mono' });
+    if (isTestingSession) {
+      columns.push({ key: 'mileage', label: 'MILEAGE', className: 'text-right font-mono' });
+      columns.push({
+        key: 'reliability',
+        label: 'RELIABILITY',
+        className: 'text-right font-mono',
+      });
+    }
   }
 
   return (
-    <div className="bg-gray-900/80 border border-gray-700 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm">
+    <div className="bg-black border border-gray-700 overflow-hidden">
       <Table>
-        <TableHeader className="bg-gray-800/50">
-          <TableRow className="border-gray-700">
-            {columns.map(col => (
-              <TableHead key={String(col.key)} className={cn("text-white font-semibold", col.className)}>
+        <TableHeader className="bg-black border-b border-gray-700">
+          <TableRow className="border-gray-700 hover:bg-transparent">
+            {columns.map((col) => (
+              <TableHead
+                key={String(col.key)}
+                className={cn(
+                  'text-gray-400 font-black uppercase tracking-wider text-xs py-4',
+                  col.className
+                )}
+              >
                 {col.label}
               </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {/* Use sortedResults for rendering */}
-          {sortedResults?.map((res, index) => (
-            <TableRow key={res.driverCode} className="border-gray-700/50 hover:bg-gray-800/40 transition-colors">
-              {columns.map(col => (
-                <TableCell key={`${res.driverCode}-${String(col.key)}`} className={cn(col.className)}>
-                  {/* Handle the display position based on session type */}
-                  {col.key === 'displayPosition' ? (
-                    // Show index+1 for Practice and Qualifying (since we sorted by time)
-                    (isPractice || isQualifying) ? index + 1 : (res.position ?? '-') 
-                  ) : col.key === 'driver' ? (
-                    <div className="flex items-center gap-2">
-                      <span>{res.fullName}</span>
-                      {isRookie(res.driverCode, year) && (
-                        <span className="text-xs px-1.5 py-0.5 bg-blue-600/40 text-blue-200 rounded font-medium">
-                          Rookie
+          {sortedResults?.map((res, index) => {
+            const isFavorite =
+              favoriteDriver &&
+              (res.driverCode === favoriteDriver ||
+                res.fullName.toLowerCase().includes(favoriteDriver.toLowerCase()));
+            return (
+              <TableRow
+                key={res.driverCode}
+                className={cn(
+                  'border-gray-700/50 transition-colors group',
+                  isFavorite
+                    ? 'bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600'
+                    : 'hover:bg-gray-800/30'
+                )}
+              >
+                {columns.map((col) => (
+                  <TableCell
+                    key={`${res.driverCode}-${String(col.key)}`}
+                    className={cn('py-3', col.className)}
+                  >
+                    {col.key === 'displayPosition' ? (
+                      isPractice || isQualifying ? (
+                        index + 1
+                      ) : (
+                        (res.position ?? '-')
+                      )
+                    ) : col.key === 'driver' ? (
+                      <div className="flex items-center gap-3">
+                        <span className="font-black text-white group-hover:text-red-500 transition-colors">
+                          {res.fullName}
                         </span>
-                      )}
-                      {isPractice && isF2Driver(res.driverCode, year) && (
-                        <span className="text-xs px-1.5 py-0.5 bg-purple-600/40 text-purple-200 rounded font-medium">
-                          Formula 2
-                        </span>
-                      )}
-                    </div>
-                  ) : col.key === 'team' ? (
-                    <span className="flex items-center gap-2">
-                      <span className={cn("w-2 h-2 rounded-full", `bg-f1-${getTeamColorClass(res.team)}`)}></span>
-                      {res.team}
-                    </span>
-                  ) : col.key === 'points' ? (
-                     res.points ?? 0 // Default points to 0 if null/undefined
-                  ) : col.key === 'time' ? (
-                    formatRaceTime(res.time, res.position === 1) // Format race time with winner flag
-                  ) : col.key === 'laps' ? (
-                    res.laps ?? '-' // Show laps completed or dash if not available
-                  ) : col.key === 'driverFastestLapTime' ? (
-                    // Custom rendering for fastest lap column
-                    res.driverFastestLapTime ? (
-                      <span className={cn(
-                        res.isFastestLap ? 'text-purple-400 font-bold' : 'text-white'
-                      )}>
-                        {res.driverFastestLapTime}
-                        {res.driverFastestLapNumber && (
-                          <span className="text-gray-400 ml-1">
-                            (L{res.driverFastestLapNumber})
+                        {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
+                          (!fastestLapHolder && res.isFastestLap)) && (
+                          <Clock01Icon className="w-3 h-3 text-purple-500" />
+                        )}
+                      </div>
+                    ) : col.key === 'team' ? (
+                      <span className="flex items-center gap-2 text-sm text-gray-400">
+                        <span
+                          className={cn(
+                            'w-1.5 h-1.5 rounded-full',
+                            `bg-f1-${getTeamColorClass(res.team)}`
+                          )}
+                        ></span>
+                        {res.team}
+                      </span>
+                    ) : col.key === 'points' ? (
+                      <span
+                        className={cn(
+                          'flex items-center justify-end gap-2 font-black',
+                          res.isProvisional ? 'text-yellow-500' : 'text-red-500'
+                        )}
+                      >
+                        {res.points !== null ? res.points : '-'}
+                        {res.isProvisional && (
+                          <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">
+                            Prov
                           </span>
                         )}
                       </span>
-                    ) : '-'
-                  ) : (
-                    res[col.key as keyof DetailedRaceResult] ?? '-' // Access other keys directly
-                  )}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+                    ) : col.key === 'time' ? (
+                      <span className="text-gray-300">
+                        {(() => {
+                          const isLapped = res.status.includes('Lap');
+                          const isFinished =
+                            res.status === 'Finished' || res.status.startsWith('+') || isLapped;
+
+                          if (isFinished) {
+                            if (res.time) return formatRaceTime(res.time, res.position === 1);
+                            if (isLapped) return res.status;
+                            return '-';
+                          }
+                          return (
+                            <span className="text-red-500 font-black uppercase text-[10px]">
+                              {res.status}
+                            </span>
+                          );
+                        })()}
+                      </span>
+                    ) : col.key === 'laps' ? (
+                      <span className="text-gray-500">{res.laps ?? '-'}</span>
+                    ) : col.key === 'fastestLapTime' && isPractice ? (
+                      <span className="text-gray-300">{getPracticeLapTime(res) ?? '-'}</span>
+                    ) : col.key === 'lapsCompleted' && isPractice ? (
+                      <span className="text-gray-500">{getPracticeLaps(res) || '-'}</span>
+                    ) : col.key === 'mileage' ? (
+                      <span className="text-gray-300">
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const distance = calculateDistance(laps, circuitLength);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          return `${formatDistance(distance)} (${pct}%)`;
+                        })()}
+                      </span>
+                    ) : col.key === 'reliability' ? (
+                      <span
+                        className={cn(
+                          'font-black',
+                          (() => {
+                            const laps = getPracticeLaps(res);
+                            const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                            if (pct >= 90) return 'text-green-400';
+                            if (pct >= 75) return 'text-yellow-400';
+                            return 'text-red-400';
+                          })()
+                        )}
+                      >
+                        {(() => {
+                          const laps = getPracticeLaps(res);
+                          const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
+                          if (pct >= 90) return 'HIGH';
+                          if (pct >= 75) return 'MEDIUM';
+                          return 'LOW';
+                        })()}
+                      </span>
+                    ) : col.key === 'driverFastestLapTime' ? (
+                      res.driverFastestLapTime ? (
+                        <span
+                          className={cn(
+                            (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
+                              (!fastestLapHolder && res.isFastestLap)
+                              ? 'text-purple-400 font-black'
+                              : 'text-gray-400'
+                          )}
+                        >
+                          {res.driverFastestLapTime}
+                        </span>
+                      ) : (
+                        '-'
+                      )
+                    ) : (
+                      (res[col.key as keyof DetailedRaceResult] ?? '-')
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
   );
 };
 
+const SectionHeader = ({
+  title,
+  icon: Icon,
+}: {
+  title: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) => (
+  <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
+    {Icon && <Icon className="w-6 h-6 text-red-600" />}
+    <h2 className="text-2xl font-black uppercase tracking-wider text-white">{title}</h2>
+  </div>
+);
+
+const NavItem = ({
+  id,
+  label,
+  icon: Icon,
+  active,
+  onClick,
+}: {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      active
+        ? 'border-red-600 bg-red-600/10 text-white'
+        : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
+    )}
+  >
+    <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-gray-600')} />
+    {label}
+  </button>
+);
+
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
-  const [availableSessions, setAvailableSessions] = useState<AvailableSession[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string>('R'); // Default to Race
-  const [selectedLap, setSelectedLap] = useState<string | number>('fastest'); // For telemetry
-  
-  // State for circuit comparison drivers
+  const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedSession = searchParams.get('session') || '';
+  const showAnalysis = searchParams.get('view') === 'analysis';
+  const initialTab = searchParams.get('tab');
+
+  const { trackEvent, trackInteraction, trackSelection } = useAnalytics();
+
+  const setSelectedSession = (session: string) => {
+    setSearchParams(
+      (prev) => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set('session', session);
+        return newParams;
+      },
+      { replace: true }
+    );
+    trackEvent('session_changed', { session_type: session, race_name: eventName, year: year });
+  };
+
+  const setShowAnalysis = (show: boolean) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      if (show) {
+        newParams.set('view', 'analysis');
+      } else {
+        newParams.delete('view');
+      }
+      return newParams;
+    });
+  };
+
+  const [selectedLap, setSelectedLap] = useState<string | number>('fastest');
+  const [activeSection, setActiveSection] = useState(initialTab || 'overview');
+  const [lapAnalysisMode, setLapAnalysisMode] = useState<'history' | 'pace' | 'gap'>('history');
+  const [testingWindow, setTestingWindow] = useState<'full' | 'morning' | 'afternoon'>('full');
+
+  // New State for Redesign
+  const [now, setNow] = useState(new Date());
+  const [is24Hour, setIs24Hour] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Circuit Comparison State
   const [circuitDrivers, setCircuitDrivers] = useState<{
     driver1: string;
     driver2: string;
     lap1: string | number;
     lap2: string | number;
     shouldLoadChart: boolean;
-  }>({
-    driver1: '',
-    driver2: '',
-    lap1: 'fastest',
-    lap2: 'fastest',
-    shouldLoadChart: false
-  });
+  }>({ driver1: '', driver2: '', lap1: 'fastest', lap2: 'fastest', shouldLoadChart: false });
 
-  // Parse year and event slug from raceId
+  // Parse ID
+
   const { year, eventSlug, eventName } = useMemo(() => {
     if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
     const parts = raceId.split('-');
     const parsedYear = parseInt(parts[0], 10);
     if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
-
     const slug = parts.slice(1).join('-');
-    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const name = slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
     return { year: parsedYear, eventSlug: slug, eventName: name };
   }, [raceId]);
 
-  // Fetch available sessions using the updated backend endpoint
-  const { data: fetchedAvailableSessions, isLoading: isLoadingSessions } = useQuery<AvailableSession[]>({
-    queryKey: ['availableSessions', year, eventName], // Use eventName as key if API expects it
-    queryFn: () => {
-        if (!year || !eventName) throw new Error("Invalid year or event name");
-        // Pass eventName or eventSlug based on what the updated API expects
-        return fetchAvailableSessions(year, eventName);
-    },
-    staleTime: 1000 * 60 * 60 * 24, // Cache for a day
-    gcTime: 1000 * 60 * 60 * 24,
+  const isTestingEvent = useMemo(() => {
+    const format = eventName?.toLowerCase() ?? '';
+    return format.includes('testing') || format.includes('test');
+  }, [eventName]);
+
+  const trackedEventRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (year && eventName && eventName !== 'Invalid Race ID') {
+      const eventKey = `${year}-${eventName}`;
+      if (trackedEventRef.current !== eventKey) {
+        trackEvent('race_analysis_viewed', {
+          year,
+          race: eventName,
+        });
+        trackedEventRef.current = eventKey;
+      }
+    }
+  }, [year, eventName, trackEvent]);
+
+  // Queries
+  const { data: availableSessions = [], isLoading: isLoadingSessions } = useQuery<
+    AvailableSession[]
+  >({
+    queryKey: ['availableSessions', year, eventName],
+    queryFn: () => fetchAvailableSessions(year!, eventName),
     enabled: !!year && !!eventName,
   });
 
-  // Fetch session schedule for upcoming races (when no sessions are available)
-  const { data: sessionSchedule, isLoading: isLoadingSchedule } = useQuery<EventSessionSchedule>({
+  const { data: sessionSchedule } = useQuery<EventSessionSchedule>({
     queryKey: ['sessionSchedule', year, eventSlug],
-    queryFn: () => {
-        if (!year || !eventSlug) throw new Error("Invalid year or event slug");
-        return fetchEventSessionSchedule(year, eventSlug);
-    },
-    staleTime: 1000 * 60 * 60 * 24, // Cache for a day
-    gcTime: 1000 * 60 * 60 * 24 * 7, // Keep for a week
-    enabled: !!year && !!eventSlug && !isLoadingSessions && (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0),
+    queryFn: () => fetchEventSessionSchedule(year!, eventSlug!),
+    enabled:
+      !!year &&
+      !!eventSlug &&
+      !isLoadingSessions &&
+      (!availableSessions || !availableSessions.some((s) => s.type === 'R')),
   });
 
-  // Effect to update state when available sessions data is fetched
-  useEffect(() => {
-    if (fetchedAvailableSessions && fetchedAvailableSessions.length > 0) {
-        setAvailableSessions(fetchedAvailableSessions);
-        // Set default selected session to 'R' if available, otherwise last session in list
-        if (fetchedAvailableSessions.some(s => s.type === 'R')) {
-            setSelectedSession('R');
-        } else {
-            setSelectedSession(fetchedAvailableSessions[fetchedAvailableSessions.length - 1].type);
-        }
-    } else if (fetchedAvailableSessions) { // Handle case where fetch returns empty array
-        setAvailableSessions([]);
-    }
-  }, [fetchedAvailableSessions]);
-
-  // Fetch detailed results for the selected session
-  const { data: sessionResults, isLoading: isLoadingResults, error, isError } = useQuery<DetailedRaceResult[]>({
+  const { data: sessionResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['sessionResult', year, eventSlug, selectedSession],
-    queryFn: () => {
-        if (!year || !eventSlug || !selectedSession) throw new Error("Invalid year, event slug, or session");
-        return fetchSpecificRaceResults(year, eventSlug, selectedSession); // Pass selectedSession
-    },
-    staleTime: 1000 * 60 * 5, // Shorter stale time for potentially live data
-    gcTime: 1000 * 60 * 15,
-    retry: 1,
-    enabled: !!year && !!eventSlug && !!selectedSession && (fetchedAvailableSessions && fetchedAvailableSessions.length > 0),
+    queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
+    enabled: !!year && !!eventSlug && !!selectedSession && availableSessions.length > 0,
   });
 
-  // --- Derived Data (Winner, Pole, Fastest Lap - specific to Race 'R') ---
-  const raceWinner = useMemo(() => {
-    if (selectedSession !== 'R' || !sessionResults) return null;
-    return sessionResults.find(r => r.position === 1);
-  }, [sessionResults, selectedSession]);
+  // Only set default session if not already in params
+  useEffect(() => {
+    if (availableSessions.length > 0 && !searchParams.get('session')) {
+      let defaultSession = '';
+      if (isTestingEvent) {
+        defaultSession = 'Summary';
+      } else if (availableSessions.some((s) => s.type === 'R')) {
+        defaultSession = 'R';
+      } else {
+        defaultSession = availableSessions[availableSessions.length - 1].type;
+      }
 
-  const poleSitter = useMemo(() => {
-     if (selectedSession !== 'R' || !sessionResults) return null;
-     return sessionResults.find(r => r.gridPosition === 1);
-  }, [sessionResults, selectedSession]);
-
-  const fastestLapHolder = useMemo(() => {
-    // Find the driver marked with the fastest lap flag by the backend
-    if (selectedSession !== 'R' || !sessionResults) return null;
-    return sessionResults.find(r => r.isFastestLap === true);
-  }, [sessionResults, selectedSession]);
-
-  // NEW: Derive top 3 performers for non-Race/Sprint sessions
-  const topPerformers = useMemo(() => {
-    if (!sessionResults || !selectedSession) return [];
-
-    const isPractice = selectedSession.startsWith('FP');
-    const isQualifying = selectedSession.startsWith('Q') || selectedSession.startsWith('SQ');
-
-    // Only calculate for Practice or Qualifying sessions
-    if (!(isPractice || isQualifying)) {
-      return [];
+      // Update params without pushing to history for initial load
+      setSearchParams(
+        (prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('session', defaultSession);
+          return newParams;
+        },
+        { replace: true }
+      );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableSessions]);
 
-    // Sort by fastest lap time (ascending) using the existing helper
-    const sorted = [...sessionResults]
-      .filter(r => r.fastestLapTime) // Ensure they have a lap time set
-      .sort((a, b) => {
-        const timeA = parseLapTime(a.fastestLapTime);
-        const timeB = parseLapTime(b.fastestLapTime);
-        return timeA - timeB;
+  // Derived Data
+  // Fetch aggregated data for "Summary" session in testing events
+  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['summaryResult', year, eventSlug],
+    queryFn: async () => {
+      if (!year || !eventSlug || availableSessions.length === 0) return [];
+
+      const fetchingSessions = availableSessions.filter((s) => s.type !== 'Summary');
+
+      const allResultsPromises = fetchingSessions.map((s) =>
+        fetchSpecificRaceResults(year, eventSlug, s.type)
+      );
+
+      const allResultsArray = await Promise.all(allResultsPromises);
+
+      const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
+
+      allResultsArray.forEach((sessionResults) => {
+        sessionResults.forEach((result) => {
+          if (!aggregatedMap[result.driverCode]) {
+            aggregatedMap[result.driverCode] = {
+              ...result,
+              lapsCompleted: 0,
+              fastestLapTime: null, // We'll find min
+            };
+          }
+
+          const aggr = aggregatedMap[result.driverCode];
+
+          // Sum laps
+          if (result.lapsCompleted) {
+            aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
+          }
+
+          // Find fastest lap across sessions
+          if (result.fastestLapTime) {
+            const currentFastest = parseLapTime(aggr.fastestLapTime);
+            const newTime = parseLapTime(result.fastestLapTime);
+            if (!aggr.fastestLapTime || newTime < currentFastest) {
+              aggr.fastestLapTime = result.fastestLapTime;
+            }
+          }
+        });
       });
 
-    return sorted.slice(0, 3); // Get top 3
+      return Object.values(aggregatedMap);
+    },
+    enabled: isTestingEvent && selectedSession === 'Summary' && availableSessions.length > 0,
+  });
 
-  }, [sessionResults, selectedSession]);
+  const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
+  const isLoadingEffectiveResults =
+    selectedSession === 'Summary' ? isLoadingSummary : isLoadingResults;
 
-  // --- Loading and Error States ---
-  const isLoading = isLoadingSessions || isLoadingResults || isLoadingSchedule;
+  const raceWinner = useMemo(
+    () =>
+      selectedSession === 'R' || selectedSession === 'Sprint'
+        ? effectiveSessionResults?.find((r) => r.position === 1)
+        : null,
+    [effectiveSessionResults, selectedSession]
+  );
 
-  if (!year || !eventSlug) {
-     // Render Invalid URL state
-     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white flex flex-col items-center justify-center p-4">
-          <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-          <h1 className="text-2xl font-bold mb-2 text-white">Invalid Race URL</h1>
-          <p className="text-gray-400 mb-6">Could not parse year or event from the URL.</p>
-          <Button onClick={() => navigate('/dashboard')} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-          </Button>
-        </div>
-      );
+  const poleSitter = useMemo(
+    () =>
+      selectedSession === 'R' || selectedSession === 'Sprint'
+        ? effectiveSessionResults?.find((r) => r.gridPosition === 1)
+        : null,
+    [effectiveSessionResults, selectedSession]
+  );
+  const fastestLapHolder = useMemo(() => {
+    if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !effectiveSessionResults)
+      return null;
+
+    const validResults = effectiveSessionResults.filter(
+      (r) => !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
+    );
+
+    if (validResults.length === 0) return null;
+
+    return validResults.sort(
+      (a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime)
+    )[0];
+  }, [effectiveSessionResults, selectedSession]);
+
+  const topPerformers = useMemo(() => {
+    if (
+      !effectiveSessionResults ||
+      !selectedSession ||
+      selectedSession === 'R' ||
+      selectedSession === 'Sprint'
+    )
+      return [];
+    return [...effectiveSessionResults]
+      .filter((r) => r.fastestLapTime)
+      .sort((a, b) => parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime))
+      .slice(0, 3);
+  }, [effectiveSessionResults, selectedSession]);
+
+  /* Testing Event identification logic moved up early in the component */
+
+  const testingSessionAlias = useMemo(
+    () => parseTestingSessionAlias(selectedSession),
+    [selectedSession]
+  );
+  const isTestingSplitSession = isTestingEvent && !!testingSessionAlias;
+  const analysisSession = useMemo(() => {
+    const resolved = resolveSessionForAnalysis(selectedSession);
+    // "Summary" is not a real FastF1 session — map to first FP in available sessions
+    if (resolved === 'Summary' && availableSessions.length > 0) {
+      const firstFP = availableSessions.find((s) => s.type.startsWith('FP'));
+      return firstFP?.type ?? 'FP1';
+    }
+    return resolved;
+  }, [selectedSession, availableSessions]);
+  const isTestingSession =
+    isTestingEvent &&
+    (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
+
+  useEffect(() => {
+    if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary') {
+      setTestingWindow('full');
+    }
+  }, [isTestingSession, isTestingSplitSession, selectedSession]);
+
+  const getSessionWindowLapTime = useCallback(
+    (result: DetailedRaceResult): string | null | undefined => {
+      if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
+      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonFastestLapTime ?? result.fastestLapTime;
+      }
+      return result.fastestLapTime;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow]
+  );
+
+  const getSessionWindowLaps = useCallback(
+    (result: DetailedRaceResult): number => {
+      if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary')
+        return result.lapsCompleted ?? 0;
+      if (testingWindow === 'morning')
+        return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
+      if (testingWindow === 'afternoon') {
+        return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
+      }
+      return result.lapsCompleted ?? 0;
+    },
+    [isTestingSession, isTestingSplitSession, testingWindow, selectedSession]
+  );
+
+  const testingInsights = useMemo(() => {
+    if (!effectiveSessionResults || !isTestingSession) {
+      return {
+        fastest: null as DetailedRaceResult | null,
+        mileage: null as DetailedRaceResult | null,
+        totalLaps: 0,
+        totalDistance: 0,
+        averageLaps: 0,
+        circuitLength: 5.0,
+      };
+    }
+
+    const circuitLength = getCircuitLength(eventName);
+
+    const fastest =
+      [...effectiveSessionResults]
+        .filter((result) => !!getSessionWindowLapTime(result))
+        .sort(
+          (a, b) =>
+            parseLapTime(getSessionWindowLapTime(a)) - parseLapTime(getSessionWindowLapTime(b))
+        )[0] ?? null;
+
+    const mileage =
+      [...effectiveSessionResults].sort(
+        (a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a)
+      )[0] ?? null;
+
+    const totalLaps = effectiveSessionResults.reduce(
+      (sum, result) => sum + getSessionWindowLaps(result),
+      0
+    );
+    const totalDistance = calculateDistance(totalLaps, circuitLength);
+    const averageLaps =
+      effectiveSessionResults.length > 0 ? totalLaps / effectiveSessionResults.length : 0;
+
+    return { fastest, mileage, totalLaps, totalDistance, averageLaps, circuitLength };
+  }, [
+    effectiveSessionResults,
+    isTestingSession,
+    getSessionWindowLapTime,
+    getSessionWindowLaps,
+    eventName,
+  ]);
+
+  const nextSession = useMemo(() => {
+    if (!sessionSchedule) return null;
+    return sessionSchedule.sessions.find((s) => new Date(s.date) > now);
+  }, [sessionSchedule, now]);
+
+  const countdown = useMemo(() => {
+    if (!nextSession) return null;
+    const diff = new Date(nextSession.date).getTime() - now.getTime();
+    if (diff <= 0) return null;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    return { days, hours, minutes, seconds };
+  }, [nextSession, now]);
+
+  const formatTimeStr = (timeStr: string | null) => {
+    if (!timeStr) return '-';
+    if (is24Hour) return timeStr;
+    try {
+      const [h, m] = timeStr.split(':');
+      const hour = parseInt(h, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${m} ${ampm}`;
+    } catch (e) {
+      return timeStr;
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !is24Hour,
+      });
+    } catch (e) {
+      return '-';
+    }
+  };
+
+  const handleCircuitDriversSelected = React.useCallback(
+    (drivers: {
+      driver1: string;
+      driver2: string;
+      lap1: string | number;
+      lap2: string | number;
+      shouldLoadChart: boolean;
+    }) => {
+      setCircuitDrivers(drivers);
+      if (drivers.shouldLoadChart) {
+        trackEvent('chart_interaction', {
+          chart: 'circuit_comparison',
+          action: 'compare_drivers',
+          driver1: drivers.driver1,
+          driver2: drivers.driver2,
+        });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent is stable, intentionally excluded
+    []
+  );
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackEvent('tab_switched', {
+      tab: section,
+      context: 'race_analysis',
+      race_name: eventName,
+      year: year,
+    });
+  };
+
+  if (!year || !eventSlug) return null;
+
+  // Mobile version
+  if (isMobile) {
+    return (
+      <>
+        <SEO
+          title={`${eventName} ${year} - F1 Race Analysis`}
+          description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+          keywords={[
+            'f1 race analysis',
+            'race results',
+            'tire strategy',
+            'f1 telemetry',
+            eventName,
+            `${year} f1 season`,
+          ]}
+        />
+        <MobileRace />
+      </>
+    );
   }
 
-  // --- Render Page ---
+  if (isLoadingSessions) {
+    return (
+      <div className="min-h-screen bg-black text-white font-sans flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
+          <div className="text-gray-500 font-mono text-sm animate-pulse">
+            LOADING SESSION DATA...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hasProcessedSessions = availableSessions.length > 0;
+  const hasRaceData = isTestingEvent
+    ? availableSessions.length > 0
+    : availableSessions.some((s) => s.type === 'R');
+  const shouldShowSchedule = !hasRaceData && !showAnalysis;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+      <SEO
+        title={`${eventName} ${year} - F1 Race Analysis`}
+        description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+        keywords={[
+          'f1 race analysis',
+          'race results',
+          'tire strategy',
+          'f1 telemetry',
+          eventName,
+          `${year} f1 season`,
+        ]}
+      />
+      <DashboardNavbar />
+
+      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="mr-3 text-gray-400 hover:bg-gray-800 hover:text-white" 
-              onClick={() => navigate(-1)}
-              data-umami-event="Race Page Back Button"
+        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-700 pb-8">
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
+              onClick={() => {
+                if (showAnalysis && !hasRaceData) {
+                  setShowAnalysis(false);
+                } else {
+                  navigate(-1);
+                }
+              }}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
+              {showAnalysis && !hasRaceData ? 'Back to Schedule' : 'Back'}
             </Button>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
-                {eventName}{selectedSession && availableSessions.find(s => s.type === selectedSession) ? 
-                  ` - ${availableSessions.find(s => s.type === selectedSession)?.name}` : ''}
-              </h1>
-              <p className="text-lg text-gray-400">{year} Season</p>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
+              {eventName}
+            </h1>
+            <div className="flex items-center gap-4 text-gray-400 font-mono text-sm">
+              <span className="bg-black px-2 py-1 border border-gray-700">{year} SEASON</span>
+              {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
+                <span className="text-red-500 font-black uppercase">
+                  {availableSessions.find((s) => s.type === selectedSession)?.name}
+                </span>
+              )}
             </div>
           </div>
-          {/* Session Selector */}
-          <div className="w-full md:w-auto">
-             {isLoadingSessions ? (
-                 <Skeleton className="h-10 w-[200px] bg-gray-800/60" />
-             ) : availableSessions.length > 0 ? (
-                 <Select 
-                   value={selectedSession} 
-                   onValueChange={(value) => {
-                     setSelectedSession(value);
-                     // Track session change event
-                     const session = availableSessions.find(s => s.type === value);
-                     if (session) {
-                       const event = document.createElement('div');
-                       event.setAttribute('data-umami-event', `Race Session Change - ${session.name}`);
-                       document.body.appendChild(event);
-                       event.remove();
-                     }
-                   }}
-                 >
-                     <SelectTrigger className="w-full md:w-[220px] bg-gray-800/70 border-gray-700 text-white backdrop-blur-sm h-10">
-                         <Calendar className="w-4 h-4 mr-2 opacity-70" />
-                         <SelectValue placeholder="Select Session" />
-                     </SelectTrigger>
-                     <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                         {availableSessions
-                            .filter(session => session.type !== 'Q') // Filter out the 'Qualifying' session type
-                            .map(session => (
-                                <SelectItem
-                                    key={session.type}
-                                    value={session.type}
-                                    className="hover:bg-gray-800 focus:bg-gray-700"
-                                    data-umami-event={`Race Session Select - ${session.name}`}
-                                >
-                                    {session.name}
-                                </SelectItem>
-                            ))}
-                     </SelectContent>
-                 </Select>
-             ) : sessionSchedule ? (
-                 <div className="flex items-center gap-2 text-blue-400">
-                   
-                 </div>
-             ) : (
-                 <p className="text-sm text-gray-500">No sessions available.</p>
-             )}
-          </div>
+
+          {!shouldShowSchedule &&
+            availableSessions.length > 0 &&
+            (isTestingEvent ? (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[300px] bg-red-900/20 border border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
+                  <SelectValue placeholder="SELECT SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border border-gray-700 text-white">
+                  <SelectItem
+                    value="Summary"
+                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-700"
+                  >
+                    3-DAY TESTING SUMMARY
+                  </SelectItem>
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-black focus:bg-gray-800 focus:text-white py-2"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select value={selectedSession} onValueChange={setSelectedSession}>
+                <SelectTrigger className="w-[200px] bg-black border border-gray-700 text-white font-black uppercase tracking-wider h-12">
+                  <SelectValue placeholder="SESSION" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border border-gray-700 text-white">
+                  {availableSessions
+                    .filter((s) => s.type !== 'Q')
+                    .map((s) => (
+                      <SelectItem
+                        key={s.type}
+                        value={s.type}
+                        className="uppercase font-black focus:bg-gray-800 focus:text-red-500"
+                      >
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ))}
         </header>
 
-                {/* Session Schedule for Upcoming Races - Bold Modern Design */}
-        {sessionSchedule && (!fetchedAvailableSessions || fetchedAvailableSessions.length === 0) && (
-          <div className="mb-12">
-            {/* Hero Header */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl border border-gray-800/50 shadow-2xl">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: `radial-gradient(circle at 20px 20px, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                  backgroundSize: '40px 40px'
-                }}></div>
-              </div>
-              
-              {/* Header Section */}
-              <div className="relative p-8 pb-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20">
-                        <Calendar className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-3xl font-black tracking-tight text-white">
-                          RACE WEEKEND
-                        </h2>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="w-1 h-1 bg-white/60 rounded-full"></div>
-                          <p className="text-lg text-white/80 font-semibold">
-                            {sessionSchedule.eventFormat?.toUpperCase()}
-                          </p>
+        {shouldShowSchedule ? (
+          sessionSchedule ? (
+            // --- UPCOMING RACE DISPLAY ---
+            <div className="space-y-12">
+              {/* Hero Countdown Section */}
+              <div className="bg-black/30 border border-gray-700 p-8 md:p-12 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Flag01Icon className="w-64 h-64" />
+                </div>
+
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-red-500 font-black uppercase tracking-widest text-sm">
+                        Upcoming Session
+                      </span>
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white mb-2">
+                      Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
+                    </h2>
+                    <div className="text-gray-400 font-mono text-lg">
+                      {nextSession
+                        ? new Date(nextSession.date).toLocaleDateString(undefined, {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                        : 'Dates TBD'}
+                    </div>
+                  </div>
+
+                  {countdown ? (
+                    <div className="flex gap-4 md:gap-8 text-center">
+                      {[
+                        { label: 'DAYS', value: countdown.days },
+                        { label: 'HRS', value: countdown.hours },
+                        { label: 'MIN', value: countdown.minutes },
+                        { label: 'SEC', value: countdown.seconds },
+                      ].map((item, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div className="text-4xl md:text-6xl font-mono font-black text-white tracking-tighter leading-none">
+                            {item.value.toString().padStart(2, '0')}
+                          </div>
+                          <div className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
+                            {item.label}
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                    
-                    <div className="flex items-center gap-3 mt-4">
-                      <MapPin className="w-5 h-5 text-white/60" />
-                      <p className="text-xl font-bold text-white/90">
-                        {sessionSchedule.location}
-                      </p>
-                      <div className="w-px h-6 bg-white/30"></div>
-                      <p className="text-lg text-white/70 font-medium">
-                        {sessionSchedule.country}
-                      </p>
+                  ) : (
+                    <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
+                      SESSION IN PROGRESS
                     </div>
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-full px-4 py-2">
-                    <span className="text-green-300 font-bold text-sm tracking-wide">UPCOMING</span>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Timeline Section */}
-              <div className="relative px-8 pb-8">
-                <div className="space-y-1">
-                  {sessionSchedule.sessions.map((session, index) => {
-                    const sessionDate = new Date(session.date);
-                    const isToday = sessionDate.toDateString() === new Date().toDateString();
-                    const isPast = sessionDate < new Date();
-                    const isNext = !isPast && !isToday && index === sessionSchedule.sessions.findIndex(s => new Date(s.date) > new Date());
-                    
+              {/* Schedule Section */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-700 pb-4">
+                  <h3 className="text-2xl font-black uppercase tracking-wider text-white">
+                    Weekend Schedule
+                  </h3>
+                  <div className="flex items-center gap-2 bg-black p-1 border border-gray-700">
+                    <button
+                      onClick={() => {
+                        setIs24Hour(true);
+                        trackInteraction('time_format_changed', { format: '24h' });
+                      }}
+                      className={cn(
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                      )}
+                    >
+                      24H
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIs24Hour(false);
+                        trackInteraction('time_format_changed', { format: '12h' });
+                      }}
+                      className={cn(
+                        'px-3 py-1 text-xs font-black transition-colors',
+                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                      )}
+                    >
+                      12H
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-px bg-gray-800 border border-gray-700 overflow-hidden">
+                  {/* Table Header */}
+                  {/* Table Header Removed as per request */}
+
+                  {/* Table Body */}
+                  {sessionSchedule.sessions.map((session, idx) => {
+                    const isNext = nextSession && session.name === nextSession.name;
+                    // Map session name to type for available check (simplified mapping)
+                    let sessionType = '';
+                    const lowerName = session.name.toLowerCase();
+                    if (lowerName.includes('practice 1')) sessionType = 'FP1';
+                    else if (lowerName.includes('practice 2')) sessionType = 'FP2';
+                    else if (lowerName.includes('practice 3')) sessionType = 'FP3';
+                    else if (
+                      lowerName.includes('sprint qualifying') ||
+                      lowerName.includes('sprint shootout')
+                    )
+                      sessionType = 'SQ';
+                    else if (lowerName.includes('sprint') && !lowerName.includes('qualifying'))
+                      sessionType = 'Sprint';
+                    else if (lowerName.includes('qualifying') && !lowerName.includes('sprint'))
+                      sessionType = 'Q';
+                    else if (lowerName === 'race') sessionType = 'R';
+
+                    const isAvailable = availableSessions.some((s) => {
+                      if (sessionType === 'Q')
+                        return (
+                          s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3'
+                        );
+                      if (sessionType === 'SQ')
+                        return (
+                          s.type === 'SQ' ||
+                          s.type === 'SQ1' ||
+                          s.type === 'SQ2' ||
+                          s.type === 'SQ3'
+                        );
+                      return s.type === sessionType;
+                    });
+
                     return (
-                      <div key={index} className="relative">
-                        {/* Timeline connector */}
-                        {index < sessionSchedule.sessions.length - 1 && (
-                          <div className="absolute left-6 top-16 w-0.5 h-6 bg-gradient-to-b from-white/30 to-white/10"></div>
+                      <div
+                        key={idx}
+                        className={cn(
+                          'grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center',
+                          isNext
+                            ? 'bg-red-900/10 hover:bg-red-900/20'
+                            : 'bg-black hover:bg-gray-800/30'
                         )}
-                        
-                        <div className={cn(
-                          "relative group transition-all duration-300 rounded-2xl border backdrop-blur-sm",
-                          isToday 
-                            ? "bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-400/40 shadow-lg shadow-blue-500/20" 
-                            : isNext 
-                            ? "bg-gradient-to-r from-white/10 to-white/5 border-white/20 hover:border-white/40 hover:bg-white/15" 
-                            : isPast 
-                            ? "bg-gradient-to-r from-gray-800/40 to-gray-900/40 border-gray-700/30 opacity-70" 
-                            : "bg-gradient-to-r from-white/8 to-white/3 border-white/15 hover:border-white/30 hover:bg-white/12"
-                        )}>
-                          <div className="flex items-center justify-between p-6">
-                            <div className="flex items-center gap-6">
-                              {/* Status Indicator */}
-                              <div className="relative">
-                                <div className={cn(
-                                  "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg tracking-wider shadow-lg",
-                                  isToday 
-                                    ? "bg-gradient-to-br from-blue-400 to-cyan-500 text-white shadow-blue-500/40" 
-                                    : isNext 
-                                    ? "bg-gradient-to-br from-white to-gray-200 text-black shadow-white/20" 
-                                    : isPast 
-                                    ? "bg-gradient-to-br from-gray-600 to-gray-700 text-gray-300" 
-                                    : "bg-gradient-to-br from-gray-700 to-gray-800 text-white border border-gray-600"
-                                )}>
-                                  {(() => {
-                                    const sessionName = session.name.toLowerCase();
-                                    if (sessionName.includes('practice 1') || sessionName.includes('fp1')) return 'FP1';
-                                    if (sessionName.includes('practice 2') || sessionName.includes('fp2')) return 'FP2';
-                                    if (sessionName.includes('practice 3') || sessionName.includes('fp3')) return 'FP3';
-                                    if (sessionName.includes('sprint shootout') || sessionName.includes('sq')) return 'SQ';
-                                    if (sessionName.includes('sprint qualifying')) return 'SQ';
-                                    if (sessionName.includes('sprint')) return 'S';
-                                    if (sessionName.includes('qualifying') || sessionName.includes('quali')) return 'Q';
-                                    if (sessionName.includes('race')) return 'R';
-                                    return session.name.substring(0, 2).toUpperCase();
-                                  })()}
-                                </div>
-                                {isNext && (
-                                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
-                                )}
-                              </div>
-                              
-                              {/* Session Info */}
-                              <div className="space-y-1">
-                                <h3 className={cn(
-                                  "text-xl font-black tracking-tight",
-                                  isToday ? "text-white" : isPast ? "text-gray-400" : "text-white"
-                                )}>
-                                  {session.name.toUpperCase()}
-                                </h3>
-                                <p className={cn(
-                                  "text-sm font-bold tracking-wide",
-                                  isToday ? "text-blue-200" : isPast ? "text-gray-500" : "text-white/70"
-                                )}>
-                                  {sessionDate.toLocaleDateString('en-US', { 
-                                    weekday: 'long', 
-                                    month: 'short', 
-                                    day: 'numeric' 
-                                  }).toUpperCase()}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            {/* Time Display */}
-                            <div className="text-right space-y-1">
-                              {session.localTime && (() => {
-                                const sessionDate = new Date(session.date);
-                                const userLocalTime = sessionDate.toLocaleTimeString('en-US', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                });
-                                
-                                return (
-                                  <div className="space-y-1">
-                                    {/* Times side by side */}
-                                    <div className="flex items-center justify-end gap-3">
-                                      {/* Circuit Local Time */}
-                                      <div className="text-right">
-                                        <div className={cn(
-                                          "text-2xl font-black font-mono tracking-tighter",
-                                          isToday ? "text-white" : isPast ? "text-gray-400" : "text-white"
-                                        )}>
-                                          {session.localTime}
-                                        </div>
-                                        <div className={cn(
-                                          "text-xs font-bold tracking-widest uppercase",
-                                          isToday ? "text-blue-300" : isPast ? "text-gray-600" : "text-white/50"
-                                        )}>
-                                          CIRCUIT
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Separator */}
-                                      <div className="w-px h-12 bg-white/20"></div>
-                                      
-                                      {/* User Local Time */}
-                                      <div className="text-right">
-                                        <div className={cn(
-                                          "text-2xl font-black font-mono tracking-tighter",
-                                          isToday ? "text-blue-200" : isPast ? "text-gray-500" : "text-white/80"
-                                        )}>
-                                          {userLocalTime}
-                                        </div>
-                                        <div className={cn(
-                                          "text-xs font-bold tracking-widest uppercase",
-                                          isToday ? "text-blue-300/80" : isPast ? "text-gray-600" : "text-white/40"
-                                        )}>
-                                          YOUR TIME
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </div>
+                      >
+                        {/* Date Column */}
+                        <div className="flex flex-col justify-center border-r border-gray-700 pr-4">
+                          <div
+                            className={cn(
+                              'font-mono text-xl font-black',
+                              isNext ? 'text-white' : 'text-gray-300'
+                            )}
+                          >
+                            {new Date(session.date)
+                              .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                              .toUpperCase()}
                           </div>
+                          <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                            {new Date(session.date).toLocaleDateString(undefined, {
+                              weekday: 'short',
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Session Name */}
+                        <div className="flex flex-col justify-center pl-2">
+                          <div
+                            className={cn(
+                              'font-black text-lg uppercase tracking-tight mb-1',
+                              isNext ? 'text-red-500' : 'text-white'
+                            )}
+                          >
+                            {session.name}
+                          </div>
+                        </div>
+
+                        {/* Local Time (Hidden if Results available) */}
+                        <div className="hidden md:flex flex-col justify-center">
+                          {!isAvailable && (
+                            <>
+                              <div className="font-mono text-gray-300 text-lg">
+                                {formatTimeStr(session.localTime)}
+                              </div>
+                              <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                                Local
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Your Time / Results Button / LIVE Indicator */}
+                        <div className="hidden md:flex flex-col justify-center items-end md:items-start">
+                          {(() => {
+                            // Check if session is LIVE
+                            const sessionDate = new Date(session.date);
+                            const now = new Date();
+                            const diffMs = now.getTime() - sessionDate.getTime();
+                            const diffMins = diffMs / (1000 * 60);
+
+                            // Define durations (in minutes)
+                            let duration = 60; // Default 1 hour
+                            if (sessionType === 'R')
+                              duration = 180; // Race: 3 hours
+                            else if (sessionType === 'Sprint') duration = 60; // Sprint: 1 hour
+
+                            const isLive = diffMins >= 0 && diffMins < duration;
+
+                            if (isLive) {
+                              return (
+                                <div className="flex items-center gap-2 text-red-500 animate-pulse">
+                                  <div className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                  </div>
+                                  <span className="font-black uppercase tracking-wider text-sm">
+                                    LIVE
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            if (isAvailable) {
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-black tracking-wider w-full md:w-auto"
+                                  onClick={() => {
+                                    let targetSession = sessionType;
+                                    if (
+                                      sessionType === 'Q' &&
+                                      !availableSessions.some((s) => s.type === 'Q')
+                                    ) {
+                                      if (availableSessions.some((s) => s.type === 'Q3'))
+                                        targetSession = 'Q3';
+                                      else if (availableSessions.some((s) => s.type === 'Q2'))
+                                        targetSession = 'Q2';
+                                      else if (availableSessions.some((s) => s.type === 'Q1'))
+                                        targetSession = 'Q1';
+                                    }
+                                    if (
+                                      sessionType === 'SQ' &&
+                                      !availableSessions.some((s) => s.type === 'SQ')
+                                    ) {
+                                      if (availableSessions.some((s) => s.type === 'SQ3'))
+                                        targetSession = 'SQ3';
+                                      else if (availableSessions.some((s) => s.type === 'SQ2'))
+                                        targetSession = 'SQ2';
+                                      else if (availableSessions.some((s) => s.type === 'SQ1'))
+                                        targetSession = 'SQ1';
+                                    }
+                                    setSelectedSession(targetSession);
+                                    setShowAnalysis(true);
+                                    trackInteraction('results_button_clicked', {
+                                      sessionKey: targetSession,
+                                    });
+                                  }}
+                                >
+                                  Results
+                                </Button>
+                              );
+                            }
+
+                            return (
+                              <>
+                                <div
+                                  className={cn(
+                                    'font-mono text-lg',
+                                    isNext ? 'text-white' : 'text-gray-300'
+                                  )}
+                                >
+                                  {formatDate(session.date)}
+                                </div>
+                                <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
+                                  Your Time
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
@@ -714,287 +1360,721 @@ const Race = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Key Info Cards - Conditional Rendering */}
-        {!isLoadingResults && sessionResults && sessionResults.length > 0 && ( // Only render if results are loaded and not empty
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-fade-in">
-            {/* Case 1: Race or Sprint */}
-            {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-              <>
-                {raceWinner && (
-                    <F1Card 
-                        title="Race Winner" 
-                        value={raceWinner.fullName} 
-                        subValue={formatRaceTime(raceWinner.time, true)} // Format race time as H:MM:SS.ms
-                        team={getTeamColorClass(raceWinner.team) as any} 
-                        icon={<Trophy />} 
-                    />
-                )}
-                {poleSitter && (
-                     <F1Card
-                        title="Pole Position"
-                        value={poleSitter.fullName}
-                        subValue={poleSitter.poleLapTimeValue} // Pass the pole lap time
-                        team={getTeamColorClass(poleSitter.team) as any}
-                        icon={<Zap />}
-                     />
-                 )}
-                {fastestLapHolder && (
-                     <F1Card
-                        title="Fastest Lap"
-                        value={fastestLapHolder.fullName}
-                        subValue={fastestLapHolder.fastestLapTimeValue} // Pass the fastest lap time
-                        team={getTeamColorClass(fastestLapHolder.team) as any}
-                        icon={<Clock />}
-                     />
-                 )}
-              </>
-            )}
-
-            {/* Case 2: Practice or Qualifying */}
-            {(selectedSession?.startsWith('FP') || selectedSession?.startsWith('Q') || selectedSession?.startsWith('SQ')) && topPerformers.length > 0 && (
-              <>
-                {topPerformers[0] && (
-                  <F1Card
-                    title="P1"
-                    value={topPerformers[0].fullName}
-                    // Prefer formatted value, fallback to raw time string
-                    subValue={topPerformers[0].fastestLapTimeValue ?? topPerformers[0].fastestLapTime ?? ''}
-                    team={getTeamColorClass(topPerformers[0].team) as any}
-                    icon={<Trophy />}
-                  />
-                )}
-                {topPerformers[1] && (
-                  <F1Card
-                    title="P2"
-                    value={topPerformers[1].fullName}
-                    subValue={topPerformers[1].fastestLapTimeValue ?? topPerformers[1].fastestLapTime ?? ''}
-                    team={getTeamColorClass(topPerformers[1].team) as any}
-                    icon={<TrendingUp />} // Use TrendingUp for P2
-                  />
-                )}
-                {topPerformers[2] && (
-                  <F1Card
-                    title="P3"
-                    value={topPerformers[2].fullName}
-                    subValue={topPerformers[2].fastestLapTimeValue ?? topPerformers[2].fastestLapTime ?? ''}
-                    team={getTeamColorClass(topPerformers[2].team) as any}
-                    icon={<TrendingUp />} // Use TrendingUp for P3
-                  />
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Main Content Area */}
-        {isLoadingResults ? (
-             <div className="space-y-6 mt-6">
-                 <Skeleton className="h-10 w-1/3 bg-gray-800/60 rounded-lg" />
-                 <Skeleton className="h-10 w-full bg-gray-800/60 rounded-lg" />
-                 <Skeleton className="h-80 w-full bg-gray-800/60 rounded-lg" />
-             </div>
-        ) : isError && !sessionSchedule ? (
-             // Only show error if it's not an upcoming race (no session schedule available)
-             <Card className="bg-red-900/20 border-red-500/50 text-red-300 mt-6">
-                 <CardHeader>
-                     <CardTitle className="flex items-center gap-2"><AlertCircle /> Error Loading Data</CardTitle>
-                 </CardHeader>
-                 <CardContent>
-                     <p>{(error as Error)?.message || 'Could not fetch data for the selected session.'}</p>
-                     <Button onClick={() => navigate('/dashboard')} variant="outline" size="sm" className="mt-4 border-red-500/50 hover:bg-red-900/30">
-                         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-                     </Button>
-                 </CardContent>
-             </Card>
-        ) : (!sessionSchedule || (fetchedAvailableSessions && fetchedAvailableSessions.length > 0)) ? (
-          <Tabs defaultValue="results" className="mt-6">
-            {/* Adjust grid columns based on number of tabs */}
-            <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1 p-1 bg-gray-800/80 border border-gray-700 rounded-lg h-auto mb-6">
-              <TabsTrigger value="results" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><Users className="w-4 h-4 mr-1.5 inline"/>Results</TabsTrigger>
-              {/* Only show Positions tab if it's Race or Sprint */}
-              {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-                <TabsTrigger value="positions" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><MapPin className="w-4 h-4 mr-1.5 inline"/>Positions</TabsTrigger>
-              )}
-              <TabsTrigger value="strategy" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><Flag className="w-4 h-4 mr-1.5 inline"/>Strategy</TabsTrigger>
-              {/* Show Lap Times, Circuit, Telemetry for all applicable sessions */}
-              <TabsTrigger value="laptimes" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><Timer className="w-4 h-4 mr-1.5 inline"/>Lap Times</TabsTrigger>
-              <TabsTrigger value="circuit" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><Map className="w-4 h-4 mr-1.5 inline"/>Track Dominance</TabsTrigger>
-              <TabsTrigger value="telemetry" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-300 hover:bg-gray-700/50 rounded-md px-3 py-1.5 text-sm transition-colors"><BarChart2 className="w-4 h-4 mr-1.5 inline"/>Telemetry</TabsTrigger>
-            </TabsList>
-
-            {/* Results Tab */}
-            <TabsContent value="results" className="pt-2">
-               <h2 className="text-xl font-semibold mb-4 text-white">Session Results: {availableSessions.find(s => s.type === selectedSession)?.name}</h2>
-               <SessionResultsTable results={sessionResults} sessionType={selectedSession} year={year} />
-            </TabsContent>
-
-            {/* Position Changes Tab (Only for Race 'R' or Sprint) */}
-            {(selectedSession === 'R' || selectedSession === 'Sprint') && (
-              <TabsContent value="positions" className="pt-2">
-                {year && eventName && (
-                   <PositionsTabContent year={year} event={eventName} session={selectedSession} />
-                )}
-              </TabsContent>
-            )}
-
-            {/* Lap Times Tab (Show for all sessions now) */}
-            <TabsContent value="laptimes" className="pt-2">
-              {year && eventName && (
-                <>
-                  <RacingChart 
-                    year={year} 
-                    event={eventName} 
-                    session={selectedSession} 
-                    title="Lap Time Comparison"
-                    autoLoad={true}
-                  />
-                </>
-              )}
-            </TabsContent>
-
-            {/* Circuit Comparison Tab (Show for all sessions now) */}
-            <TabsContent value="circuit" className="pt-2">
-              {year && eventName && (
-                <>
-                  <CircuitComparisonChart
-                    year={year}
-                    event={eventName}
-                    session={selectedSession}
-                    onDriversSelected={setCircuitDrivers}
-                  />
-                  
-                  <h2 className="text-xl font-semibold mt-8 mb-4 text-white">Additional Telemetry Comparison</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Throttle Comparison */}
-                    <DriverComparisonTelemetry
-                      year={year}
-                      event={eventName}
-                      session={selectedSession}
-                      driver1={circuitDrivers.driver1}
-                      driver2={circuitDrivers.driver2}
-                      lap1={circuitDrivers.lap1}
-                      lap2={circuitDrivers.lap2}
-                      shouldLoadChart={circuitDrivers.shouldLoadChart}
-                      telemetryType="throttle"
-                      title="Throttle Comparison"
-                    />
-                    
-                    {/* Brake Comparison */}
-                    <DriverComparisonTelemetry
-                      year={year}
-                      event={eventName}
-                      session={selectedSession}
-                      driver1={circuitDrivers.driver1}
-                      driver2={circuitDrivers.driver2}
-                      lap1={circuitDrivers.lap1}
-                      lap2={circuitDrivers.lap2}
-                      shouldLoadChart={circuitDrivers.shouldLoadChart}
-                      telemetryType="brake"
-                      title="Brake Input Comparison"
-                    />
-                    
-                    {/* RPM Comparison */}
-                    <DriverComparisonTelemetry
-                      year={year}
-                      event={eventName}
-                      session={selectedSession}
-                      driver1={circuitDrivers.driver1}
-                      driver2={circuitDrivers.driver2}
-                      lap1={circuitDrivers.lap1}
-                      lap2={circuitDrivers.lap2}
-                      shouldLoadChart={circuitDrivers.shouldLoadChart}
-                      telemetryType="rpm"
-                      title="RPM Comparison"
-                    />
-                    
-                    {/* DRS Comparison */}
-                    <DriverComparisonTelemetry
-                      year={year}
-                      event={eventName}
-                      session={selectedSession}
-                      driver1={circuitDrivers.driver1}
-                      driver2={circuitDrivers.driver2}
-                      lap1={circuitDrivers.lap1}
-                      lap2={circuitDrivers.lap2}
-                      shouldLoadChart={circuitDrivers.shouldLoadChart}
-                      telemetryType="drs"
-                      title="DRS Usage Comparison"
-                    />
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            {/* Strategy Tab (Only Race or Sprint) */}
-            <TabsContent value="strategy" className="pt-2">
-               {year && eventName && (
-                 <TireStrategy year={year} event={eventName} session={selectedSession} />
-               )}
-            </TabsContent>
-
-            {/* Telemetry Tab (Show for all sessions now) */}
-            <TabsContent value="telemetry" className="pt-2">
-               {year && eventName && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                      {/* Speed Trace */}
-                      <SpeedTraceChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap} // Pass selected lap state
-                          title="" // Title is handled internally now
-                      />
-                      {/* Gear Map */}
-                      <GearMapChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap} // Pass selected lap state
-                      />
-                      {/* Throttle */}
-                      <ThrottleChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                      />
-                      {/* Brake */}
-                      <BrakeChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                      />
-                      {/* RPM */}
-                      <RPMChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                      />
-                      {/* DRS */}
-                      <DRSChart
-                          year={year}
-                          event={eventName}
-                          session={selectedSession}
-                          lap={selectedLap}
-                      />
-                  </div>
-               )}
-            </TabsContent>
-
-          </Tabs>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
+            </div>
+          )
         ) : (
-          // Show message for upcoming races with no session data
-          <div className="mt-6 text-center py-12">
-            <Calendar className="w-16 h-16 mx-auto text-blue-400 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Race Weekend Awaits</h3>
-            <p className="text-gray-400">
-              This race hasn't started yet. Check the schedule above for session times.
-            </p>
+          // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
+          <div className="flex flex-col lg:flex-row gap-12">
+            {/* Sticky Sidebar */}
+            {selectedSession !== 'Summary' && (
+              <aside className="hidden lg:block w-64 shrink-0">
+                <div className="sticky top-32 space-y-1">
+                  <NavItem
+                    id="overview"
+                    label="Overview"
+                    icon={ChampionIcon}
+                    active={activeSection === 'overview'}
+                    onClick={() => handleSectionChange('overview')}
+                  />
+
+                  {selectedSession !== 'Summary' && (
+                    <>
+                      <NavItem
+                        id="replay"
+                        label="Replay"
+                        icon={PlayCircle02Icon}
+                        active={activeSection === 'replay'}
+                        onClick={() => handleSectionChange('replay')}
+                      />
+                      {(selectedSession === 'R' ||
+                        selectedSession === 'Sprint' ||
+                        isTestingSession) && (
+                        <NavItem
+                          id="strategy"
+                          label="Strategy"
+                          icon={TireIcon}
+                          active={activeSection === 'strategy'}
+                          onClick={() => handleSectionChange('strategy')}
+                        />
+                      )}
+                      {(selectedSession === 'R' || selectedSession === 'Sprint') && (
+                        <NavItem
+                          id="positions"
+                          label="Positions"
+                          icon={ChartLineData01Icon}
+                          active={activeSection === 'positions'}
+                          onClick={() => handleSectionChange('positions')}
+                        />
+                      )}
+                      <NavItem
+                        id="laptimes"
+                        label="Lap Times"
+                        icon={Time01Icon}
+                        active={activeSection === 'laptimes'}
+                        onClick={() => handleSectionChange('laptimes')}
+                      />
+                      <NavItem
+                        id="dominance"
+                        label="Head to Head"
+                        icon={GitCompareIcon}
+                        active={activeSection === 'dominance'}
+                        onClick={() => handleSectionChange('dominance')}
+                      />
+                      <NavItem
+                        id="teampace"
+                        label="Team Pace"
+                        icon={UserGroupIcon}
+                        active={activeSection === 'teampace'}
+                        onClick={() => handleSectionChange('teampace')}
+                      />
+                      <NavItem
+                        id="telemetry"
+                        label="Telemetry"
+                        icon={Analytics01Icon}
+                        active={activeSection === 'telemetry'}
+                        onClick={() => handleSectionChange('telemetry')}
+                      />
+                    </>
+                  )}
+                </div>
+              </aside>
+            )}
+
+            {/* Main Content Stream */}
+            <div className="flex-1 space-y-8">
+              {/* 1. Overview Section (Includes Results) */}
+              {activeSection === 'overview' && (
+                <div className="space-y-12 animate-in fade-in duration-500">
+                  <section id="overview">
+                    <SectionHeader
+                      title={`${availableSessions.find((s) => s.type === selectedSession)?.name || 'Race'} Overview`}
+                      icon={ChampionIcon}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {selectedSession === 'R' || selectedSession === 'Sprint' ? (
+                        <>
+                          {raceWinner && (
+                            <F1Card
+                              title="WINNER"
+                              value={raceWinner.fullName}
+                              subValue={formatRaceTime(raceWinner.time, true)}
+                              team={getTeamColorClass(raceWinner.team)}
+                              icon={<ChampionIcon />}
+                              imageUrl={getDriverImage(raceWinner.driverCode, year!)}
+                            />
+                          )}
+                          {poleSitter && (
+                            <F1Card
+                              title="POLE POSITION"
+                              value={poleSitter.fullName}
+                              subValue={poleSitter.poleLapTimeValue}
+                              team={getTeamColorClass(poleSitter.team)}
+                              icon={<FlashIcon />}
+                              imageUrl={getDriverImage(poleSitter.driverCode, year!)}
+                            />
+                          )}
+                          {fastestLapHolder && (
+                            <F1Card
+                              title="FASTEST LAP"
+                              value={fastestLapHolder.fullName}
+                              subValue={fastestLapHolder.driverFastestLapTime}
+                              team={getTeamColorClass(fastestLapHolder.team)}
+                              icon={<Clock01Icon />}
+                              imageUrl={getDriverImage(fastestLapHolder.driverCode, year!)}
+                            />
+                          )}
+                        </>
+                      ) : isTestingSession ? (
+                        <>
+                          {testingInsights.fastest && (
+                            <F1Card
+                              title="FASTEST LAP"
+                              value={testingInsights.fastest.fullName}
+                              subValue={getSessionWindowLapTime(testingInsights.fastest) ?? '-'}
+                              team={getTeamColorClass(testingInsights.fastest.team)}
+                              icon={<Clock01Icon />}
+                              imageUrl={getDriverImage(testingInsights.fastest.driverCode, year!)}
+                            />
+                          )}
+                          {testingInsights.mileage && (
+                            <F1Card
+                              title="MILEAGE LEADER"
+                              value={testingInsights.mileage.fullName}
+                              subValue={`${formatDistance(calculateDistance(getSessionWindowLaps(testingInsights.mileage), testingInsights.circuitLength))}`}
+                              team={getTeamColorClass(testingInsights.mileage.team)}
+                              icon={<TradeUpIcon />}
+                              imageUrl={getDriverImage(testingInsights.mileage.driverCode, year!)}
+                            />
+                          )}
+                          <F1Card
+                            title="SESSION WORKLOAD"
+                            value={`${formatDistance(testingInsights.totalDistance)}`}
+                            subValue={`Avg ${testingInsights.averageLaps.toFixed(1)} laps/driver`}
+                            team="gray"
+                            icon={<Calendar01Icon />}
+                          />
+                        </>
+                      ) : (
+                        topPerformers.map((p, i) => (
+                          <F1Card
+                            key={i}
+                            title={`P${i + 1}`}
+                            value={p.fullName}
+                            subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''}
+                            team={getTeamColorClass(p.team)}
+                            icon={i === 0 ? <ChampionIcon /> : <TradeUpIcon />}
+                            imageUrl={getDriverImage(p.driverCode, year!)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </section>
+
+                  <section id="results">
+                    <SectionHeader title="Session Results" icon={UserGroupIcon} />
+
+                    {isTestingSession &&
+                      !isTestingSplitSession &&
+                      selectedSession !== 'Summary' && (
+                        <div className="mb-6 flex items-center gap-2 bg-black border border-gray-700 p-2 w-fit">
+                          {(
+                            [
+                              ['full', 'Full Day'],
+                              ['morning', 'Morning'],
+                              ['afternoon', 'Afternoon'],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <button
+                              key={value}
+                              onClick={() => {
+                                setTestingWindow(value);
+                                trackInteraction('testing_window_toggled', { window: value });
+                              }}
+                              className={cn(
+                                'px-3 py-1 text-xs font-black uppercase tracking-wider transition-colors border',
+                                testingWindow === value
+                                  ? 'bg-white border-white text-black'
+                                  : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                    {/* Provisional Results Banner */}
+                    {sessionResults && sessionResults.some((r) => r.isProvisional) && (
+                      <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
+                        <Alert02Icon className="h-4 w-4" />
+                        <AlertTitle className="font-black uppercase tracking-wider">
+                          Provisional Results
+                        </AlertTitle>
+                        <AlertDescription>
+                          Official race results are still being processed. Points and positions
+                          shown are provisional and subject to confirmation.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {isTestingSession && selectedSession !== 'Summary' && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                          Testing Focus
+                        </AlertTitle>
+                        <AlertDescription>
+                          Results are sorted by fastest lap. Mileage and reliability columns
+                          highlight long-run robustness.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {isTestingSession && selectedSession === 'Summary' && (
+                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
+                        <Alert02Icon className="h-4 w-4 text-blue-400" />
+                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
+                          3-Day Testing Summary
+                        </AlertTitle>
+                        <AlertDescription>
+                          Aggregated data from all pre-season testing sessions. Total mileage and
+                          fastest laps are combined.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {effectiveSessionResults && (
+                      <SessionResultsTable
+                        results={effectiveSessionResults}
+                        sessionType={selectedSession}
+                        favoriteDriver={profile?.favorite_driver}
+                        fastestLapHolder={fastestLapHolder}
+                        isTestingSession={isTestingSession}
+                        isTestingSplitSession={isTestingSplitSession}
+                        testingWindow={testingWindow}
+                        eventName={eventName}
+                      />
+                    )}
+                  </section>
+                </div>
+              )}
+
+              {/* 3. Strategy Section */}
+              {activeSection === 'strategy' &&
+                (selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) && (
+                  <GatedRoute
+                    featureName="Tire Strategy"
+                    description="Advanced tire strategy analysis including pit stop patterns and compound selection strategies"
+                  >
+                    <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
+                      <TireStrategy
+                        year={year!}
+                        event={eventName}
+                        session={analysisSession}
+                        favoriteDriver={profile?.favorite_driver}
+                      />
+                    </section>
+                  </GatedRoute>
+                )}
+
+              {/* 3.5 Positions Section (Race Only) */}
+              {activeSection === 'positions' &&
+                (selectedSession === 'R' || selectedSession === 'Sprint') && (
+                  <GatedRoute
+                    featureName="Position Tracking"
+                    description="Real-time position changes and overtaking opportunities throughout the race"
+                  >
+                    <section id="positions" className="animate-in fade-in duration-500">
+                      <PositionsTabContent
+                        year={year!}
+                        event={eventName}
+                        session={analysisSession}
+                        favoriteDriver={profile?.favorite_driver}
+                      />
+                    </section>
+                  </GatedRoute>
+                )}
+
+              {/* 4. Lap Times Section */}
+              {activeSection === 'laptimes' && (
+                <GatedRoute
+                  featureName="Lap Times Analysis"
+                  description="Detailed lap-by-lap timing data with pace distribution analysis and comparison charts"
+                >
+                  <section id="laptimes" className="animate-in fade-in duration-500">
+                    <Tabs
+                      defaultValue="history"
+                      value={lapAnalysisMode}
+                      onValueChange={(v) => {
+                        setLapAnalysisMode(v as 'history' | 'pace' | 'gap');
+                        trackInteraction('desktop_analysis_tab_changed', { tab: v });
+                      }}
+                      className="w-full"
+                    >
+                      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
+                        <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+                          <TabsTrigger
+                            value="history"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                          >
+                            Lap History
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="pace"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                          >
+                            Pace Distribution
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="gap"
+                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                          >
+                            Gap to Leader
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
+
+                      <TabsContent
+                        value="history"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
+
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                            }
+                          }
+
+                          return (
+                            <RacingChart
+                              year={year!}
+                              event={eventName}
+                              session={analysisSession}
+                              title="Lap Time Comparison"
+                              autoLoad={true}
+                              favoriteDriver={favDriverCode}
+                              rivalDriver={rivalDriverCode}
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+
+                      <TabsContent
+                        value="pace"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
+
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                            }
+                          }
+                          return (
+                            <PaceAnalysisChart
+                              year={year!}
+                              event={eventName}
+                              session={analysisSession}
+                              initialDrivers={
+                                favDriverCode
+                                  ? ([favDriverCode, rivalDriverCode].filter(Boolean) as string[])
+                                  : []
+                              }
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+
+                      <TabsContent
+                        value="gap"
+                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                      >
+                        {(() => {
+                          const favDriverCode = profile?.favorite_driver;
+                          let rivalDriverCode = null;
+
+                          if (favDriverCode && sessionResults) {
+                            const favResult = sessionResults.find(
+                              (r) =>
+                                r.driverCode === favDriverCode ||
+                                r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                            );
+                            if (favResult && favResult.position) {
+                              const rivalPos =
+                                favResult.position === 1 ? 2 : favResult.position - 1;
+                              const rivalResult = sessionResults.find(
+                                (r) => r.position === rivalPos
+                              );
+                              if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                            }
+                          }
+
+                          return (
+                            <GapToLeaderChart
+                              year={year!}
+                              event={eventName}
+                              session={analysisSession}
+                              autoLoad={true}
+                              favoriteDriver={favDriverCode}
+                              rivalDriver={rivalDriverCode}
+                            />
+                          );
+                        })()}
+                      </TabsContent>
+                    </Tabs>
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 5. Dominance Section */}
+              {activeSection === 'dominance' && (
+                <GatedRoute
+                  featureName="Head to Head Analysis"
+                  description="Driver comparison and dominance analysis with detailed telemetry overlays including speed, throttle, brake, and DRS patterns"
+                >
+                  <section id="dominance" className="animate-in fade-in duration-500">
+                    {(() => {
+                      const favDriverCode = profile?.favorite_driver;
+                      let rivalDriverCode = null;
+
+                      if (favDriverCode && sessionResults) {
+                        const favResult = sessionResults.find(
+                          (r) =>
+                            r.driverCode === favDriverCode ||
+                            r.fullName.toLowerCase().includes(favDriverCode.toLowerCase())
+                        );
+                        if (favResult && favResult.position) {
+                          // Rival is the driver ahead (pos - 1), or behind (pos + 1) if P1
+                          const rivalPos = favResult.position === 1 ? 2 : favResult.position - 1;
+                          const rivalResult = sessionResults.find((r) => r.position === rivalPos);
+                          if (rivalResult) rivalDriverCode = rivalResult.driverCode;
+                        }
+                      }
+
+                      return (
+                        <div className="space-y-12">
+                          <CircuitComparisonChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            initialDriver1={favDriverCode}
+                            initialDriver2={rivalDriverCode || undefined}
+                            onDriversSelected={handleCircuitDriversSelected}
+                          />
+
+                          {/* Comparison Charts if selected */}
+                          {circuitDrivers.shouldLoadChart && (
+                            <div className="space-y-12">
+                              {/* Race Performance Summary */}
+                              <HeadToHeadEnriched
+                                year={year!}
+                                event={eventName}
+                                session={analysisSession}
+                                driver1={circuitDrivers.driver1}
+                                driver2={circuitDrivers.driver2}
+                              />
+
+                              {/* Speed Trace - Full Width */}
+                              <DriverComparisonTelemetry
+                                year={year!}
+                                event={eventName}
+                                session={analysisSession}
+                                driver1={circuitDrivers.driver1}
+                                driver2={circuitDrivers.driver2}
+                                lap1={circuitDrivers.lap1}
+                                lap2={circuitDrivers.lap2}
+                                shouldLoadChart={true}
+                                telemetryType="speed"
+                                title="Speed Trace"
+                              />
+
+                              {/* Other Telemetry - Stacked */}
+                              <div className="space-y-12">
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={analysisSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="gap"
+                                  title="Gap"
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={analysisSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="throttle"
+                                  title="Throttle"
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={analysisSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="brake"
+                                  title="Brake"
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={analysisSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="rpm"
+                                  title="RPM"
+                                />
+                                <DriverComparisonTelemetry
+                                  year={year!}
+                                  event={eventName}
+                                  session={analysisSession}
+                                  driver1={circuitDrivers.driver1}
+                                  driver2={circuitDrivers.driver2}
+                                  lap1={circuitDrivers.lap1}
+                                  lap2={circuitDrivers.lap2}
+                                  shouldLoadChart={true}
+                                  telemetryType="drs"
+                                  title="DRS"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 6. Team Pace Section */}
+              {activeSection === 'teampace' && (
+                <GatedRoute
+                  featureName="Team Pace Analysis"
+                  description="Team-level pace breakdown by tyre compound and sector, with individual driver analysis"
+                >
+                  <section id="teampace" className="animate-in fade-in duration-500">
+                    <TeamPaceBreakdown
+                      year={year!}
+                      event={eventName}
+                      session={analysisSession}
+                      isProvisional={sessionResults?.some((r) => r.isProvisional)}
+                    />
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 7. Telemetry Section */}
+              {activeSection === 'telemetry' && (
+                <GatedRoute
+                  featureName="Advanced Telemetry"
+                  description="Complete telemetry analysis with speed traces, throttle/brake patterns, RPM curves, gear selection, and DRS deployment strategies"
+                >
+                  <section id="telemetry" className="animate-in fade-in duration-500">
+                    {(() => {
+                      const defaultDriver =
+                        profile?.favorite_driver ||
+                        (sessionResults && sessionResults.length > 0
+                          ? sessionResults[0].driverCode
+                          : undefined);
+
+                      return (
+                        <div className="flex flex-col space-y-12">
+                          <SpeedTraceChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                          <ThrottleChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                          <BrakeChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                          <RPMChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                          <GearMapChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                          <DRSChart
+                            year={year!}
+                            event={eventName}
+                            session={analysisSession}
+                            lap={selectedLap}
+                            initialDriver={defaultDriver}
+                          />
+                        </div>
+                      );
+                    })()}
+                  </section>
+                </GatedRoute>
+              )}
+
+              {/* 7. Replay Section */}
+              {activeSection === 'replay' && year && eventSlug && selectedSession && (
+                <GatedRoute
+                  featureName="Session Replay"
+                  description="Experience immersive race telemetry with real-time car positions and data overlays"
+                >
+                  <div className="space-y-6 animate-in fade-in duration-500">
+                    <div className="bg-black border border-gray-700 overflow-hidden h-[80vh] relative">
+                      <React.Suspense
+                        fallback={
+                          <div className="h-full flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
+                              <div className="text-xs text-gray-500 font-mono">
+                                LOADING REPLAY MODULE...
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      >
+                        {(() => {
+                          let replaySessionTarget = analysisSession;
+                          if (isTestingSession) {
+                            if (isTestingSplitSession && testingSessionAlias) {
+                              replaySessionTarget = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
+                            } else if (testingWindow !== 'full') {
+                              replaySessionTarget = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                            }
+                          }
+
+                          return (
+                            <SessionReplay
+                              year={year}
+                              event={eventSlug}
+                              session={replaySessionTarget}
+                              className="h-full"
+                            />
+                          );
+                        })()}
+                      </React.Suspense>
+                    </div>
+                  </div>
+                </GatedRoute>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1002,4 +2082,5 @@ const Race = () => {
   );
 };
 
+export { Race };
 export default Race;
