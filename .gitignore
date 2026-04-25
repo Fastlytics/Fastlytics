@@ -98,3 +98,14 @@ FIX_PLAN.sh
 .ruff_cache/
 docs
 reports
+projects
+.kilo
+.opencode
+.gitignore
+ios
+.roo
+.prettier*
+openspec
+.agent
+AGENTS.md
+dependency-audit-report-2026-04-24.md
