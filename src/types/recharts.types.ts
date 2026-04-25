@@ -1,5 +1,3 @@
-import type { TooltipProps } from 'recharts';
-
 export type ChartPayloadEntry<TData> = {
   name?: string;
   value?: TData;
