@@ -12,8 +12,6 @@ interface PlaybackControlsProps {
   hasStarted: boolean;
   showSpeedHeatmap: boolean;
   seekbarStatusSegments: TrackStatusSegment[];
-  hoverTime: number | null;
-  hoverPos: number | null;
   /** Available laps for lap-based seeking */
   availableLaps: number[];
   /** Current lap number (of leader or selected driver) */
@@ -49,44 +47,55 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onSpeedChange,
   onToggleFullscreen,
   onToggleHeatmap,
-  onHoverMove,
-  onHoverLeave,
   onSeekToLap,
 }) => {
+  const progress = activeTotalDuration > 0 ? currentTime / activeTotalDuration : 0;
+
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 h-32 flex items-end justify-center z-40 transition-all duration-500 ${hasStarted ? (isFullscreen ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto' : 'opacity-100 pointer-events-auto') : 'translate-y-full opacity-0'}`}
+      className={cn(
+        'absolute bottom-0 left-0 right-0 z-40 transition-all duration-500',
+        hasStarted
+          ? isFullscreen
+            ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto'
+            : 'opacity-100 pointer-events-auto'
+          : 'translate-y-full opacity-0'
+      )}
     >
-      <div className="w-full bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 pointer-events-auto">
-        <div className="max-w-7xl mx-auto flex flex-col gap-4">
-          {/* Slider Container with Tooltip */}
-          <div className="relative group/slider w-full">
+      <div className="bg-[#0c0c0e]/95 backdrop-blur border-t border-white/[0.06] p-4 pointer-events-auto">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          {/* Seekbar Container */}
+          <div className="relative group/slider w-full h-4 flex items-center">
             {/* Track Status Overlay Segments */}
             {seekbarStatusSegments.length > 0 && (
-              <div className="absolute inset-0 flex items-center pointer-events-none z-10">
+              <div className="absolute inset-y-0 left-0 right-0 flex items-center pointer-events-none z-10">
                 {seekbarStatusSegments.map((seg, i) => (
                   <div
                     key={`status-seg-${i}`}
-                    className="absolute h-2 rounded-sm"
+                    className="absolute h-1 rounded-full"
                     style={{
                       left: `${seg.startPct * 100}%`,
                       width: `${(seg.endPct - seg.startPct) * 100}%`,
                       backgroundColor: seg.color,
-                      opacity: 0.6,
+                      opacity: 0.5,
                     }}
                     title={seg.label}
                   />
                 ))}
               </div>
             )}
-            {hoverTime !== null && hoverPos !== null && (
-              <div
-                className="absolute bottom-4 -translate-x-1/2 bg-black/90 text-white text-xs font-mono font-bold py-1 px-2 rounded border border-gray-700 pointer-events-none z-50 whitespace-nowrap"
-                style={{ left: `${hoverPos}px` }}
-              >
-                {formatTime(hoverTime)}
+
+            {/* Custom Seekbar Track */}
+            <div className="absolute inset-y-0 left-0 right-0 flex items-center">
+              <div className="w-full h-1 bg-white/[0.08] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-red-500/80 rounded-full transition-all duration-75"
+                  style={{ width: `${progress * 100}%` }}
+                />
               </div>
-            )}
+            </div>
+
+            {/* Range Input */}
             <input
               type="range"
               min={0}
@@ -94,47 +103,45 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               step={0.1}
               value={currentTime}
               onChange={(e) => onSeek(parseFloat(e.target.value))}
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const width = rect.width;
-                const pct = Math.max(0, Math.min(1, x / width));
-                const time = pct * activeTotalDuration;
-                onHoverMove(time, x);
-              }}
-              onMouseLeave={onHoverLeave}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 block"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+            />
+
+            {/* Current Time Thumb */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full shadow-lg pointer-events-none z-10 border-2 border-white/20"
+              style={{ left: `calc(${progress * 100}% - 6px)` }}
             />
           </div>
 
+          {/* Controls Row */}
           <div className="flex items-center justify-between">
             {/* Left Controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={onPlayPause}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
               >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
               </button>
 
-              <span className="font-mono text-xl font-bold tabular-nums min-w-[5ch]">
+              <span className="text-[14px] font-mono font-bold tabular-nums text-white/80 min-w-[5ch]">
                 {formatTime(currentTime)}
               </span>
 
-              {/* Lap-Based Seeking */}
+              {/* Lap Navigation */}
               {availableLaps.length > 0 && (
-                <div className="flex items-center gap-1 ml-2 bg-white/5 rounded-lg px-2 py-1">
+                <div className="flex items-center gap-1 ml-2 rounded-lg border border-white/[0.06] bg-white/[0.03] p-0.5">
                   <button
                     onClick={() => {
                       const idx = availableLaps.indexOf(currentLap);
                       if (idx > 0) onSeekToLap(availableLaps[idx - 1]);
                     }}
                     disabled={availableLaps.indexOf(currentLap) <= 0}
-                    className="p-0.5 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white/50 hover:text-white"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={14} />
                   </button>
-                  <span className="text-xs font-mono text-gray-300 min-w-[5ch] text-center">
+                  <span className="text-[11px] font-mono font-semibold text-white/60 min-w-[4ch] text-center tabular-nums">
                     L{currentLap}
                   </span>
                   <button
@@ -143,24 +150,24 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                       if (idx < availableLaps.length - 1) onSeekToLap(availableLaps[idx + 1]);
                     }}
                     disabled={availableLaps.indexOf(currentLap) >= availableLaps.length - 1}
-                    className="p-0.5 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white/50 hover:text-white"
                   >
-                    <ChevronRight size={16} />
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Right - Speed & Fullscreen */}
+            {/* Right Controls */}
             <div className="flex items-center gap-2">
-              {/* Speed Heatmap Toggle */}
+              {/* Heatmap Toggle */}
               <button
                 onClick={onToggleHeatmap}
                 className={cn(
-                  'p-2 rounded-full transition-colors text-xs',
+                  'flex items-center justify-center w-8 h-8 rounded-lg border transition-all text-[11px]',
                   showSpeedHeatmap
-                    ? 'bg-emerald-600/80 text-white hover:bg-emerald-500/80'
-                    : 'hover:bg-white/10 text-white/60'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                    : 'border-white/[0.06] bg-white/[0.03] text-white/40 hover:bg-white/[0.06] hover:text-white/60'
                 )}
                 title={
                   showSpeedHeatmap
@@ -168,21 +175,23 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                     : 'Show speed heatmap (select a driver first)'
                 }
               >
-                <Gauge size={18} />
+                <Gauge size={15} />
               </button>
 
+              {/* Speed Control */}
               <button
                 onClick={onSpeedChange}
-                className="font-mono text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 min-w-[3ch] text-center"
+                className="h-8 px-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[11px] font-mono font-bold text-white/60 hover:bg-white/[0.06] hover:text-white transition-all tabular-nums min-w-[3ch] text-center"
               >
                 {playbackSpeed}x
               </button>
 
+              {/* Fullscreen */}
               <button
                 onClick={onToggleFullscreen}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white/40 hover:bg-white/[0.06] hover:text-white transition-all"
               >
-                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
               </button>
             </div>
           </div>

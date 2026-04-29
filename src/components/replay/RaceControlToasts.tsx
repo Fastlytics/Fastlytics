@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { getMessageType } from './replay-utils';
 import type { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface RaceControlMessage {
   time: number;
@@ -65,34 +66,40 @@ const RaceControlToasts: React.FC<RaceControlToastsProps> = ({
         return (
           <div
             key={id}
-            className={`
-              ${config.bg} ${config.border} ${config.color}
-              border-l-4 p-3 rounded-r shadow-lg max-w-xl w-full
-              animate-in fade-in slide-in-from-top-4 duration-300
-              pointer-events-auto flex items-center gap-4
-            `}
+            className={cn(
+              'border-l-4 p-3 rounded-r-lg shadow-2xl max-w-xl w-full',
+              'animate-in fade-in slide-in-from-top-4 duration-300',
+              'pointer-events-auto flex items-center gap-4',
+              'bg-[#0c0c0e]/95 backdrop-blur border-y border-r border-white/[0.06]',
+              config.border,
+              config.color
+            )}
           >
-            <div className="shrink-0 p-2 bg-black/20 rounded-full">
-              <Icon size={24} fill={config.fill ? 'currentColor' : 'none'} />
+            <div
+              className={cn('shrink-0 p-2 rounded-full bg-white/[0.04] border border-white/[0.06]')}
+            >
+              <Icon size={20} fill={config.fill ? 'currentColor' : 'none'} />
             </div>
 
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold text-sm tracking-wider uppercase opacity-90">
+                <span className="font-bold text-[11px] tracking-wider uppercase opacity-80">
                   {msg.flag || config.type}
                 </span>
-                <span className="text-[10px] font-mono opacity-60">{formatTime(msg.time)}</span>
+                <span className="text-[10px] font-mono opacity-40 tabular-nums">
+                  {formatTime(msg.time)}
+                </span>
               </div>
-              <span className="text-white font-medium text-sm leading-tight break-words">
+              <span className="text-white/90 font-medium text-[13px] leading-tight break-words">
                 {msg.message}
               </span>
             </div>
 
             <button
               onClick={() => onDismiss(id)}
-              className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
+              className="text-white/30 hover:text-white transition-colors p-1 shrink-0"
             >
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { getDriverImage } from '@/utils/imageMapping';
 import { getTyreCompoundName } from './replay-utils';
+import { cn } from '@/lib/utils';
 
 interface LeaderboardDriver {
   pos: number;
@@ -57,21 +58,30 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   onFollow,
 }) => {
   return (
-    <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
-      <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
-        <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
+    <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-[#0c0c0e]/90 backdrop-blur border-l border-b border-white/[0.06] overflow-y-auto hidden md:block z-10">
+      {/* Header */}
+      <div className="p-3 border-b border-white/[0.04] flex justify-between items-center">
+        <span className="text-[12px] font-medium uppercase tracking-wider text-white/35">
+          {isRace ? 'Leaderboard' : 'Classification'}
+        </span>
         {isRace ? (
-          <span className="text-white">
-            LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span>
+          <span className="text-[12px] font-medium uppercase tracking-wider text-white/35">
+            LAP <span className="text-white/60 font-mono">{leaderboard[0]?.lap || 0}</span>
+            <span className="text-white/20"> / {totalLaps}</span>
           </span>
         ) : sessionTimeRemaining ? (
           <span
-            className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}
+            className={cn(
+              'text-[12px] font-mono font-bold tabular-nums tracking-tight',
+              sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white/60'
+            )}
           >
-            TIME {sessionTimeRemaining.formatted}
+            {sessionTimeRemaining.formatted}
           </span>
         ) : null}
       </div>
+
+      {/* Driver Rows */}
       <div className="flex flex-col">
         {leaderboard.map((driver, index) => {
           const isOut = driverVisuals.outStatus?.[driver.code];
@@ -112,6 +122,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
           const tyreName = getTyreCompoundName(driver.tyre ?? 0);
           const age = tyreAge?.[driver.code];
+          const isSelected = selectedDriver === driver.code;
 
           return (
             <div
@@ -121,12 +132,19 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                 onSelectDriver(driver.code === selectedDriver ? null : driver.code);
                 onFollow();
               }}
-              className={`flex items-center gap-2 py-0.5 px-2 border-b border-gray-800/50 transition-colors ${isOut ? 'opacity-40 grayscale cursor-default' : 'cursor-pointer hover:bg-white/5'} ${selectedDriver === driver.code ? 'bg-white/10' : ''}`}
+              className={cn(
+                'flex items-center gap-2.5 py-2 px-3 border-b border-white/[0.04] transition-colors cursor-pointer',
+                isOut ? 'opacity-40 grayscale cursor-default' : 'hover:bg-white/[0.03]',
+                isSelected && 'bg-white/[0.06]'
+              )}
             >
-              <span className="w-4 text-center text-gray-500 font-mono text-[10px]">
+              {/* Position */}
+              <span className="w-5 text-center text-[14px] font-bold text-white/30 tabular-nums">
                 {driver.pos}
               </span>
-              <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded-full overflow-hidden border border-gray-700 shrink-0">
+
+              {/* Driver Image */}
+              <div className="w-7 h-7 flex items-center justify-center bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.06] shrink-0">
                 <img
                   src={getDriverImage(driver.code, year)}
                   alt={driver.code}
@@ -138,24 +156,43 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                   }}
                 />
               </div>
-              <div className="w-1 h-5 mx-1" style={{ backgroundColor: driver.color }}></div>
-              <span className="font-bold text-xs min-w-[3ch]">{driver.code}</span>
+
+              {/* Team Color Dot */}
+              <span
+                className="h-1.5 w-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: driver.color || '#666' }}
+              />
+
+              {/* Driver Code */}
+              <span className="text-[13px] font-semibold text-white min-w-[3ch]">
+                {driver.code}
+              </span>
+
+              {/* Tyre + Age */}
               <div className="flex items-center gap-0.5 ml-auto">
-                <img src={`/tyres/${tyreName}.png`} alt="Tyre" className="h-4 w-4 object-contain" />
+                <img
+                  src={`/tyres/${tyreName}.png`}
+                  alt="Tyre"
+                  className="h-3.5 w-3.5 object-contain opacity-80"
+                />
                 {age !== undefined && age > 0 && (
-                  <span className="text-[9px] font-mono text-gray-500">{age}</span>
+                  <span className="text-[9px] font-mono text-white/30 tabular-nums">{age}</span>
                 )}
               </div>
-              <span
-                className={`text-[10px] font-mono w-10 text-right ${
-                  intervalText === 'PIT'
-                    ? 'text-orange-500 font-bold animate-pulse'
-                    : intervalText === 'OUT'
-                      ? 'text-gray-500 font-bold'
-                      : 'text-gray-400'
-                }`}
-              >
-                {intervalText}
+
+              {/* Interval / Status */}
+              <span className="text-[11px] font-mono w-12 text-right tabular-nums shrink-0">
+                {isPitting ? (
+                  <span className="inline-flex items-center rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+                    PIT
+                  </span>
+                ) : intervalText === 'OUT' ? (
+                  <span className="text-white/25 font-bold uppercase">OUT</span>
+                ) : intervalText === 'LEADER' ? (
+                  <span className="text-white/30 font-bold uppercase">LEADER</span>
+                ) : (
+                  <span className="text-white/50">{intervalText}</span>
+                )}
               </span>
             </div>
           );

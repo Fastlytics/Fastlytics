@@ -19,6 +19,11 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
   const [currentTime, setCurrentTime] = useState(0);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [showSpeedHeatmap, setShowSpeedHeatmap] = useState(false);
+  const [showWeather, setShowWeather] = useState(true);
+  const [showRaceControlFeed, setShowRaceControlFeed] = useState(true);
+  const [showSectorTimes, setShowSectorTimes] = useState(true);
+  const [showTelemetry, setShowTelemetry] = useState(true);
+  const [showLapHistory, setShowLapHistory] = useState(true);
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
   const totalDurationRef = useRef(totalDuration);
@@ -38,6 +43,12 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
     setCurrentTime(0);
     setPlaybackSpeed(1);
     setSelectedDriver(null);
+    setShowSpeedHeatmap(false);
+    setShowWeather(true);
+    setShowRaceControlFeed(true);
+    setShowSectorTimes(true);
+    setShowTelemetry(true);
+    setShowLapHistory(true);
     setDismissedMessages(new Set());
   }, []);
 
@@ -88,6 +99,30 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
           e.preventDefault();
           setCurrentTime((prev) => Math.min(totalDurationRef.current, prev + 5));
           break;
+        case 'w':
+        case 'W':
+          setShowWeather((prev) => !prev);
+          break;
+        case 'r':
+        case 'R':
+          setShowRaceControlFeed((prev) => !prev);
+          break;
+        case 's':
+        case 'S':
+          setShowSectorTimes((prev) => !prev);
+          break;
+        case 't':
+        case 'T':
+          setShowTelemetry((prev) => !prev);
+          break;
+        case 'h':
+        case 'H':
+          setShowSpeedHeatmap((prev) => !prev);
+          break;
+        case 'i':
+        case 'I':
+          setShowLapHistory((prev) => !prev);
+          break;
       }
     };
 
@@ -108,6 +143,16 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
     setSelectedDriver,
     showSpeedHeatmap,
     setShowSpeedHeatmap,
+    showWeather,
+    setShowWeather,
+    showRaceControlFeed,
+    setShowRaceControlFeed,
+    showSectorTimes,
+    setShowSectorTimes,
+    showTelemetry,
+    setShowTelemetry,
+    showLapHistory,
+    setShowLapHistory,
     dismissedMessages,
     reset,
     cycleSpeed,
