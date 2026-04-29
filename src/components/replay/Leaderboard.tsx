@@ -3,14 +3,17 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { getTyreCompoundName } from './replay-utils';
 
 interface LeaderboardDriver {
+  pos: number;
   code: string;
   originalCode?: string;
-  pos: number;
-  lap: number;
-  speed: number;
+  x: number;
+  y: number;
   ref_dist: number;
-  color?: string;
+  dist?: number;
+  speed: number;
+  lap: number;
   tyre?: number;
+  color?: string;
   bestLap?: {
     driver: string;
     lap: number;
@@ -24,13 +27,9 @@ interface LeaderboardDriver {
 interface LeaderboardProps {
   leaderboard: LeaderboardDriver[];
   selectedDriver: string | null;
-  driverVisuals: {
-    outStatus: Record<string, boolean>;
-    visibility: Record<string, string>;
-  };
+  driverVisuals: { outStatus: Record<string, boolean>; visibility: Record<string, string> };
   isRace: boolean;
   isQualifying: boolean;
-  replayMode: string;
   currentTime: number;
   totalLaps: number;
   year: number;
@@ -47,8 +46,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   selectedDriver,
   driverVisuals,
   isRace,
-  isQualifying,
-  replayMode,
   currentTime,
   totalLaps,
   year,
@@ -63,11 +60,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
     <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-black/50 backdrop-blur border-l border-b border-gray-800 rounded-bl-lg overflow-y-auto hidden md:block z-10">
       <div className="p-3 border-b border-gray-800 font-bold text-sm tracking-widest uppercase flex justify-between items-center text-gray-200">
         <span>{isRace ? 'Leaderboard' : 'Classification'}</span>
-        {isRace && replayMode !== 'ghost' ? (
+        {isRace ? (
           <span className="text-white">
             LAP {leaderboard[0]?.lap || 0} <span className="text-gray-500">/ {totalLaps}</span>
           </span>
-        ) : sessionTimeRemaining && replayMode !== 'ghost' && !isQualifying ? (
+        ) : sessionTimeRemaining ? (
           <span
             className={`tabular-nums tracking-tight ${sessionTimeRemaining.isRed ? 'text-red-500 font-bold animate-pulse' : 'text-white'}`}
           >
@@ -78,12 +75,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
       <div className="flex flex-col">
         {leaderboard.map((driver, index) => {
           const isOut = driverVisuals.outStatus?.[driver.code];
-
-          // Interval Calculation
           let intervalText = 'LEADER';
           let isPitting = false;
 
-          // Check Pit Status
           if (pitIntervals?.[driver.code]) {
             isPitting = pitIntervals[driver.code].some(
               (interval) => currentTime >= interval.start && currentTime <= interval.end
@@ -94,31 +88,25 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
             intervalText = 'OUT';
           } else if (isPitting) {
             intervalText = 'PIT';
+          } else if (isRace) {
+            if (index > 0) {
+              const leader = leaderboard[index - 1];
+              const distA = leader.lap * circuitLength + (leader.ref_dist || 0);
+              const distB = driver.lap * circuitLength + (driver.ref_dist || 0);
+              const deltaMeters = Math.max(0, distA - distB);
+              const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
+              intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
+            }
           } else {
-            if (isRace) {
-              if (index > 0) {
-                const leader = leaderboard[index - 1];
-                const lapA = replayMode === 'ghost' ? 0 : leader.lap;
-                const lapB = replayMode === 'ghost' ? 0 : driver.lap;
-                const distA = lapA * circuitLength + (leader.ref_dist || 0);
-                const distB = lapB * circuitLength + (driver.ref_dist || 0);
-                const deltaMeters = Math.max(0, distA - distB);
-                const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
-                intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
-              }
+            const bestLap = driver.bestLap;
+            const p1Best = leaderboard[0]?.bestLap;
+            if (index === 0) {
+              intervalText = bestLap?.time_str || 'NO TIME';
+            } else if (bestLap && p1Best) {
+              const diff = bestLap.seconds - p1Best.seconds;
+              intervalText = `+${diff.toFixed(3)}s`;
             } else {
-              const bestLap = driver.bestLap;
-              const p1Best = leaderboard[0]?.bestLap;
-              if (index === 0) {
-                intervalText = bestLap?.time_str || 'NO TIME';
-              } else {
-                if (bestLap && p1Best) {
-                  const diff = bestLap.seconds - p1Best.seconds;
-                  intervalText = `+${diff.toFixed(3)}s`;
-                } else {
-                  intervalText = 'NO TIME';
-                }
-              }
+              intervalText = 'NO TIME';
             }
           }
 
@@ -138,11 +126,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
               <span className="w-4 text-center text-gray-500 font-mono text-[10px]">
                 {driver.pos}
               </span>
-
-              {/* Driver Image */}
               <div className="w-8 h-8 flex items-center justify-center bg-gray-900 rounded-full overflow-hidden border border-gray-700 shrink-0">
                 <img
-                  src={getDriverImage(driver.code.replace('_GHOST', ''), year)}
+                  src={getDriverImage(driver.code, year)}
                   alt={driver.code}
                   className="w-full h-full object-cover object-top transform scale-110"
                   onError={(e) => {
@@ -153,19 +139,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                 />
               </div>
               <div className="w-1 h-5 mx-1" style={{ backgroundColor: driver.color }}></div>
-              <span className="font-bold text-xs min-w-[3ch]">
-                {driver.originalCode || driver.code.replace('_GHOST', '')}
-              </span>
-
-              {/* Tyre Icon + Age */}
+              <span className="font-bold text-xs min-w-[3ch]">{driver.code}</span>
               <div className="flex items-center gap-0.5 ml-auto">
                 <img src={`/tyres/${tyreName}.png`} alt="Tyre" className="h-4 w-4 object-contain" />
                 {age !== undefined && age > 0 && (
                   <span className="text-[9px] font-mono text-gray-500">{age}</span>
                 )}
               </div>
-
-              {/* Interval */}
               <span
                 className={`text-[10px] font-mono w-10 text-right ${
                   intervalText === 'PIT'

@@ -1206,7 +1206,8 @@ export const fetchSessionReplayChunk = async (
   year: number,
   event: string,
   session: string,
-  chunkId: number
+  chunkId: number,
+  signal?: AbortSignal
 ): Promise<ReplayChunk> => {
   const params = new URLSearchParams({
     year: year.toString(),
@@ -1214,5 +1215,5 @@ export const fetchSessionReplayChunk = async (
     session,
     chunk_id: chunkId.toString(),
   });
-  return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`);
+  return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`, { signal });
 };
