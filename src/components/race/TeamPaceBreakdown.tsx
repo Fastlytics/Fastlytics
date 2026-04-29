@@ -161,6 +161,22 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
 
   return (
     <div ref={exportRef} className="space-y-0">
+      {/* Section Header */}
+      <div className="mb-6">
+        <p
+          className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          Team Pace
+        </p>
+        <p
+          className="mt-0.5 text-[18px] font-bold uppercase italic text-white"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          Pace Breakdown
+        </p>
+      </div>
+
       {/* View Mode Tabs */}
       <div
         className="flex overflow-hidden rounded-t-xl border border-white/[0.06] bg-[#0c0c0e]"
@@ -178,8 +194,8 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
             onClick={() => setViewMode(mode)}
             className={`flex-1 py-3 text-[12px] font-semibold uppercase tracking-wider transition-all ${
               viewMode === mode
-                ? 'bg-white/[0.08] text-white'
-                : 'text-white hover:bg-white/[0.03] hover:text-white/60'
+                ? 'rounded-lg bg-white/[0.08] text-white'
+                : 'rounded-lg text-white hover:bg-white/[0.03] hover:text-white/60'
             }`}
           >
             {label}
@@ -256,25 +272,28 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                     type="number"
                     dataKey="gap"
                     domain={[0, 'dataMax + 0.1']}
-                    tick={{ fill: '#FFF', fontSize: 12, fontWeight: 'bold', fontFamily: 'Geist' }}
+                    tick={{
+                      fill: '#FFF',
+                      fontSize: 12,
+                      fontWeight: 'bold',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
                     stroke="#444"
                     tickFormatter={(v: number) => (v === 0 ? '0' : `+${v.toFixed(3)}`)}
                   />
                   <YAxis
                     type="category"
                     dataKey="team"
-                    tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+                    tick={{
+                      fill: '#FFF',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      fontFamily: "'Inter', sans-serif",
+                    }}
                     width={110}
                     stroke="transparent"
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#111',
-                      border: '1px solid #555',
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      fontFamily: 'Geist',
-                    }}
                     cursor={{ fill: '#ffffff10' }}
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null;
@@ -283,17 +302,26 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                         <div className="min-w-[200px] rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-3 shadow-xl">
                           <div
                             className="mb-1.5 text-[13px] font-semibold"
-                            style={{ color: d.color }}
+                            style={{ color: d.color, fontFamily: "'Inter', sans-serif" }}
                           >
                             {d.team}
                           </div>
-                          <div className="text-[13px] font-semibold text-white">
+                          <div
+                            className="text-[13px] font-semibold text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
                             Median: {formatLapTime(d.medianTime)}
                           </div>
-                          <div className="text-[13px] text-white">
+                          <div
+                            className="text-[13px] text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
                             Gap: {d.gap === 0 ? 'LEADER' : `+${d.gap.toFixed(3)}s`}
                           </div>
-                          <div className="mt-1 text-[11px] text-white">
+                          <div
+                            className="mt-1 text-[11px] text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
                             {d.lapCount} laps on {d.compound}
                           </div>
                         </div>
@@ -309,7 +337,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                       fill: '#FFF',
                       fontSize: 12,
                       fontWeight: 'bold',
-                      fontFamily: 'Geist Mono',
+                      fontFamily: "'Inter', sans-serif",
                       formatter: (_: number, __: unknown, index: number) => {
                         const item = compoundBars[index as number];
                         return item

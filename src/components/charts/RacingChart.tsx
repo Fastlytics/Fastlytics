@@ -1015,199 +1015,205 @@ const RacingChart: React.FC<RacingChartProps> = ({
               }
               isExporting={isExporting}
             />
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-white uppercase tracking-wider">
-                Fuel
-              </span>
-              <Switch
-                checked={fuelCorrectionEnabled}
-                onCheckedChange={(checked) => {
-                  trackInteraction('fuel_correction_toggled', {
-                    enabled: checked,
-                    chart: 'lap_time',
-                    year,
-                    event,
-                    session,
-                  });
-                  setFuelCorrectionEnabled(checked);
-                }}
-              />
-              <Popover>
+            {!staticData && availableDrivers && (
+              <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
-                  >
-                    <InformationCircleIcon className="h-4 w-4" />
-                  </Button>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
+                    <span>
+                      {selectedDrivers.length === availableDrivers.length
+                        ? 'All Drivers'
+                        : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
+                    </span>
+                    <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+                  </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-80 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+                  className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
                   style={inter}
+                  align="end"
                 >
-                  <div className="space-y-2">
-                    <div className="font-bold text-white uppercase text-[12px] tracking-wider">
-                      Fuel Correction
-                    </div>
-                    <div className="text-[12px] space-y-1 text-white">
-                      <p>Applies correction for fuel weight (0.03s per kg)</p>
-                      <p className="text-white">
-                        Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
-                      </p>
-                      <p className="text-white">Applied to first 60% of laps only</p>
-                      <p className="text-white mt-2 italic">
-                        Formula: corrected = raw - (fuelLoad × 0.03)
-                      </p>
+                  <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                      {selectedDrivers.length} / {availableDrivers.length} visible
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          trackInteraction('select_all_drivers', {
+                            chart: 'lap_time',
+                            year,
+                            event,
+                            session,
+                          });
+                          setSelectedDrivers(availableDrivers.map((d) => d.code));
+                        }}
+                        className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => {
+                          trackInteraction('deselect_all_drivers', {
+                            chart: 'lap_time',
+                            year,
+                            event,
+                            session,
+                          });
+                          setSelectedDrivers(
+                            availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code)
+                          );
+                        }}
+                        className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                      >
+                        Reset
+                      </button>
                     </div>
                   </div>
+                  <ScrollArea className="h-[300px]">
+                    <div className="grid gap-0.5">
+                      {availableDrivers.map((driver) => {
+                        const isSelected = selectedDrivers.includes(driver.code);
+                        const headshot = getDriverImage(driver.code, year);
+                        const color = driverColor(driver.code, year);
+                        const fullName = driverNameMap.get(driver.code) || driver.code;
+                        const isFavorite = favoriteDriver && driver.code === favoriteDriver;
+
+                        return (
+                          <button
+                            key={driver.code}
+                            onClick={() => toggleDriver(driver.code)}
+                            className={cn(
+                              'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                              isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                              isFavorite && isSelected && 'bg-red-500/[0.06]',
+                              focusedDriver && focusedDriver !== driver.code && '!opacity-20'
+                            )}
+                            onMouseEnter={() => setFocusedDriver(driver.code)}
+                            onMouseLeave={() => setFocusedDriver(null)}
+                          >
+                            {/* Check indicator */}
+                            <div
+                              className={cn(
+                                'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                                isSelected
+                                  ? 'bg-red-500 border-red-500'
+                                  : 'border-white/[0.15] bg-transparent'
+                              )}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="w-2.5 h-2.5 text-white"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                            </div>
+
+                            {/* Team color bar */}
+                            <div
+                              className={cn(
+                                'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                                isSelected ? 'opacity-100' : 'opacity-30'
+                              )}
+                              style={{ backgroundColor: color }}
+                            />
+
+                            {/* Headshot */}
+                            <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                              <AvatarImage src={headshot} className="object-cover object-top" />
+                              <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                                {driver.code[0]}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            {/* Name */}
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span
+                                className={cn(
+                                  'text-[12px] font-semibold truncate transition-colors',
+                                  isFavorite
+                                    ? 'text-red-400'
+                                    : isSelected
+                                      ? 'text-white'
+                                      : 'text-white'
+                                )}
+                              >
+                                {fullName}
+                              </span>
+                              <span
+                                className={cn(
+                                  'text-[10px] font-medium',
+                                  isSelected ? 'text-white/80' : 'text-white/80'
+                                )}
+                              >
+                                {driver.code}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 </PopoverContent>
               </Popover>
-            </div>
+            )}
           </div>
         </div>
-        {!staticData && availableDrivers && (
-          <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-[11px] font-semibold text-white uppercase tracking-wider">
+            Fuel
+          </span>
+          <Switch
+            checked={fuelCorrectionEnabled}
+            onCheckedChange={(checked) => {
+              trackInteraction('fuel_correction_toggled', {
+                enabled: checked,
+                chart: 'lap_time',
+                year,
+                event,
+                session,
+              });
+              setFuelCorrectionEnabled(checked);
+            }}
+          />
+          <Popover>
             <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
-                <span>
-                  {selectedDrivers.length === availableDrivers.length
-                    ? 'All Drivers'
-                    : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
-                </span>
-                <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
-              </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
+              >
+                <InformationCircleIcon className="h-4 w-4" />
+              </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+              className="w-80 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
               style={inter}
-              align="end"
             >
-              <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
-                  {selectedDrivers.length} / {availableDrivers.length} visible
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      trackInteraction('select_all_drivers', {
-                        chart: 'lap_time',
-                        year,
-                        event,
-                        session,
-                      });
-                      setSelectedDrivers(availableDrivers.map((d) => d.code));
-                    }}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => {
-                      trackInteraction('deselect_all_drivers', {
-                        chart: 'lap_time',
-                        year,
-                        event,
-                        session,
-                      });
-                      setSelectedDrivers(availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code));
-                    }}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                  >
-                    Reset
-                  </button>
+              <div className="space-y-2">
+                <div className="font-bold text-white uppercase text-[12px] tracking-wider">
+                  Fuel Correction
+                </div>
+                <div className="text-[12px] space-y-1 text-white">
+                  <p>Applies correction for fuel weight (0.03s per kg)</p>
+                  <p className="text-white">
+                    Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
+                  </p>
+                  <p className="text-white">Applied to first 60% of laps only</p>
+                  <p className="text-white mt-2 italic">
+                    Formula: corrected = raw - (fuelLoad × 0.03)
+                  </p>
                 </div>
               </div>
-              <ScrollArea className="h-[300px]">
-                <div className="grid gap-0.5">
-                  {availableDrivers.map((driver) => {
-                    const isSelected = selectedDrivers.includes(driver.code);
-                    const headshot = getDriverImage(driver.code, year);
-                    const color = driverColor(driver.code, year);
-                    const fullName = driverNameMap.get(driver.code) || driver.code;
-                    const isFavorite = favoriteDriver && driver.code === favoriteDriver;
-
-                    return (
-                      <button
-                        key={driver.code}
-                        onClick={() => toggleDriver(driver.code)}
-                        className={cn(
-                          'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
-                          isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
-                          isFavorite && isSelected && 'bg-red-500/[0.06]',
-                          focusedDriver && focusedDriver !== driver.code && '!opacity-20'
-                        )}
-                        onMouseEnter={() => setFocusedDriver(driver.code)}
-                        onMouseLeave={() => setFocusedDriver(null)}
-                      >
-                        {/* Check indicator */}
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
-                            isSelected
-                              ? 'bg-red-500 border-red-500'
-                              : 'border-white/[0.15] bg-transparent'
-                          )}
-                        >
-                          {isSelected && (
-                            <svg
-                              className="w-2.5 h-2.5 text-white"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-
-                        {/* Team color bar */}
-                        <div
-                          className={cn(
-                            'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
-                            isSelected ? 'opacity-100' : 'opacity-30'
-                          )}
-                          style={{ backgroundColor: color }}
-                        />
-
-                        {/* Headshot */}
-                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
-                          <AvatarImage src={headshot} className="object-cover object-top" />
-                          <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
-                            {driver.code[0]}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        {/* Name */}
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span
-                            className={cn(
-                              'text-[12px] font-semibold truncate transition-colors',
-                              isFavorite ? 'text-red-400' : isSelected ? 'text-white' : 'text-white'
-                            )}
-                          >
-                            {fullName}
-                          </span>
-                          <span
-                            className={cn(
-                              'text-[10px] font-medium',
-                              isSelected ? 'text-white/80' : 'text-white/80'
-                            )}
-                          >
-                            {driver.code}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
             </PopoverContent>
           </Popover>
-        )}
+        </div>
       </div>
 
       {renderContent()}

@@ -59,9 +59,9 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
       renderChart={(data, color, selectedDriver) => {
         return (
-          <div className="relative w-full h-[350px] flex items-center justify-center bg-black border border-gray-700 overflow-hidden">
+          <div className="relative w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
             {/* Legend */}
-            <div className="absolute top-4 right-4 flex flex-col gap-1 z-10 bg-black p-2 border border-gray-700">
+            <div className="absolute top-4 right-4 flex flex-col gap-1 z-10 rounded-lg border border-white/[0.06] bg-[#0c0c0e] p-2">
               {gearColors.map((c, i) => {
                 const gear = i + 1;
                 const isHovered = hoveredGear === gear;
@@ -74,7 +74,12 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                     onMouseLeave={() => setHoveredGear(null)}
                   >
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c }}></div>
-                    <span className="text-[10px] font-mono text-gray-300">GEAR {gear}</span>
+                    <span
+                      className="text-[10px] text-white"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      GEAR {gear}
+                    </span>
                   </div>
                 );
               })}
@@ -117,11 +122,14 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
 
             {/* Tooltip for Hovered Gear */}
             {hoveredGear && (
-              <div className="absolute bottom-4 left-4 bg-black/80 border border-gray-700 p-2 rounded backdrop-blur text-xs font-mono text-white pointer-events-none transition-all duration-200">
+              <div
+                className="absolute bottom-4 left-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-2 shadow-xl text-xs text-white pointer-events-none transition-all duration-200"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 Current Gear:{' '}
                 <span
                   style={{ color: getGearColor(hoveredGear) }}
-                  className="font-black text-lg ml-1"
+                  className="font-bold text-lg ml-1"
                 >
                   {hoveredGear}
                 </span>
@@ -132,35 +140,55 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       }}
       renderStats={(data) => {
         return (
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-white/[0.06] pt-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+              <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.06] bg-[#0c0c0e]">
+                <span
+                  className="text-[9px] text-white uppercase tracking-wider"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   Most Used
                 </span>
                 <span
-                  className="text-lg font-black font-mono"
-                  style={{ color: getGearColor(data.stats.mostUsedGear) }}
+                  className="text-lg font-bold"
+                  style={{
+                    color: getGearColor(data.stats.mostUsedGear),
+                    fontFamily: "'Inter', sans-serif",
+                  }}
                 >
                   Gear {data.stats.mostUsedGear}
                 </span>
               </div>
               {data.stats.avgGear != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.06] bg-[#0c0c0e]">
+                  <span
+                    className="text-[9px] text-white uppercase tracking-wider"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     Avg Gear
                   </span>
-                  <span className="text-lg font-black text-white font-mono">
+                  <span
+                    className="text-lg font-bold text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     {data.stats.avgGear.toFixed(1)}
                   </span>
                 </div>
               )}
               {data.lapNumber != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.06] bg-[#0c0c0e]">
+                  <span
+                    className="text-[9px] text-white uppercase tracking-wider"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     Lap
                   </span>
-                  <span className="text-lg font-black text-white font-mono">{data.lapNumber}</span>
+                  <span
+                    className="text-lg font-bold text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {data.lapNumber}
+                  </span>
                 </div>
               )}
             </div>
