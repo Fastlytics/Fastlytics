@@ -9,15 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessionDrivers, fetchLapTimes, SessionDriver } from '@/lib/api';
 import { getDriverImage } from '@/utils/imageMapping';
+import { driverColor } from '@/lib/driverColor';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+
+const inter: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -57,7 +60,7 @@ const TelemetryChartWrapper = <T,>({
   });
   const { trackSelection } = useAnalytics();
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
-  // Internal state for driver/lap initialized from props
+
   const [internalDriver, setInternalDriver] = useState<string>(initialDriver);
   const [internalLap, setInternalLap] = useState<string | number>(lap);
 
@@ -69,9 +72,6 @@ const TelemetryChartWrapper = <T,>({
     enabled: !!year && !!event && !!session,
   });
 
-  // Derive effective driver from internal state and available session drivers.
-  // This avoids setState-in-effect while still falling back when the favourite
-  // driver does not exist in this session (e.g. VER not in testing).
   const selectedDriver = useMemo(() => {
     const codes = availableDrivers?.map((d) => d.code) || [];
     if (internalDriver && codes.includes(internalDriver)) return internalDriver;
@@ -98,7 +98,6 @@ const TelemetryChartWrapper = <T,>({
     return ['fastest'];
   }, [lapTimesResponse, selectedDriver]);
 
-  // Load Data Hook - useQuery is now called at top level in the wrapper
   const { data, isLoading, error } = useQuery<T>({
     queryKey: queryKey(selectedDriver, selectedLap),
     queryFn: () => queryFn(selectedDriver, selectedLap),
@@ -110,10 +109,7 @@ const TelemetryChartWrapper = <T,>({
       : !!selectedDriver && !!selectedLap,
   });
 
-  // Determine Driver Color
-  const driverColor = (driverCode: string) => {
-    return '#ef4444'; // Default red
-  };
+  const currentColor = selectedDriver ? driverColor(selectedDriver, year) : '#ef4444';
 
   const chartTitle =
     title ||
@@ -121,10 +117,15 @@ const TelemetryChartWrapper = <T,>({
       ? `${selectedDriver} - ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
       : 'Select Driver');
 
+  const selectedDriverObj = availableDrivers?.find((d) => d.code === selectedDriver);
+
   const renderContent = () => {
     if (!selectedDriver) {
       return (
-        <div className="w-full h-[350px] flex items-center justify-center bg-black border border-gray-700 text-white font-mono text-xs uppercase tracking-widest">
+        <div
+          className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] text-white text-[12px] font-semibold uppercase tracking-widest"
+          style={inter}
+        >
           Select a driver to view telemetry
         </div>
       );
@@ -132,18 +133,20 @@ const TelemetryChartWrapper = <T,>({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[350px] flex items-center justify-center bg-black border border-gray-700">
-          <LoadingSpinnerF1 />
+        <div className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
         </div>
       );
     }
 
     if (error || !data) {
       return (
-        <div className="w-full h-[350px] bg-black border border-red-900/50 flex flex-col items-center justify-center text-red-500">
-          <AlertCircleIcon className="w-10 h-10 mb-2 opacity-50" />
-          <p className="font-black uppercase tracking-widest text-sm">Data Unavailable</p>
-          <p className="text-[10px] text-white mt-1 font-mono">
+        <div className="w-full h-[350px] rounded-xl border border-red-500/20 bg-red-500/[0.05] flex flex-col items-center justify-center">
+          <AlertCircleIcon className="w-10 h-10 mb-2 text-red-400" />
+          <p className="font-bold uppercase tracking-widest text-sm text-red-400" style={inter}>
+            Data Unavailable
+          </p>
+          <p className="text-[10px] text-white mt-1" style={inter}>
             {(error as Error)?.message || 'Could not fetch telemetry.'}
           </p>
         </div>
@@ -152,15 +155,18 @@ const TelemetryChartWrapper = <T,>({
 
     if (Array.isArray(data) && data.length === 0) {
       return (
-        <div className="w-full h-[350px] bg-black border border-gray-700 flex items-center justify-center text-white font-mono uppercase text-xs tracking-widest">
+        <div
+          className="w-full h-[350px] rounded-xl border border-white/[0.06] bg-[#0c0c0e] flex items-center justify-center text-white text-[12px] font-semibold uppercase tracking-widest"
+          style={inter}
+        >
           No data for {selectedDriver}
         </div>
       );
     }
 
     return (
-      <div className="flex flex-col gap-4 animate-in fade-in duration-500 w-full min-w-0">
-        {renderChart(data, '#ef4444', selectedDriver)}
+      <div className="flex flex-col gap-4 w-full min-w-0">
+        {renderChart(data, currentColor, selectedDriver)}
         {renderStats && renderStats(data)}
       </div>
     );
@@ -172,11 +178,25 @@ const TelemetryChartWrapper = <T,>({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('bg-black border border-gray-700 p-6', className)}
+      className={cn(
+        'bg-[#0c0c0e] border border-white/[0.06] rounded-xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500',
+        className
+      )}
+      style={inter}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-white/[0.06] pb-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-xl font-black uppercase tracking-wider text-white">{title}</h3>
+          <div className="flex flex-col">
+            <span
+              className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+              style={inter}
+            >
+              Telemetry
+            </span>
+            <h3 className="text-[18px] font-bold uppercase italic text-white" style={inter}>
+              {title}
+            </h3>
+          </div>
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -194,7 +214,7 @@ const TelemetryChartWrapper = <T,>({
           />
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 items-center">
           <Select
             value={selectedDriver}
             onValueChange={(value) => {
@@ -204,32 +224,39 @@ const TelemetryChartWrapper = <T,>({
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
-            <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
+            <SelectTrigger className="w-[200px] rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] font-semibold text-white h-10 focus:ring-red-600">
               <div className="flex items-center gap-2 w-full">
                 {(() => {
                   const driver = availableDrivers?.find((d) => d.code === selectedDriver);
 
                   if (!driver && !selectedDriver)
-                    return <span className="text-white">Select Driver</span>;
+                    return (
+                      <span className="text-white" style={inter}>
+                        Select Driver
+                      </span>
+                    );
                   const displayCode = driver?.code || selectedDriver;
                   const headshot = getDriverImage(displayCode, year);
+                  const color = driverColor(displayCode, year);
 
                   return (
                     <>
-                      <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                        {headshot ? (
-                          <img
-                            src={headshot}
-                            alt={displayCode}
-                            className="w-full h-full object-cover object-top"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[8px] text-white font-mono">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-6 w-6 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback
+                            className="bg-[#1a1a1e] text-[8px] font-bold text-white"
+                            style={inter}
+                          >
                             {displayCode?.[0]}
-                          </div>
-                        )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-[#0c0c0e]"
+                          style={{ backgroundColor: color }}
+                        />
                       </div>
-                      <span className="font-mono font-black truncate">
+                      <span className="font-semibold truncate" style={inter}>
                         {driver?.name || displayCode}
                       </span>
                     </>
@@ -237,33 +264,30 @@ const TelemetryChartWrapper = <T,>({
                 })()}
               </div>
             </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[300px]">
+            <SelectContent className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl text-white max-h-[300px]">
               <SelectGroup>
-                <SelectLabel className="text-xs text-white uppercase">Select Driver</SelectLabel>
+                <SelectLabel
+                  className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+                  style={inter}
+                >
+                  Select Driver
+                </SelectLabel>
                 {availableDrivers?.map((driver) => {
-                  const headshot = getDriverImage(driver.code, year);
+                  const color = driverColor(driver.code, year);
 
                   return (
                     <SelectItem
                       key={driver.code}
                       value={driver.code}
-                      className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
+                      className="text-[13px] font-semibold focus:bg-white/[0.06] focus:text-white pl-2"
+                      style={inter}
                     >
                       <div className="flex items-center gap-2 w-full">
-                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                          {headshot ? (
-                            <img
-                              src={headshot}
-                              alt={driver.code}
-                              className="w-full h-full object-cover object-top"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] text-white font-mono">
-                              {driver.code[0]}
-                            </div>
-                          )}
-                        </div>
-                        <span>{driver.name || driver.code}</span>
+                        <div
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="whitespace-nowrap">{driver.name || driver.code}</span>
                       </div>
                     </SelectItem>
                   );
@@ -280,21 +304,24 @@ const TelemetryChartWrapper = <T,>({
             }}
             disabled={lapOptions.length <= 1}
           >
-            <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors px-2">
+            <SelectTrigger className="w-[100px] ml-auto rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] font-semibold text-white h-10 focus:ring-red-600">
               <div className="flex flex-col items-start leading-none gap-1">
-                <span className="text-[8px] text-white uppercase font-black">Lap</span>
-                <span className="font-mono font-black text-red-500">
+                <span className="text-[8px] text-white/80 uppercase font-semibold" style={inter}>
+                  Lap
+                </span>
+                <span className="font-semibold text-red-400" style={inter}>
                   {selectedLap === 'fastest' ? 'FASTEST' : selectedLap}
                 </span>
               </div>
             </SelectTrigger>
-            <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
+            <SelectContent className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl text-white max-h-[200px]">
               <SelectGroup>
                 {lapOptions.map((lap) => (
                   <SelectItem
                     key={lap.toString()}
                     value={lap.toString()}
-                    className="text-xs font-mono focus:bg-gray-900 focus:text-red-500"
+                    className="text-[13px] font-semibold focus:bg-white/[0.06] focus:text-white"
+                    style={inter}
                   >
                     {lap === 'fastest' ? 'Fastest' : `Lap ${lap}`}
                   </SelectItem>

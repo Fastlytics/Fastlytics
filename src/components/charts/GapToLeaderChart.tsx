@@ -467,155 +467,163 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">
             Gap to Leader
           </h3>
-          <ChartExportMenu
-            onExport={(format) =>
-              exportChart(format, {
-                title: 'Gap to Leader',
-                subtitle: 'Cumulative gap to race leader over laps',
-                year,
-                event,
-                session,
-                drivers: driversToDisplay,
-              })
-            }
-            isExporting={isExporting}
-          />
-        </div>
-        {!staticData && availableDrivers && (
-          <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
-            <PopoverTrigger asChild>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
-                <span>
-                  {selectedDrivers.length === availableDrivers.length
-                    ? 'All Drivers'
-                    : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
-                </span>
-                <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
-              style={inter}
-              align="end"
-            >
-              <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
-                  {selectedDrivers.length} / {availableDrivers.length} visible
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      trackInteraction('select_all_drivers', {
-                        chart: 'gap_to_leader',
-                        year,
-                        event,
-                        session,
-                      });
-                      setSelectedDrivers(availableDrivers.map((d) => d.code));
-                    }}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                  >
-                    All
+          <div className="flex items-center gap-3">
+            <ChartExportMenu
+              onExport={(format) =>
+                exportChart(format, {
+                  title: 'Gap to Leader',
+                  subtitle: 'Cumulative gap to race leader over laps',
+                  year,
+                  event,
+                  session,
+                  drivers: driversToDisplay,
+                })
+              }
+              isExporting={isExporting}
+            />
+            {!staticData && availableDrivers && (
+              <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
+                    <span>
+                      {selectedDrivers.length === availableDrivers.length
+                        ? 'All Drivers'
+                        : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
+                    </span>
+                    <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
                   </button>
-                  <button
-                    onClick={() => {
-                      trackInteraction('deselect_all_drivers', {
-                        chart: 'gap_to_leader',
-                        year,
-                        event,
-                        session,
-                      });
-                      setSelectedDrivers(availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code));
-                    }}
-                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-              <ScrollArea className="h-[300px]">
-                <div className="grid gap-0.5">
-                  {availableDrivers.map((driver) => {
-                    const isSelected = selectedDrivers.includes(driver.code);
-                    const headshot = getDriverImage(driver.code, year);
-                    const color = driverColor(driver.code, year);
-                    const fullName = driverNameMap.get(driver.code) || driver.code;
-                    const isFavorite = favoriteDriver && driver.code === favoriteDriver;
-
-                    return (
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+                  style={inter}
+                  align="end"
+                >
+                  <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                      {selectedDrivers.length} / {availableDrivers.length} visible
+                    </span>
+                    <div className="flex gap-1">
                       <button
-                        key={driver.code}
-                        onClick={() => toggleDriver(driver.code)}
-                        className={cn(
-                          'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
-                          isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
-                          isFavorite && isSelected && 'bg-red-500/[0.06]',
-                          focusedDriver && focusedDriver !== driver.code && '!opacity-20'
-                        )}
-                        onMouseEnter={() => setFocusedDriver(driver.code)}
-                        onMouseLeave={() => setFocusedDriver(null)}
+                        onClick={() => {
+                          trackInteraction('select_all_drivers', {
+                            chart: 'gap_to_leader',
+                            year,
+                            event,
+                            session,
+                          });
+                          setSelectedDrivers(availableDrivers.map((d) => d.code));
+                        }}
+                        className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
-                            isSelected
-                              ? 'bg-red-500 border-red-500'
-                              : 'border-white/[0.15] bg-transparent'
-                          )}
-                        >
-                          {isSelected && (
-                            <svg
-                              className="w-2.5 h-2.5 text-white"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                        <div
-                          className={cn(
-                            'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
-                            isSelected ? 'opacity-100' : 'opacity-30'
-                          )}
-                          style={{ backgroundColor: color }}
-                        />
-                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
-                          <AvatarImage src={headshot} className="object-cover object-top" />
-                          <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
-                            {driver.code[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span
-                            className={cn(
-                              'text-[12px] font-semibold truncate transition-colors',
-                              isFavorite ? 'text-red-400' : isSelected ? 'text-white' : 'text-white'
-                            )}
-                          >
-                            {fullName}
-                          </span>
-                          <span
-                            className={cn(
-                              'text-[10px] font-medium',
-                              isSelected ? 'text-white/80' : 'text-white/80'
-                            )}
-                          >
-                            {driver.code}
-                          </span>
-                        </div>
+                        All
                       </button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
-        )}
+                      <button
+                        onClick={() => {
+                          trackInteraction('deselect_all_drivers', {
+                            chart: 'gap_to_leader',
+                            year,
+                            event,
+                            session,
+                          });
+                          setSelectedDrivers(
+                            availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code)
+                          );
+                        }}
+                        className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                  <ScrollArea className="h-[300px]">
+                    <div className="grid gap-0.5">
+                      {availableDrivers.map((driver) => {
+                        const isSelected = selectedDrivers.includes(driver.code);
+                        const headshot = getDriverImage(driver.code, year);
+                        const color = driverColor(driver.code, year);
+                        const fullName = driverNameMap.get(driver.code) || driver.code;
+                        const isFavorite = favoriteDriver && driver.code === favoriteDriver;
+
+                        return (
+                          <button
+                            key={driver.code}
+                            onClick={() => toggleDriver(driver.code)}
+                            className={cn(
+                              'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                              isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                              isFavorite && isSelected && 'bg-red-500/[0.06]',
+                              focusedDriver && focusedDriver !== driver.code && '!opacity-20'
+                            )}
+                            onMouseEnter={() => setFocusedDriver(driver.code)}
+                            onMouseLeave={() => setFocusedDriver(null)}
+                          >
+                            <div
+                              className={cn(
+                                'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                                isSelected
+                                  ? 'bg-red-500 border-red-500'
+                                  : 'border-white/[0.15] bg-transparent'
+                              )}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="w-2.5 h-2.5 text-white"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                            </div>
+                            <div
+                              className={cn(
+                                'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                                isSelected ? 'opacity-100' : 'opacity-30'
+                              )}
+                              style={{ backgroundColor: color }}
+                            />
+                            <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                              <AvatarImage src={headshot} className="object-cover object-top" />
+                              <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                                {driver.code[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span
+                                className={cn(
+                                  'text-[12px] font-semibold truncate transition-colors',
+                                  isFavorite
+                                    ? 'text-red-400'
+                                    : isSelected
+                                      ? 'text-white'
+                                      : 'text-white'
+                                )}
+                              >
+                                {fullName}
+                              </span>
+                              <span
+                                className={cn(
+                                  'text-[10px] font-medium',
+                                  isSelected ? 'text-white/80' : 'text-white/80'
+                                )}
+                              >
+                                {driver.code}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
       </div>
 
       {renderContent()}
