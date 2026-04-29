@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { request, APIError } from './api-client';
+import { logger } from './logger';
 
 // Mock the global fetch
 const mockFetch = vi.fn();
@@ -94,6 +95,28 @@ describe('api-client', () => {
       mockFetch.mockRejectedValueOnce(new Error('Network failure'));
 
       await expect(request('/api/test')).rejects.toThrow('Network failure');
+    });
+
+    it('does not log abort-shaped fetch cancellations as network errors', async () => {
+      const loggerSpy = vi.spyOn(logger, 'error');
+      const abortError = { name: 'AbortError', message: 'The user aborted a request.' };
+      mockFetch.mockRejectedValueOnce(abortError);
+
+      await expect(request('/api/test')).rejects.toBe(abortError);
+
+      expect(loggerSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not log requests cancelled by an aborted signal', async () => {
+      const loggerSpy = vi.spyOn(logger, 'error');
+      const controller = new AbortController();
+      controller.abort();
+      const cancellation = new TypeError('signal is aborted without reason');
+      mockFetch.mockRejectedValueOnce(cancellation);
+
+      await expect(request('/api/test', { signal: controller.signal })).rejects.toBe(cancellation);
+
+      expect(loggerSpy).not.toHaveBeenCalled();
     });
 
     it('merges custom headers with default headers', async () => {

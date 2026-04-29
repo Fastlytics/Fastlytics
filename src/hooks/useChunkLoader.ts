@@ -27,12 +27,39 @@ interface ChunkLoaderState {
 }
 
 const CONCURRENT_LIMIT = 4;
+const PREFETCH_CHUNKS = 4;
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
 const EVICTION_DISTANCE_SEC = 120;
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function isAbortError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name?: unknown }).name === 'AbortError'
+  );
+}
+
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    function onAbort() {
+      window.clearTimeout(timeout);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 async function fetchChunkWithRetry(
@@ -48,11 +75,18 @@ async function fetchChunkWithRetry(
     } catch (err) {
       if (signal?.aborted) throw err;
       if (attempt === MAX_RETRIES) throw err;
-      await sleep(RETRY_DELAYS[attempt] || 4000);
+      await sleep(RETRY_DELAYS[attempt] || 4000, signal);
     }
   }
   throw new Error('Unreachable');
 }
+
+type LoadedChunk = {
+  time: number[];
+  drivers: ReplayDriversMap;
+  start: number;
+  end: number;
+};
 
 export function useChunkLoader(
   metadata: SessionReplayData | null,
@@ -69,11 +103,11 @@ export function useChunkLoader(
   });
 
   const dataRef = useRef<SessionReplayData | null>(null);
-  const chunksMapRef = useRef<Map<number, { time: number[]; drivers: ReplayDriversMap }>>(
-    new Map()
-  );
+  const chunksMapRef = useRef<Map<number, LoadedChunk>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const fetchingSetRef = useRef<Set<number>>(new Set());
+  const failedSetRef = useRef<Set<number>>(new Set());
+  const totalChunksRef = useRef(0);
   const priorityQueueRef = useRef<number[]>([]);
   const metadataRef = useRef<SessionReplayData | null>(null);
   const generationRef = useRef(0);
@@ -89,7 +123,16 @@ export function useChunkLoader(
     if (!meta) return;
 
     const chunks = chunksMapRef.current;
-    if (chunks.size === 0) return;
+    if (chunks.size === 0) {
+      dataRef.current = null;
+      setState((prev) => ({
+        ...prev,
+        replayData: null,
+        loadedChunks: new Set(),
+        loadedDuration: 0,
+      }));
+      return;
+    }
 
     const sortedIds = [...chunks.keys()].sort((a, b) => a - b);
 
@@ -141,8 +184,42 @@ export function useChunkLoader(
     setState((prev) => ({
       ...prev,
       replayData: merged,
+      loadedChunks: new Set(sortedIds),
       loadedDuration: lastTime,
     }));
+  }, []);
+
+  const enqueueChunks = useCallback((chunkIds: number[]) => {
+    const queued = new Set(priorityQueueRef.current);
+    const loaded = chunksMapRef.current;
+    const fetching = fetchingSetRef.current;
+    const failed = failedSetRef.current;
+
+    for (const id of chunkIds) {
+      if (loaded.has(id) || fetching.has(id) || failed.has(id) || queued.has(id)) continue;
+      priorityQueueRef.current.push(id);
+      queued.add(id);
+    }
+  }, []);
+
+  const evictDistantChunks = useCallback((currentTime: number, manifest: ChunkManifest[]) => {
+    if (chunksMapRef.current.size <= PREFETCH_CHUNKS) return false;
+
+    const keepStart = currentTime - EVICTION_DISTANCE_SEC;
+    const keepEnd = currentTime + EVICTION_DISTANCE_SEC;
+    let evicted = false;
+
+    for (const [id, chunk] of chunksMapRef.current) {
+      const entry = manifest.find((c) => c.id === id);
+      const start = entry?.start ?? chunk.start;
+      const end = entry?.end ?? chunk.end;
+      if (end < keepStart || start > keepEnd) {
+        chunksMapRef.current.delete(id);
+        evicted = true;
+      }
+    }
+
+    return evicted;
   }, []);
 
   const scheduleNextChunks = useCallback(() => {
@@ -153,30 +230,21 @@ export function useChunkLoader(
 
     const loaded = chunksMapRef.current;
     const fetching = fetchingSetRef.current;
-    const total = state.totalChunks;
+    const failed = failedSetRef.current;
 
     const pending: number[] = [];
 
-    while (priorityQueueRef.current.length > 0) {
+    while (priorityQueueRef.current.length > 0 && pending.length < slotsAvailable) {
       const id = priorityQueueRef.current.shift()!;
-      if (!loaded.has(id) && !fetching.has(id)) {
+      if (!loaded.has(id) && !fetching.has(id) && !failed.has(id)) {
         pending.push(id);
-      }
-    }
-
-    if (pending.length < slotsAvailable) {
-      for (let i = 0; i < total; i++) {
-        if (pending.length >= slotsAvailable) break;
-        if (!loaded.has(i) && !fetching.has(i) && !pending.includes(i)) {
-          pending.push(i);
-        }
       }
     }
 
     for (let i = 0; i < Math.min(pending.length, slotsAvailable); i++) {
       loadChunkRef.current?.(pending[i]);
     }
-  }, [state.totalChunks]);
+  }, []);
 
   const loadChunk = useCallback(
     async (chunkId: number) => {
@@ -184,34 +252,25 @@ export function useChunkLoader(
       if (chunksMapRef.current.has(chunkId)) return;
 
       const gen = generationRef.current;
+      const signal = abortRef.current?.signal;
       fetchingSetRef.current.add(chunkId);
 
       try {
-        const chunk = await fetchChunkWithRetry(
-          year,
-          event,
-          session,
-          chunkId,
-          abortRef.current?.signal
-        );
+        const chunk = await fetchChunkWithRetry(year, event, session, chunkId, signal);
         if (gen !== generationRef.current) return;
-        chunksMapRef.current.set(chunkId, { time: chunk.time, drivers: chunk.drivers });
-
-        setState((prev) => {
-          const next = new Set(prev.loadedChunks);
-          next.add(chunkId);
-          return {
-            ...prev,
-            loadedChunks: next,
-            totalChunks: Math.max(prev.totalChunks, chunkId + 1),
-          };
+        chunksMapRef.current.set(chunkId, {
+          time: chunk.time,
+          drivers: chunk.drivers,
+          start: chunk.start_time,
+          end: chunk.end_time,
         });
 
         mergeAllChunks();
       } catch (err) {
         if (gen !== generationRef.current) return;
-        if ((err as Error).name !== 'AbortError') {
+        if (!signal?.aborted && !isAbortError(err)) {
           console.error(`Failed to load chunk ${chunkId}:`, err);
+          failedSetRef.current.add(chunkId);
         }
       } finally {
         if (gen === generationRef.current) {
@@ -237,22 +296,23 @@ export function useChunkLoader(
       const manifest = meta?.chunk_manifest || [];
       if (manifest.length === 0) return;
 
-      const targetChunk = manifest.find((c) => time >= c.start && time < c.end);
+      const targetIndex = manifest.findIndex((c) => time >= c.start && time < c.end);
+      const resolvedIndex =
+        targetIndex === -1 ? (time < manifest[0].start ? 0 : manifest.length - 1) : targetIndex;
+      const targetChunk = manifest[resolvedIndex];
       if (!targetChunk) return;
 
-      if (chunksMapRef.current.has(targetChunk.id)) return;
+      const evicted = evictDistantChunks(time, manifest);
+      if (evicted) mergeAllChunks();
 
-      priorityQueueRef.current = [targetChunk.id];
-
-      const forward = manifest
-        .filter((c) => c.id > targetChunk.id)
-        .map((c) => c.id)
-        .slice(0, 3);
-      priorityQueueRef.current.push(...forward);
+      const chunkIds = manifest
+        .slice(resolvedIndex, resolvedIndex + PREFETCH_CHUNKS)
+        .map((c) => c.id);
+      enqueueChunks(chunkIds);
 
       scheduleNextChunks();
     },
-    [scheduleNextChunks]
+    [enqueueChunks, evictDistantChunks, mergeAllChunks, scheduleNextChunks]
   );
 
   useEffect(() => {
@@ -266,12 +326,15 @@ export function useChunkLoader(
     abortRef.current = new AbortController();
     chunksMapRef.current.clear();
     fetchingSetRef.current.clear();
+    failedSetRef.current.clear();
+    totalChunksRef.current = manifest.length;
     priorityQueueRef.current = [];
     dataRef.current = null;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialization/reset on metadata change
     setState({
-      // eslint-disable-line react-hooks/set-state-in-effect -- initialization/reset on metadata change
-      loadedChunks: new Set(),
+      replayData: null,
+      loadedChunks: new Set<number>(),
       totalChunks: manifest.length,
       isBuffering: false,
       loadedDuration: 0,
@@ -279,14 +342,14 @@ export function useChunkLoader(
 
     if (manifest.length > 0) {
       const initial = [0, 1, 2, 3].filter((i) => i < manifest.length);
-      priorityQueueRef.current = initial;
-      scheduleNextChunks();
+      enqueueChunks(initial);
+      scheduleNextChunksRef.current?.();
     }
 
     return () => {
       abortRef.current?.abort();
     };
-  }, [metadata, scheduleNextChunks]);
+  }, [enqueueChunks, metadata]);
 
   const checkBuffering = useCallback(
     (currentTime: number, isPlaying: boolean) => {
@@ -295,7 +358,8 @@ export function useChunkLoader(
       const loadedDur = state.loadedDuration;
       const fullyLoaded = state.loadedChunks.size >= state.totalChunks && state.totalChunks > 0;
 
-      const shouldBuffer = isPlaying && !fullyLoaded && currentTime + 10 > loadedDur;
+      const shouldBuffer =
+        isPlaying && currentTime < totalDur && !fullyLoaded && currentTime + 10 > loadedDur;
       setState((prev) => ({ ...prev, isBuffering: shouldBuffer }));
       return shouldBuffer;
     },

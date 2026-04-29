@@ -60,7 +60,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     gcTime: 1000 * 60 * 60,
   });
 
-  const { replayData: data, loadedChunks } = useChunkLoader(metadata ?? null, year, event, session);
+  const {
+    replayData: data,
+    loadedChunks,
+    seekTo,
+  } = useChunkLoader(metadata ?? null, year, event, session);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +100,16 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     data,
     currentTime
   );
+
+  const activeTotalDuration = useMemo(() => {
+    const meta = metadata as SessionReplayMetadata | undefined;
+    const manifest = meta?.chunk_manifest;
+    return meta?.total_duration ?? manifest?.[manifest.length - 1]?.end ?? totalDuration;
+  }, [metadata, totalDuration]);
+
+  useEffect(() => {
+    seekTo(currentTime);
+  }, [currentTime, seekTo]);
 
   const { leaderboardOrder, leaderboard, driverVisuals } = useLeaderboard(
     data,
@@ -220,8 +234,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
   const seekbarStatusSegments = useMemo(() => {
     if (!data?.track_statuses) return [];
-    return getTrackStatusSegments(data.track_statuses, totalDuration || 1);
-  }, [data?.track_statuses, totalDuration]);
+    return getTrackStatusSegments(data.track_statuses, activeTotalDuration || 1);
+  }, [data?.track_statuses, activeTotalDuration]);
 
   const availableLaps = useMemo(() => {
     if (!data?.drivers) return [];
@@ -251,9 +265,9 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         if (isPlaying) {
           setCurrentTime((prevTime) => {
             const newTime = prevTime + deltaTime * playbackSpeed;
-            if (newTime >= totalDuration) {
+            if (newTime >= activeTotalDuration) {
               setIsPlaying(false);
-              return totalDuration;
+              return activeTotalDuration;
             }
             return newTime;
           });
@@ -262,7 +276,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       previousTimeRef.current = time;
       requestRef.current = requestAnimationFrame(tick);
     },
-    [isPlaying, playbackSpeed, totalDuration, setCurrentTime, setIsPlaying]
+    [isPlaying, playbackSpeed, activeTotalDuration, setCurrentTime, setIsPlaying]
   );
 
   useEffect(() => {
@@ -493,7 +507,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         isPlaying={isPlaying}
         currentTime={currentTime}
         playbackSpeed={playbackSpeed}
-        activeTotalDuration={totalDuration}
+        activeTotalDuration={activeTotalDuration}
         isFullscreen={isFullscreen}
         hasStarted={hasStarted}
         showSpeedHeatmap={showSpeedHeatmap}
