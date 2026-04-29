@@ -17,9 +17,17 @@ import {
 import ReplayLoader from './ReplayLoader';
 import PlaybackControls from './PlaybackControls';
 import RaceControlToasts from './RaceControlToasts';
+import RaceControlFeed from './RaceControlFeed';
 import Leaderboard from './Leaderboard';
 import TrackCanvas from './TrackCanvas';
+import WeatherOverlay from './WeatherOverlay';
+import SectorTimesPanel from './SectorTimesPanel';
+import QualifyingCountdown from './QualifyingCountdown';
+import TelemetryOverlay from './TelemetryOverlay';
+import LapHistoryPanel from './LapHistoryPanel';
+import ReplayToolbar from './ReplayToolbar';
 import { Play, Gauge } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SessionReplayProps {
   year: number;
@@ -68,6 +76,16 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     setSelectedDriver,
     showSpeedHeatmap,
     setShowSpeedHeatmap,
+    showWeather,
+    setShowWeather,
+    showRaceControlFeed,
+    setShowRaceControlFeed,
+    showSectorTimes,
+    setShowSectorTimes,
+    showTelemetry,
+    setShowTelemetry,
+    showLapHistory,
+    setShowLapHistory,
     dismissedMessages,
     reset: resetState,
     cycleSpeed,
@@ -84,9 +102,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     currentFrameDrivers,
     session === 'Race' || session === 'R',
     isPlaying,
-    currentTime,
-    'session',
-    { d1: null, d2: null }
+    currentTime
   );
 
   const {
@@ -94,6 +110,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     isFullscreen,
     rootRef,
     toggleFullscreen,
+    follow,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
@@ -167,19 +184,19 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   }, [isRace, session, data, currentTime]);
 
   const trackColor = useMemo(() => {
-    if (!data?.race_control_messages) return '#1f2937';
-    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1f2937';
+    if (!data?.race_control_messages) return '#1a1a1e';
+    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
 
     for (let i = data.race_control_messages.length - 1; i >= 0; i--) {
       const msg = data.race_control_messages[i];
       if (msg.time > currentTime) continue;
       const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
       if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
-        if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1f2937';
-        return '#ef4444';
+        if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
+        return '#dc2626';
       }
       if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED'))
-        return '#1f2937';
+        return '#1a1a1e';
       if (
         (text.includes('YELLOW') ||
           text.includes('SAFETY CAR') ||
@@ -190,10 +207,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         !text.includes('INVESTIGATION') &&
         !text.includes('BLUE')
       ) {
-        return '#eab308';
+        return '#ca8a04';
       }
     }
-    return '#1f2937';
+    return '#1a1a1e';
   }, [currentTime, data, isQualifying, sessionTimeRemaining]);
 
   const sectorMarkers = useMemo(() => {
@@ -271,24 +288,41 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return result;
   }, [data?.drivers]);
 
+  const recentSpeedHistory = useMemo(() => {
+    if (!selectedDriver || !data?.drivers?.[selectedDriver]?.speed) return [];
+    const speedArray = data.drivers[selectedDriver].speed;
+    const windowSize = 150; // 6 seconds at 25fps
+    const start = Math.max(0, safeIndex - windowSize);
+    return speedArray.slice(start, safeIndex + 1);
+  }, [data, selectedDriver, safeIndex]);
+
   const isLoading = isMetaLoading || !data || loadedChunks.size === 0;
 
   if (isLoading) {
     return <ReplayLoader year={year} event={event} session={session} />;
   }
   if (metaError)
-    return <div className="p-12 text-center text-red-500">Error loading replay data.</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-red-400 text-[14px] font-medium">
+        Error loading replay data.
+      </div>
+    );
   if (!data) return null;
 
   return (
     <div
       ref={rootRef}
-      className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl shadow-2xl'} ${className}`}
+      className={cn(
+        'flex flex-col bg-[#09090b] text-white overflow-hidden',
+        isFullscreen
+          ? 'h-full'
+          : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl border border-white/[0.06] shadow-2xl'
+      )}
     >
       <div className="flex flex-1 relative overflow-hidden">
         <div
           ref={containerRef}
-          className="absolute inset-0 overflow-hidden bg-[#0d0d0d] cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 overflow-hidden bg-[#0c0c0e] cursor-grab active:cursor-grabbing"
         >
           {isFullscreen && (
             <div className="absolute top-6 left-6 flex items-center gap-2 z-50 pointer-events-none select-none">
@@ -303,6 +337,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             trackColor={trackColor}
             drivers={currentFrameDrivers}
             driverColors={data.driver_colors}
+            driverNumbers={
+              data.driver_info
+                ? Object.fromEntries(
+                    Object.entries(data.driver_info).map(([code, info]) => [code, info.number])
+                  )
+                : undefined
+            }
             selectedDriver={selectedDriver}
             visibility={driverVisuals.visibility}
             viewState={viewState}
@@ -321,7 +362,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         {isFullscreen && (
           <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-40 pointer-events-none select-none text-center">
             <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-white drop-shadow-lg">
-              {event} "{session}"
+              {event} &ldquo;{session}&rdquo;
             </h1>
           </div>
         )}
@@ -333,6 +374,81 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           formatTime={formatTime}
           onDismiss={dismissMessage}
         />
+
+        <ReplayToolbar
+          toggles={{
+            weather: showWeather,
+            raceControl: showRaceControlFeed,
+            sectors: showSectorTimes,
+            telemetry: showTelemetry,
+            lapHistory: showLapHistory,
+            heatmap: showSpeedHeatmap,
+          }}
+          onToggle={{
+            weather: () => setShowWeather((v) => !v),
+            raceControl: () => setShowRaceControlFeed((v) => !v),
+            sectors: () => setShowSectorTimes((v) => !v),
+            telemetry: () => setShowTelemetry((v) => !v),
+            lapHistory: () => setShowLapHistory((v) => !v),
+            heatmap: () => setShowSpeedHeatmap((v) => !v),
+          }}
+        />
+
+        {showWeather && <WeatherOverlay weather={data.weather} currentTime={currentTime} />}
+
+        {showRaceControlFeed && (
+          <RaceControlFeed
+            messages={data.race_control_messages}
+            currentTime={currentTime}
+            formatTime={formatTime}
+          />
+        )}
+
+        {isQualifying && sessionTimeRemaining && (
+          <QualifyingCountdown
+            remaining={sessionTimeRemaining.remaining}
+            isRed={sessionTimeRemaining.isRed}
+            formatted={sessionTimeRemaining.formatted}
+            sessionName={session}
+          />
+        )}
+
+        {showSectorTimes && (
+          <SectorTimesPanel
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+            fastestSectors={data.fastest_sectors}
+          />
+        )}
+
+        {showLapHistory && (
+          <LapHistoryPanel
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+          />
+        )}
+
+        {showTelemetry && (
+          <TelemetryOverlay
+            driverCode={selectedDriver}
+            telemetry={
+              selectedDriver && currentFrameDrivers[selectedDriver]
+                ? {
+                    speed: currentFrameDrivers[selectedDriver].speed,
+                    gear: currentFrameDrivers[selectedDriver].gear,
+                    throttle: currentFrameDrivers[selectedDriver].throttle,
+                    brake: currentFrameDrivers[selectedDriver].brake,
+                    drs: currentFrameDrivers[selectedDriver].drs,
+                    rpm: currentFrameDrivers[selectedDriver].rpm,
+                  }
+                : null
+            }
+            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+            speedHistory={recentSpeedHistory}
+          />
+        )}
 
         <Leaderboard
           leaderboard={leaderboard}
@@ -348,7 +464,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           circuitLength={data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000}
           tyreAge={tyreAgeMap}
           onSelectDriver={(code) => setSelectedDriver(code)}
-          onFollow={() => {}}
+          onFollow={follow}
         />
       </div>
 
@@ -382,8 +498,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         hasStarted={hasStarted}
         showSpeedHeatmap={showSpeedHeatmap}
         seekbarStatusSegments={seekbarStatusSegments}
-        hoverTime={null}
-        hoverPos={null}
         formatTime={formatTime}
         onPlayPause={() => setIsPlaying(!isPlaying)}
         onSeek={(time) => setCurrentTime(time)}
@@ -396,8 +510,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           const time = getTimeForLap(data.drivers, data.time, lap);
           if (time !== null) setCurrentTime(time);
         }}
-        onHoverMove={() => {}}
-        onHoverLeave={() => {}}
       />
     </div>
   );

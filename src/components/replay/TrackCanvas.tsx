@@ -8,6 +8,7 @@ interface TrackCanvasProps {
   trackColor: string;
   drivers: Record<string, DriverFrameState>;
   driverColors: Record<string, string>;
+  driverNumbers?: Record<string, number | string>;
   selectedDriver: string | null;
   visibility: Record<string, string>;
   viewState: { scale: number; x: number; y: number };
@@ -29,6 +30,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
   trackColor,
   drivers,
   driverColors,
+  driverNumbers,
   selectedDriver,
   visibility,
   viewState,
@@ -113,6 +115,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
       trackColor,
       drivers,
       driverColors,
+      driverNumbers,
       selectedDriver,
       visibility,
       viewState,
@@ -139,6 +142,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
     trackColor,
     drivers,
     driverColors,
+    driverNumbers,
     selectedDriver,
     visibility,
     viewState,

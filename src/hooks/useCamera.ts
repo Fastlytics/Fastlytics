@@ -12,22 +12,19 @@ export function useCamera(
   activeDrivers: Record<string, DriverFrameState>,
   selectedDriver: string | null,
   leaderboardOrder: string[],
-  isFollowing: boolean,
-  setIsFollowing: (v: boolean) => void,
+  isFollowingProp: boolean,
+  setIsFollowingProp: (v: boolean) => void,
   isLoading: boolean
 ) {
   const [viewState, setViewState] = useState<ViewState>({ scale: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(isFollowingProp);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
 
-  const isFollowingRef = useRef(isFollowing);
   const selectedDriverRef = useRef(selectedDriver);
   const leaderboardOrderRef = useRef(leaderboardOrder);
 
-  useEffect(() => {
-    isFollowingRef.current = isFollowing;
-  }, [isFollowing]);
   useEffect(() => {
     selectedDriverRef.current = selectedDriver;
   }, [selectedDriver]);
@@ -57,9 +54,10 @@ export function useCamera(
       if (e.button !== 0) return;
       setIsDragging(true);
       setIsFollowing(false);
+      setIsFollowingProp(false);
       setDragStart({ x: e.clientX - viewState.x, y: e.clientY - viewState.y });
     },
-    [viewState.x, viewState.y, setIsFollowing]
+    [viewState.x, viewState.y, setIsFollowingProp]
   );
 
   const handleMouseMove = useCallback(
@@ -91,7 +89,7 @@ export function useCamera(
       setViewState((prev) => {
         const newScale = Math.min(Math.max(1, prev.scale + delta * prev.scale), 20);
 
-        if (isFollowingRef.current) {
+        if (isFollowing) {
           return { ...prev, scale: newScale };
         }
 
@@ -109,7 +107,7 @@ export function useCamera(
 
     container.addEventListener('wheel', onWheel, { passive: false });
     return () => container.removeEventListener('wheel', onWheel);
-  }, [containerRef, isLoading]);
+  }, [containerRef, isLoading, isFollowing]);
 
   useEffect(() => {
     if (!isFollowing || !containerRef.current || Object.keys(activeDrivers).length === 0) return;
@@ -147,6 +145,11 @@ export function useCamera(
     });
   }, [isFollowing, activeDrivers, selectedDriver, leaderboardOrder, containerRef]);
 
+  const follow = useCallback(() => {
+    setIsFollowing(true);
+    setIsFollowingProp(true);
+  }, [setIsFollowingProp]);
+
   return {
     viewState,
     setViewState,
@@ -154,6 +157,7 @@ export function useCamera(
     isFullscreen,
     rootRef,
     toggleFullscreen,
+    follow,
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,

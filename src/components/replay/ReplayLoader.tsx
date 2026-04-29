@@ -19,7 +19,6 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
   });
   const [dots, setDots] = useState('');
 
-  // Animated dots for "Initializing"
   useEffect(() => {
     const interval = setInterval(() => {
       setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
@@ -27,12 +26,10 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
     return () => clearInterval(interval);
   }, []);
 
-  // Poll Backend
   useEffect(() => {
     let isMounted = true;
     const poll = async () => {
       try {
-        // Construct URL matching the backend logic
         const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/replay/session/progress?year=${year}&event=${event}&session=${session}`;
 
         const res = await fetch(url, {
@@ -51,11 +48,8 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
       }
     };
 
-    // Initial poll
     poll();
-
-    // Interval poll
-    const intervalId = setInterval(poll, 750); // Poll every 750ms
+    const intervalId = setInterval(poll, 750);
 
     return () => {
       isMounted = false;
@@ -65,7 +59,6 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-white/90 font-mono">
-      {/* Loading Icon */}
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
@@ -88,23 +81,22 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
         </svg>
       </motion.div>
 
-      {/* Progress Bar Container */}
-      <div className="w-64 md:w-96 h-2 bg-white/10 rounded-full overflow-hidden mb-4 border border-white/5">
+      <div className="w-64 md:w-96 h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-4 border border-white/[0.04]">
         <motion.div
-          className="h-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+          className="h-full bg-red-500 shadow-[0_0_10px_rgba(220,38,38,0.4)]"
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(5, progress.percent * 100)}%` }}
           transition={{ type: 'spring', stiffness: 50 }}
         />
       </div>
 
-      {/* Status Text */}
-      <div className="text-sm font-medium tracking-wide text-white/80 h-6">
+      <div className="text-[13px] font-medium tracking-wide text-white/70 h-6">
         {progress.message ? progress.message : `Loading${dots}`}
       </div>
 
-      {/* Percentage */}
-      <div className="text-xs text-white/40 mt-1">{Math.round(progress.percent * 100)}%</div>
+      <div className="text-[11px] text-white/30 mt-1 font-mono tabular-nums">
+        {Math.round(progress.percent * 100)}%
+      </div>
     </div>
   );
 };

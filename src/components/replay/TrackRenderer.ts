@@ -9,6 +9,7 @@ export interface TrackRendererConfig {
   trackColor: string;
   drivers: Record<string, DriverFrameState>;
   driverColors: Record<string, string>;
+  driverNumbers?: Record<string, number | string>;
   selectedDriver: string | null;
   visibility: Record<string, string>;
   viewState: { scale: number; x: number; y: number };
@@ -62,7 +63,7 @@ export function renderTrack(
   const fit = fitToCanvas(ctx, width, height);
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#0d0d0d';
+  ctx.fillStyle = '#0c0c0e';
   ctx.fillRect(0, 0, width, height);
 
   ctx.save();
@@ -72,12 +73,23 @@ export function renderTrack(
   );
   ctx.scale(config.viewState.scale, config.viewState.scale);
 
+  // Track glow effect for safety car / red flag
+  const isYellow = config.trackColor === '#ca8a04';
+  const isRed = config.trackColor === '#dc2626';
+  if (isYellow || isRed) {
+    ctx.save();
+    ctx.shadowColor = config.trackColor;
+    ctx.shadowBlur = 20 * fit.scale;
+    drawPathFromPoints(ctx, config.circuitPoints, config.trackColor, 14, fit);
+    ctx.restore();
+  }
+
   drawPathFromPoints(ctx, config.circuitPoints, config.trackColor, 12, fit);
 
   ctx.setLineDash([4, 4]);
-  drawPathFromPoints(ctx, config.circuitPoints, '#374151', 2, fit);
+  drawPathFromPoints(ctx, config.circuitPoints, '#2a2a2e', 2, fit);
   ctx.globalAlpha = 0.3;
-  drawPathFromPoints(ctx, config.circuitPoints, '#374151', 2, fit);
+  drawPathFromPoints(ctx, config.circuitPoints, '#2a2a2e', 2, fit);
   ctx.globalAlpha = 1;
   ctx.setLineDash([]);
 
@@ -115,10 +127,33 @@ export function renderTrack(
       ctx.setLineDash([3, 3]);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Checkered finish line pattern
+      const checkSize = 3 * fit.scale;
+      const checksAcross = 6;
+      const perpX = -dy / lineLen;
+      const perpY = dx / lineLen;
+      const checkWidth = checkSize * checksAcross;
+
+      for (let row = 0; row < 2; row++) {
+        for (let col = 0; col < checksAcross; col++) {
+          const isWhite = (row + col) % 2 === 0;
+          const cx =
+            mx +
+            perpX * (col * checkSize - checkWidth / 2 + checkSize / 2) +
+            perpX * (row * checkSize);
+          const cy =
+            my +
+            perpY * (col * checkSize - checkWidth / 2 + checkSize / 2) +
+            perpY * (row * checkSize);
+          ctx.fillStyle = isWhite ? '#ffffff' : '#1a1a1e';
+          ctx.fillRect(cx - checkSize / 2, cy - checkSize / 2, checkSize, checkSize);
+        }
+      }
     }
 
     ctx.fillStyle = isSF ? '#ffffff' : '#9ca3af';
-    ctx.font = `${(isSF ? 10 : 9) * fit.scale}px sans-serif`;
+    ctx.font = `${(isSF ? 10 : 9) * fit.scale}px var(--font-sans, sans-serif)`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(marker.label, mx + dx * 1.4, my + dy * 1.4);
@@ -179,10 +214,22 @@ export function renderTrack(
     ctx.lineWidth = 1;
     ctx.stroke();
 
+    // Driver number inside the dot
+    const driverNumber = config.driverNumbers?.[code.replace('_GHOST', '')];
+    if (driverNumber !== undefined) {
+      const numStr = String(driverNumber);
+      const fontSize = (isSelected ? 7 : 5) * fit.scale;
+      ctx.fillStyle = '#000000';
+      ctx.font = `bold ${fontSize}px var(--font-sans, sans-serif)`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(numStr, cx, cy + 0.5);
+    }
+
     if (isSelected) {
       const labelSize = 12;
       ctx.fillStyle = color;
-      ctx.font = `bold ${labelSize}px sans-serif`;
+      ctx.font = `bold ${labelSize}px var(--font-sans, sans-serif)`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       ctx.fillText(car.originalCode || code.replace('_GHOST', ''), cx, cy - 15);
