@@ -1,22 +1,12 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
+import { motion } from 'motion/react';
+import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
 import { useSeason } from '@/contexts/SeasonContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
-import {
-  ChampionIcon,
-  UserGroupIcon,
-  ArrowRight01Icon,
-  Settings02Icon,
-  FireIcon,
-  Alert01Icon,
-  CheckmarkCircle02Icon,
-} from 'hugeicons-react';
-import { Button } from '@/components/ui/button';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 interface FavoritesWidgetProps {
@@ -27,6 +17,8 @@ interface FavoritesWidgetProps {
   isLoading: boolean;
 }
 
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
 const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   profile,
   drivers,
@@ -35,7 +27,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   isLoading,
 }) => {
   const { selectedYear } = useSeason();
-  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
+  const getDriverImageForYear = (code: string) => getDriverImage(code, selectedYear);
 
   const favoriteDriver = useMemo(() => {
     if (!profile?.favorite_driver || !drivers.length) return null;
@@ -55,35 +47,23 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
     );
   }, [profile, teams]);
 
-  // Calculate remaining points in the season
-  // 2025+: 25 pts per race (no fastest lap bonus), 8 pts for sprint = 33 max for sprint weekend
-  // 2019-2024: 26 pts per race (25 + 1 fastest lap), 8 pts for sprint = 34 max for sprint weekend
   const remainingPoints = useMemo(() => {
-    if (!schedule || schedule.length === 0) return 0;
+    if (!schedule?.length) return 0;
     const now = new Date();
-    let points = 0;
-
-    // Determine the season year from the first event
+    let pts = 0;
     const seasonYear = schedule[0]?.EventDate
       ? new Date(schedule[0].EventDate).getFullYear()
       : getCurrentSeasonYear();
-    const hasFastestLapPoint = seasonYear >= 2019 && seasonYear <= 2024;
-    const raceMaxPoints = hasFastestLapPoint ? 26 : 25;
+    const hasFastestLap = seasonYear >= 2019 && seasonYear <= 2024;
+    const raceMax = hasFastestLap ? 26 : 25;
 
     schedule.forEach((event) => {
-      // Check Main Race
-      // Use Session5Date (Race) if available for precise timing, otherwise fallback to EventDate
       const raceDate = event.Session5Date
         ? new Date(event.Session5Date)
         : event.EventDate
           ? new Date(event.EventDate)
           : null;
-
-      if (raceDate && raceDate > now) {
-        points += raceMaxPoints;
-      }
-
-      // Check Sprint Race (8 pts)
+      if (raceDate && raceDate > now) pts += raceMax;
       if (event.EventFormat.toLowerCase().includes('sprint')) {
         const sessions = [
           { name: event.Session1, date: event.Session1Date },
@@ -92,40 +72,28 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
           { name: event.Session4, date: event.Session4Date },
           { name: event.Session5, date: event.Session5Date },
         ];
-        // Assuming Sprint is explicitly named "Sprint"
-        const sprintSession = sessions.find((s) => s.name?.toLowerCase() === 'sprint');
-
-        if (sprintSession && sprintSession.date) {
-          if (new Date(sprintSession.date) > now) {
-            points += 8;
-          }
-        } else if (raceDate && raceDate > now) {
-          // Fallback: if main race is in future, assume sprint is too (or close enough)
-          points += 8;
-        }
+        const sprint = sessions.find((s) => s.name?.toLowerCase() === 'sprint');
+        if (sprint?.date && new Date(sprint.date) > now) pts += 8;
+        else if (raceDate && raceDate > now) pts += 8;
       }
     });
-    return points;
+    return pts;
   }, [schedule]);
 
   const driverRivals = useMemo(() => {
     if (!favoriteDriver) return null;
     const index = drivers.findIndex((d) => d === favoriteDriver);
     const leader = drivers[0];
-
-    // Title Contender Logic - ensure season has started (leader has points)
     const isTitleContender =
       leader.points > 0 && leader.points - favoriteDriver.points <= remainingPoints;
 
-    // Rivalry Status Logic
     const getRivalryStatus = (rival: DriverStanding | null) => {
       if (!rival) return 'none';
-      const gap = Math.abs(favoriteDriver.points - rival.points);
-      if (gap > remainingPoints) return 'confirmed';
-      return 'active';
+      return Math.abs(favoriteDriver.points - rival.points) > remainingPoints
+        ? 'confirmed'
+        : 'active';
     };
 
-    // Determine which drivers to display
     let displayDrivers: {
       driver: DriverStanding;
       label: string;
@@ -134,20 +102,9 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
     }[] = [];
 
     if (isTitleContender) {
-      // Title Contender Mode: Show the most relevant title fight context
-      // If P3 or lower, and fighting for title, show the targets ahead (P1, P2...)
-      // If P1, show P2, P3 (Threats)
-      // If P2, show P1, P3 (Target & Threat)
-
-      // Get all mathematical contenders
       const contenders = drivers.filter((d) => leader.points - d.points <= remainingPoints);
-
-      // We want to show 3 slots.
-      // Find where "YOU" are in the contenders list.
-      const contenderIndex = contenders.findIndex((d) => d.code === favoriteDriver.code);
-
-      if (contenderIndex === 0) {
-        // You are P1 (Leader) -> Show You, P2, P3
+      const ci = contenders.findIndex((d) => d.code === favoriteDriver.code);
+      if (ci === 0) {
         displayDrivers = [
           { driver: favoriteDriver, label: 'LEADER', status: 'active', type: 'you' },
           ...(contenders[1]
@@ -157,8 +114,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
             ? [{ driver: contenders[2], label: 'RIVAL', status: 'active', type: 'rival' as const }]
             : []),
         ];
-      } else if (contenderIndex === 1) {
-        // You are P2 -> Show P1, You, P3
+      } else if (ci === 1) {
         displayDrivers = [
           { driver: contenders[0], label: 'LEADER', status: 'active', type: 'leader' },
           { driver: favoriteDriver, label: 'CONTENDER', status: 'active', type: 'you' },
@@ -167,265 +123,289 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
             : []),
         ];
       } else {
-        // You are P3 or lower -> Show P1, Next Target (Ahead), You
-        // This gives the "Hunting" perspective
-        const immediateAhead = contenders[contenderIndex - 1];
         displayDrivers = [
           { driver: contenders[0], label: 'LEADER', status: 'active', type: 'leader' },
-          { driver: immediateAhead, label: 'AHEAD', status: 'active', type: 'ahead' },
+          { driver: contenders[ci - 1], label: 'AHEAD', status: 'active', type: 'ahead' },
           { driver: favoriteDriver, label: 'CONTENDER', status: 'active', type: 'you' },
         ];
       }
     } else {
-      // Standard Mode: Ahead / You / Behind
       const ahead = index > 0 ? drivers[index - 1] : null;
       const behind = index < drivers.length - 1 ? drivers[index + 1] : null;
-
-      if (ahead) {
+      if (ahead)
         displayDrivers.push({
           driver: ahead,
           label: getRivalryStatus(ahead) === 'confirmed' ? 'LOCKED' : 'AHEAD',
           status: getRivalryStatus(ahead),
           type: 'ahead',
         });
-      } else {
-        // If no one ahead (P1 but not title contender context? Should be covered above, but fallback)
-        // Just show You and Behind
-      }
-
       displayDrivers.push({
         driver: favoriteDriver,
         label: 'YOUR FAV',
         status: 'active',
         type: 'you',
       });
-
-      if (behind) {
+      if (behind)
         displayDrivers.push({
           driver: behind,
           label: getRivalryStatus(behind) === 'confirmed' ? 'SAFE' : 'BEHIND',
           status: getRivalryStatus(behind),
           type: 'behind',
         });
-      }
     }
 
-    return {
-      displayDrivers,
-      isTitleContender,
-      gapToLeader: leader.points - favoriteDriver.points,
-    };
+    return { displayDrivers, isTitleContender, gapToLeader: leader.points - favoriteDriver.points };
   }, [favoriteDriver, drivers, remainingPoints]);
 
   if (isLoading) {
     return (
-      <div className="h-64 bg-gray-900/50 animate-pulse border-2 border-gray-800 rounded-lg"></div>
+      <div style={inter} className="grid gap-6 lg:grid-cols-2 mb-8">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="h-56 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
+          />
+        ))}
+      </div>
     );
   }
 
-  // Fallback State: No favorites selected
+  // No favorites set
   if (!profile?.favorite_driver && !profile?.favorite_team) {
     return (
-      <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-gray-800 p-8 rounded-lg relative overflow-hidden group">
-        <div className="relative z-10 max-w-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-red-600/20 rounded-lg">
-              <Alert01Icon className="w-6 h-6 text-red-500" />
-            </div>
-            <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">
-              Complete Your Setup
-            </h3>
+      <div
+        style={inter}
+        className="mb-8 overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-7"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3v6M9 12v1" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="9" cy="9" r="7.5" stroke="#ef4444" strokeWidth="1.2" opacity="0.5" />
+            </svg>
           </div>
-          <p className="text-gray-400 mb-6 text-lg">
-            Select your favorite driver and team to unlock personalized stats, rivalry tracking, and
-            custom highlights across the dashboard.
-          </p>
-          <Link to="/account">
-            <Button className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider">
-              Personalize Dashboard <ArrowRight01Icon className="ml-2 w-4 h-4" />
-            </Button>
-          </Link>
+          <div className="flex-1">
+            <h3 className="text-[17px] font-semibold text-white">Personalize your dashboard</h3>
+            <p className="mt-1 text-[15px] leading-relaxed text-white/55">
+              Select a favorite driver and team to unlock rivalry tracking, personalized highlights
+              and custom stats.
+            </p>
+            <Link
+              to="/account"
+              className="mt-4 inline-flex items-center gap-1.5 text-[15px] font-medium text-red-400 transition-colors hover:text-red-300"
+            >
+              Set up preferences
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M1 6h10M7 2l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 mb-12">
-      {/* My Garage */}
-      <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors">
-        <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
-          <span className="w-1 h-8 bg-red-600 block"></span>
-          My <span className="text-gray-500">Garage</span>
-        </h3>
+    <div style={inter} className="mb-8 grid gap-6 lg:grid-cols-2">
+      {/* ── My Garage ── */}
+      <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="border-b border-white/[0.06] px-6 py-5">
+          <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
+            My Garage
+          </p>
+          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">Your picks</p>
+        </div>
 
-        <div className="grid gap-4 relative z-10">
+        <div className="divide-y divide-white/[0.04] p-3">
           {favoriteDriver && (
-            <div className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 transition-colors group/card">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12 border-2 border-gray-700">
-                  <AvatarImage
-                    src={getDriverImageForYear(favoriteDriver.code)}
-                    className="object-cover object-top bg-gray-800"
-                  />
-                  <AvatarFallback>{favoriteDriver.code}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-0.5">
-                    Favorite Driver
-                  </div>
-                  <div className="font-black text-xl uppercase italic leading-none transition-colors text-white">
-                    {favoriteDriver.name}
-                  </div>
-                  <div className="text-xs font-sans text-gray-500 mt-1">{favoriteDriver.team}</div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center gap-3 rounded-lg p-4"
+            >
+              <Avatar className="h-15 w-15 shrink-0 border border-white/[0.08]">
+                <AvatarImage
+                  src={getDriverImageForYear(favoriteDriver.code)}
+                  className="object-cover object-top"
+                />
+                <AvatarFallback className="bg-[#1a1a1e] text-[13px] font-bold text-white">
+                  {favoriteDriver.code}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-medium text-white/45">Favourite Driver</div>
+                <div className="mt-0.5 text-[16px] font-semibold text-white">
+                  {favoriteDriver.name}
+                </div>
+                <div className="text-[13px] text-white/45">{favoriteDriver.team}</div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-[22px] font-bold tabular-nums text-white">
+                  P{favoriteDriver.rank}
+                </div>
+                <div className="text-[14px] font-medium text-red-400">
+                  {favoriteDriver.points} pts
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-black text-white">
-                  {favoriteDriver.rank}
-                  <span className="text-sm align-top text-gray-500 ml-1">POS</span>
-                </div>
-                <div className="text-sm font-sans text-red-500 font-bold">
-                  {favoriteDriver.points} PTS
-                </div>
-              </div>
-            </div>
+            </motion.div>
           )}
 
           {favoriteTeam && (
-            <Link
-              to="/standings/teams"
-              className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:bg-gray-900 transition-colors group/card"
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.08 }}
             >
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-16 flex items-center justify-center bg-white/5 rounded p-2 border border-gray-700">
+              <Link
+                to="/standings/teams"
+                className="flex items-center gap-3 rounded-lg p-4 transition-colors hover:bg-white/[0.02]"
+              >
+                <div className="flex h-15 w-15 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-1.5">
                   {getTeamLogo(favoriteTeam.team) ? (
                     <img
                       src={getTeamLogo(favoriteTeam.team)!}
                       alt={favoriteTeam.team}
-                      className="w-full h-full object-contain"
+                      className="h-full w-full object-contain"
                     />
                   ) : (
-                    <UserGroupIcon className="w-6 h-6 text-gray-400" />
+                    <span className="text-[12px] font-bold text-white/55">
+                      {favoriteTeam.team.substring(0, 2).toUpperCase()}
+                    </span>
                   )}
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-0.5">
-                    Favorite Team
-                  </div>
-                  <div className="font-black text-xl uppercase italic leading-none group-hover/card:text-red-500 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium text-white/45">Favourite Team</div>
+                  <div className="mt-0.5 text-[16px] font-semibold text-white">
                     {favoriteTeam.team}
                   </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-black text-white">
-                  {favoriteTeam.rank}
-                  <span className="text-sm align-top text-gray-500 ml-1">POS</span>
+                <div className="shrink-0 text-right">
+                  <div className="text-[22px] font-bold tabular-nums text-white">
+                    P{favoriteTeam.rank}
+                  </div>
+                  <div className="text-[14px] font-medium text-red-400">
+                    {favoriteTeam.points} pts
+                  </div>
                 </div>
-                <div className="text-sm font-sans text-red-500 font-bold">
-                  {favoriteTeam.points} PTS
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </motion.div>
           )}
         </div>
       </div>
 
-      {/* Rivalry Tracker */}
+      {/* ── Rivalry Tracker ── */}
       {favoriteDriver && driverRivals && (
         <div
-          className={`bg-black border-2 ${driverRivals.isTitleContender ? 'border-yellow-600/50' : 'border-gray-800'} p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col`}
+          className={`overflow-hidden rounded-xl border bg-[#0c0c0e] ${driverRivals.isTitleContender ? 'border-amber-500/20' : 'border-white/[0.06]'}`}
         >
-          <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
-            <span
-              className={`w-1 h-8 ${driverRivals.isTitleContender ? 'bg-yellow-500' : 'bg-red-600'} block`}
-            ></span>
-            {driverRivals.isTitleContender ? (
-              <span className="text-yellow-500">Title Contender</span>
-            ) : (
-              <>
-                Rivalry <span className="text-gray-500">Tracker</span>
-              </>
-            )}
-          </h3>
+          <div className="border-b border-white/[0.06] px-6 py-5">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
+              {driverRivals.isTitleContender ? 'Title Fight' : 'Rivalry Tracker'}
+            </p>
+            <p
+              className={`mt-0.5 text-[18px] font-bold uppercase italic ${driverRivals.isTitleContender ? 'text-amber-400' : 'text-white'}`}
+            >
+              {driverRivals.isTitleContender ? 'In the hunt' : 'Your position'}
+            </p>
+          </div>
 
-          <div className="flex-grow flex flex-col justify-center gap-4 relative z-10">
-            {driverRivals.displayDrivers.map((item, idx) => {
+          <div className="divide-y divide-white/[0.04] p-3">
+            {driverRivals.displayDrivers.map((item) => {
               const isYou = item.type === 'you';
               const isConfirmed = item.status === 'confirmed';
 
-              // Dynamic styling based on type
-              let containerClass = 'flex items-center gap-4 p-3 border-l-2';
-              if (isYou) {
-                containerClass = `flex items-center gap-4 p-4 border-l-4 ${driverRivals.isTitleContender ? 'border-yellow-500 bg-yellow-500/10' : 'border-red-600 bg-red-600/10'} my-1`;
-              } else if (isConfirmed) {
-                containerClass += ' border-gray-800 bg-gray-900/10 opacity-60';
-              } else {
-                containerClass += ' border-gray-700 bg-gray-900/30';
-              }
-
               return (
-                <div key={item.driver.code} className={containerClass}>
+                <motion.div
+                  key={item.driver.code}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className={`flex items-center gap-3 rounded-lg p-4 transition-colors ${
+                    isYou
+                      ? driverRivals.isTitleContender
+                        ? 'bg-amber-500/[0.06]'
+                        : 'bg-red-500/[0.05]'
+                      : isConfirmed
+                        ? 'opacity-40'
+                        : ''
+                  }`}
+                >
+                  {/* Label */}
                   <div
-                    className={`text-xs font-bold ${isYou ? (driverRivals.isTitleContender ? 'text-yellow-500' : 'text-red-500') : 'text-gray-500'} ${isYou ? 'w-24' : 'w-12'} text-right flex-shrink-0`}
+                    className={`w-16 shrink-0 text-right text-[12px] font-semibold uppercase tracking-wider ${
+                      isYou
+                        ? driverRivals.isTitleContender
+                          ? 'text-amber-400'
+                          : 'text-red-400'
+                        : 'text-white/40'
+                    }`}
                   >
                     {item.label}
                   </div>
+
+                  {/* Accent */}
+                  <div
+                    className={`h-8 w-0.5 shrink-0 rounded-full ${
+                      isYou
+                        ? driverRivals.isTitleContender
+                          ? 'bg-amber-400'
+                          : 'bg-red-500'
+                        : 'bg-white/10'
+                    }`}
+                  />
+
+                  {/* Avatar */}
                   <Avatar
-                    className={`h-8 w-8 ${isYou ? (driverRivals.isTitleContender ? 'border-2 border-yellow-500' : 'border-2 border-red-600') : 'border border-gray-700'}`}
+                    className={`h-15 w-15 shrink-0 ${isYou ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}
                   >
                     <AvatarImage
                       src={getDriverImageForYear(item.driver.code)}
                       className="object-cover object-top"
                     />
-                    <AvatarFallback>{item.driver.code}</AvatarFallback>
+                    <AvatarFallback className="bg-[#1a1a1e] text-[12px] font-bold text-white">
+                      {item.driver.code}
+                    </AvatarFallback>
                   </Avatar>
-                  <div className="flex-grow min-w-0">
+
+                  {/* Name */}
+                  <div className="min-w-0 flex-1">
                     <div
-                      className={`font-bold text-sm uppercase truncate ${isYou ? 'italic text-lg' : ''}`}
+                      className={`truncate text-[15px] font-semibold ${isYou ? 'text-white' : 'text-white/80'}`}
                     >
-                      {item.driver.name}
+                      {item.driver.name.split(' ').pop()?.toUpperCase()}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">{item.driver.team}</div>
+                    <div className="text-[13px] text-white/40 truncate">{item.driver.code}</div>
                   </div>
-                  <div className="text-right flex-shrink-0">
+
+                  {/* Points/gap */}
+                  <div className="shrink-0 text-right">
                     {isConfirmed ? (
-                      <div className="flex items-center gap-1 text-gray-500 justify-end">
-                        <CheckmarkCircle02Icon className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase">Safe</span>
+                      <span className="text-[13px] font-medium text-white/40">Safe</span>
+                    ) : isYou ? (
+                      <div
+                        className={`text-[16px] font-bold tabular-nums ${driverRivals.isTitleContender ? 'text-amber-400' : 'text-red-400'}`}
+                      >
+                        {item.driver.points}
                       </div>
                     ) : (
-                      <>
-                        {isYou ? (
-                          <div
-                            className={`text-xs ${driverRivals.isTitleContender ? 'text-yellow-500' : 'text-red-400'} font-bold`}
-                          >
-                            {item.driver.points} PTS
-                          </div>
-                        ) : (
-                          <>
-                            <div
-                              className={`font-sans font-bold ${item.driver.points > favoriteDriver.points ? 'text-red-500' : 'text-green-500'}`}
-                            >
-                              {item.driver.points > favoriteDriver.points ? '+' : ''}
-                              {item.driver.points - favoriteDriver.points}
-                            </div>
-                            <div className="text-[10px] text-gray-500 uppercase">Gap</div>
-                          </>
-                        )}
-                      </>
+                      <div
+                        className={`text-[16px] font-bold tabular-nums ${item.driver.points > (favoriteDriver?.points ?? 0) ? 'text-red-400' : 'text-emerald-400'}`}
+                      >
+                        {item.driver.points > (favoriteDriver?.points ?? 0) ? '+' : ''}
+                        {item.driver.points - (favoriteDriver?.points ?? 0)}
+                      </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-
-            {driverRivals.displayDrivers.length === 0 && (
-              <div className="p-3 text-center text-gray-500 text-sm italic">
-                No active rivalries found.
-              </div>
-            )}
           </div>
         </div>
       )}

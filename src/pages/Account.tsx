@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,6 @@ import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import {
   UserIcon,
   SecurityCheckIcon,
-  CreditCardIcon,
   Logout01Icon,
   CheckmarkCircle01Icon,
   PencilEdit02Icon,
@@ -33,26 +32,16 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAccount } from '@/components/mobile';
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
+import { SEO } from '@/components/layout/SEO';
 
-// ... existing imports
-
-// --- Components ---
-
-const SectionHeader = ({ title, icon: Icon }: { title: string; icon?: React.ElementType }) => (
-  <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
-    {Icon && <Icon className="w-6 h-6 text-red-600" />}
-    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white">{title}</h2>
-  </div>
-);
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 const NavItem = ({
-  id,
   label,
   icon: Icon,
   active,
   onClick,
 }: {
-  id: string;
   label: string;
   icon: React.ElementType;
   active: boolean;
@@ -61,13 +50,13 @@ const NavItem = ({
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[13px] font-semibold uppercase tracking-wider transition-all text-left',
       active
-        ? 'border-red-600 bg-red-600/10 text-white'
-        : 'border-transparent text-zinc-500 hover:text-white hover:bg-zinc-900'
+        ? 'bg-white/[0.06] text-white border border-white/[0.08]'
+        : 'text-white/45 hover:text-white hover:bg-white/[0.03] border border-transparent'
     )}
   >
-    <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-zinc-600')} />
+    <Icon className={cn('h-4 w-4', active ? 'text-red-400' : 'text-white/30')} />
     {label}
   </button>
 );
@@ -80,30 +69,25 @@ const Account = () => {
   const [activeSection, setActiveSection] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form States
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
-
-  // UI States
   const [editingField, setEditingField] = useState<string | null>(null);
 
-  // Favorites State
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
   const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
 
-  // Activity History State
   const [userActivity, setUserActivity] = useState<ActivityItemProps['activity'][]>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
   useEffect(() => {
     if (user) {
-      setFullName(user.user_metadata?.full_name || '');
+      setFullName(user.user_metadata?.full_name || ''); // eslint-disable-line react-hooks/set-state-in-effect
       setEmail(user.email || '');
     }
     if (profile) {
@@ -141,7 +125,6 @@ const Account = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100);
-
         if (error) throw error;
         setUserActivity(data || []);
       } catch (error) {
@@ -150,10 +133,7 @@ const Account = () => {
         setIsLoadingActivity(false);
       }
     };
-
-    if (activeSection === 'history') {
-      fetchActivity();
-    }
+    if (activeSection === 'history') fetchActivity();
   }, [user, activeSection]);
 
   const getDriverImageForYear = (driverCode: string) =>
@@ -171,7 +151,6 @@ const Account = () => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
-
       if (error) throw error;
       await refreshProfile();
       toast.success('Favorites updated successfully');
@@ -190,40 +169,31 @@ const Account = () => {
     setIsLoading(true);
     try {
       let error;
-
       if (field === 'fullName') {
         const { error: updateError } = await supabase.auth.updateUser({
           data: { full_name: fullName },
         });
         error = updateError;
-        if (!error) {
-          // Also update profile table for consistency if needed, but auth metadata is primary for name here
+        if (!error)
           await supabase.from('profiles').update({ full_name: fullName }).eq('id', user.id);
-        }
       } else if (field === 'username') {
-        // Check uniqueness first if needed, but RLS/Constraint handles it usually.
-        // Better to catch error.
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ username: username })
+          .update({ username })
           .eq('id', user.id);
         error = updateError;
       } else if (field === 'email') {
         if (email !== user?.email) {
-          const { error: updateError } = await supabase.auth.updateUser({ email: email });
+          const { error: updateError } = await supabase.auth.updateUser({ email });
           error = updateError;
-          if (!error) {
-            toast.info('Please check your new email for a confirmation link.');
-          }
+          if (!error) toast.info('Please check your new email for a confirmation link.');
         } else {
           setEditingField(null);
           setIsLoading(false);
           return;
         }
       }
-
       if (error) throw error;
-
       toast.success(
         `${field === 'fullName' ? 'Name' : field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`
       );
@@ -239,14 +209,11 @@ const Account = () => {
 
   const cancelEdit = () => {
     setEditingField(null);
-    // Reset values to current
     if (user) {
       setFullName(user.user_metadata?.full_name || '');
       setEmail(user.email || '');
     }
-    if (profile) {
-      setUsername(profile.username || '');
-    }
+    if (profile) setUsername(profile.username || '');
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -259,7 +226,6 @@ const Account = () => {
       toast.error('Please enter your old password');
       return;
     }
-
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
@@ -278,16 +244,14 @@ const Account = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.linkIdentity({
-        provider: provider,
+        provider,
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
           scopes: provider === 'github' ? 'read:user user:email' : undefined,
         },
       });
       if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url;
-      }
+      if (data?.url) window.location.assign(data.url);
     } catch (error: unknown) {
       const e = error as Error;
       if (e.message?.includes('manual linking is disabled')) {
@@ -301,78 +265,81 @@ const Account = () => {
     }
   };
 
-  const isProviderConnected = (provider: string) => {
-    return user?.identities?.some((identity) => identity.provider === provider);
-  };
+  const isProviderConnected = (provider: string) =>
+    user?.identities?.some((identity) => identity.provider === provider);
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast.success('Signed out successfully');
       navigate('/');
-    } catch (error) {
+    } catch {
       toast.error('Error signing out');
     }
   };
 
   if (!user) return null;
-
-  // Mobile version
-  if (isMobile) {
-    return <MobileAccount />;
-  }
+  if (isMobile) return <MobileAccount />;
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+      <SEO
+        title="My Account — Fastlytics"
+        description="Manage your Fastlytics account, profile, and preferences."
+      />
       <DashboardNavbar />
 
-      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-zinc-800 pb-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter text-white">
-              My Account
-            </h1>
-            <p className="text-zinc-400 font-mono text-sm">
-              Manage your profile and security settings.
-            </p>
-          </div>
-          <Button
-            variant="destructive"
-            onClick={handleSignOut}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider"
+        <div className="mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            <Logout01Icon className="mr-2 h-4 w-4" /> Sign Out
-          </Button>
-        </header>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+                  My Account
+                </h1>
+                <p className="mt-1 text-[15px] text-white/50">
+                  Manage your profile and preferences
+                </p>
+              </div>
+              <Button
+                onClick={handleSignOut}
+                className="h-10 rounded-xl border border-red-500/20 bg-red-500/[0.07] px-5 text-[13px] font-semibold text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/[0.12] hover:text-red-300"
+              >
+                <Logout01Icon className="mr-2 h-4 w-4" /> Sign Out
+              </Button>
+            </div>
+          </motion.div>
+          <div className="mt-8 h-px w-full bg-white/[0.05]" />
+        </div>
 
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* Sidebar Navigation */}
-          <aside className="w-full lg:w-64 shrink-0">
-            <div className="sticky top-32 space-y-1">
+        <div className="flex flex-col gap-8 lg:flex-row">
+          {/* Sidebar */}
+          <aside className="w-full shrink-0 lg:w-56">
+            <div className="sticky top-24 space-y-1.5">
               <NavItem
-                id="profile"
                 label="Profile"
                 icon={UserIcon}
                 active={activeSection === 'profile'}
                 onClick={() => setActiveSection('profile')}
               />
               <NavItem
-                id="favorites"
-                label="My Favorites"
+                label="Favorites"
                 icon={StarIcon}
                 active={activeSection === 'favorites'}
                 onClick={() => setActiveSection('favorites')}
               />
               <NavItem
-                id="security"
                 label="Security"
                 icon={SecurityCheckIcon}
                 active={activeSection === 'security'}
                 onClick={() => setActiveSection('security')}
               />
               <NavItem
-                id="history"
                 label="History"
                 icon={Analytics01Icon}
                 active={activeSection === 'history'}
@@ -381,40 +348,48 @@ const Account = () => {
             </div>
           </aside>
 
-          {/* Main Content Area */}
-          <div className="flex-1 min-h-[500px]">
-            {/* 1. Profile Section */}
+          {/* Main Content */}
+          <div className="min-h-[500px] flex-1">
+            {/* Profile */}
             {activeSection === 'profile' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <SectionHeader title="Profile Settings" icon={UserIcon} />
-                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
-                  <div className="flex items-center gap-6 mb-8">
-                    <Avatar className="h-24 w-24 border-4 border-zinc-800">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+                    Profile Settings
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
+                  <div className="mb-8 flex items-center gap-5">
+                    <Avatar className="h-20 w-20 border border-white/[0.08]">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-zinc-800 text-2xl font-bold">
+                      <AvatarFallback className="bg-[#1a1a1e] text-[18px] font-bold text-white/70">
                         {user.email?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className="text-[18px] font-bold text-white">
                         {user.user_metadata?.full_name || 'User'}
                       </h3>
-                      <p className="text-zinc-500">{user.email}</p>
-                      <p className="text-xs text-zinc-600 font-mono mt-1">ID: {user.id}</p>
+                      <p className="text-[14px] text-white/40">{user.email}</p>
                     </div>
                   </div>
-
-                  <div className="space-y-6 max-w-xl">
+                  <div className="max-w-lg space-y-6">
                     {/* Full Name */}
                     <div className="space-y-2">
-                      <Label className="text-zinc-400">Full Name</Label>
+                      <Label className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                        Full Name
+                      </Label>
                       <div className="flex items-center gap-3">
                         {editingField === 'fullName' ? (
                           <>
                             <Input
                               value={fullName}
                               onChange={(e) => setFullName(e.target.value)}
-                              className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                              className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
                               autoFocus
                             />
                             <Button
@@ -422,30 +397,32 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('fullName')}
                               disabled={isLoading}
-                              className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-5 h-5" />
+                              <Tick02Icon className="w-4 h-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-5 h-5" />
+                              <Cancel01Icon className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
                           <>
-                            <div className="flex-1 p-2 text-white font-medium">{fullName}</div>
+                            <div className="flex-1 rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-2.5 text-[15px] text-white">
+                              {fullName}
+                            </div>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('fullName')}
-                              className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-5 h-5" />
+                              <PencilEdit02Icon className="w-4 h-4" />
                             </Button>
                           </>
                         )}
@@ -454,14 +431,16 @@ const Account = () => {
 
                     {/* Username */}
                     <div className="space-y-2">
-                      <Label className="text-zinc-400">Username</Label>
+                      <Label className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                        Username
+                      </Label>
                       <div className="flex items-center gap-3">
                         {editingField === 'username' ? (
                           <>
                             <Input
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
-                              className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                              className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
                               autoFocus
                             />
                             <Button
@@ -469,32 +448,32 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('username')}
                               disabled={isLoading}
-                              className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-5 h-5" />
+                              <Tick02Icon className="w-4 h-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-5 h-5" />
+                              <Cancel01Icon className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
                           <>
-                            <div className="flex-1 p-2 text-white font-medium">
-                              {username || <span className="text-zinc-600 italic">Not set</span>}
+                            <div className="flex-1 rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-2.5 text-[15px] text-white">
+                              {username || 'Not set'}
                             </div>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('username')}
-                              className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-5 h-5" />
+                              <PencilEdit02Icon className="w-4 h-4" />
                             </Button>
                           </>
                         )}
@@ -503,14 +482,16 @@ const Account = () => {
 
                     {/* Email */}
                     <div className="space-y-2">
-                      <Label className="text-zinc-400">Email Address</Label>
+                      <Label className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                        Email Address
+                      </Label>
                       <div className="flex items-center gap-3">
                         {editingField === 'email' ? (
                           <>
                             <Input
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
-                              className="bg-black border-zinc-800 focus:border-red-600 h-10"
+                              className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
                               autoFocus
                             />
                             <Button
@@ -518,30 +499,32 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('email')}
                               disabled={isLoading}
-                              className="h-10 w-10 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-5 h-5" />
+                              <Tick02Icon className="w-4 h-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-5 h-5" />
+                              <Cancel01Icon className="w-4 h-4" />
                             </Button>
                           </>
                         ) : (
                           <>
-                            <div className="flex-1 p-2 text-white font-medium">{email}</div>
+                            <div className="flex-1 rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 py-2.5 text-[15px] text-white">
+                              {email}
+                            </div>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('email')}
-                              className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-zinc-800"
+                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-5 h-5" />
+                              <PencilEdit02Icon className="w-4 h-4" />
                             </Button>
                           </>
                         )}
@@ -549,54 +532,69 @@ const Account = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* 2. My Favorites Section */}
+            {/* Favorites */}
             {activeSection === 'favorites' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <SectionHeader title="My Favorites" icon={StarIcon} />
-                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
-                  <p className="text-zinc-400 mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+                    My Favorites
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
+                  <p className="mb-6 text-[14px] text-white/40">
                     Update your favorite driver and team to personalize your dashboard.
                   </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Favorite Driver */}
-                    <div className="space-y-4">
-                      <Label className="text-zinc-400">Favorite Driver</Label>
-                      <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 border border-zinc-800 rounded-md p-2 bg-black/50">
+                    <div className="space-y-3">
+                      <Label className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                        Favorite Driver
+                      </Label>
+                      <div className="custom-scrollbar max-h-[340px] space-y-1 overflow-y-auto rounded-xl border border-white/[0.06] bg-white/[0.02] p-2">
                         {drivers.map((driver) => (
                           <button
                             key={driver.code}
                             onClick={() => setFavoriteDriver(driver.code)}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-md transition-colors text-left',
+                              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
                               favoriteDriver === driver.code
-                                ? 'bg-red-600 text-white'
-                                : 'hover:bg-zinc-800 text-zinc-300'
+                                ? 'bg-red-500/[0.1] text-white'
+                                : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
                             )}
                           >
-                            <Avatar className="h-10 w-10 border border-zinc-700">
+                            <Avatar className="h-9 w-9 shrink-0 border border-white/[0.08]">
                               <AvatarImage
                                 src={getDriverImageForYear(driver.code)}
                                 className="object-cover object-top"
                               />
-                              <AvatarFallback className="text-black">{driver.code}</AvatarFallback>
+                              <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold">
+                                {driver.code}
+                              </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <div className="font-bold text-sm">{driver.name}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[14px] font-semibold">
+                                {driver.name.split(' ').pop()}
+                              </div>
                               <div
                                 className={cn(
-                                  'text-xs',
-                                  favoriteDriver === driver.code ? 'text-red-200' : 'text-zinc-500'
+                                  'text-[11px]',
+                                  favoriteDriver === driver.code
+                                    ? 'text-red-400/60'
+                                    : 'text-white/30'
                                 )}
                               >
                                 {driver.team}
                               </div>
                             </div>
                             {favoriteDriver === driver.code && (
-                              <CheckmarkCircle01Icon className="ml-auto w-5 h-5" />
+                              <CheckmarkCircle01Icon className="h-4 w-4 shrink-0 text-red-400" />
                             )}
                           </button>
                         ))}
@@ -604,30 +602,34 @@ const Account = () => {
                     </div>
 
                     {/* Favorite Team */}
-                    <div className="space-y-4">
-                      <Label className="text-zinc-400">Favorite Team</Label>
-                      <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 border border-zinc-800 rounded-md p-2 bg-black/50">
+                    <div className="space-y-3">
+                      <Label className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                        Favorite Team
+                      </Label>
+                      <div className="custom-scrollbar max-h-[340px] space-y-1 overflow-y-auto rounded-xl border border-white/[0.06] bg-white/[0.02] p-2">
                         {teams.map((team) => (
                           <button
                             key={team.team}
                             onClick={() => setFavoriteTeam(team.team)}
                             className={cn(
-                              'flex items-center gap-3 p-3 rounded-md transition-colors text-left',
+                              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
                               favoriteTeam === team.team
-                                ? 'bg-red-600 text-white'
-                                : 'hover:bg-zinc-800 text-zinc-300'
+                                ? 'bg-red-500/[0.1] text-white'
+                                : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
                             )}
                           >
-                            <div className="w-10 h-10 bg-white/10 rounded p-1 flex items-center justify-center">
+                            <div className="flex h-9 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.04] p-1.5">
                               <img
                                 src={getTeamLogo(team.team) || ''}
                                 alt={team.team}
-                                className="w-full h-full object-contain"
+                                className="h-full w-full object-contain"
                               />
                             </div>
-                            <div className="font-bold text-sm">{team.team}</div>
+                            <span className="flex-1 truncate text-[14px] font-semibold">
+                              {team.team}
+                            </span>
                             {favoriteTeam === team.team && (
-                              <CheckmarkCircle01Icon className="ml-auto w-5 h-5" />
+                              <CheckmarkCircle01Icon className="h-4 w-4 shrink-0 text-red-400" />
                             )}
                           </button>
                         ))}
@@ -639,37 +641,51 @@ const Account = () => {
                     <Button
                       onClick={handleUpdateFavorites}
                       disabled={isLoading}
-                      className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
+                      className="h-11 rounded-xl bg-white px-6 text-[13px] font-semibold text-black transition-all hover:bg-white/90"
                     >
                       {isLoading ? 'Saving...' : 'Save Preferences'}
                     </Button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* 3. Security Section */}
+            {/* Security */}
             {activeSection === 'security' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <SectionHeader title="Security" icon={SecurityCheckIcon} />
-                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
-                  <h3 className="text-lg font-bold text-white mb-6">Change Password</h3>
-                  <form onSubmit={handleUpdatePassword} className="space-y-6 max-w-xl">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+                    Security
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
+                  <h3 className="mb-6 text-[18px] font-bold text-white">Change Password</h3>
+                  <form onSubmit={handleUpdatePassword} className="max-w-lg space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="oldPassword" className="text-zinc-400">
-                        Old Password
+                      <Label
+                        htmlFor="oldPassword"
+                        className="text-[11px] font-medium uppercase tracking-wider text-white/35"
+                      >
+                        Current Password
                       </Label>
                       <Input
                         id="oldPassword"
                         type="password"
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
-                        className="bg-black border-zinc-800 focus:border-red-600 h-12"
+                        className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40"
                         placeholder="Enter current password"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-zinc-400">
+                      <Label
+                        htmlFor="password"
+                        className="text-[11px] font-medium uppercase tracking-wider text-white/35"
+                      >
                         New Password
                       </Label>
                       <Input
@@ -677,12 +693,15 @@ const Account = () => {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="bg-black border-zinc-800 focus:border-red-600 h-12"
+                        className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40"
                         placeholder="Enter new password"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword" className="text-zinc-400">
+                      <Label
+                        htmlFor="confirmPassword"
+                        className="text-[11px] font-medium uppercase tracking-wider text-white/35"
+                      >
                         Confirm Password
                       </Label>
                       <Input
@@ -690,22 +709,22 @@ const Account = () => {
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="bg-black border-zinc-800 focus:border-red-600 h-12"
+                        className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40"
                         placeholder="Confirm new password"
                       />
                     </div>
                     <Button
                       type="submit"
                       disabled={isLoading || !password || !oldPassword}
-                      className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider"
+                      className="h-11 rounded-xl bg-white px-6 text-[13px] font-semibold text-black transition-all hover:bg-white/90"
                     >
                       {isLoading ? 'Updating...' : 'Update Password'}
                     </Button>
                   </form>
 
-                  <div className="mt-12 pt-8 border-t border-zinc-800">
-                    <h3 className="text-lg font-bold text-white mb-6">Connected Accounts</h3>
-                    <div className="space-y-4 max-w-xl">
+                  <div className="mt-10 border-t border-white/[0.04] pt-8">
+                    <h3 className="mb-5 text-[18px] font-bold text-white">Connected Accounts</h3>
+                    <div className="max-w-lg space-y-3">
                       {[
                         { provider: 'google', icon: faGoogle, label: 'Google' },
                         { provider: 'github', icon: faGithub, label: 'GitHub' },
@@ -715,25 +734,27 @@ const Account = () => {
                         return (
                           <div
                             key={social.provider}
-                            className="flex items-center justify-between p-4 bg-black/50 border border-zinc-800 rounded-lg"
+                            className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4"
                           >
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
                                 <FontAwesomeIcon
                                   icon={social.icon}
-                                  className="text-zinc-400 text-lg"
+                                  className="text-[16px] text-white/50"
                                 />
                               </div>
                               <div>
-                                <div className="font-bold text-white">{social.label}</div>
-                                <div className="text-xs text-zinc-500">
+                                <div className="text-[14px] font-semibold text-white">
+                                  {social.label}
+                                </div>
+                                <div className="text-[12px] text-white/35">
                                   {isConnected ? 'Connected' : 'Not connected'}
                                 </div>
                               </div>
                             </div>
                             {isConnected ? (
-                              <div className="flex items-center text-green-500 text-sm font-bold uppercase tracking-wider">
-                                <Tick02Icon className="w-5 h-5 mr-2" /> Connected
+                              <div className="flex items-center text-[12px] font-semibold text-emerald-400">
+                                <Tick02Icon className="mr-1.5 h-4 w-4" /> Connected
                               </div>
                             ) : (
                               <Button
@@ -743,10 +764,10 @@ const Account = () => {
                                   )
                                 }
                                 variant="outline"
-                                className="border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                                className="h-9 rounded-xl border-white/[0.08] bg-white/[0.03] px-4 text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white"
                                 disabled={isLoading}
                               >
-                                <LinkSquare01Icon className="w-4 h-4 mr-2" /> Connect
+                                <LinkSquare01Icon className="mr-1.5 h-3.5 w-3.5" /> Connect
                               </Button>
                             )}
                           </div>
@@ -755,41 +776,52 @@ const Account = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
+            {/* History */}
             {activeSection === 'history' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <SectionHeader title="Activity History" icon={Analytics01Icon} />
-                <div className="bg-zinc-900/30 border border-zinc-800 p-8 rounded-lg">
-                  <p className="text-zinc-400 mb-6">
-                    Your recent interactions and activity on Fastlytics.
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+                    Activity History
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
+                  <p className="mb-6 text-[14px] text-white/40">
+                    Your recent interactions on Fastlytics.
                   </p>
-
                   {isLoadingActivity ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-16 bg-zinc-800/50 animate-pulse rounded-lg" />
+                        <div
+                          key={i}
+                          className="h-16 animate-pulse rounded-xl border border-white/[0.04] bg-white/[0.02]"
+                        />
                       ))}
                     </div>
                   ) : userActivity.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {userActivity.map((activity) => (
                         <ActivityItem key={activity.id} activity={activity} drivers={[]} />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-zinc-500">
-                      <Analytics01Icon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>No recent activity found.</p>
+                    <div className="py-12 text-center">
+                      <Analytics01Icon className="mx-auto mb-3 h-10 w-10 text-white/15" />
+                      <p className="text-[14px] text-white/35">No recent activity found.</p>
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

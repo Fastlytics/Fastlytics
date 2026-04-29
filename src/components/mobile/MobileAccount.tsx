@@ -1,26 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
-
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   UserIcon,
   SecurityCheckIcon,
-  CreditCardIcon,
   Logout01Icon,
-  CheckmarkCircle01Icon,
   PencilEdit02Icon,
-  Tick02Icon,
   Cancel01Icon,
-  Rocket01Icon,
+  Analytics01Icon,
 } from 'hugeicons-react';
 import {
   Star,
   ChevronRight,
   Shield,
   User,
-  CreditCard,
   LogOut,
   Check,
   X,
@@ -40,17 +35,15 @@ import MobilePageHeader from './MobilePageHeader';
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 
-// Bottom Sheet Component
-interface BottomSheetProps {
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
+const BottomSheet: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-}
-
-const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, children }) => {
+}> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
-
   return (
     <AnimatePresence>
       <motion.div
@@ -65,26 +58,21 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, child
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="absolute bottom-0 left-0 right-0 bg-black border-t-2 border-white/20 max-h-[90vh] flex flex-col rounded-t-3xl"
+          className="absolute bottom-0 left-0 right-0 max-h-[90vh] flex flex-col rounded-t-2xl border-t border-white/[0.06] bg-[#0c0c0e]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Handle Bar */}
           <div className="flex justify-center pt-3 pb-2">
-            <div className="w-10 h-1 bg-white/20" />
+            <div className="h-1 w-10 rounded-full bg-white/15" />
           </div>
-
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-4 border-b-2 border-white/10">
-            <h3 className="text-xl font-black uppercase italic tracking-tighter">{title}</h3>
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 pb-4">
+            <h3 className="text-[16px] font-bold uppercase italic tracking-tight">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white hover:text-black transition-colors border border-transparent hover:border-white"
+              className="rounded-lg p-2 text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
             >
-              <Cancel01Icon className="w-5 h-5" />
+              <Cancel01Icon className="h-5 w-5" />
             </button>
           </div>
-
-          {/* Content - with bottom padding for safe area */}
           <div className="flex-1 overflow-y-auto pb-24">{children}</div>
         </motion.div>
       </motion.div>
@@ -92,57 +80,43 @@ const BottomSheet: React.FC<BottomSheetProps> = ({ isOpen, onClose, title, child
   );
 };
 
-// Menu Item Component
-interface MenuItemProps {
+const MenuItem: React.FC<{
   icon: React.ElementType;
   label: string;
   value?: string;
   onClick: () => void;
   danger?: boolean;
   showChevron?: boolean;
-}
-
-const MenuItem: React.FC<MenuItemProps> = ({
-  icon: Icon,
-  label,
-  value,
-  onClick,
-  danger,
-  showChevron = true,
-}) => (
+}> = ({ icon: Icon, label, value, onClick, danger, showChevron = true }) => (
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-4 p-4 active:bg-white active:text-black transition-colors border-b border-white/10 last:border-b-0',
-      danger ? 'text-red-500 hover:bg-red-600 hover:text-white' : 'text-white hover:bg-zinc-900'
+      'flex w-full items-center gap-4 p-4 transition-colors',
+      danger ? 'text-red-400 hover:bg-red-500/[0.06]' : 'text-white hover:bg-white/[0.03]'
     )}
   >
     <div
       className={cn(
-        'w-10 h-10 flex items-center justify-center border border-white/10',
-        danger ? 'bg-red-600/10' : 'bg-black'
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border',
+        danger ? 'border-red-500/20 bg-red-500/[0.07]' : 'border-white/[0.06] bg-white/[0.03]'
       )}
     >
-      <Icon className={cn('w-5 h-5', danger ? 'text-red-500' : 'text-white')} />
+      <Icon className={cn('h-4 w-4', danger ? 'text-red-400' : 'text-white/50')} />
     </div>
-    <div className="flex-1 text-left">
-      <div className="font-black uppercase tracking-wider text-sm">{label}</div>
-      {value && <div className="text-xs font-mono text-gray-500 mt-0.5">{value}</div>}
+    <div className="min-w-0 flex-1 text-left">
+      <div className="text-[14px] font-semibold">{label}</div>
+      {value && <div className="mt-0.5 truncate text-[11px] text-white/35">{value}</div>}
     </div>
-    {showChevron && <ChevronRight className="w-5 h-5 text-gray-600" />}
+    {showChevron && <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />}
   </button>
 );
 
-// Driver Image Map for 2025
-// Removed hardcoded map
 const MobileAccount: React.FC = () => {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const { trackEvent } = useAnalytics();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sheet States
   const [showProfileSheet, setShowProfileSheet] = useState(false);
   const [showFavoritesSheet, setShowFavoritesSheet] = useState(false);
   const [showSecuritySheet, setShowSecuritySheet] = useState(false);
@@ -150,7 +124,6 @@ const MobileAccount: React.FC = () => {
   const [showTeamPicker, setShowTeamPicker] = useState(false);
   const [showHistorySheet, setShowHistorySheet] = useState(false);
 
-  // Form States
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
   const [username, setUsername] = useState('');
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -160,20 +133,16 @@ const MobileAccount: React.FC = () => {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Favorites State
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
   const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
 
-  // Activity History State
   const [userActivity, setUserActivity] = useState<ActivityItemProps['activity'][]>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setFullName(user.user_metadata?.full_name || '');
-    }
+    if (user) setFullName(user.user_metadata?.full_name || ''); // eslint-disable-line react-hooks/set-state-in-effect
     if (profile) {
       setUsername(profile.username || '');
       setFavoriteDriver(profile.favorite_driver);
@@ -209,7 +178,6 @@ const MobileAccount: React.FC = () => {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100);
-
         if (error) throw error;
         setUserActivity(data || []);
       } catch (error) {
@@ -218,10 +186,7 @@ const MobileAccount: React.FC = () => {
         setIsLoadingActivity(false);
       }
     };
-
-    if (showHistorySheet) {
-      fetchActivity();
-    }
+    if (showHistorySheet) fetchActivity();
   }, [user, showHistorySheet]);
 
   const getDriverImg = (driverCode: string) => getDriverImage(driverCode, getCurrentSeasonYear());
@@ -238,7 +203,6 @@ const MobileAccount: React.FC = () => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
-
       if (error) throw error;
       await refreshProfile();
       toast.success('Favorites updated');
@@ -264,17 +228,15 @@ const MobileAccount: React.FC = () => {
           data: { full_name: fullName },
         });
         error = updateError;
-        if (!error) {
+        if (!error)
           await supabase.from('profiles').update({ full_name: fullName }).eq('id', user.id);
-        }
       } else if (field === 'username') {
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ username: username })
+          .update({ username })
           .eq('id', user.id);
         error = updateError;
       }
-
       if (error) throw error;
       toast.success('Updated successfully');
       await refreshProfile();
@@ -295,7 +257,6 @@ const MobileAccount: React.FC = () => {
       toast.error('Enter your old password');
       return;
     }
-
     setIsLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -303,10 +264,8 @@ const MobileAccount: React.FC = () => {
         password: oldPassword,
       });
       if (signInError) throw new Error('Incorrect old password');
-
-      const { error } = await supabase.auth.updateUser({ password: password });
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-
       toast.success('Password updated');
       setPassword('');
       setConfirmPassword('');
@@ -324,50 +283,42 @@ const MobileAccount: React.FC = () => {
       await signOut();
       navigate('/auth');
       toast.success('Signed out successfully');
-    } catch (error) {
+    } catch {
       toast.error('Error signing out');
     }
   };
 
-  const getFavoriteDriverName = () => {
-    const driver = drivers.find((d) => d.code === favoriteDriver);
-    return driver?.name || 'Not set';
-  };
-
-  const getFavoriteTeamName = () => {
-    return favoriteTeam || 'Not set';
-  };
+  const getFavoriteDriverName = () =>
+    drivers.find((d) => d.code === favoriteDriver)?.name || 'Not set';
 
   if (!user) return null;
 
   return (
     <MobileLayout>
-      <div className="min-h-screen bg-black text-white">
+      <div style={inter} className="min-h-screen bg-[#09090b] text-white">
         <MobilePageHeader />
 
         {/* Profile Card */}
         <div className="px-4 py-6">
-          <div className="bg-black border-2 border-white/10 p-5 relative overflow-hidden rounded-xl">
-            {/* Decorative Corner */}
-            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-red-600" />
-
+          <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+            <div className="absolute right-0 top-0 h-4 w-4 border-r border-t border-red-500/30" />
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 border-2 border-white/20 rounded-md">
+              <Avatar className="h-16 w-16 shrink-0 rounded-xl border border-white/[0.08]">
                 <AvatarImage
                   src={user.user_metadata?.avatar_url}
                   className="object-cover object-top"
                 />
-                <AvatarFallback className="bg-zinc-900 text-xl font-black rounded-md">
+                <AvatarFallback className="bg-[#1a1a1e] text-[16px] font-bold text-white/60">
                   {user.email?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-black uppercase italic tracking-tighter truncate">
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-[18px] font-bold uppercase italic">
                   {user.user_metadata?.full_name || 'User'}
                 </h2>
-                <p className="text-xs font-mono text-gray-500 truncate">{user.email}</p>
+                <p className="truncate text-[12px] text-white/40">{user.email}</p>
                 {profile?.username && (
-                  <div className="inline-block mt-1 px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                  <div className="mt-1 inline-block rounded-full bg-red-500/[0.1] px-2 py-0.5 text-[10px] font-bold text-red-400">
                     @{profile.username}
                   </div>
                 )}
@@ -377,13 +328,12 @@ const MobileAccount: React.FC = () => {
         </div>
 
         {/* Menu Sections */}
-        <div className="px-4 space-y-6">
-          {/* Account Section */}
+        <div className="space-y-5 px-4">
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
+            <h3 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
               Account
             </h3>
-            <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] divide-y divide-white/[0.04]">
               <MenuItem
                 icon={User}
                 label="Profile"
@@ -393,7 +343,7 @@ const MobileAccount: React.FC = () => {
               <MenuItem
                 icon={Star}
                 label="My Favorites"
-                value={`${getFavoriteDriverName()}`}
+                value={getFavoriteDriverName()}
                 onClick={() => setShowFavoritesSheet(true)}
               />
               <MenuItem
@@ -405,12 +355,11 @@ const MobileAccount: React.FC = () => {
             </div>
           </div>
 
-          {/* Security Section */}
           <div>
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-1 mb-2">
+            <h3 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
               Security
             </h3>
-            <div className="bg-black border-2 border-white/10 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
               <MenuItem
                 icon={Shield}
                 label="Password & Security"
@@ -420,9 +369,8 @@ const MobileAccount: React.FC = () => {
             </div>
           </div>
 
-          {/* Sign Out */}
-          <div className="pt-4">
-            <div className="bg-black border-2 border-red-900/50 rounded-xl overflow-hidden">
+          <div className="pt-2">
+            <div className="overflow-hidden rounded-xl border border-red-500/15 bg-[#0c0c0e]">
               <MenuItem
                 icon={LogOut}
                 label="Sign Out"
@@ -443,10 +391,9 @@ const MobileAccount: React.FC = () => {
           }}
           title="Profile"
         >
-          <div className="p-4 space-y-6">
-            {/* Full Name */}
+          <div className="space-y-5 p-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Full Name
               </label>
               {editingField === 'fullName' ? (
@@ -454,37 +401,35 @@ const MobileAccount: React.FC = () => {
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg"
+                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-[14px] text-white focus:border-red-500/40 focus:outline-none"
                     autoFocus
                   />
                   <button
                     onClick={() => handleSaveField('fullName')}
                     disabled={isLoading}
-                    className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors rounded-lg"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400"
                   >
-                    <Check className="w-5 h-5 text-black" />
+                    <Check className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setEditingField(null)}
-                    className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors rounded-lg"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/40"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setEditingField('fullName')}
-                  className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors rounded-lg"
+                  className="flex h-11 w-full items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 text-[14px] text-white transition-colors hover:border-white/[0.1]"
                 >
-                  <span className="font-bold uppercase">{fullName || 'Not set'}</span>
-                  <PencilEdit02Icon className="w-5 h-5 text-gray-500" />
+                  <span>{fullName || 'Not set'}</span>
+                  <PencilEdit02Icon className="h-4 w-4 text-white/25" />
                 </button>
               )}
             </div>
-
-            {/* Username */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Username
               </label>
               {editingField === 'username' ? (
@@ -492,40 +437,38 @@ const MobileAccount: React.FC = () => {
                   <input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="flex-1 bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg"
+                    className="h-11 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-[14px] text-white focus:border-red-500/40 focus:outline-none"
                     autoFocus
                   />
                   <button
                     onClick={() => handleSaveField('username')}
                     disabled={isLoading}
-                    className="p-3 bg-green-600 hover:bg-green-500 border-2 border-transparent hover:border-white transition-colors rounded-lg"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400"
                   >
-                    <Check className="w-5 h-5 text-black" />
+                    <Check className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setEditingField(null)}
-                    className="p-3 bg-zinc-800 hover:bg-zinc-700 border-2 border-transparent hover:border-white transition-colors rounded-lg"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/40"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setEditingField('username')}
-                  className="w-full flex items-center justify-between bg-zinc-900/50 border-2 border-white/10 px-4 py-3 hover:border-white/30 transition-colors rounded-lg"
+                  className="flex h-11 w-full items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 text-[14px] text-white transition-colors hover:border-white/[0.1]"
                 >
-                  <span className="font-bold uppercase">{username || 'Not set'}</span>
-                  <PencilEdit02Icon className="w-5 h-5 text-gray-500" />
+                  <span>{username || 'Not set'}</span>
+                  <PencilEdit02Icon className="h-4 w-4 text-white/25" />
                 </button>
               )}
             </div>
-
-            {/* Email (read-only on mobile) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Email
               </label>
-              <div className="bg-zinc-900/30 border-2 border-white/5 px-4 py-3 text-gray-500 font-mono text-sm rounded-lg">
+              <div className="flex h-11 items-center rounded-xl border border-white/[0.04] bg-white/[0.02] px-4 text-[13px] text-white/35">
                 {user.email}
               </div>
             </div>
@@ -538,72 +481,69 @@ const MobileAccount: React.FC = () => {
           onClose={() => setShowFavoritesSheet(false)}
           title="My Favorites"
         >
-          <div className="p-4 space-y-6">
-            {/* Favorite Driver */}
+          <div className="space-y-5 p-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Favorite Driver
               </label>
               <button
                 onClick={() => setShowDriverPicker(true)}
-                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors rounded-xl"
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 transition-colors hover:border-white/[0.1]"
               >
                 {favoriteDriver ? (
                   <>
-                    <Avatar className="h-10 w-10 border border-white/20 rounded-md">
+                    <Avatar className="h-8 w-8 shrink-0 rounded-lg border border-white/[0.08]">
                       <AvatarImage
                         src={getDriverImg(favoriteDriver)}
                         className="object-cover object-top"
                       />
-                      <AvatarFallback className="rounded-md">{favoriteDriver}</AvatarFallback>
+                      <AvatarFallback className="rounded-lg text-[10px]">
+                        {favoriteDriver}
+                      </AvatarFallback>
                     </Avatar>
-                    <span className="flex-1 text-left font-black uppercase">
+                    <span className="flex-1 text-left text-[14px] font-semibold">
                       {getFavoriteDriverName()}
                     </span>
                   </>
                 ) : (
-                  <span className="flex-1 text-left text-gray-500 font-mono uppercase text-xs">
+                  <span className="flex-1 text-left text-[13px] text-white/30">
                     Select a driver
                   </span>
                 )}
-                <ChevronRight className="w-5 h-5 text-gray-500" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />
               </button>
             </div>
-
-            {/* Favorite Team */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Favorite Team
               </label>
               <button
                 onClick={() => setShowTeamPicker(true)}
-                className="w-full flex items-center gap-3 bg-black border-2 border-white/10 p-3 hover:border-white/30 transition-colors rounded-xl"
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 transition-colors hover:border-white/[0.1]"
               >
                 {favoriteTeam ? (
                   <>
-                    <div className="w-10 h-10 bg-white/10 p-1 flex items-center justify-center rounded-md">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.04] p-1">
                       <img
                         src={getTeamLogo(favoriteTeam) || ''}
                         alt={favoriteTeam}
-                        className="w-full h-full object-contain"
+                        className="h-full w-full object-contain"
                       />
                     </div>
-                    <span className="flex-1 text-left font-black uppercase">{favoriteTeam}</span>
+                    <span className="flex-1 text-left text-[14px] font-semibold">
+                      {favoriteTeam}
+                    </span>
                   </>
                 ) : (
-                  <span className="flex-1 text-left text-gray-500 font-mono uppercase text-xs">
-                    Select a team
-                  </span>
+                  <span className="flex-1 text-left text-[13px] text-white/30">Select a team</span>
                 )}
-                <ChevronRight className="w-5 h-5 text-gray-500" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />
               </button>
             </div>
-
-            {/* Save Button */}
             <button
               onClick={handleUpdateFavorites}
               disabled={isLoading}
-              className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-6 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white rounded-xl"
+              className="mt-4 h-12 w-full rounded-xl bg-red-500/[0.12] text-[13px] font-bold text-red-400 transition-colors hover:bg-red-500/[0.18] disabled:opacity-50"
             >
               {isLoading ? 'Saving...' : 'Save Favorites'}
             </button>
@@ -617,19 +557,19 @@ const MobileAccount: React.FC = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute inset-0 bg-gray-900"
+                className="absolute inset-0 bg-[#0c0c0e]"
               >
-                <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                <div className="flex items-center justify-between border-b border-white/[0.04] p-4">
                   <button
                     onClick={() => setShowDriverPicker(false)}
-                    className="text-red-500 font-bold"
+                    className="text-[13px] font-semibold text-red-400"
                   >
                     Back
                   </button>
-                  <h3 className="font-bold">Select Driver</h3>
+                  <h3 className="text-[14px] font-bold uppercase">Select Driver</h3>
                   <div className="w-10" />
                 </div>
-                <div className="p-2 overflow-y-auto max-h-[70vh]">
+                <div className="max-h-[70vh] overflow-y-auto p-2">
                   {drivers.map((driver) => (
                     <button
                       key={driver.code}
@@ -638,31 +578,35 @@ const MobileAccount: React.FC = () => {
                         setShowDriverPicker(false);
                       }}
                       className={cn(
-                        'w-full flex items-center gap-3 p-3 transition-colors border-b border-white/10 last:border-b-0',
+                        'flex w-full items-center gap-3 border-b border-white/[0.04] p-3 transition-colors last:border-b-0',
                         favoriteDriver === driver.code
-                          ? 'bg-red-600 text-white'
-                          : 'hover:bg-zinc-900 text-gray-300'
+                          ? 'bg-red-500/[0.1] text-white'
+                          : 'text-white/60 hover:bg-white/[0.03]'
                       )}
                     >
-                      <Avatar className="h-12 w-12 border border-white/20 rounded-md">
+                      <Avatar className="h-11 w-11 shrink-0 rounded-lg border border-white/[0.08]">
                         <AvatarImage
                           src={getDriverImg(driver.code)}
                           className="object-cover object-top"
                         />
-                        <AvatarFallback className="rounded-md">{driver.code}</AvatarFallback>
+                        <AvatarFallback className="rounded-lg text-[10px]">
+                          {driver.code}
+                        </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 text-left">
-                        <div className="font-black uppercase">{driver.name}</div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <div className="truncate text-[14px] font-semibold">{driver.name}</div>
                         <div
                           className={cn(
-                            'text-xs font-mono',
-                            favoriteDriver === driver.code ? 'text-white/80' : 'text-gray-500'
+                            'text-[11px]',
+                            favoriteDriver === driver.code ? 'text-red-400/60' : 'text-white/30'
                           )}
                         >
                           {driver.team}
                         </div>
                       </div>
-                      {favoriteDriver === driver.code && <Check className="w-5 h-5" />}
+                      {favoriteDriver === driver.code && (
+                        <Check className="h-4 w-4 shrink-0 text-red-400" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -678,19 +622,19 @@ const MobileAccount: React.FC = () => {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute inset-0 bg-gray-900"
+                className="absolute inset-0 bg-[#0c0c0e]"
               >
-                <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                <div className="flex items-center justify-between border-b border-white/[0.04] p-4">
                   <button
                     onClick={() => setShowTeamPicker(false)}
-                    className="text-red-500 font-bold"
+                    className="text-[13px] font-semibold text-red-400"
                   >
                     Back
                   </button>
-                  <h3 className="font-bold">Select Team</h3>
+                  <h3 className="text-[14px] font-bold uppercase">Select Team</h3>
                   <div className="w-10" />
                 </div>
-                <div className="p-2 overflow-y-auto max-h-[70vh]">
+                <div className="max-h-[70vh] overflow-y-auto p-2">
                   {teams.map((team) => (
                     <button
                       key={team.team}
@@ -699,21 +643,23 @@ const MobileAccount: React.FC = () => {
                         setShowTeamPicker(false);
                       }}
                       className={cn(
-                        'w-full flex items-center gap-3 p-3 transition-colors border-b border-white/10 last:border-b-0',
+                        'flex w-full items-center gap-3 border-b border-white/[0.04] p-3 transition-colors last:border-b-0',
                         favoriteTeam === team.team
-                          ? 'bg-red-600 text-white'
-                          : 'hover:bg-zinc-900 text-gray-300'
+                          ? 'bg-red-500/[0.1] text-white'
+                          : 'text-white/60 hover:bg-white/[0.03]'
                       )}
                     >
-                      <div className="w-12 h-12 bg-white/10 p-1 flex items-center justify-center rounded-md">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.04] p-1.5">
                         <img
                           src={getTeamLogo(team.team) || ''}
                           alt={team.team}
-                          className="w-full h-full object-contain"
+                          className="h-full w-full object-contain"
                         />
                       </div>
-                      <div className="flex-1 text-left font-black uppercase">{team.team}</div>
-                      {favoriteTeam === team.team && <Check className="w-5 h-5" />}
+                      <div className="flex-1 text-left text-[14px] font-semibold">{team.team}</div>
+                      {favoriteTeam === team.team && (
+                        <Check className="h-4 w-4 shrink-0 text-red-400" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -728,14 +674,10 @@ const MobileAccount: React.FC = () => {
           onClose={() => setShowSecuritySheet(false)}
           title="Security"
         >
-          <div className="p-4 space-y-6">
-            <p className="text-xs font-mono text-gray-400 uppercase">
-              Change your account password
-            </p>
-
-            {/* Old Password */}
+          <div className="space-y-5 p-5">
+            <p className="text-[12px] text-white/35">Change your account password.</p>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Current Password
               </label>
               <div className="relative">
@@ -743,22 +685,20 @@ const MobileAccount: React.FC = () => {
                   type={showOldPassword ? 'text' : 'password'}
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="ENTER CURRENT PASSWORD"
-                  className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
+                  placeholder="Current password"
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 pr-11 text-[14px] text-white placeholder:text-white/20 focus:border-red-500/40 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowOldPassword(!showOldPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
                 >
-                  {showOldPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-
-            {/* New Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 New Password
               </label>
               <div className="relative">
@@ -766,38 +706,34 @@ const MobileAccount: React.FC = () => {
                   type={showNewPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="ENTER NEW PASSWORD"
-                  className="w-full bg-black border-2 border-white/20 px-4 py-3 pr-12 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
+                  placeholder="New password"
+                  className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 pr-11 text-[14px] text-white placeholder:text-white/20 focus:border-red-500/40 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
                 >
-                  {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-
-            {/* Confirm Password */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
                 Confirm Password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="CONFIRM NEW PASSWORD"
-                className="w-full bg-black border-2 border-white/20 px-4 py-3 text-white focus:border-red-600 focus:outline-none font-bold uppercase rounded-lg placeholder:text-gray-700"
+                placeholder="Confirm new password"
+                className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 text-[14px] text-white placeholder:text-white/20 focus:border-red-500/40 focus:outline-none"
               />
             </div>
-
-            {/* Update Button */}
             <button
               onClick={handleUpdatePassword}
               disabled={isLoading || !password || !oldPassword || !confirmPassword}
-              className="w-full bg-red-600 text-white font-black uppercase tracking-wider py-4 mt-4 active:bg-red-700 transition-colors disabled:opacity-50 border-2 border-transparent hover:border-white rounded-xl"
+              className="mt-2 h-12 w-full rounded-xl bg-red-500/[0.12] text-[13px] font-bold text-red-400 transition-colors hover:bg-red-500/[0.18] disabled:opacity-50"
             >
               {isLoading ? 'Updating...' : 'Update Password'}
             </button>
@@ -810,26 +746,26 @@ const MobileAccount: React.FC = () => {
           onClose={() => setShowHistorySheet(false)}
           title="Activity History"
         >
-          <div className="p-4">
+          <div className="p-5">
             {isLoadingActivity ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className="h-16 bg-zinc-900/50 animate-pulse border-2 border-white/5 rounded-xl"
+                    className="h-16 animate-pulse rounded-xl border border-white/[0.04] bg-white/[0.02]"
                   />
                 ))}
               </div>
             ) : userActivity.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {userActivity.map((activity) => (
                   <ActivityItem key={activity.id} activity={activity} drivers={[]} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
-                <Activity className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No recent activity found.</p>
+              <div className="py-12 text-center">
+                <Activity className="mx-auto mb-3 h-10 w-10 text-white/15" />
+                <p className="text-[13px] text-white/35">No recent activity found.</p>
               </div>
             )}
           </div>

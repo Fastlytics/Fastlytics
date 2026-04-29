@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'motion/react';
 import { SEO } from '@/components/layout/SEO';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   Select,
   SelectContent,
@@ -11,18 +12,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SessionReplay } from '@/components/replay/SessionReplay';
 import {
-  ArrowLeft01Icon,
   ChampionIcon,
   Flag01Icon,
   Analytics01Icon,
   Clock01Icon,
   FlashIcon,
   Calendar01Icon,
-  Location01Icon,
   UserGroupIcon,
   Time01Icon,
   TradeUpIcon,
-  MapsLocation01Icon,
   ChartLineData01Icon,
   GitCompareIcon,
   PlayCircle02Icon,
@@ -39,8 +37,6 @@ import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTel
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { TeamPaceBreakdown } from '@/components/race/TeamPaceBreakdown';
 import { F1Card } from '@/components/race/F1Card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Alert02Icon } from 'hugeicons-react';
 import {
   fetchSpecificRaceResults,
@@ -79,20 +75,11 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 
 // --- Helper Functions ---
 
-type TeamColorClass =
-  | 'ferrari'
-  | 'mercedes'
-  | 'mclaren'
-  | 'redbull'
-  | 'astonmartin'
-  | 'alpine'
-  | 'williams'
-  | 'haas'
-  | 'alfaromeo'
-  | 'alphatauri'
-  | 'gray';
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
-const getTeamColorClass = (teamName: string | undefined): TeamColorClass => {
+type TeamColorClass = string;
+
+const getTeamColorClass = (teamName: string | undefined): string => {
   if (!teamName) return 'gray';
   const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
   if (simpleName.includes('mclaren')) return 'mclaren';
@@ -103,8 +90,10 @@ const getTeamColorClass = (teamName: string | undefined): TeamColorClass => {
   if (simpleName.includes('astonmartin')) return 'astonmartin';
   if (simpleName.includes('williams')) return 'williams';
   if (simpleName.includes('haas')) return 'haas';
-  if (simpleName.includes('sauber')) return 'alfaromeo';
-  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
+  if (simpleName.includes('audi')) return 'audi';
+  if (simpleName.includes('cadillac')) return 'cadillac';
+  if (simpleName.includes('sauber')) return 'kicksauber';
+  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'racingbulls';
   return 'gray';
 };
 
@@ -324,15 +313,15 @@ const SessionResultsTable: React.FC<{
   }
 
   return (
-    <div className="bg-black border border-gray-700 overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
       <Table>
-        <TableHeader className="bg-black border-b border-gray-700">
-          <TableRow className="border-gray-700 hover:bg-transparent">
+        <TableHeader>
+          <TableRow className="border-b border-white/[0.04] hover:bg-transparent">
             {columns.map((col) => (
               <TableHead
                 key={String(col.key)}
                 className={cn(
-                  'text-gray-400 font-black uppercase tracking-wider text-xs py-4',
+                  'text-[12px] font-medium uppercase tracking-wider text-white/35 py-4',
                   col.className
                 )}
               >
@@ -351,26 +340,26 @@ const SessionResultsTable: React.FC<{
               <TableRow
                 key={res.driverCode}
                 className={cn(
-                  'border-gray-700/50 transition-colors group',
-                  isFavorite
-                    ? 'bg-red-600/10 hover:bg-red-600/20 border-l-2 border-l-red-600'
-                    : 'hover:bg-gray-800/30'
+                  'border-b border-white/[0.04] transition-colors group last:border-b-0',
+                  isFavorite ? 'bg-red-500/[0.05] hover:bg-red-500/[0.08]' : 'hover:bg-white/[0.02]'
                 )}
               >
                 {columns.map((col) => (
                   <TableCell
                     key={`${res.driverCode}-${String(col.key)}`}
-                    className={cn('py-3', col.className)}
+                    className={cn('py-4', col.className)}
                   >
                     {col.key === 'displayPosition' ? (
                       isPractice || isQualifying ? (
-                        index + 1
+                        <span className="text-[15px] font-bold text-white/40">{index + 1}</span>
                       ) : (
-                        (res.position ?? '-')
+                        <span className="text-[15px] font-bold text-white/40">
+                          {res.position ?? '-'}
+                        </span>
                       )
                     ) : col.key === 'driver' ? (
                       <div className="flex items-center gap-3">
-                        <span className="font-black text-white group-hover:text-red-500 transition-colors">
+                        <span className="text-[15px] font-semibold text-white group-hover:text-red-400 transition-colors">
                           {res.fullName}
                         </span>
                         {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
@@ -379,31 +368,31 @@ const SessionResultsTable: React.FC<{
                         )}
                       </div>
                     ) : col.key === 'team' ? (
-                      <span className="flex items-center gap-2 text-sm text-gray-400">
+                      <span className="flex items-center gap-2 text-[13px] text-white/45">
                         <span
                           className={cn(
-                            'w-1.5 h-1.5 rounded-full',
+                            'h-1.5 w-1.5 rounded-full',
                             `bg-f1-${getTeamColorClass(res.team)}`
                           )}
-                        ></span>
+                        />
                         {res.team}
                       </span>
                     ) : col.key === 'points' ? (
                       <span
                         className={cn(
-                          'flex items-center justify-end gap-2 font-black',
-                          res.isProvisional ? 'text-yellow-500' : 'text-red-500'
+                          'flex items-center justify-end gap-2 font-bold',
+                          res.isProvisional ? 'text-amber-400' : 'text-red-400'
                         )}
                       >
                         {res.points !== null ? res.points : '-'}
                         {res.isProvisional && (
-                          <span className="text-[10px] uppercase tracking-tighter bg-yellow-500/20 px-1 rounded">
+                          <span className="text-[10px] uppercase tracking-tighter rounded bg-amber-500/10 px-1.5 py-0.5 text-amber-400">
                             Prov
                           </span>
                         )}
                       </span>
                     ) : col.key === 'time' ? (
-                      <span className="text-gray-300">
+                      <span className="text-white/60">
                         {(() => {
                           const isLapped = res.status.includes('Lap');
                           const isFinished =
@@ -415,20 +404,20 @@ const SessionResultsTable: React.FC<{
                             return '-';
                           }
                           return (
-                            <span className="text-red-500 font-black uppercase text-[10px]">
+                            <span className="text-red-400 font-semibold uppercase text-[10px]">
                               {res.status}
                             </span>
                           );
                         })()}
                       </span>
                     ) : col.key === 'laps' ? (
-                      <span className="text-gray-500">{res.laps ?? '-'}</span>
+                      <span className="text-white/35">{res.laps ?? '-'}</span>
                     ) : col.key === 'fastestLapTime' && isPractice ? (
-                      <span className="text-gray-300">{getPracticeLapTime(res) ?? '-'}</span>
+                      <span className="text-white/60">{getPracticeLapTime(res) ?? '-'}</span>
                     ) : col.key === 'lapsCompleted' && isPractice ? (
-                      <span className="text-gray-500">{getPracticeLaps(res) || '-'}</span>
+                      <span className="text-white/35">{getPracticeLaps(res) || '-'}</span>
                     ) : col.key === 'mileage' ? (
-                      <span className="text-gray-300">
+                      <span className="text-white/60">
                         {(() => {
                           const laps = getPracticeLaps(res);
                           const distance = calculateDistance(laps, circuitLength);
@@ -439,12 +428,12 @@ const SessionResultsTable: React.FC<{
                     ) : col.key === 'reliability' ? (
                       <span
                         className={cn(
-                          'font-black',
+                          'font-semibold',
                           (() => {
                             const laps = getPracticeLaps(res);
                             const pct = leaderLaps > 0 ? Math.round((laps / leaderLaps) * 100) : 0;
-                            if (pct >= 90) return 'text-green-400';
-                            if (pct >= 75) return 'text-yellow-400';
+                            if (pct >= 90) return 'text-emerald-400';
+                            if (pct >= 75) return 'text-amber-400';
                             return 'text-red-400';
                           })()
                         )}
@@ -463,8 +452,8 @@ const SessionResultsTable: React.FC<{
                           className={cn(
                             (fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
                               (!fastestLapHolder && res.isFastestLap)
-                              ? 'text-purple-400 font-black'
-                              : 'text-gray-400'
+                              ? 'text-purple-400 font-bold'
+                              : 'text-white/40'
                           )}
                         >
                           {res.driverFastestLapTime}
@@ -488,14 +477,12 @@ const SessionResultsTable: React.FC<{
 
 const SectionHeader = ({
   title,
-  icon: Icon,
 }: {
   title: string;
   icon?: React.ComponentType<{ className?: string }>;
 }) => (
-  <div className="flex items-center gap-3 mb-6 border-b border-gray-700 pb-4">
-    {Icon && <Icon className="w-6 h-6 text-red-600" />}
-    <h2 className="text-2xl font-black uppercase tracking-wider text-white">{title}</h2>
+  <div className="mb-6">
+    <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">{title}</h2>
   </div>
 );
 
@@ -515,21 +502,20 @@ const NavItem = ({
   <button
     onClick={onClick}
     className={cn(
-      'w-full flex items-center gap-3 px-4 py-3 text-sm font-black uppercase tracking-wider transition-all duration-300 border-l-2 text-left',
+      'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[13px] font-semibold uppercase tracking-wider transition-all text-left',
       active
-        ? 'border-red-600 bg-red-600/10 text-white'
-        : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
+        ? 'bg-white/[0.06] text-white border border-white/[0.08]'
+        : 'text-white/45 hover:text-white hover:bg-white/[0.03] border border-transparent'
     )}
   >
-    <Icon className={cn('w-4 h-4', active ? 'text-red-500' : 'text-gray-600')} />
+    <Icon className={cn('h-4 w-4', active ? 'text-red-400' : 'text-white/30')} />
     {label}
   </button>
 );
 
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
-  const { profile, user } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
@@ -587,7 +573,7 @@ const Race = () => {
 
   // Parse ID
 
-  const { year, eventSlug, eventName } = useMemo(() => {
+  const parsedRaceId = (() => {
     if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
     const parts = raceId.split('-');
     const parsedYear = parseInt(parts[0], 10);
@@ -596,7 +582,10 @@ const Race = () => {
     const name = slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
     return { year: parsedYear, eventSlug: slug, eventName: name };
-  }, [raceId]);
+  })();
+  const year = parsedRaceId.year;
+  const eventSlug = parsedRaceId.eventSlug;
+  const eventName = parsedRaceId.eventName;
 
   const isTestingEvent = useMemo(() => {
     const format = eventName?.toLowerCase() ?? '';
@@ -786,36 +775,37 @@ const Race = () => {
     isTestingEvent &&
     (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
 
-  useEffect(() => {
-    if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary') {
-      setTestingWindow('full');
-    }
-  }, [isTestingSession, isTestingSplitSession, selectedSession]);
+  // Derived testing window: forced to 'full' when conditions invalidate session splits.
+  const effectiveTestingWindow =
+    !isTestingSession || isTestingSplitSession || selectedSession === 'Summary'
+      ? 'full'
+      : testingWindow;
 
   const getSessionWindowLapTime = useCallback(
     (result: DetailedRaceResult): string | null | undefined => {
       if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
-      if (testingWindow === 'morning') return result.morningFastestLapTime ?? result.fastestLapTime;
-      if (testingWindow === 'afternoon') {
+      if (effectiveTestingWindow === 'morning')
+        return result.morningFastestLapTime ?? result.fastestLapTime;
+      if (effectiveTestingWindow === 'afternoon') {
         return result.afternoonFastestLapTime ?? result.fastestLapTime;
       }
       return result.fastestLapTime;
     },
-    [isTestingSession, isTestingSplitSession, testingWindow]
+    [isTestingSession, isTestingSplitSession, effectiveTestingWindow]
   );
 
   const getSessionWindowLaps = useCallback(
     (result: DetailedRaceResult): number => {
       if (!isTestingSession || isTestingSplitSession || selectedSession === 'Summary')
         return result.lapsCompleted ?? 0;
-      if (testingWindow === 'morning')
+      if (effectiveTestingWindow === 'morning')
         return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
-      if (testingWindow === 'afternoon') {
+      if (effectiveTestingWindow === 'afternoon') {
         return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
       }
       return result.lapsCompleted ?? 0;
     },
-    [isTestingSession, isTestingSplitSession, testingWindow, selectedSession]
+    [isTestingSession, isTestingSplitSession, effectiveTestingWindow, selectedSession]
   );
 
   const testingInsights = useMemo(() => {
@@ -965,12 +955,13 @@ const Race = () => {
 
   if (isLoadingSessions) {
     return (
-      <div className="min-h-screen bg-black text-white font-sans flex items-center justify-center">
+      <div
+        style={inter}
+        className="flex min-h-screen items-center justify-center bg-[#09090b] text-white"
+      >
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
-          <div className="text-gray-500 font-mono text-sm animate-pulse">
-            LOADING SESSION DATA...
-          </div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+          <div className="text-[13px] text-white/35 animate-pulse">Loading session data...</div>
         </div>
       </div>
     );
@@ -983,7 +974,7 @@ const Race = () => {
   const shouldShowSchedule = !hasRaceData && !showAnalysis;
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
         title={`${eventName} ${year} - F1 Race Analysis`}
         description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
@@ -998,108 +989,110 @@ const Race = () => {
       />
       <DashboardNavbar />
 
-      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between md:items-end mb-12 gap-6 border-b border-gray-700 pb-8">
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="pl-0 text-gray-500 hover:text-white hover:bg-transparent -ml-2 mb-2"
-              onClick={() => {
-                if (showAnalysis && !hasRaceData) {
-                  setShowAnalysis(false);
-                } else {
-                  navigate(-1);
-                }
-              }}
-            >
-              <ArrowLeft01Icon className="mr-2 h-4 w-4" />{' '}
-              {showAnalysis && !hasRaceData ? 'Back to Schedule' : 'Back'}
-            </Button>
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider text-white">
-              {eventName}
-            </h1>
-            <div className="flex items-center gap-4 text-gray-400 font-mono text-sm">
-              <span className="bg-black px-2 py-1 border border-gray-700">{year} SEASON</span>
-              {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
-                <span className="text-red-500 font-black uppercase">
-                  {availableSessions.find((s) => s.type === selectedSession)?.name}
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="mb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
+                    </span>
+                    Season {year}
+                  </span>
+                </div>
+                <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+                  {eventName}
+                </h1>
+                {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
+                  <p className="mt-1 text-[15px] text-white/50">
+                    {availableSessions.find((s) => s.type === selectedSession)?.name}
+                  </p>
+                )}
+              </div>
 
-          {!shouldShowSchedule &&
-            availableSessions.length > 0 &&
-            (isTestingEvent ? (
-              <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[300px] bg-red-900/20 border border-red-600/50 text-white font-black uppercase tracking-widest h-14 text-lg">
-                  <SelectValue placeholder="SELECT SESSION" />
-                </SelectTrigger>
-                <SelectContent className="bg-black border border-gray-700 text-white">
-                  <SelectItem
-                    value="Summary"
-                    className="uppercase font-black text-red-500 focus:bg-red-900/30 focus:text-red-400 py-3 border-b border-gray-700"
-                  >
-                    3-DAY TESTING SUMMARY
-                  </SelectItem>
-                  {availableSessions
-                    .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
-                    .map((s) => (
+              {!shouldShowSchedule &&
+                availableSessions.length > 0 &&
+                (isTestingEvent ? (
+                  <Select value={selectedSession} onValueChange={setSelectedSession}>
+                    <SelectTrigger className="w-auto min-w-[240px] rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-[13px] font-semibold uppercase tracking-wider text-white/70 transition-colors hover:border-white/[0.1] hover:text-white">
+                      <SelectValue placeholder="Select Session" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
                       <SelectItem
-                        key={s.type}
-                        value={s.type}
-                        className="uppercase font-black focus:bg-gray-800 focus:text-white py-2"
+                        value="Summary"
+                        className="text-[13px] font-semibold text-red-400 focus:bg-white/[0.06] focus:text-red-300"
                       >
-                        {s.name}
+                        3-Day Testing Summary
                       </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Select value={selectedSession} onValueChange={setSelectedSession}>
-                <SelectTrigger className="w-[200px] bg-black border border-gray-700 text-white font-black uppercase tracking-wider h-12">
-                  <SelectValue placeholder="SESSION" />
-                </SelectTrigger>
-                <SelectContent className="bg-black border border-gray-700 text-white">
-                  {availableSessions
-                    .filter((s) => s.type !== 'Q')
-                    .map((s) => (
-                      <SelectItem
-                        key={s.type}
-                        value={s.type}
-                        className="uppercase font-black focus:bg-gray-800 focus:text-red-500"
-                      >
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            ))}
-        </header>
+                      {availableSessions
+                        .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
+                        .map((s) => (
+                          <SelectItem
+                            key={s.type}
+                            value={s.type}
+                            className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
+                          >
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={selectedSession} onValueChange={setSelectedSession}>
+                    <SelectTrigger className="w-auto min-w-[180px] rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-[13px] font-semibold uppercase tracking-wider text-white/70 transition-colors hover:border-white/[0.1] hover:text-white">
+                      <SelectValue placeholder="Session" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+                      {availableSessions
+                        .filter((s) => s.type !== 'Q')
+                        .map((s) => (
+                          <SelectItem
+                            key={s.type}
+                            value={s.type}
+                            className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
+                          >
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                ))}
+            </div>
+          </motion.div>
+          <div className="mt-8 h-px w-full bg-white/[0.05]" />
+        </div>
 
         {shouldShowSchedule ? (
           sessionSchedule ? (
-            // --- UPCOMING RACE DISPLAY ---
-            <div className="space-y-12">
-              {/* Hero Countdown Section */}
-              <div className="bg-black/30 border border-gray-700 p-8 md:p-12 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Flag01Icon className="w-64 h-64" />
+            <div className="space-y-10">
+              {/* Hero Countdown */}
+              <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 md:p-10">
+                <div className="absolute right-4 top-4 text-white/[0.03] transition-opacity group-hover:text-white/[0.05]">
+                  <Flag01Icon className="h-48 w-48" />
                 </div>
-
-                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+                <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
                   <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-red-500 font-black uppercase tracking-widest text-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                      </span>
+                      <span className="text-[12px] font-semibold uppercase tracking-wider text-red-400">
                         Upcoming Session
                       </span>
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider text-white mb-2">
+                    <h2 className="mb-2 text-2xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-3xl">
                       Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
                     </h2>
-                    <div className="text-gray-400 font-mono text-lg">
+                    <div className="text-[15px] text-white/50">
                       {nextSession
                         ? new Date(nextSession.date).toLocaleDateString(undefined, {
                             weekday: 'long',
@@ -1109,48 +1102,51 @@ const Race = () => {
                         : 'Dates TBD'}
                     </div>
                   </div>
-
                   {countdown ? (
-                    <div className="flex gap-4 md:gap-8 text-center">
+                    <div className="flex gap-5 sm:gap-7">
                       {[
                         { label: 'DAYS', value: countdown.days },
                         { label: 'HRS', value: countdown.hours },
                         { label: 'MIN', value: countdown.minutes },
                         { label: 'SEC', value: countdown.seconds },
-                      ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center">
-                          <div className="text-4xl md:text-6xl font-mono font-black text-white tracking-tighter leading-none">
+                      ].map((item) => (
+                        <div key={item.label} className="text-center">
+                          <div
+                            className={`text-4xl font-bold tabular-nums leading-none sm:text-5xl ${item.label === 'SEC' ? 'text-red-400' : 'text-white'}`}
+                          >
                             {item.value.toString().padStart(2, '0')}
                           </div>
-                          <div className="text-xs text-gray-500 font-black uppercase tracking-widest mt-2">
+                          <div className="mt-1 text-[10px] uppercase tracking-widest text-white/35">
                             {item.label}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter leading-none">
-                      SESSION IN PROGRESS
+                    <div className="text-3xl font-bold uppercase italic text-red-400">
+                      Session in Progress
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Schedule Section */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-700 pb-4">
-                  <h3 className="text-2xl font-black uppercase tracking-wider text-white">
+              {/* Schedule */}
+              <div>
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
                     Weekend Schedule
                   </h3>
-                  <div className="flex items-center gap-2 bg-black p-1 border border-gray-700">
+                  <div className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
                     <button
                       onClick={() => {
                         setIs24Hour(true);
                         trackInteraction('time_format_changed', { format: '24h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-black transition-colors',
-                        is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                        'rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors',
+                        is24Hour
+                          ? 'bg-white/[0.08] text-white'
+                          : 'text-white/35 hover:text-white/60'
                       )}
                     >
                       24H
@@ -1161,217 +1157,206 @@ const Race = () => {
                         trackInteraction('time_format_changed', { format: '12h' });
                       }}
                       className={cn(
-                        'px-3 py-1 text-xs font-black transition-colors',
-                        !is24Hour ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'
+                        'rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-colors',
+                        !is24Hour
+                          ? 'bg-white/[0.08] text-white'
+                          : 'text-white/35 hover:text-white/60'
                       )}
                     >
                       12H
                     </button>
                   </div>
                 </div>
+                <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+                  <div className="divide-y divide-white/[0.04]">
+                    {sessionSchedule.sessions.map((session, idx) => {
+                      const isNext = nextSession && session.name === nextSession.name;
+                      let sessionType = '';
+                      const lowerName = session.name.toLowerCase();
+                      if (lowerName.includes('practice 1')) sessionType = 'FP1';
+                      else if (lowerName.includes('practice 2')) sessionType = 'FP2';
+                      else if (lowerName.includes('practice 3')) sessionType = 'FP3';
+                      else if (
+                        lowerName.includes('sprint qualifying') ||
+                        lowerName.includes('sprint shootout')
+                      )
+                        sessionType = 'SQ';
+                      else if (lowerName.includes('sprint') && !lowerName.includes('qualifying'))
+                        sessionType = 'Sprint';
+                      else if (lowerName.includes('qualifying') && !lowerName.includes('sprint'))
+                        sessionType = 'Q';
+                      else if (lowerName === 'race') sessionType = 'R';
 
-                <div className="grid gap-px bg-gray-800 border border-gray-700 overflow-hidden">
-                  {/* Table Header */}
-                  {/* Table Header Removed as per request */}
+                      const isAvailable = availableSessions.some((s) => {
+                        if (sessionType === 'Q')
+                          return (
+                            s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3'
+                          );
+                        if (sessionType === 'SQ')
+                          return (
+                            s.type === 'SQ' ||
+                            s.type === 'SQ1' ||
+                            s.type === 'SQ2' ||
+                            s.type === 'SQ3'
+                          );
+                        return s.type === sessionType;
+                      });
 
-                  {/* Table Body */}
-                  {sessionSchedule.sessions.map((session, idx) => {
-                    const isNext = nextSession && session.name === nextSession.name;
-                    // Map session name to type for available check (simplified mapping)
-                    let sessionType = '';
-                    const lowerName = session.name.toLowerCase();
-                    if (lowerName.includes('practice 1')) sessionType = 'FP1';
-                    else if (lowerName.includes('practice 2')) sessionType = 'FP2';
-                    else if (lowerName.includes('practice 3')) sessionType = 'FP3';
-                    else if (
-                      lowerName.includes('sprint qualifying') ||
-                      lowerName.includes('sprint shootout')
-                    )
-                      sessionType = 'SQ';
-                    else if (lowerName.includes('sprint') && !lowerName.includes('qualifying'))
-                      sessionType = 'Sprint';
-                    else if (lowerName.includes('qualifying') && !lowerName.includes('sprint'))
-                      sessionType = 'Q';
-                    else if (lowerName === 'race') sessionType = 'R';
-
-                    const isAvailable = availableSessions.some((s) => {
-                      if (sessionType === 'Q')
-                        return (
-                          s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3'
-                        );
-                      if (sessionType === 'SQ')
-                        return (
-                          s.type === 'SQ' ||
-                          s.type === 'SQ1' ||
-                          s.type === 'SQ2' ||
-                          s.type === 'SQ3'
-                        );
-                      return s.type === sessionType;
-                    });
-
-                    return (
-                      <div
-                        key={idx}
-                        className={cn(
-                          'grid grid-cols-1 md:grid-cols-4 p-6 gap-4 transition-colors group items-center',
-                          isNext
-                            ? 'bg-red-900/10 hover:bg-red-900/20'
-                            : 'bg-black hover:bg-gray-800/30'
-                        )}
-                      >
-                        {/* Date Column */}
-                        <div className="flex flex-col justify-center border-r border-gray-700 pr-4">
-                          <div
-                            className={cn(
-                              'font-mono text-xl font-black',
-                              isNext ? 'text-white' : 'text-gray-300'
-                            )}
-                          >
-                            {new Date(session.date)
-                              .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-                              .toUpperCase()}
-                          </div>
-                          <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
-                            {new Date(session.date).toLocaleDateString(undefined, {
-                              weekday: 'short',
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Session Name */}
-                        <div className="flex flex-col justify-center pl-2">
-                          <div
-                            className={cn(
-                              'font-black text-lg uppercase tracking-tight mb-1',
-                              isNext ? 'text-red-500' : 'text-white'
-                            )}
-                          >
-                            {session.name}
-                          </div>
-                        </div>
-
-                        {/* Local Time (Hidden if Results available) */}
-                        <div className="hidden md:flex flex-col justify-center">
-                          {!isAvailable && (
-                            <>
-                              <div className="font-mono text-gray-300 text-lg">
-                                {formatTimeStr(session.localTime)}
-                              </div>
-                              <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
-                                Local
-                              </div>
-                            </>
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            'flex items-center gap-4 px-5 py-4 transition-colors',
+                            isNext ? 'bg-red-500/[0.04]' : 'hover:bg-white/[0.02]'
                           )}
-                        </div>
-
-                        {/* Your Time / Results Button / LIVE Indicator */}
-                        <div className="hidden md:flex flex-col justify-center items-end md:items-start">
-                          {(() => {
-                            // Check if session is LIVE
-                            const sessionDate = new Date(session.date);
-                            const now = new Date();
-                            const diffMs = now.getTime() - sessionDate.getTime();
-                            const diffMins = diffMs / (1000 * 60);
-
-                            // Define durations (in minutes)
-                            let duration = 60; // Default 1 hour
-                            if (sessionType === 'R')
-                              duration = 180; // Race: 3 hours
-                            else if (sessionType === 'Sprint') duration = 60; // Sprint: 1 hour
-
-                            const isLive = diffMins >= 0 && diffMins < duration;
-
-                            if (isLive) {
-                              return (
-                                <div className="flex items-center gap-2 text-red-500 animate-pulse">
-                                  <div className="relative flex h-3 w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                                  </div>
-                                  <span className="font-black uppercase tracking-wider text-sm">
-                                    LIVE
-                                  </span>
-                                </div>
-                              );
-                            }
-
-                            if (isAvailable) {
-                              return (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white uppercase font-black tracking-wider w-full md:w-auto"
-                                  onClick={() => {
-                                    let targetSession = sessionType;
-                                    if (
-                                      sessionType === 'Q' &&
-                                      !availableSessions.some((s) => s.type === 'Q')
-                                    ) {
-                                      if (availableSessions.some((s) => s.type === 'Q3'))
-                                        targetSession = 'Q3';
-                                      else if (availableSessions.some((s) => s.type === 'Q2'))
-                                        targetSession = 'Q2';
-                                      else if (availableSessions.some((s) => s.type === 'Q1'))
-                                        targetSession = 'Q1';
-                                    }
-                                    if (
-                                      sessionType === 'SQ' &&
-                                      !availableSessions.some((s) => s.type === 'SQ')
-                                    ) {
-                                      if (availableSessions.some((s) => s.type === 'SQ3'))
-                                        targetSession = 'SQ3';
-                                      else if (availableSessions.some((s) => s.type === 'SQ2'))
-                                        targetSession = 'SQ2';
-                                      else if (availableSessions.some((s) => s.type === 'SQ1'))
-                                        targetSession = 'SQ1';
-                                    }
-                                    setSelectedSession(targetSession);
-                                    setShowAnalysis(true);
-                                    trackInteraction('results_button_clicked', {
-                                      sessionKey: targetSession,
-                                    });
-                                  }}
-                                >
-                                  Results
-                                </Button>
-                              );
-                            }
-
-                            return (
+                        >
+                          <div className="w-16 shrink-0 text-center">
+                            <div
+                              className={cn(
+                                'text-[15px] font-bold tabular-nums',
+                                isNext ? 'text-white' : 'text-white/60'
+                              )}
+                            >
+                              {new Date(session.date)
+                                .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                                .toUpperCase()}
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/25">
+                              {new Date(session.date).toLocaleDateString(undefined, {
+                                weekday: 'short',
+                              })}
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              'h-8 w-0.5 rounded-full',
+                              isNext ? 'bg-red-400' : 'bg-white/[0.06]'
+                            )}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className={cn(
+                                'text-[14px] font-semibold',
+                                isNext ? 'text-red-400' : 'text-white'
+                              )}
+                            >
+                              {session.name}
+                            </div>
+                          </div>
+                          <div className="hidden shrink-0 text-right md:block">
+                            {!isAvailable && (
                               <>
                                 <div
                                   className={cn(
-                                    'font-mono text-lg',
-                                    isNext ? 'text-white' : 'text-gray-300'
+                                    'text-[14px] tabular-nums',
+                                    isNext ? 'text-white' : 'text-white/50'
                                   )}
                                 >
-                                  {formatDate(session.date)}
+                                  {formatTimeStr(session.localTime)}
                                 </div>
-                                <div className="text-xs text-gray-600 uppercase font-black tracking-wider">
-                                  Your Time
+                                <div className="text-[10px] uppercase tracking-wider text-white/25">
+                                  Local
                                 </div>
                               </>
-                            );
-                          })()}
+                            )}
+                          </div>
+                          <div className="hidden shrink-0 md:block">
+                            {(() => {
+                              const sessionDate = new Date(session.date);
+                              const diffMins =
+                                (new Date().getTime() - sessionDate.getTime()) / (1000 * 60);
+                              let duration = 60;
+                              if (sessionType === 'R') duration = 180;
+                              else if (sessionType === 'Sprint') duration = 60;
+                              const isLive = diffMins >= 0 && diffMins < duration;
+
+                              if (isLive) {
+                                return (
+                                  <div className="flex items-center gap-1.5 text-emerald-400">
+                                    <span className="relative flex h-1.5 w-1.5">
+                                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    </span>
+                                    <span className="text-[11px] font-semibold uppercase">
+                                      Live
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (isAvailable) {
+                                return (
+                                  <button
+                                    onClick={() => {
+                                      let targetSession = sessionType;
+                                      if (
+                                        sessionType === 'Q' &&
+                                        !availableSessions.some((s) => s.type === 'Q')
+                                      ) {
+                                        if (availableSessions.some((s) => s.type === 'Q3'))
+                                          targetSession = 'Q3';
+                                        else if (availableSessions.some((s) => s.type === 'Q2'))
+                                          targetSession = 'Q2';
+                                        else if (availableSessions.some((s) => s.type === 'Q1'))
+                                          targetSession = 'Q1';
+                                      }
+                                      if (
+                                        sessionType === 'SQ' &&
+                                        !availableSessions.some((s) => s.type === 'SQ')
+                                      ) {
+                                        if (availableSessions.some((s) => s.type === 'SQ3'))
+                                          targetSession = 'SQ3';
+                                        else if (availableSessions.some((s) => s.type === 'SQ2'))
+                                          targetSession = 'SQ2';
+                                        else if (availableSessions.some((s) => s.type === 'SQ1'))
+                                          targetSession = 'SQ1';
+                                      }
+                                      setSelectedSession(targetSession);
+                                      setShowAnalysis(true);
+                                      trackInteraction('results_button_clicked', {
+                                        sessionKey: targetSession,
+                                      });
+                                    }}
+                                    className="rounded-lg border border-red-500/20 bg-red-500/[0.07] px-3 py-1.5 text-[11px] font-semibold uppercase text-red-400 transition-colors hover:bg-red-500/[0.12]"
+                                  >
+                                    Results
+                                  </button>
+                                );
+                              }
+                              return (
+                                <div className="text-right">
+                                  <div
+                                    className={cn(
+                                      'text-[14px] tabular-nums',
+                                      isNext ? 'text-white' : 'text-white/50'
+                                    )}
+                                  >
+                                    {formatDate(session.date)}
+                                  </div>
+                                  <div className="text-[10px] uppercase tracking-wider text-white/25">
+                                    Your Time
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-64">
-              <div className="w-12 h-12 border-4 border-gray-800 border-t-red-600 rounded-full animate-spin"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
             </div>
           )
         ) : (
-          // --- FINISHED RACE DISPLAY (Vertical Scroll) ---
-          <div className="flex flex-col lg:flex-row gap-12">
-            {/* Sticky Sidebar */}
+          <div className="flex flex-col gap-8 lg:flex-row">
+            {/* Sidebar */}
             {selectedSession !== 'Summary' && (
-              <aside className="hidden lg:block w-64 shrink-0">
-                <div className="sticky top-32 space-y-1">
+              <aside className="hidden w-56 shrink-0 lg:block">
+                <div className="sticky top-24 space-y-1.5">
                   <NavItem
                     id="overview"
                     label="Overview"
@@ -1443,17 +1428,16 @@ const Race = () => {
               </aside>
             )}
 
-            {/* Main Content Stream */}
-            <div className="flex-1 space-y-8">
-              {/* 1. Overview Section (Includes Results) */}
+            {/* Main Content */}
+            <div className="min-w-0 flex-1 space-y-8">
+              {/* Overview */}
               {activeSection === 'overview' && (
-                <div className="space-y-12 animate-in fade-in duration-500">
+                <div className="space-y-10">
                   <section id="overview">
                     <SectionHeader
                       title={`${availableSessions.find((s) => s.type === selectedSession)?.name || 'Race'} Overview`}
-                      icon={ChampionIcon}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                       {selectedSession === 'R' || selectedSession === 'Sprint' ? (
                         <>
                           {raceWinner && (
@@ -1534,12 +1518,12 @@ const Race = () => {
                   </section>
 
                   <section id="results">
-                    <SectionHeader title="Session Results" icon={UserGroupIcon} />
+                    <SectionHeader title="Session Results" />
 
                     {isTestingSession &&
                       !isTestingSplitSession &&
                       selectedSession !== 'Summary' && (
-                        <div className="mb-6 flex items-center gap-2 bg-black border border-gray-700 p-2 w-fit">
+                        <div className="mb-5 flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 w-fit">
                           {(
                             [
                               ['full', 'Full Day'],
@@ -1554,10 +1538,10 @@ const Race = () => {
                                 trackInteraction('testing_window_toggled', { window: value });
                               }}
                               className={cn(
-                                'px-3 py-1 text-xs font-black uppercase tracking-wider transition-colors border',
+                                'rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors',
                                 testingWindow === value
-                                  ? 'bg-white border-white text-black'
-                                  : 'bg-black border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+                                  ? 'bg-white/[0.08] text-white'
+                                  : 'text-white/35 hover:text-white/60'
                               )}
                             >
                               {label}
@@ -1568,42 +1552,47 @@ const Race = () => {
 
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
-                      <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10 text-yellow-500">
-                        <Alert02Icon className="h-4 w-4" />
-                        <AlertTitle className="font-black uppercase tracking-wider">
-                          Provisional Results
-                        </AlertTitle>
-                        <AlertDescription>
-                          Official race results are still being processed. Points and positions
-                          shown are provisional and subject to confirmation.
-                        </AlertDescription>
-                      </Alert>
+                      <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-5 py-4">
+                        <Alert02Icon className="h-4 w-4 shrink-0 text-amber-400" />
+                        <div>
+                          <div className="text-[12px] font-semibold uppercase tracking-wider text-amber-400">
+                            Provisional Results
+                          </div>
+                          <div className="text-[13px] text-amber-400/60">
+                            Official results are still being processed. Positions shown are
+                            provisional.
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {isTestingSession && selectedSession !== 'Summary' && (
-                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
-                        <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
-                          Testing Focus
-                        </AlertTitle>
-                        <AlertDescription>
-                          Results are sorted by fastest lap. Mileage and reliability columns
-                          highlight long-run robustness.
-                        </AlertDescription>
-                      </Alert>
+                      <div className="mb-5 flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] px-5 py-4">
+                        <Alert02Icon className="h-4 w-4 shrink-0 text-blue-400" />
+                        <div>
+                          <div className="text-[12px] font-semibold uppercase tracking-wider text-blue-400">
+                            Testing Focus
+                          </div>
+                          <div className="text-[13px] text-blue-400/60">
+                            Sorted by fastest lap. Mileage and reliability columns highlight
+                            long-run robustness.
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {isTestingSession && selectedSession === 'Summary' && (
-                      <Alert className="mb-6 border-blue-500/50 bg-blue-500/10 text-blue-200">
-                        <Alert02Icon className="h-4 w-4 text-blue-400" />
-                        <AlertTitle className="font-black uppercase tracking-wider text-blue-300">
-                          3-Day Testing Summary
-                        </AlertTitle>
-                        <AlertDescription>
-                          Aggregated data from all pre-season testing sessions. Total mileage and
-                          fastest laps are combined.
-                        </AlertDescription>
-                      </Alert>
+                      <div className="mb-5 flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] px-5 py-4">
+                        <Alert02Icon className="h-4 w-4 shrink-0 text-blue-400" />
+                        <div>
+                          <div className="text-[12px] font-semibold uppercase tracking-wider text-blue-400">
+                            3-Day Testing Summary
+                          </div>
+                          <div className="text-[13px] text-blue-400/60">
+                            Aggregated data from all pre-season testing sessions.
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {effectiveSessionResults && (
@@ -1675,22 +1664,22 @@ const Race = () => {
                       className="w-full"
                     >
                       <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
-                        <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
+                        <TabsList className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 h-auto gap-1">
                           <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
                           >
                             Lap History
                           </TabsTrigger>
                           <TabsTrigger
                             value="pace"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
                           >
                             Pace Distribution
                           </TabsTrigger>
                           <TabsTrigger
                             value="gap"
-                            className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-400 border border-gray-700 data-[state=active]:border-white text-sm font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-500"
+                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
                           >
                             Gap to Leader
                           </TabsTrigger>
@@ -1840,7 +1829,7 @@ const Race = () => {
                       }
 
                       return (
-                        <div className="space-y-12">
+                        <div className="space-y-6">
                           <CircuitComparisonChart
                             year={year!}
                             event={eventName}
@@ -1852,7 +1841,7 @@ const Race = () => {
 
                           {/* Comparison Charts if selected */}
                           {circuitDrivers.shouldLoadChart && (
-                            <div className="space-y-12">
+                            <div className="space-y-6">
                               {/* Race Performance Summary */}
                               <HeadToHeadEnriched
                                 year={year!}
@@ -1877,7 +1866,7 @@ const Race = () => {
                               />
 
                               {/* Other Telemetry - Stacked */}
-                              <div className="space-y-12">
+                              <div className="space-y-6">
                                 <DriverComparisonTelemetry
                                   year={year!}
                                   event={eventName}
@@ -2031,16 +2020,14 @@ const Race = () => {
                   featureName="Session Replay"
                   description="Experience immersive race telemetry with real-time car positions and data overlays"
                 >
-                  <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="bg-black border border-gray-700 overflow-hidden h-[80vh] relative">
+                  <div className="space-y-6">
+                    <div className="relative h-[80vh] overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
                       <React.Suspense
                         fallback={
-                          <div className="h-full flex items-center justify-center">
+                          <div className="flex h-full items-center justify-center">
                             <div className="text-center">
-                              <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin mx-auto mb-2"></div>
-                              <div className="text-xs text-gray-500 font-mono">
-                                LOADING REPLAY MODULE...
-                              </div>
+                              <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+                              <div className="text-[11px] text-white/30">Loading replay...</div>
                             </div>
                           </div>
                         }
@@ -2050,8 +2037,8 @@ const Race = () => {
                           if (isTestingSession) {
                             if (isTestingSplitSession && testingSessionAlias) {
                               replaySessionTarget = `${analysisSession}_${testingSessionAlias.window.toUpperCase()}`;
-                            } else if (testingWindow !== 'full') {
-                              replaySessionTarget = `${analysisSession}_${testingWindow.toUpperCase()}`;
+                            } else if (effectiveTestingWindow !== 'full') {
+                              replaySessionTarget = `${analysisSession}_${effectiveTestingWindow.toUpperCase()}`;
                             }
                           }
 
@@ -2072,7 +2059,7 @@ const Race = () => {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

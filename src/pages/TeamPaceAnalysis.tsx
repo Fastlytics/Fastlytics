@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Activity01Icon,
   Calendar03Icon,
@@ -47,6 +47,51 @@ import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 
+const TeamPaceTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
+  if (active && payload && payload.length) {
+    const sortedPayload = [...payload].sort((a, b) => (a.value || 0) - (b.value || 0));
+    return (
+      <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[200px]">
+        <p className="text-gray-400 font-mono text-xs mb-3 uppercase tracking-wider border-b border-gray-800 pb-2">
+          {label}
+        </p>
+        {sortedPayload.map((entry, index: number) => (
+          <div key={index} className="flex items-center justify-between gap-4 mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-gray-200 font-bold text-sm">{entry.name}</span>
+            </div>
+            <span className="text-white font-mono text-sm font-bold">{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const TeamPaceLegend = ({ payload }: CustomLegendProps) => {
+  if (!payload) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-3 pt-6 border-t border-gray-800/50 mt-4">
+      {payload.map((entry, index: number) => (
+        <div
+          key={`legend-${index}`}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-gray-800 hover:border-gray-700 transition-colors"
+        >
+          <div
+            className="w-2 h-2 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.2)]"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+            {entry.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const TeamPaceAnalysis = () => {
   const navigate = useNavigate();
   const { trackEvent, trackPageView } = useAnalytics();
@@ -71,7 +116,6 @@ const TeamPaceAnalysis = () => {
   const [eventData, setEventData] = useState<TeamPaceEvent | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTeams, setActiveTeams] = useState<string[]>([]);
-  const [selectedEventName, setSelectedEventName] = useState<string>(''); // For display in Select
 
   // Track page view
   useEffect(() => {
@@ -100,11 +144,9 @@ const TeamPaceAnalysis = () => {
             const firstEvent = data[0];
             const slug = firstEvent.eventName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
             setSelectedEventSlug(slug);
-            setSelectedEventName(firstEvent.eventName);
           }
         } else {
           setSelectedEventSlug(null);
-          setSelectedEventName('');
         }
       } catch (error) {
         console.error('Error fetching summary:', error);
@@ -158,15 +200,16 @@ const TeamPaceAnalysis = () => {
     fetchEventData();
   }, [selectedEventSlug, selectedYear]);
 
-  // Update selected event name when slug or list changes
-  useEffect(() => {
+  // Derive selected event name from slug and list
+  const selectedEventName = useMemo(() => {
     if (selectedEventSlug && summaryList.length > 0) {
       const event = summaryList.find(
         (e) =>
           e.eventName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_') === selectedEventSlug
       );
-      if (event) setSelectedEventName(event.eventName);
+      return event?.eventName || '';
     }
+    return '';
   }, [selectedEventSlug, summaryList]);
 
   // Format Data for Evolution Chart
@@ -260,54 +303,6 @@ const TeamPaceAnalysis = () => {
     };
     const normalized = colorName.toLowerCase().replace(/\s+/g, '');
     return colors[normalized] || '#666666';
-  };
-
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
-    if (active && payload && payload.length) {
-      // Sort by rank ascending (1 is best, so 1 at top)
-      const sortedPayload = [...payload].sort((a, b) => (a.value || 0) - (b.value || 0));
-
-      return (
-        <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[200px]">
-          <p className="text-gray-400 font-mono text-xs mb-3 uppercase tracking-wider border-b border-gray-800 pb-2">
-            {label}
-          </p>
-          {sortedPayload.map((entry, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-gray-200 font-bold text-sm">{entry.name}</span>
-              </div>
-              <span className="text-white font-mono text-sm font-bold">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  // Custom Legend Component
-  const CustomLegend = ({ payload }: CustomLegendProps) => {
-    if (!payload) return null;
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-3 pt-6 border-t border-gray-800/50 mt-4">
-        {payload.map((entry, index: number) => (
-          <div
-            key={`legend-${index}`}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-gray-800 hover:border-gray-700 transition-colors"
-          >
-            <div
-              className="w-2 h-2 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.2)]"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-              {entry.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -488,8 +483,8 @@ const TeamPaceAnalysis = () => {
                       axisLine={false}
                       width={40}
                     />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend content={<CustomLegend />} verticalAlign="bottom" />
+                    <Tooltip content={<TeamPaceTooltip />} />
+                    <Legend content={<TeamPaceLegend />} verticalAlign="bottom" />
                     {activeTeams.map((team) => (
                       <Line
                         key={team}

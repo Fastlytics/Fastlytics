@@ -24,20 +24,6 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
-
-interface TooltipPayloadItem {
-  value: number | null;
-  name: string;
-  color?: string;
-}
-
-// Extended LegendPayload type with custom id field
-interface CustomLegendPayload {
-  value?: string;
-  color?: string;
-  id?: string;
-}
-
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -49,6 +35,19 @@ import {
   TooltipProvider,
   TooltipTrigger as ShadTooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+interface TooltipPayloadItem {
+  value: number | null;
+  name: string;
+  color?: string;
+}
+
+interface CustomLegendPayload {
+  value?: string;
+  color?: string;
+  id?: string;
+}
 
 interface PositionChartProps {
   className?: string;
@@ -59,6 +58,8 @@ interface PositionChartProps {
   sessionResults?: DetailedRaceResult[];
   favoriteDriver?: string | null;
 }
+
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 const PositionChart: React.FC<PositionChartProps> = ({
   className,
@@ -78,6 +79,15 @@ const PositionChart: React.FC<PositionChartProps> = ({
   });
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
   const positionData = lapData;
+
+  const driverNameMap = useMemo(() => {
+    if (!sessionResults) return new Map<string, string>();
+    const map = new Map<string, string>();
+    sessionResults.forEach((r) => {
+      if (r.driverCode && r.fullName) map.set(r.driverCode, r.fullName);
+    });
+    return map;
+  }, [sessionResults]);
 
   const driverCodes = useMemo(() => {
     if (!positionData || positionData.length === 0) return [];
@@ -128,7 +138,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const renderContent = () => {
     if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
       return (
-        <div className="w-full h-[400px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[400px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">
           No position data found or provided.
         </div>
       );
@@ -139,45 +149,55 @@ const PositionChart: React.FC<PositionChartProps> = ({
     return (
       <ResponsiveContainer width="100%" height={400} className="export-chart-container">
         <LineChart data={positionData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
           <XAxis
             dataKey="LapNumber"
-            stroke="#666"
-            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+            stroke="rgba(255,255,255,0.15)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
+            }}
             padding={{ left: 10, right: 10 }}
             label={{
-              value: 'Lap Number',
+              value: 'LAP NUMBER',
               position: 'insideBottom',
               offset: -5,
-              fill: '#FFF',
-              fontSize: 13,
-              fontFamily: 'Geist Mono',
+              fill: 'rgba(255,255,255,0.4)',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
             }}
             allowDecimals={false}
           />
           <YAxis
-            stroke="#666"
-            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+            stroke="rgba(255,255,255,0.15)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
+            }}
             reversed={true}
             domain={[1, 'dataMax + 1']}
             interval={0}
             tickFormatter={(value) => `P${value}`}
             allowDecimals={false}
-            width={45}
+            width={40}
           />
           <Brush
             dataKey="LapNumber"
-            height={30}
-            stroke="#333"
-            fill="#111"
+            height={24}
+            stroke="rgba(255,255,255,0.1)"
+            fill="rgba(255,255,255,0.03)"
             tickFormatter={() => ''}
-            travellerWidth={10}
+            travellerWidth={8}
           />
-          <ReferenceLine x={currentLap} stroke="red" strokeDasharray="3 3" />
+          <ReferenceLine x={currentLap} stroke="#ef4444" strokeDasharray="3 3" />
           <Tooltip
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null;
-              // Sort by position
               const typedPayload = payload as TooltipPayloadItem[];
               const sortedPayload = [...typedPayload].sort((a, b) => {
                 if (a.value === null) return 1;
@@ -186,11 +206,14 @@ const PositionChart: React.FC<PositionChartProps> = ({
               });
 
               return (
-                <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[500px] z-50">
-                  <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                <div
+                  className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
+                  style={inter}
+                >
+                  <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
                     Lap {label}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
                     {sortedPayload.map((entry) => {
                       const driverCode = entry.name;
                       const position = entry.value;
@@ -198,30 +221,21 @@ const PositionChart: React.FC<PositionChartProps> = ({
 
                       const headshot = getDriverImage(driverCode, year);
                       const color = entry.color;
+                      const fullName = driverNameMap.get(driverCode) || driverCode;
 
                       return (
                         <div key={driverCode} className="flex items-center gap-2 min-w-[100px]">
-                          <span
-                            className="text-xs font-black font-mono w-5 text-right"
-                            style={{ color }}
-                          >
+                          <span className="text-[11px] font-bold w-5 text-right" style={{ color }}>
                             P{position}
                           </span>
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
-                            {headshot ? (
-                              <img
-                                src={headshot}
-                                alt={driverCode}
-                                className="w-full h-full object-cover object-top"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
-                                {driverCode[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-xs font-mono text-gray-300 font-black">
-                            {driverCode}
+                          <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                            <AvatarImage src={headshot} className="object-cover object-top" />
+                            <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                              {driverCode[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[11px] font-semibold text-white/80 truncate">
+                            {fullName}
                           </span>
                         </div>
                       );
@@ -230,10 +244,10 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 </div>
               );
             }}
-            cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Geist Mono', fontSize: '12px' }}
+            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Inter, sans-serif', fontSize: '11px' }}
             payload={selectedDrivers.map((driverCode) => {
               const color = driverColor(driverCode, year);
               let team = '';
@@ -250,10 +264,10 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 const driverIndex = teammates.indexOf(driverCode);
                 switch (driverIndex % 3) {
                   case 1:
-                    lineStyle = 'dashed line';
+                    lineStyle = 'dashed';
                     break;
                   case 2:
-                    lineStyle = 'dotted line';
+                    lineStyle = 'dotted';
                     break;
                 }
               }
@@ -261,7 +275,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
               return {
                 value:
                   isInMultiDriverTeam && lineStyle !== ''
-                    ? `${driverCode} - ${lineStyle}`
+                    ? `${driverCode} (${lineStyle})`
                     : driverCode,
                 type: 'line',
                 id: driverCode,
@@ -292,8 +306,8 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 offset={5}
                 fill={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
                 fontSize={10}
-                opacity={0.7}
-                fontFamily="Geist Mono"
+                fontWeight={600}
+                fontFamily="Inter, sans-serif"
               />
             </ReferenceArea>
           ))}
@@ -353,15 +367,12 @@ const PositionChart: React.FC<PositionChartProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('bg-black p-0', className)}
-      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
+      className={cn('', className)}
+      style={{ animationDelay: `${delay * 100}ms`, ...inter } as React.CSSProperties}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4 border-b border-gray-700 pb-2">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-black uppercase tracking-wider text-white">
-              Lap-by-Lap Position Changes
-            </h3>
             <ChartExportMenu
               onExport={(format) =>
                 exportChart(format, {
@@ -374,9 +385,6 @@ const PositionChart: React.FC<PositionChartProps> = ({
               isExporting={isExporting}
             />
           </div>
-          <p className="text-xs text-gray-400 font-mono uppercase">
-            Track driver positions throughout the race.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -385,7 +393,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={isPopoverOpen}
-                className="w-[180px] justify-between text-xs h-8 bg-black border-gray-700 text-white hover:bg-gray-800 hover:text-white rounded-none uppercase font-black tracking-wider"
+                className="w-auto min-w-[180px] justify-between text-[11px] font-semibold h-9 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white uppercase tracking-wider"
                 disabled={driverCodes.length === 0}
               >
                 {selectedDrivers.length === driverCodes.length
@@ -393,75 +401,110 @@ const PositionChart: React.FC<PositionChartProps> = ({
                   : selectedDrivers.length === 0
                     ? 'Select Drivers...'
                     : `${selectedDrivers.length} Selected`}
-                <ArrowUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 bg-black border border-gray-700 text-white rounded-none">
-              <div className="p-2 border-b border-gray-700 flex justify-between bg-black">
-                <Button
-                  variant="link"
-                  onClick={handleSelectAll}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
-                >
-                  All
-                </Button>
-                <Button
-                  variant="link"
-                  onClick={handleSelectNone}
-                  className="p-0 h-auto text-xs text-red-500 hover:text-red-400 font-black uppercase"
-                >
-                  None
-                </Button>
+            <PopoverContent
+              className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+              style={inter}
+            >
+              <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                  {selectedDrivers.length} / {driverCodes.length} visible
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={handleSelectAll}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={handleSelectNone}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                  >
+                    None
+                  </button>
+                </div>
               </div>
-              <ScrollArea className="h-[250px] p-2">
-                <div className="grid gap-2">
+              <ScrollArea className="h-[300px]">
+                <div className="grid gap-0.5">
                   {driverCodes.map((driverCode) => {
                     const headshot = getDriverImage(driverCode, year);
-                    const formattedName = driverCode;
+                    const fullName = driverNameMap.get(driverCode) || driverCode;
+                    const isSelected = selectedDrivers.includes(driverCode);
                     const isFavorite = favoriteDriver && driverCode === favoriteDriver;
+                    const dColor = driverColor(driverCode, year);
 
                     return (
-                      <Label
+                      <button
                         key={driverCode}
+                        onClick={() => handleDriverSelectionChange(driverCode)}
                         className={cn(
-                          'flex items-center space-x-2 p-2 hover:bg-gray-800/30 cursor-pointer transition-colors',
-                          isFavorite && 'bg-red-900/20 border-l-2 border-red-600',
-                          focusedDriver && focusedDriver !== driverCode && 'opacity-30'
+                          'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                          isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                          isFavorite && isSelected && 'bg-red-500/[0.06]',
+                          focusedDriver && focusedDriver !== driverCode && '!opacity-20'
                         )}
                         onMouseEnter={() => setFocusedDriver(driverCode)}
                         onMouseLeave={() => setFocusedDriver(null)}
                       >
-                        <Checkbox
-                          id={`driver-${driverCode}`}
-                          checked={selectedDrivers.includes(driverCode)}
-                          onCheckedChange={() => handleDriverSelectionChange(driverCode)}
-                          className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-gray-600 rounded-none"
-                        />
-                        <div className="flex items-center gap-3">
-                          {headshot ? (
-                            <img
-                              src={headshot}
-                              alt={driverCode}
-                              className="w-6 h-6 object-cover object-top rounded-full bg-black"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center text-[10px] font-black text-gray-500">
-                              {driverCode.substring(0, 1)}
-                            </div>
+                        {/* Check indicator */}
+                        <div
+                          className={cn(
+                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                            isSelected
+                              ? 'bg-red-500 border-red-500'
+                              : 'border-white/[0.15] bg-transparent'
                           )}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+
+                        {/* Team color bar */}
+                        <div
+                          className={cn(
+                            'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                            isSelected ? 'opacity-100' : 'opacity-30'
+                          )}
+                          style={{ backgroundColor: dColor }}
+                        />
+
+                        {/* Headshot */}
+                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                            {driverCode[0]}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Name */}
+                        <div className="flex flex-col min-w-0 flex-1">
                           <span
                             className={cn(
-                              'text-xs font-mono font-black',
-                              isFavorite ? 'text-red-500' : 'text-white'
+                              'text-[12px] font-semibold truncate transition-colors',
+                              isFavorite ? 'text-red-400' : isSelected ? 'text-white' : 'text-white'
                             )}
-                            style={{
-                              color: !isFavorite ? driverColor(driverCode, year) : undefined,
-                            }}
                           >
-                            {formattedName}
+                            {fullName}
+                          </span>
+                          <span className="text-[10px] font-medium text-white/80">
+                            {driverCode}
                           </span>
                         </div>
-                      </Label>
+                      </button>
                     );
                   })}
                 </div>

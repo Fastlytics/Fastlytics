@@ -146,6 +146,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Geist Pixel';
+  src: url('/fonts/geist-font/GeistPixel/webfonts/GeistPixel-Square.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -609,6 +617,44 @@
 
 .premium-feature-badge {
   @apply bg-primary/10 px-3 py-1 rounded-full text-xs border border-primary/20;
+}
+
+/* Landing redesign utilities */
+.race-display {
+  font-family: 'Geist', sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.race-micro {
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.race-pixel {
+  font-family: 'Geist Pixel', 'Geist Mono', monospace;
+  letter-spacing: 0;
+}
+
+.race-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.race-scanline {
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px,
+    transparent 7px
+  );
 }
 
 /* Footer styles */

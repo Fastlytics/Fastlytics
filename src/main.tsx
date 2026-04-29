@@ -1,4 +1,11 @@
-import { StrictMode } from 'react';
+import * as Sentry from '@sentry/react';
+import {
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router-dom';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import { PostHogProvider } from 'posthog-js/react';
@@ -8,6 +15,23 @@ import { ErrorFallback } from './components/layout/ErrorFallback';
 import { hasAnalyticsConsent, hasConsentChoice } from './lib/consent';
 import App from './App.tsx';
 import './index.css';
+
+Sentry.init({
+  dsn: 'https://d6124c77a3ce6da34a6e3fcb510280a5@o4509542641434624.ingest.de.sentry.io/4511292801024080',
+  sendDefaultPii: true,
+  integrations: [
+    Sentry.reactRouterV7BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
+    }),
+  ],
+  tracesSampleRate: 1.0,
+  tracePropagationTargets: ['localhost', /^https:\/\/api\.fastlytics\.app\/api/],
+  enableLogs: true,
+});
 
 /** Inject the Umami analytics script */
 const initUmami = () => {

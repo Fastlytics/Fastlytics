@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { Activity01Icon } from 'hugeicons-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,28 +16,37 @@ interface MobileNextSessionCardProps {
 }
 
 const MobileNextSessionCard: React.FC<MobileNextSessionCardProps> = ({ nextSession }) => {
-  const calculateTimeLeft = () => {
+  const [timeLeft, setTimeLeft] = useState(() => {
     if (!nextSession) return null;
     const now = new Date().getTime();
     const targetDate = new Date(nextSession.date).getTime();
     const difference = targetDate - now;
-
     if (difference <= 0) return null;
-
     return {
       d: Math.floor(difference / (1000 * 60 * 60 * 24)),
       h: Math.floor((difference / (1000 * 60 * 60)) % 24),
       m: Math.floor((difference / 1000 / 60) % 60),
       s: Math.floor((difference / 1000) % 60),
     };
-  };
-
-  const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft());
+  });
   const navigate = useNavigate();
   const { selectedYear } = useSeason();
 
   useEffect(() => {
     if (!nextSession?.date) return;
+
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const targetDate = new Date(nextSession.date).getTime();
+      const difference = targetDate - now;
+      if (difference <= 0) return null;
+      return {
+        d: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        h: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        m: Math.floor((difference / 1000 / 60) % 60),
+        s: Math.floor((difference / 1000) % 60),
+      };
+    };
 
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
     return () => clearInterval(timer);

@@ -42,7 +42,7 @@ const DriverComparison: React.FC<DriverComparisonProps> = ({ data, className, de
       className={cn('chart-container', className)}
       style={{ '--delay': delay } as React.CSSProperties}
     >
-      <h2 className="text-lg font-semibold mb-4">Driver Performance Comparison</h2>
+      <h2 className="mb-4 text-[14px] font-semibold text-white">Driver Performance Comparison</h2>
       <ResponsiveContainer width="100%" height={400}>
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
           <PolarGrid stroke="rgba(255,255,255,0.2)" />

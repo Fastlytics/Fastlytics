@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { driverColor } from '@/lib/driverColor';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ChartMouseEvent {

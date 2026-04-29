@@ -21,7 +21,7 @@ import {
   LapTimesEnrichedResponse,
 } from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
-import { AlertCircleIcon, Analytics01Icon } from 'hugeicons-react';
+import { AlertCircleIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
@@ -30,16 +30,18 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowUpDownIcon } from 'hugeicons-react';
 
 const formatGap = (gap: number | null): string => {
-  if (gap === null || isNaN(gap)) {
-    return 'N/A';
-  }
-  if (gap === 0) {
-    return '+0.000';
-  }
+  if (gap === null || isNaN(gap)) return 'N/A';
+  if (gap === 0) return '+0.000';
   return gap > 0 ? `+${gap.toFixed(3)}` : gap.toFixed(3);
 };
+
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 interface GapToLeaderChartProps {
   className?: string;
@@ -81,14 +83,13 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
+  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
 
   const getInitialDrivers = () => {
     if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
-
     const defaults: string[] = [];
     if (favoriteDriver) defaults.push(favoriteDriver);
     if (rivalDriver) defaults.push(rivalDriver);
-
     return defaults;
   };
 
@@ -102,18 +103,23 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     enabled: !staticData && !!year && !!event && !!session,
   });
 
+  const driverNameMap = useMemo(() => {
+    if (!availableDrivers) return new Map<string, string>();
+    const map = new Map<string, string>();
+    availableDrivers.forEach((d) => {
+      if (d.code && d.name) map.set(d.code, d.name);
+    });
+    return map;
+  }, [availableDrivers]);
+
   const effectiveDrivers = useMemo(() => {
     if (staticData) return selectedDrivers;
-
-    // Filter out any selected drivers that are not in this session
     const validCodes = availableDrivers ? new Set(availableDrivers.map((d) => d.code)) : null;
     const validSelected = validCodes
       ? selectedDrivers.filter((d) => validCodes.has(d))
       : selectedDrivers;
-
     if (validSelected.length >= MIN_DRIVERS) return validSelected;
     if (!availableDrivers) return validSelected;
-
     const needed = MIN_DRIVERS - validSelected.length;
     const candidates = availableDrivers
       .filter((d) => !validSelected.includes(d.code))
@@ -149,11 +155,8 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
   const lapData = staticData || fetchedEnrichedData?.lapComparison;
 
-  // Calculate gap to leader for each lap
   const gapData = useMemo(() => {
     if (!lapData || lapData.length === 0) return [];
-
-    // Calculate cumulative times for each driver
     const cumulativeTimes: Record<string, number[]> = {};
     driversToDisplay.forEach((driver) => {
       cumulativeTimes[driver] = [];
@@ -165,11 +168,9 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       });
     });
 
-    // Find leader for each lap (driver with lowest cumulative time)
     const leaderPerLap = lapData.map((point) => {
       let minCumulative = Infinity;
       let leader: string | null = null;
-
       driversToDisplay.forEach((driver) => {
         const lapIndex = point.LapNumber - 1;
         if (cumulativeTimes[driver][lapIndex] < minCumulative) {
@@ -177,16 +178,13 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           leader = driver;
         }
       });
-
       return leader;
     });
 
-    // Calculate gap to leader for each lap
     const gapPoints = lapData.map((point) => {
       const lapIndex = point.LapNumber - 1;
       const leader = leaderPerLap[lapIndex];
       const gapPoint: LapTimeDataPoint = { LapNumber: point.LapNumber };
-
       driversToDisplay.forEach((driver) => {
         if (point[driver] !== null && leader !== null && cumulativeTimes[leader]) {
           const driverCumulative = cumulativeTimes[driver][lapIndex];
@@ -196,7 +194,6 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           gapPoint[driver] = null;
         }
       });
-
       return gapPoint;
     });
 
@@ -213,9 +210,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     });
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
-        if (prev.length > MIN_DRIVERS) {
-          return prev.filter((d) => d !== driverCode);
-        }
+        if (prev.length > MIN_DRIVERS) return prev.filter((d) => d !== driverCode);
         return prev;
       }
       return [...prev, driverCode];
@@ -227,8 +222,10 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
       return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="w-full h-[300px] flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] gap-4">
+          <p className="text-white text-[13px] font-medium uppercase tracking-wider">
+            Select drivers to compare
+          </p>
           <Button
             onClick={() => {
               trackInteraction('chart_data_loaded', {
@@ -239,10 +236,9 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               });
               setShouldLoadChart(true);
             }}
-            className="bg-white hover:bg-gray-200 text-black font-black uppercase tracking-wider rounded-none"
+            className="rounded-lg bg-white hover:bg-white/90 text-black font-semibold text-[12px] uppercase tracking-wider"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Data
           </Button>
         </div>
@@ -251,7 +247,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-gray-700">
+        <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
           <LoadingSpinnerF1 />
         </div>
       );
@@ -259,10 +255,10 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     if (isError || !lapData) {
       return (
-        <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
+        <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading lap times</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-semibold uppercase text-[13px]">Error loading lap times</p>
+          <p className="text-xs text-white mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
           {!staticData && (
@@ -270,7 +266,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-bold"
+              className="mt-4 rounded-lg border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold text-[11px] uppercase tracking-wider"
             >
               Back
             </Button>
@@ -281,14 +277,14 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     if (lapData.length === 0 || gapData.length === 0) {
       return (
-        <div className="w-full h-[300px] bg-black border border-gray-700 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
           <p>No common lap data found.</p>
           {!staticData && (
             <Button
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-gray-700 hover:bg-gray-800 rounded-none"
+              className="mt-4 rounded-lg border-white/[0.08] text-white hover:bg-white/[0.06] font-semibold text-[11px] uppercase tracking-wider"
             >
               Back
             </Button>
@@ -302,20 +298,30 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     return (
       <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
         <LineChart data={gapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
           <XAxis
             dataKey="LapNumber"
-            stroke="#666"
-            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+            stroke="rgba(255,255,255,0.15)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
+            }}
             padding={{ left: 10, right: 10 }}
           />
           <YAxis
-            stroke="#666"
-            tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+            stroke="rgba(255,255,255,0.15)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: 'Inter, sans-serif',
+            }}
             domain={['auto', 'auto']}
             tickFormatter={formatGap}
             allowDecimals={true}
-            width={60}
+            width={65}
           />
           <Tooltip
             content={({ active, payload, label }) => {
@@ -325,39 +331,35 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               );
 
               return (
-                <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[500px] z-50">
-                  <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                <div
+                  className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
+                  style={inter}
+                >
+                  <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
                     Lap {label}
                   </div>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     {sortedPayload.map((entry) => {
                       const driverCode = String(entry.name);
                       const gap = entry.value;
                       if (gap === null) return null;
-
                       const headshot = getDriverImage(driverCode, year);
                       const color = entry.color;
+                      const fullName = driverNameMap.get(driverCode) || driverCode;
 
                       return (
                         <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
-                            {headshot ? (
-                              <img
-                                src={headshot}
-                                alt={driverCode}
-                                className="w-full h-full object-cover object-top"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
-                                {driverCode[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span className="text-xs font-black font-mono" style={{ color }}>
+                          <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                            <AvatarImage src={headshot} className="object-cover object-top" />
+                            <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                              {driverCode[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[12px] font-bold" style={{ color }}>
                             {formatGap(gap as number)}
                           </span>
-                          <span className="text-xs font-mono text-gray-400 font-black">
-                            {driverCode}
+                          <span className="text-[12px] font-semibold text-white/80 truncate">
+                            {fullName}
                           </span>
                         </div>
                       );
@@ -366,14 +368,14 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                 </div>
               );
             }}
-            cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
           />
           <Legend
             wrapperStyle={{
               paddingTop: '20px',
               paddingBottom: '10px',
-              fontFamily: 'Geist Mono',
-              fontSize: '12px',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '11px',
             }}
             onClick={(e) => {
               if (e && e.value) {
@@ -383,11 +385,8 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   event,
                   session,
                 });
-                if (focusedDriver === e.value) {
-                  setFocusedDriver(null);
-                } else {
-                  setFocusedDriver(e.value);
-                }
+                if (focusedDriver === e.value) setFocusedDriver(null);
+                else setFocusedDriver(e.value);
               }
             }}
             onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
@@ -400,7 +399,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                   style={{
                     color: entry.color,
                     opacity: isDimmed ? 0.3 : 1,
-                    fontWeight: isFocused ? 'bold' : 'normal',
+                    fontWeight: isFocused ? 700 : 400,
                   }}
                 >
                   {value}
@@ -408,7 +407,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               );
             }}
           />
-          <ReferenceLine y={0} stroke="#888" strokeWidth={1} strokeDasharray="4 4" label="Leader" />
+          <ReferenceLine
+            y={0}
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth={1}
+            strokeDasharray="4 4"
+          />
           {driversToDisplay.map((driverCode, index) => {
             const color = driverColor(driverCode, year);
             let teammates: string[] = [];
@@ -437,11 +441,11 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           })}
           <Brush
             dataKey="LapNumber"
-            height={30}
-            stroke="#333"
-            fill="#111"
+            height={24}
+            stroke="rgba(255,255,255,0.1)"
+            fill="rgba(255,255,255,0.03)"
             tickFormatter={() => ''}
-            travellerWidth={10}
+            travellerWidth={8}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -456,11 +460,13 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
         exportRef.current = el;
       }}
       className={cn('space-y-6 relative', className)}
-      style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
+      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
+      <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase text-white tracking-wider">Gap to Leader</h3>
+          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">
+            Gap to Leader
+          </h3>
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -476,49 +482,139 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           />
         </div>
         {!staticData && availableDrivers && (
-          <div className="flex flex-wrap gap-2">
-            {availableDrivers.map((driver) => {
-              const isSelected = selectedDrivers.includes(driver.code);
-              const headshot = getDriverImage(driver.code, year);
-              const color = driverColor(driver.code, year);
-
-              return (
-                <button
-                  key={driver.code}
-                  onClick={() => toggleDriver(driver.code)}
-                  className={cn(
-                    'flex items-center gap-2 px-2 py-1 border transition-all duration-200 group',
-                    isSelected
-                      ? 'bg-black border-gray-700 hover:border-gray-500'
-                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-800'
-                  )}
-                  style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
-                >
-                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                    {headshot ? (
-                      <img
-                        src={headshot}
-                        alt={driver.code}
-                        className="w-full h-full object-cover object-top"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                        {driver.code[0]}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      'text-xs font-mono font-bold',
-                      isSelected ? 'text-white' : 'text-gray-500'
-                    )}
+          <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
+                <span>
+                  {selectedDrivers.length === availableDrivers.length
+                    ? 'All Drivers'
+                    : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
+                </span>
+                <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+              style={inter}
+              align="end"
+            >
+              <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                  {selectedDrivers.length} / {availableDrivers.length} visible
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      trackInteraction('select_all_drivers', {
+                        chart: 'gap_to_leader',
+                        year,
+                        event,
+                        session,
+                      });
+                      setSelectedDrivers(availableDrivers.map((d) => d.code));
+                    }}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
                   >
-                    {driver.code}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    All
+                  </button>
+                  <button
+                    onClick={() => {
+                      trackInteraction('deselect_all_drivers', {
+                        chart: 'gap_to_leader',
+                        year,
+                        event,
+                        session,
+                      });
+                      setSelectedDrivers(availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code));
+                    }}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="h-[300px]">
+                <div className="grid gap-0.5">
+                  {availableDrivers.map((driver) => {
+                    const isSelected = selectedDrivers.includes(driver.code);
+                    const headshot = getDriverImage(driver.code, year);
+                    const color = driverColor(driver.code, year);
+                    const fullName = driverNameMap.get(driver.code) || driver.code;
+                    const isFavorite = favoriteDriver && driver.code === favoriteDriver;
+
+                    return (
+                      <button
+                        key={driver.code}
+                        onClick={() => toggleDriver(driver.code)}
+                        className={cn(
+                          'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                          isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                          isFavorite && isSelected && 'bg-red-500/[0.06]',
+                          focusedDriver && focusedDriver !== driver.code && '!opacity-20'
+                        )}
+                        onMouseEnter={() => setFocusedDriver(driver.code)}
+                        onMouseLeave={() => setFocusedDriver(null)}
+                      >
+                        <div
+                          className={cn(
+                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                            isSelected
+                              ? 'bg-red-500 border-red-500'
+                              : 'border-white/[0.15] bg-transparent'
+                          )}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                            isSelected ? 'opacity-100' : 'opacity-30'
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                            {driver.code[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              'text-[12px] font-semibold truncate transition-colors',
+                              isFavorite ? 'text-red-400' : isSelected ? 'text-white' : 'text-white'
+                            )}
+                          >
+                            {fullName}
+                          </span>
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium',
+                              isSelected ? 'text-white/80' : 'text-white/80'
+                            )}
+                          >
+                            {driver.code}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 

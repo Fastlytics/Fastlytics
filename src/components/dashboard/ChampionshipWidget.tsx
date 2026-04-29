@@ -1,14 +1,13 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
 import { Profile } from '@/contexts/AuthContext';
-import { ArrowRight01Icon } from 'hugeicons-react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getTeamLogo } from '@/lib/teamUtils';
-import { getDriverImage, getCarImage } from '@/utils/imageMapping';
+import { getCarImage } from '@/utils/imageMapping';
+import { getDriverImage } from '@/utils/imageMapping';
 
 interface ChampionshipWidgetProps {
   drivers: DriverStanding[];
@@ -19,6 +18,8 @@ interface ChampionshipWidgetProps {
   profile?: Profile | null;
 }
 
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
 const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   drivers,
   teams,
@@ -27,184 +28,312 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   isLoading,
   profile,
 }) => {
+  const { selectedYear } = useSeason();
   const topDrivers = drivers.slice(0, 3);
   const topTeams = teams.slice(0, 3);
-  const { selectedYear } = useSeason();
-  const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
-
   const isPreSeasonDriver = drivers.length > 0 && drivers[0].points === 0;
   const isPreSeasonTeam = teams.length > 0 && teams[0].points === 0;
 
-  const getGap = (points: number, leaderPoints: number) => {
-    const gap = leaderPoints - points;
-    return gap === 0 ? 'LEADER' : `-${gap}`;
+  const getDriverImageForYear = (code: string) => getDriverImage(code, selectedYear);
+
+  const getGap = (pts: number, leaderPts: number) => {
+    const gap = leaderPts - pts;
+    return gap === 0 ? 'Leader' : `−${gap}`;
   };
 
-  // Calculate Driver Championship Status
-  let driverChampionshipStatus: 'leader' | 'champion' = 'leader';
+  let driverChampStatus: 'leader' | 'champion' = 'leader';
   if (drivers.length >= 2 && schedule.length > 0 && raceResults) {
-    const p1Points = drivers[0].points;
-    const p2Points = drivers[1].points;
-    const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'driver', selectedYear);
-    driverChampionshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
+    const remaining = calculateRemainingPoints(schedule, raceResults, 'driver', selectedYear);
+    driverChampStatus = getChampionshipStatus(drivers[0].points, drivers[1].points, remaining);
   }
 
-  // Calculate Team Championship Status
-  let teamChampionshipStatus: 'leader' | 'champion' = 'leader';
+  let teamChampStatus: 'leader' | 'champion' = 'leader';
   if (teams.length >= 2 && schedule.length > 0 && raceResults) {
-    const p1Points = teams[0].points;
-    const p2Points = teams[1].points;
-    const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'team', selectedYear);
-    teamChampionshipStatus = getChampionshipStatus(p1Points, p2Points, remainingPoints);
+    const remaining = calculateRemainingPoints(schedule, raceResults, 'team', selectedYear);
+    teamChampStatus = getChampionshipStatus(teams[0].points, teams[1].points, remaining);
   }
 
   if (isLoading) {
-    return <div className="h-96 bg-gray-900/50 animate-pulse border-2 border-gray-800"></div>;
+    return (
+      <div style={inter} className="grid gap-6 md:grid-cols-2">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="h-80 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-8">
-      {/* Drivers Championship */}
-      <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col">
-        <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
-          <span className="w-1 h-8 bg-red-600 block"></span>
-          Drivers <span className="text-gray-500">Title</span>
-        </h3>
-
-        <div className="space-y-4 relative z-10 flex-grow">
-          {topDrivers.map((driver, index) => (
-            <motion.div
-              key={driver.code}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex items-center justify-between p-3 border-l-4 ${
-                index === 0 && !isPreSeasonDriver
-                  ? driverChampionshipStatus === 'champion'
-                    ? 'bg-yellow-500/10 border-yellow-500'
-                    : 'bg-gray-900 border-yellow-500'
-                  : profile?.favorite_driver &&
-                      (driver.code === profile.favorite_driver ||
-                        driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()))
-                    ? 'bg-red-600/10 border-red-600'
-                    : 'bg-gray-900/50 border-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span
-                  className={`font-sans font-bold text-xl w-6 ${index === 0 && !isPreSeasonDriver ? 'text-yellow-500' : 'text-gray-500'}`}
-                >
-                  {index + 1}
-                </span>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border-2 border-gray-700">
-                    <AvatarImage
-                      src={getDriverImageForYear(driver.code)}
-                      className="object-cover object-top bg-gray-800"
-                    />
-                    <AvatarFallback>{driver.code}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <div className="font-bold text-lg leading-none">
-                        {driver.name.split(' ').pop()?.toUpperCase()}
-                      </div>
-                      {index === 0 && driverChampionshipStatus === 'champion' && (
-                        <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider">
-                          Champion
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 font-sans">{driver.team}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-black text-xl">{driver.points}</div>
-                <div className="text-xs font-sans text-gray-500">
-                  {getGap(driver.points, topDrivers[0].points)}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+    <div style={inter} className="grid gap-6 md:grid-cols-2">
+      {/* ── Drivers Championship ── */}
+      <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
+          <div>
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
+              World Drivers Championship
+            </p>
+            <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+              Driver Standings
+            </p>
+          </div>
+          {driverChampStatus === 'champion' && !isPreSeasonDriver && (
+            <span className="rounded-full bg-amber-500/10 px-3 py-1 text-[13px] font-semibold text-amber-400 border border-amber-500/20">
+              Sealed
+            </span>
+          )}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-gray-800 relative z-10">
+        <div className="flex-1 divide-y divide-white/[0.04] p-3">
+          {topDrivers.map((driver, i) => {
+            const isLeader = i === 0 && !isPreSeasonDriver;
+            const isFav =
+              !!profile?.favorite_driver &&
+              (driver.code === profile.favorite_driver ||
+                driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()));
+
+            return (
+              <motion.div
+                key={driver.code}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07, duration: 0.4 }}
+                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
+                  isLeader && driverChampStatus === 'champion'
+                    ? 'bg-amber-500/[0.06]'
+                    : isLeader
+                      ? 'bg-white/[0.03]'
+                      : isFav
+                        ? 'bg-red-500/[0.05]'
+                        : 'transparent'
+                }`}
+              >
+                {/* Position */}
+                <span
+                  className={`w-5 shrink-0 text-[15px] tabular-nums font-medium ${isLeader ? 'text-amber-400' : 'text-white/40'}`}
+                >
+                  {i + 1}
+                </span>
+
+                {/* Accent bar */}
+                <div
+                  className={`h-8 w-0.5 shrink-0 rounded-full ${isFav ? 'bg-red-500' : isLeader ? 'bg-amber-400/60' : 'bg-white/10'}`}
+                />
+
+                {/* Avatar */}
+                <Avatar className="h-15 w-15 shrink-0 border border-white/[0.08]">
+                  <AvatarImage
+                    src={getDriverImageForYear(driver.code)}
+                    className="object-cover object-top"
+                  />
+                  <AvatarFallback className="bg-[#1a1a1e] text-[12px] font-bold text-white">
+                    {driver.code}
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Name + team */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[16px] font-semibold text-white">
+                      {driver.name.split(' ').pop()?.toUpperCase()}
+                    </span>
+                    {isLeader && driverChampStatus === 'champion' && (
+                      <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] font-semibold text-amber-400">
+                        Champ
+                      </span>
+                    )}
+                    {isFav && (
+                      <span className="inline-flex rounded bg-red-500/10 px-1.5 py-0.5 text-[12px] font-semibold text-red-400">
+                        Fav
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[13px] text-white/45">{driver.team}</div>
+                </div>
+
+                {/* Points + gap */}
+                <div className="shrink-0 text-right">
+                  <div className="text-[18px] font-bold tabular-nums text-white">
+                    {driver.points}
+                  </div>
+                  <div
+                    className={`text-[13px] tabular-nums ${isLeader ? 'text-amber-400' : 'text-white/45'}`}
+                  >
+                    {getGap(driver.points, topDrivers[0].points)}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-white/[0.06] px-6 py-3.5 flex items-center justify-between">
+          <Link
+            to="/standings/progression"
+            className="flex items-center gap-1.5 text-[13px] font-medium text-red-500/70 transition-colors hover:text-red-400"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path
+                d="M2 10l3-4 2 2 3-5"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Progression
+          </Link>
           <Link
             to="/standings/drivers"
-            className="flex items-center justify-end gap-2 text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors"
+            className="flex items-center justify-end gap-1.5 text-[14px] font-medium text-white/45 transition-colors hover:text-white"
           >
-            Full Standings <ArrowRight01Icon className="w-4 h-4" />
+            FULL STANDINGS
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path
+                d="M1 6h10M7 2l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
       </div>
 
-      {/* Constructors Championship */}
-      <div className="bg-black border-2 border-gray-800 p-6 relative overflow-hidden group hover:border-red-600/50 transition-colors flex flex-col">
-        <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-6 flex items-center gap-3">
-          <span className="w-1 h-8 bg-red-600 block"></span>
-          Constructors <span className="text-gray-500">Title</span>
-        </h3>
+      {/* ── Constructors Championship ── */}
+      <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
+          <div>
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
+              World Constructors Championship
+            </p>
+            <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+              Constructor Standings
+            </p>
+          </div>
+          {teamChampStatus === 'champion' && !isPreSeasonTeam && (
+            <span className="rounded-full bg-amber-500/10 px-3 py-1 text-[13px] font-semibold text-amber-400 border border-amber-500/20">
+              Sealed
+            </span>
+          )}
+        </div>
 
-        <div className="space-y-4 relative z-10 flex-grow">
-          {topTeams.map((team, index) => (
-            <motion.div
-              key={team.team}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 + 0.3 }}
-              className={`flex items-center justify-between p-3 border-l-4 ${
-                index === 0 && !isPreSeasonTeam
-                  ? teamChampionshipStatus === 'champion'
-                    ? 'bg-yellow-500/10 border-yellow-500'
-                    : 'bg-gray-900 border-yellow-500'
-                  : profile?.favorite_team &&
-                      (team.team === profile.favorite_team ||
-                        team.team.toLowerCase().includes(profile.favorite_team.toLowerCase()))
-                    ? 'bg-red-600/10 border-red-600'
-                    : 'bg-gray-900/50 border-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-4">
+        <div className="flex-1 divide-y divide-white/[0.04] p-3">
+          {topTeams.map((team, i) => {
+            const isLeader = i === 0 && !isPreSeasonTeam;
+            const isFav =
+              !!profile?.favorite_team &&
+              (team.team === profile.favorite_team ||
+                team.team.toLowerCase().includes(profile.favorite_team.toLowerCase()));
+            const carImg = getCarImage(team.team, selectedYear);
+
+            return (
+              <motion.div
+                key={team.team}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07 + 0.2, duration: 0.4 }}
+                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
+                  isLeader && teamChampStatus === 'champion'
+                    ? 'bg-amber-500/[0.06]'
+                    : isLeader
+                      ? 'bg-white/[0.03]'
+                      : isFav
+                        ? 'bg-red-500/[0.05]'
+                        : 'transparent'
+                }`}
+              >
                 <span
-                  className={`font-sans font-bold text-xl w-6 ${index === 0 && !isPreSeasonTeam ? 'text-yellow-500' : 'text-gray-500'}`}
+                  className={`w-5 shrink-0 text-[15px] tabular-nums font-medium ${isLeader ? 'text-amber-400' : 'text-white/40'}`}
                 >
-                  {index + 1}
+                  {i + 1}
                 </span>
-                <div>
-                  <div className="flex items-center gap-3">
-                    {getCarImage(team.team, selectedYear) && (
-                      <img
-                        src={getCarImage(team.team, selectedYear)!}
-                        alt={team.team}
-                        className="h-8 w-auto object-contain drop-shadow-md [mix-blend-mode:lighten]"
-                      />
+
+                <div
+                  className={`h-8 w-0.5 shrink-0 rounded-full ${isFav ? 'bg-red-500' : isLeader ? 'bg-amber-400/60' : 'bg-white/10'}`}
+                />
+
+                {/* Car image or fallback */}
+                <div className="flex h-16 w-[72px] shrink-0 items-center justify-center">
+                  {carImg ? (
+                    <img
+                      src={carImg}
+                      alt={team.team}
+                      className="h-full w-full object-contain [mix-blend-mode:lighten]"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1e]">
+                      <span className="text-[12px] font-bold text-white/55">
+                        {team.team.substring(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[16px] font-semibold text-white">
+                      {team.team.toUpperCase()}
+                    </span>
+                    {isLeader && teamChampStatus === 'champion' && (
+                      <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] font-semibold text-amber-400">
+                        Champ
+                      </span>
                     )}
-                    <div className="font-bold text-lg leading-none">{team.team.toUpperCase()}</div>
-                    {index === 0 && teamChampionshipStatus === 'champion' && (
-                      <span className="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wider">
-                        Champion
+                    {isFav && (
+                      <span className="inline-flex rounded bg-red-500/10 px-1.5 py-0.5 text-[12px] font-semibold text-red-400">
+                        Fav
                       </span>
                     )}
                   </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="font-black text-xl">{team.points}</div>
-                <div className="text-xs font-sans text-gray-500">
-                  {getGap(team.points, topTeams[0].points)}
+
+                <div className="shrink-0 text-right">
+                  <div className="text-[18px] font-bold tabular-nums text-white">{team.points}</div>
+                  <div
+                    className={`text-[13px] tabular-nums ${isLeader ? 'text-amber-400' : 'text-white/45'}`}
+                  >
+                    {getGap(team.points, topTeams[0].points)}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-gray-800 relative z-10">
+        <div className="border-t border-white/[0.06] px-6 py-3.5 flex items-center justify-between">
+          <Link
+            to="/team-pace"
+            className="flex items-center gap-1.5 text-[13px] font-medium text-red-500/70 transition-colors hover:text-red-400"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path
+                d="M2 8l3-3 2 2 3-4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Pace Analysis
+          </Link>
           <Link
             to="/standings/teams"
-            className="flex items-center justify-end gap-2 text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors"
+            className="flex items-center justify-end gap-1.5 text-[14px] font-medium text-white/45 transition-colors hover:text-white"
           >
-            Full Standings <ArrowRight01Icon className="w-4 h-4" />
+            FULL STANDINGS
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path
+                d="M1 6h10M7 2l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
       </div>

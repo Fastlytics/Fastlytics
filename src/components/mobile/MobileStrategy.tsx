@@ -12,7 +12,7 @@ import {
 import { driverColor } from '@/lib/driverColor';
 import { getCompoundColor } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowDown01Icon,
   AlertCircleIcon,

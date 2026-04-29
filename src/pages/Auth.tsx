@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -33,16 +33,17 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(isResetMode);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [isResetPasswordMode, setIsResetPasswordMode] = useState(false);
-  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('signup');
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isResetMode = searchParams.get('reset') === 'true';
+  const [isResetPasswordMode, setIsResetPasswordMode] = useState(isResetMode);
+  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState(isResetMode ? 'signin' : 'signup');
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -59,16 +60,6 @@ const Auth = () => {
       }
     }
   }, [user, profile, loading, navigate, returnTo]);
-
-  // Check for password reset query parameter
-  useEffect(() => {
-    const isResetMode = searchParams.get('reset') === 'true';
-    setIsResetPasswordMode(isResetMode);
-    if (isResetMode) {
-      setActiveTab('signin');
-      setShowForgotPassword(true);
-    }
-  }, [searchParams]);
 
   const handleSocialLogin = async (provider: 'google' | 'github' | 'discord') => {
     setIsLoading(true);

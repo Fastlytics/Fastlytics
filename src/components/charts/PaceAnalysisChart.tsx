@@ -22,14 +22,17 @@ import {
   SessionDriver,
   fetchSessionDrivers,
 } from '@/lib/api';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { PlusSignCircleIcon, CancelCircleIcon } from 'hugeicons-react';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { driverColor } from '@/lib/driverColor';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getDriverImage } from '@/utils/imageMapping';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ArrowUpDownIcon } from 'hugeicons-react';
 
 interface PaceChartDataPoint extends PaceDistributionData {
   iqr: [number, number];
@@ -41,37 +44,40 @@ interface PaceTooltipProps {
   label?: string;
 }
 
-// Helper function - moved outside component to avoid re-creation
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = (seconds % 60).toFixed(3);
   return `${mins}:${secs.padStart(6, '0')}`;
 };
 
-// CustomTooltip component - moved outside component to avoid creation during render
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
 const CustomTooltip: React.FC<PaceTooltipProps> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-black/90 border border-white/20 p-3 rounded shadow-lg backdrop-blur-md z-50">
-        <p className="text-white font-bold mb-2">{label}</p>
-        <div className="space-y-1 text-sm">
-          <p className="text-gray-300">
-            Fastest: <span className="text-white font-mono">{formatTime(data.min)}</span>
+      <div
+        className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl z-50"
+        style={inter}
+      >
+        <p className="text-white font-bold mb-2 text-[12px]">{label}</p>
+        <div className="space-y-1 text-[11px]">
+          <p className="text-white/60">
+            Fastest: <span className="text-white font-semibold">{formatTime(data.min)}</span>
           </p>
-          <p className="text-gray-300">
-            Q1 (25%): <span className="text-white font-mono">{formatTime(data.q1)}</span>
+          <p className="text-white/60">
+            Q1 (25%): <span className="text-white font-semibold">{formatTime(data.q1)}</span>
           </p>
-          <p className="text-red-500 font-bold">
-            Median: <span className="font-mono">{formatTime(data.median)}</span>
+          <p className="text-red-400 font-semibold">
+            Median: <span className="font-semibold">{formatTime(data.median)}</span>
           </p>
-          <p className="text-gray-300">
-            Q3 (75%): <span className="text-white font-mono">{formatTime(data.q3)}</span>
+          <p className="text-white/60">
+            Q3 (75%): <span className="text-white font-semibold">{formatTime(data.q3)}</span>
           </p>
-          <p className="text-gray-300">
-            Slowest: <span className="text-white font-mono">{formatTime(data.max)}</span>
+          <p className="text-white/60">
+            Slowest: <span className="text-white font-semibold">{formatTime(data.max)}</span>
           </p>
-          <p className="text-gray-400 text-xs mt-2">Laps: {data.count}</p>
+          <p className="text-white/40 text-[10px] mt-2">Laps: {data.count}</p>
         </div>
       </div>
     );
@@ -104,26 +110,26 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(
     initialDrivers.length > 0 ? initialDrivers : []
   );
+  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
 
-  // Fetch Drivers
   const { data: sessionDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
     queryFn: () => fetchSessionDrivers(year, event, session),
     staleTime: Infinity,
   });
 
-  // Validate initial drivers against session driver list — remove any that
-  // don't exist in this session (e.g. VER set as favourite but absent from testing).
-  React.useEffect(() => {
-    if (!sessionDrivers || sessionDrivers.length === 0) return;
-    const codes = new Set(sessionDrivers.map((d) => d.code));
-    setSelectedDrivers((prev) => {
-      const valid = prev.filter((d) => codes.has(d));
-      return valid.length !== prev.length ? valid : prev;
+  const driverNameMap = useMemo(() => {
+    if (!sessionDrivers) return new Map<string, string>();
+    const map = new Map<string, string>();
+    sessionDrivers.forEach((d) => {
+      if (d.code && d.name) map.set(d.code, d.name);
     });
+    return map;
   }, [sessionDrivers]);
 
-  // Fetch Pace Distribution Data
+  // Note: selectedDrivers may briefly contain invalid codes before sessionDrivers loads.
+  // The query handles this gracefully; we avoid setState-in-effect by not syncing here.
+
   const {
     data: paceData,
     isLoading,
@@ -132,70 +138,43 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
     queryKey: ['paceDistribution', year, event, session, selectedDrivers],
     queryFn: async () => {
       const result = await fetchPaceDistribution(year, event, session, selectedDrivers);
-      // Handle both new PaceDistributionResponse format and old PaceDistributionData[] format
       if (Array.isArray(result)) return result;
       return (result as PaceDistributionResponse).overall ?? [];
     },
     enabled: selectedDrivers.length > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
-  // Merge colors
   const finalDriverColors = useMemo(() => {
     const colors = { ...driverColors };
     if (sessionDrivers) {
       sessionDrivers.forEach((d) => {
         if (!colors[d.code]) {
-          colors[d.code] =
-            d.team === 'Red Bull Racing'
-              ? '#3671C6'
-              : d.team === 'Ferrari'
-                ? '#F91536'
-                : d.team === 'Mercedes'
-                  ? '#6CD3BF'
-                  : d.team === 'McLaren'
-                    ? '#F58020'
-                    : d.team === 'Aston Martin'
-                      ? '#358C75'
-                      : d.team === 'Alpine'
-                        ? '#2293D1'
-                        : d.team === 'Williams'
-                          ? '#37BEDD'
-                          : d.team === 'RB'
-                            ? '#6692FF'
-                            : d.team === 'Kick Sauber'
-                              ? '#52E252'
-                              : d.team === 'Haas F1 Team'
-                                ? '#B6BABD'
-                                : '#FFFFFF';
+          colors[d.code] = driverColor(d.code, year);
         }
       });
     }
     return colors;
-  }, [driverColors, sessionDrivers]);
+  }, [driverColors, sessionDrivers, year]);
 
-  // Process data for Recharts
   const chartData = useMemo(() => {
     if (!paceData) return [];
     return paceData
       .map((d) => ({
         ...d,
-        iqr: [d.q1, d.q3], // For the box
+        iqr: [d.q1, d.q3],
       }))
-      .sort((a, b) => a.median - b.median); // Sort by median pace (fastest first)
+      .sort((a, b) => a.median - b.median);
   }, [paceData]);
 
   const toggleDriver = (driverCode: string) => {
     trackInteraction('driver_toggled', { chart: 'pace_analysis', year, event, session });
     setSelectedDrivers((prev) => {
-      if (prev.includes(driverCode)) {
-        return prev.filter((d) => d !== driverCode);
-      }
+      if (prev.includes(driverCode)) return prev.filter((d) => d !== driverCode);
       return [...prev, driverCode];
     });
   };
 
-  // Calculate domain
   const minPace = chartData.length > 0 ? Math.min(...chartData.map((d) => d.min)) : 0;
   const maxPace = chartData.length > 0 ? Math.max(...chartData.map((d) => d.max)) : 0;
   const domainPadding = (maxPace - minPace) * 0.1;
@@ -206,11 +185,12 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="w-full h-full p-4 relative"
+      className="w-full h-full relative"
+      style={inter}
     >
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-xl font-bold uppercase italic tracking-wider text-white mb-4">
+          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">
             Race Pace Distribution
           </h3>
           <ChartExportMenu
@@ -229,35 +209,135 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         </div>
 
         {/* Driver Selector */}
-        <div className="flex flex-wrap gap-2">
-          {sessionDrivers?.map((driver) => (
-            <button
-              key={driver.code}
-              onClick={() => toggleDriver(driver.code)}
-              className={cn(
-                'px-2 py-1 text-xs font-bold rounded border transition-all',
-                selectedDrivers.includes(driver.code)
-                  ? 'bg-white text-black border-white'
-                  : 'bg-transparent text-gray-500 border-gray-800 hover:border-gray-600'
-              )}
-              style={{
-                borderColor: selectedDrivers.includes(driver.code)
-                  ? finalDriverColors[driver.code]
-                  : undefined,
-                backgroundColor: selectedDrivers.includes(driver.code)
-                  ? finalDriverColors[driver.code]
-                  : undefined,
-                color: selectedDrivers.includes(driver.code) ? '#fff' : undefined,
-              }}
-            >
-              {driver.code}
+        <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider">
+              <span>
+                {selectedDrivers.length === (sessionDrivers?.length || 0)
+                  ? 'All Drivers'
+                  : `${selectedDrivers.length} / ${sessionDrivers?.length || 0} Selected`}
+              </span>
+              <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
             </button>
-          ))}
-        </div>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+            style={inter}
+            align="end"
+          >
+            <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+                {selectedDrivers.length} / {sessionDrivers?.length || 0} visible
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    trackInteraction('select_all_drivers', {
+                      chart: 'pace_analysis',
+                      year,
+                      event,
+                      session,
+                    });
+                    setSelectedDrivers(sessionDrivers?.map((d) => d.code) || []);
+                  }}
+                  className="text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => {
+                    trackInteraction('deselect_all_drivers', {
+                      chart: 'pace_analysis',
+                      year,
+                      event,
+                      session,
+                    });
+                    setSelectedDrivers([]);
+                  }}
+                  className="text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                >
+                  None
+                </button>
+              </div>
+            </div>
+            <ScrollArea className="h-[300px]">
+              <div className="grid gap-0.5">
+                {sessionDrivers?.map((driver) => {
+                  const isSelected = selectedDrivers.includes(driver.code);
+                  const headshot = getDriverImage(driver.code, year);
+                  const color = finalDriverColors[driver.code] || '#fff';
+                  const fullName = driverNameMap.get(driver.code) || driver.code;
+
+                  return (
+                    <button
+                      key={driver.code}
+                      onClick={() => toggleDriver(driver.code)}
+                      className={cn(
+                        'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                        isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                          isSelected
+                            ? 'bg-red-500 border-red-500'
+                            : 'border-white/[0.15] bg-transparent'
+                        )}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-2.5 h-2.5 text-white"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+                      <div
+                        className="h-8 w-0.5 rounded-full shrink-0"
+                        style={{ backgroundColor: color, opacity: isSelected ? 1 : 0.3 }}
+                      />
+                      <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                        <AvatarImage src={headshot} className="object-cover object-top" />
+                        <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white/60">
+                          {driver.code[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            'text-[12px] font-semibold truncate',
+                            isSelected ? 'text-white' : 'text-white/60'
+                          )}
+                        >
+                          {fullName}
+                        </span>
+                        <span
+                          className={cn(
+                            'text-[10px] font-medium',
+                            isSelected ? 'text-white/40' : 'text-white/25'
+                          )}
+                        >
+                          {driver.code}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {selectedDrivers.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-gray-500 border border-dashed border-gray-800 rounded-lg">
+        <div className="h-64 flex items-center justify-center text-white/50 border border-dashed border-white/[0.1] rounded-xl text-[13px] font-medium">
           Select drivers to compare pace distribution
         </div>
       ) : isLoading ? (
@@ -272,22 +352,36 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         <div className="h-[500px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.06)"
+                vertical={false}
+              />
               <XAxis
                 dataKey="driverCode"
-                stroke="#666"
-                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
-                axisLine={{ stroke: '#333' }}
+                stroke="rgba(255,255,255,0.15)"
+                tick={{
+                  fill: 'rgba(255,255,255,0.5)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
               />
               <YAxis
                 domain={[minPace - domainPadding, maxPace + domainPadding]}
                 tickFormatter={formatTime}
-                stroke="#666"
-                tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+                stroke="rgba(255,255,255,0.15)"
+                tick={{
+                  fill: 'rgba(255,255,255,0.5)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontFamily: 'Inter, sans-serif',
+                }}
                 width={80}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Legend wrapperStyle={{ fontFamily: 'Geist Mono', fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontFamily: 'Inter, sans-serif', fontSize: '11px' }} />
 
               {/* The Box (Q1 to Q3) */}
               <Bar
@@ -319,24 +413,24 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               <Scatter
                 name="Fastest Lap"
                 dataKey="min"
-                fill="#00ff00"
+                fill="#10b981"
                 shape="triangle"
                 legendType="triangle"
               />
               <Scatter
                 name="Slowest Lap"
                 dataKey="max"
-                fill="#ff0000"
+                fill="#ef4444"
                 shape="triangle"
                 legendType="triangle"
               />
             </ComposedChart>
           </ResponsiveContainer>
-          <div className="mt-4 text-xs text-center text-gray-500">
+          <div className="mt-4 text-[11px] text-center text-white/40">
             Box represents the middle 50% of laps (Interquartile Range).
-            <span className="mx-2 text-white">■ Median</span>
-            <span className="mx-2 text-green-500">▲ Fastest</span>
-            <span className="mx-2 text-red-500">▲ Slowest</span>
+            <span className="mx-2 text-white font-semibold">■ Median</span>
+            <span className="mx-2 text-emerald-400 font-semibold">▲ Fastest</span>
+            <span className="mx-2 text-red-400 font-semibold">▲ Slowest</span>
           </div>
         </div>
       )}

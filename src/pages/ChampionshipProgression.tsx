@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
 import { TrendingUp } from 'lucide-react';
 import {
@@ -40,6 +40,121 @@ import { getCountryCode } from '@/utils/countryUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useEffect } from 'react';
 
+interface ChampionshipTooltipProps extends CustomTooltipProps<number> {
+  selectedYear: number;
+}
+
+const ChampionshipTooltip = ({
+  active,
+  payload,
+  label,
+  selectedYear,
+}: ChampionshipTooltipProps) => {
+  if (active && payload && payload.length) {
+    // Sort payload by value (points) descending
+    const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    // Access direct data point from payload
+    const dataPoint = payload[0]?.payload;
+    const country = dataPoint?.country || label;
+    const eventName = dataPoint?.name || label;
+
+    return (
+      <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
+        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-800">
+          <img
+            src={`https://flagcdn.com/h24/${getCountryCode(country)}.png`}
+            alt="Country Flag"
+            className="h-4 rounded-[2px]"
+          />
+          <p className="font-black text-white uppercase italic tracking-wider text-sm">
+            {eventName}
+          </p>
+        </div>
+        <div className="space-y-3">
+          {sortedPayload.map((entry, index: number) => {
+            // Use dataKey (driver code) for image lookup if available, otherwise name
+            const driverId = entry.dataKey || entry.name;
+            const headshot = getDriverImage(driverId, selectedYear);
+
+            return (
+              <div key={entry.name} className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-500 font-mono text-xs w-4">#{index + 1}</span>
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 border border-gray-800">
+                      {headshot ? (
+                        <img
+                          src={headshot}
+                          alt={entry.name}
+                          className="w-full h-full object-cover object-top"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
+                          {entry.name[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                  </div>
+                  <span className="font-bold text-sm text-gray-200">{entry.name}</span>
+                </div>
+                <span className="font-black font-mono text-white text-sm tabular-nums">
+                  {entry.value}{' '}
+                  <span className="text-[10px] text-gray-500 font-normal ml-0.5">PTS</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+interface ChampionshipLegendProps extends CustomLegendProps {
+  selectedYear: number;
+}
+
+const ChampionshipLegend = ({ payload, selectedYear }: ChampionshipLegendProps) => {
+  if (!payload) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4 mb-6 pt-4">
+      {payload.map((entry, index: number) => {
+        const driverId = entry.dataKey || entry.value; // Prefer dataKey (code)
+        const headshot = getDriverImage(driverId, selectedYear);
+
+        return (
+          <div
+            key={`legend-${index}`}
+            className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-gray-800 backdrop-blur-sm"
+          >
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
+              {headshot ? (
+                <img
+                  src={headshot}
+                  alt={entry.value}
+                  className="w-full h-full object-cover object-top"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                  {entry.value[0]}
+                </div>
+              )}
+            </div>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-xs font-bold text-gray-200">{entry.value}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const ChampionshipProgression = () => {
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
@@ -51,14 +166,9 @@ const ChampionshipProgression = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // State for driver filtering
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+  // State for driver filtering keyed by year so switching seasons naturally resets
+  const [selectedDriversMap, setSelectedDriversMap] = useState<Record<number, string[]>>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  // Reset selected drivers when year changes
-  useEffect(() => {
-    setSelectedDrivers([]);
-  }, [selectedYear]);
 
   // Fetch Data
   const { data, isLoading, isError, error } = useQuery<ChampionshipProgressionData>({
@@ -90,43 +200,47 @@ const ChampionshipProgression = () => {
     });
   }, [data]);
 
-  // Determine drivers to show by default (Title Contenders going into final race)
-  useEffect(() => {
-    if (data && selectedDrivers.length === 0) {
-      const roundsReceived = data.rounds.length;
-      const checkIndex = roundsReceived > 1 ? roundsReceived - 2 : 0; // Index of the penultimate round (state before last race)
+  // Compute default drivers when no explicit selection exists for the current year
+  const defaultDrivers = useMemo(() => {
+    if (!data) return [];
+    const roundsReceived = data.rounds.length;
+    const checkIndex = roundsReceived > 1 ? roundsReceived - 2 : 0;
 
-      // Calculate points at the check index
-      const driversAtCheck = Object.entries(data.drivers)
-        .map(([code, d]) => ({
-          code,
-          points: d.points_history[checkIndex] || 0,
-          currentPoints: d.points_history[d.points_history.length - 1] || 0, // For sorting
-        }))
-        .sort((a, b) => b.points - a.points);
+    const driversAtCheck = Object.entries(data.drivers)
+      .map(([code, d]) => ({
+        code,
+        points: d.points_history[checkIndex] || 0,
+        currentPoints: d.points_history[d.points_history.length - 1] || 0,
+      }))
+      .sort((a, b) => b.points - a.points);
 
-      if (driversAtCheck.length > 0) {
-        const leaderPoints = driversAtCheck[0].points;
-        // Drivers within 26 points (Win + FL) of leader at penultimate round
-        // (Assuming simple 26pts remaining, can be made more robust if needed, but this is a solid heuristic for "last race title decider")
-        const contenders = driversAtCheck
-          .filter((d) => leaderPoints - d.points <= 26)
-          .map((d) => d.code);
+    if (driversAtCheck.length > 0) {
+      const leaderPoints = driversAtCheck[0].points;
+      const contenders = driversAtCheck
+        .filter((d) => leaderPoints - d.points <= 26)
+        .map((d) => d.code);
 
-        if (contenders.length > 1) {
-          setSelectedDrivers(contenders);
-        } else {
-          // If title decided before last race, or only 1 contender, fallback to top 5
-          const top5 = driversAtCheck
-            .sort((a, b) => b.currentPoints - a.currentPoints)
-            .slice(0, 5)
-            .map((d) => d.code);
-          setSelectedDrivers(top5);
-        }
-      }
+      if (contenders.length > 1) return contenders;
+      return driversAtCheck
+        .sort((a, b) => b.currentPoints - a.currentPoints)
+        .slice(0, 5)
+        .map((d) => d.code);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]); // Run only when data loads initially
+    return [];
+  }, [data]);
+
+  const selectedDrivers = selectedDriversMap[selectedYear]?.length
+    ? selectedDriversMap[selectedYear]
+    : defaultDrivers;
+
+  const setSelectedDrivers = (value: React.SetStateAction<string[]>) => {
+    setSelectedDriversMap((prev) => {
+      const current = prev[selectedYear] || [];
+      const next =
+        typeof value === 'function' ? (value as (prev: string[]) => string[])(current) : value;
+      return { ...prev, [selectedYear]: next };
+    });
+  };
 
   const handleDriverToggle = (code: string) => {
     setSelectedDrivers((prev) =>
@@ -159,112 +273,6 @@ const ChampionshipProgression = () => {
       action: 'clear_selection',
       year: selectedYear,
     });
-  };
-
-  // No separate helper needed — getDriverImage imported from @/utils/imageMapping
-  // Usage: getDriverImage(driverCode, selectedYear)
-
-  // Custom Toolkit Styles
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
-    if (active && payload && payload.length) {
-      // Sort payload by value (points) descending
-      const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0));
-
-      // Access direct data point from payload
-      const dataPoint = payload[0]?.payload;
-      const country = dataPoint?.country || label;
-      const eventName = dataPoint?.name || label;
-
-      return (
-        <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
-          <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-800">
-            <img
-              src={`https://flagcdn.com/h24/${getCountryCode(country)}.png`}
-              alt="Country Flag"
-              className="h-4 rounded-[2px]"
-            />
-            <p className="font-black text-white uppercase italic tracking-wider text-sm">
-              {eventName}
-            </p>
-          </div>
-          <div className="space-y-3">
-            {sortedPayload.map((entry, index: number) => {
-              // Use dataKey (driver code) for image lookup if available, otherwise name
-              const driverId = entry.dataKey || entry.name;
-              const headshot = getDriverImage(driverId, selectedYear);
-
-              return (
-                <div key={entry.name} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-500 font-mono text-xs w-4">#{index + 1}</span>
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 border border-gray-800">
-                        {headshot ? (
-                          <img
-                            src={headshot}
-                            alt={entry.name}
-                            className="w-full h-full object-cover object-top"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
-                            {entry.name[0]}
-                          </div>
-                        )}
-                      </div>
-                      <div
-                        className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                    </div>
-                    <span className="font-bold text-sm text-gray-200">{entry.name}</span>
-                  </div>
-                  <span className="font-black font-mono text-white text-sm tabular-nums">
-                    {entry.value}{' '}
-                    <span className="text-[10px] text-gray-500 font-normal ml-0.5">PTS</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-  };
-
-  // Custom Legend Component
-  const CustomLegend = ({ payload }: CustomLegendProps) => {
-    if (!payload) return null;
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-4 mb-6 pt-4">
-        {payload.map((entry, index: number) => {
-          const driverId = entry.dataKey || entry.value; // Prefer dataKey (code)
-          const headshot = getDriverImage(driverId, selectedYear);
-
-          return (
-            <div
-              key={`legend-${index}`}
-              className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-gray-800 backdrop-blur-sm"
-            >
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={entry.value}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                    {entry.value[0]}
-                  </div>
-                )}
-              </div>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-xs font-bold text-gray-200">{entry.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
   };
 
   return (
@@ -474,8 +482,11 @@ const ChampionshipProgression = () => {
                     },
                   ]}
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend content={<CustomLegend />} verticalAlign="bottom" />
+                <Tooltip content={<ChampionshipTooltip selectedYear={selectedYear} />} />
+                <Legend
+                  content={<ChampionshipLegend selectedYear={selectedYear} />}
+                  verticalAlign="bottom"
+                />
                 {selectedDrivers.map((code) => {
                   const driverData = data?.drivers[code];
                   if (!driverData) return null;
