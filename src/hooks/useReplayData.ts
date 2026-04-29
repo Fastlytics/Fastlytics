@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { SessionReplayData } from '@/lib/api';
-import { DriverFrameState, FPS } from '@/components/replay/replay-utils';
+import { DriverFrameState } from '@/components/replay/replay-utils';
 
 function findTrackIndex(x: number, y: number, points: number[][]): number {
   if (!points || points.length === 0) return 0;
@@ -19,12 +19,36 @@ function findTrackIndex(x: number, y: number, points: number[][]): number {
   return bestIdx;
 }
 
+function findNearestTimeIndex(time: number, timeline: number[]): number {
+  if (!timeline.length) return 0;
+  if (time <= timeline[0]) return 0;
+  if (time >= timeline[timeline.length - 1]) return timeline.length - 1;
+
+  let low = 0;
+  let high = timeline.length - 1;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const value = timeline[mid];
+
+    if (value === time) return mid;
+    if (value < time) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return time - timeline[high] <= timeline[low] - time ? high : low;
+}
+
 export function useReplayData(data: SessionReplayData | null, currentTime: number) {
+  const timeline = data?.time;
+
   const safeIndex = useMemo(() => {
-    if (!data?.time?.length) return 0;
-    const idx = Math.floor(currentTime * FPS);
-    return Math.min(Math.max(0, idx), data.time.length - 1);
-  }, [data?.time?.length, currentTime]);
+    if (!timeline?.length) return 0;
+    return findNearestTimeIndex(currentTime, timeline);
+  }, [timeline, currentTime]);
 
   const currentFrameDrivers = useMemo(() => {
     if (!data) return {};
@@ -33,8 +57,10 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     const pathDists = data.circuit_distances || [];
 
     for (const [code, d] of Object.entries(data.drivers)) {
-      const x = d.x[safeIndex];
-      const y = d.y[safeIndex];
+      const x = d.x?.[safeIndex];
+      const y = d.y?.[safeIndex];
+      if (typeof x !== 'number' || typeof y !== 'number') continue;
+
       const trackIdx = findTrackIndex(x, y, pathPoints);
       const refDist =
         pathDists.length > 0 && trackIdx < pathDists.length

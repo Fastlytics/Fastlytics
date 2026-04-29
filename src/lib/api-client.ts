@@ -28,6 +28,15 @@ const getHeaders = (): HeadersInit => {
   return headers;
 };
 
+const isAbortError = (error: unknown) => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name?: unknown }).name === 'AbortError'
+  );
+};
+
 export const request = async <T>(
   endpoint: string,
   options?: RequestInit & { signal?: AbortSignal }
@@ -60,6 +69,7 @@ export const request = async <T>(
     return await response.json();
   } catch (error) {
     if (error instanceof APIError) throw error;
+    if (isAbortError(error) || options?.signal?.aborted) throw error;
     logger.error(`Network or Parsing Error:`, error);
     throw error;
   }
