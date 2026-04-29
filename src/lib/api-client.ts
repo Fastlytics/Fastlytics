@@ -28,15 +28,17 @@ const getHeaders = (): HeadersInit => {
   return headers;
 };
 
-export const request = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
-  // Remove leading slash if present in endpoint to avoid double slashes if base url has one?
-  // Usually standardizing on no trailing slash in base, leading slash in endpoint.
+export const request = async <T>(
+  endpoint: string,
+  options?: RequestInit & { signal?: AbortSignal }
+): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   logger.debug(`Fetching: ${url}`);
 
   try {
     const response = await fetch(url, {
       ...options,
+      signal: options?.signal,
       headers: {
         ...getHeaders(),
         ...options?.headers,

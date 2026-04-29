@@ -1,14 +1,9 @@
 /**
- * FastlyticsLogo — cyber brutalist telemetry mark.
- * A deconstructed "F" built from raw geometric blocks and telemetry
- * data lines, evoking a race control terminal. On hover, the mark
- * activates with a glitch shift, scan-line sweep, and red pulse.
+ * FastlyticsLogo — minimalist cyber-brutalist mark.
+ * A bold geometric F paired with raw telemetry bars.
+ * On hover: deconstruct shift, glitch shadow, scan sweep, grid reveal.
  */
-import { useState } from 'react';
-
 const FastlyticsLogo = ({ size = 28 }: { size?: number }) => {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <svg
       width={size}
@@ -18,267 +13,135 @@ const FastlyticsLogo = ({ size = 28 }: { size?: number }) => {
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Fastlytics"
       role="img"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{ cursor: 'pointer' }}
     >
       <style>{`
-        .fl-logo { transition: filter 0.3s ease; }
-        .fl-logo:hover { filter: drop-shadow(0 0 6px rgba(255, 40, 0, 0.5)); }
+        .fl-container { transition: filter 0.3s ease; }
+        .fl-container:hover { filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.35)); }
 
-        .fl-block {
-          transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-                      opacity 0.25s ease;
+        /* Deconstruct: F blocks drift apart on hover */
+        .fl-stem {
+          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .fl-logo:hover .fl-block-1 { transform: translateX(-1.5px) translateY(0.5px); }
-        .fl-logo:hover .fl-block-2 { transform: translateX(1.5px) translateY(-0.5px); }
-        .fl-logo:hover .fl-block-3 { transform: translateX(-1px); }
+        .fl-container:hover .fl-stem { transform: translate(-1px, 0); }
 
-        .fl-pulse {
-          stroke-dasharray: 40;
-          stroke-dashoffset: 40;
-          transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+        .fl-top {
+          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .fl-container:hover .fl-top { transform: translate(1px, -1px); }
+
+        .fl-mid {
+          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .fl-container:hover .fl-mid { transform: translate(-0.5px, 1px); }
+
+        /* Telemetry bars: staggered lift on hover */
+        .fl-bar {
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
                       opacity 0.3s ease;
-          opacity: 0;
         }
-        .fl-logo:hover .fl-pulse {
-          stroke-dashoffset: 0;
-          opacity: 1;
+        .fl-container:hover .fl-bar-1 { transform: translateY(-2px); transition-delay: 0.05s; }
+        .fl-container:hover .fl-bar-2 { transform: translateY(-3px); transition-delay: 0.1s; }
+        .fl-container:hover .fl-bar-3 { transform: translateY(-4px); transition-delay: 0.15s; }
+
+        /* Glitch shadow layer */
+        .fl-glitch {
+          transition: opacity 0.25s ease, transform 0.25s ease;
+          opacity: 0;
+          transform: translate(0, 0);
+        }
+        .fl-container:hover .fl-glitch {
+          opacity: 0.12;
+          transform: translate(1.5px, 0.5px);
         }
 
+        /* Scan line sweep */
         .fl-scan {
-          transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-          transform: translateY(32px);
+          transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: translateY(-36px);
         }
-        .fl-logo:hover .fl-scan {
-          transform: translateY(-32px);
+        .fl-container:hover .fl-scan {
+          transform: translateY(36px);
         }
 
+        /* Grid reveal */
         .fl-grid line {
-          transition: opacity 0.3s ease;
+          transition: opacity 0.35s ease;
           opacity: 0;
         }
-        .fl-logo:hover .fl-grid line {
+        .fl-container:hover .fl-grid line {
           opacity: 1;
         }
 
-        .fl-data-dot {
-          transition: opacity 0.3s ease 0.15s;
-          opacity: 0;
+        /* Corner marks */
+        .fl-reg {
+          stroke-opacity: 0.1;
+          transition: stroke-opacity 0.3s ease;
         }
-        .fl-logo:hover .fl-data-dot {
-          opacity: 1;
-        }
-
-        @keyframes fl-glitch {
-          0%, 100% { transform: translate(0, 0); }
-          20% { transform: translate(-1px, 0); }
-          40% { transform: translate(1px, -0.5px); }
-          60% { transform: translate(-0.5px, 0.5px); }
-          80% { transform: translate(0.5px, 0); }
-        }
-        .fl-logo:hover .fl-glitch-layer {
-          animation: fl-glitch 0.4s steps(5) 1;
+        .fl-container:hover .fl-reg {
+          stroke-opacity: 0.3;
         }
       `}</style>
 
-      <g className="fl-logo">
-        {/* Background — brutalist dark slab */}
-        <rect width="32" height="32" rx="4" fill="#08080A" />
-        <rect x="0.5" y="0.5" width="31" height="31" rx="3.5" stroke="white" strokeOpacity="0.06" />
+      <g className="fl-container">
+        {/* Background slab */}
+        <rect width="32" height="32" rx="4" fill="#0A0A0C" />
+        <rect x="0.5" y="0.5" width="31" height="31" rx="3.5" stroke="white" strokeOpacity="0.05" />
 
-        {/* Exposed grid structure — revealed on hover */}
-        <g className="fl-grid">
-          <line
-            x1="8"
-            y1="0"
-            x2="8"
-            y2="32"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
-          <line
-            x1="16"
-            y1="0"
-            x2="16"
-            y2="32"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
-          <line
-            x1="24"
-            y1="0"
-            x2="24"
-            y2="32"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
-          <line
-            x1="0"
-            y1="8"
-            x2="32"
-            y2="8"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
-          <line
-            x1="0"
-            y1="16"
-            x2="32"
-            y2="16"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
-          <line
-            x1="0"
-            y1="24"
-            x2="32"
-            y2="24"
-            stroke="white"
-            strokeOpacity="0.04"
-            strokeWidth="0.5"
-          />
+        {/* Exposed grid */}
+        <g className="fl-grid" stroke="white" strokeOpacity="0.03" strokeWidth="0.5">
+          <line x1="8" y1="0" x2="8" y2="32" />
+          <line x1="16" y1="0" x2="16" y2="32" />
+          <line x1="24" y1="0" x2="24" y2="32" />
+          <line x1="0" y1="8" x2="32" y2="8" />
+          <line x1="0" y1="16" x2="32" y2="16" />
+          <line x1="0" y1="24" x2="32" y2="24" />
         </g>
 
-        {/* Scan line sweep — hover reveal */}
+        {/* Scan line */}
         <rect
           className="fl-scan"
           x="0"
           y="0"
           width="32"
-          height="3"
-          fill="url(#fl-scan-grad)"
-          opacity="0.5"
-        />
-
-        {/* === The F mark — deconstructed geometric blocks === */}
-
-        {/* Vertical stem — raw slab */}
-        <rect
-          className="fl-block fl-block-1"
-          x="7"
-          y="6"
-          width="3.5"
-          height="20"
-          fill="white"
-          rx="0.5"
-        />
-
-        {/* Top horizontal bar — extends past stem (brutalist overreach) */}
-        <rect
-          className="fl-block fl-block-2"
-          x="7"
-          y="6"
-          width="16"
-          height="3.5"
-          fill="white"
-          rx="0.5"
-        />
-
-        {/* Middle bar — shorter, offset for tension */}
-        <rect
-          className="fl-block fl-block-3"
-          x="10.5"
-          y="13.5"
-          width="11"
           height="2.5"
-          fill="white"
-          rx="0.5"
+          fill="url(#fl-scan-grad)"
+          opacity="0.6"
         />
 
-        {/* Telemetry data dots — raw data points */}
-        <circle className="fl-data-dot" cx="23" cy="7.75" r="1.2" fill="#EF4444" />
-        <circle className="fl-data-dot" cx="23" cy="14.75" r="1.2" fill="#EF4444" />
-        <circle className="fl-data-dot" cx="23" cy="22" r="1" fill="#EF4444" opacity="0.6" />
+        {/* The F mark */}
+        <rect className="fl-stem" x="6" y="5" width="5" height="22" rx="1" fill="white" />
+        <rect className="fl-top" x="6" y="5" width="18" height="5" rx="1" fill="white" />
+        <rect className="fl-mid" x="6" y="14" width="12" height="4" rx="1" fill="white" />
 
-        {/* Speed notch — cut out of top bar */}
-        <rect className="fl-block fl-block-2" x="20" y="6" width="3" height="3.5" fill="#08080A" />
+        {/* Telemetry bars */}
+        <rect className="fl-bar fl-bar-1" x="20" y="20" width="2.5" height="7" fill="#EF4444" />
+        <rect className="fl-bar fl-bar-2" x="24" y="16" width="2.5" height="11" fill="#EF4444" />
+        <rect className="fl-bar fl-bar-3" x="28" y="12" width="2.5" height="15" fill="#EF4444" />
 
-        {/* Telemetry pulse line — animates in on hover */}
-        <polyline
-          className="fl-pulse"
-          points="4,27 8,27 10,24 12,29 14,25 16,28 18,26 20,27 28,27"
-          stroke="#EF4444"
-          strokeWidth="1.2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Glitch double — offset shadow on hover */}
-        <g className="fl-glitch-layer" opacity={hovered ? 0.08 : 0}>
-          <rect x="8" y="6.5" width="3.5" height="20" fill="#EF4444" rx="0.5" />
-          <rect x="8" y="6.5" width="16" height="3.5" fill="#EF4444" rx="0.5" />
+        {/* Glitch layer */}
+        <g className="fl-glitch">
+          <rect x="6" y="5" width="5" height="22" rx="1" fill="#EF4444" />
+          <rect x="6" y="5" width="18" height="5" rx="1" fill="#EF4444" />
+          <rect x="6" y="14" width="12" height="4" rx="1" fill="#EF4444" />
         </g>
 
-        {/* Corner registration marks — brutalist print detail */}
-        <line x1="2" y1="2" x2="4.5" y2="2" stroke="white" strokeOpacity="0.12" strokeWidth="0.5" />
-        <line x1="2" y1="2" x2="2" y2="4.5" stroke="white" strokeOpacity="0.12" strokeWidth="0.5" />
-        <line
-          x1="30"
-          y1="2"
-          x2="27.5"
-          y2="2"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
-        <line
-          x1="30"
-          y1="2"
-          x2="30"
-          y2="4.5"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
-        <line
-          x1="2"
-          y1="30"
-          x2="4.5"
-          y2="30"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
-        <line
-          x1="2"
-          y1="30"
-          x2="2"
-          y2="27.5"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
-        <line
-          x1="30"
-          y1="30"
-          x2="27.5"
-          y2="30"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
-        <line
-          x1="30"
-          y1="30"
-          x2="30"
-          y2="27.5"
-          stroke="white"
-          strokeOpacity="0.12"
-          strokeWidth="0.5"
-        />
+        {/* Corner registration marks */}
+        <g className="fl-reg" stroke="white" strokeWidth="0.5">
+          <line x1="2" y1="2" x2="5" y2="2" />
+          <line x1="2" y1="2" x2="2" y2="5" />
+          <line x1="30" y1="2" x2="27" y2="2" />
+          <line x1="30" y1="2" x2="30" y2="5" />
+          <line x1="2" y1="30" x2="5" y2="30" />
+          <line x1="2" y1="30" x2="2" y2="27" />
+          <line x1="30" y1="30" x2="27" y2="30" />
+          <line x1="30" y1="30" x2="30" y2="27" />
+        </g>
 
-        {/* Gradients */}
         <defs>
           <linearGradient id="fl-scan-grad" x1="0" y1="0" x2="32" y2="0">
             <stop offset="0%" stopColor="#EF4444" stopOpacity="0" />
-            <stop offset="50%" stopColor="#EF4444" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#EF4444" stopOpacity="0.5" />
             <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
           </linearGradient>
         </defs>
