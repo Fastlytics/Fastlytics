@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';

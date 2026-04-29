@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   Legend,
   Brush,
-  ReferenceLine,
   BarChart,
   Bar,
   Cell,
@@ -28,11 +27,11 @@ import {
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import {
   AlertCircleIcon,
-  PlusSignCircleIcon,
-  CancelCircleIcon,
-  Analytics01Icon,
   Time01Icon,
   InformationCircleIcon,
+  Flag01Icon,
+  ChartLineData01Icon,
+  ArrowUpDownIcon,
 } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
@@ -52,6 +51,8 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -60,7 +61,17 @@ const formatLapTime = (totalSeconds: number | null): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   const formattedSeconds = seconds.toFixed(3).padStart(6, '0');
-  return `${minutes}:${formattedSeconds} `;
+  return `${minutes}:${formattedSeconds}`;
+};
+
+const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
+const COMPOUND_COLORS: Record<string, string> = {
+  SOFT: '#FF3333',
+  MEDIUM: '#FFC107',
+  HARD: '#EEEEEE',
+  INTERMEDIATE: '#4CAF50',
+  WET: '#2196F3',
 };
 
 interface RacingChartProps {
@@ -104,16 +115,13 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
   const [fuelCorrectionEnabled, setFuelCorrectionEnabled] = useState(false);
+  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
 
-  // Determine initial drivers based on props
   const getInitialDrivers = () => {
     if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
-
     const defaults: string[] = [];
     if (favoriteDriver) defaults.push(favoriteDriver);
     if (rivalDriver) defaults.push(rivalDriver);
-
-    // If we still need drivers, we'll fill them in after fetching available drivers
     return defaults;
   };
 
@@ -127,18 +135,23 @@ const RacingChart: React.FC<RacingChartProps> = ({
     enabled: !staticData && !!year && !!event && !!session,
   });
 
+  const driverNameMap = useMemo(() => {
+    if (!availableDrivers) return new Map<string, string>();
+    const map = new Map<string, string>();
+    availableDrivers.forEach((d) => {
+      if (d.code && d.name) map.set(d.code, d.name);
+    });
+    return map;
+  }, [availableDrivers]);
+
   const effectiveDrivers = useMemo(() => {
     if (staticData) return selectedDrivers;
-
-    // Filter out any selected drivers that are not in this session
     const validCodes = availableDrivers ? new Set(availableDrivers.map((d) => d.code)) : null;
     const validSelected = validCodes
       ? selectedDrivers.filter((d) => validCodes.has(d))
       : selectedDrivers;
-
     if (validSelected.length >= MIN_DRIVERS) return validSelected;
     if (!availableDrivers) return validSelected;
-
     const needed = MIN_DRIVERS - validSelected.length;
     const candidates = availableDrivers
       .filter((d) => !validSelected.includes(d.code))
@@ -176,30 +189,18 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const driverLapDetails = enrichedResponse?.driverLapDetails;
   const weatherData = enrichedResponse?.weather;
 
-  // Fuel correction constants
   const TOTAL_FUEL_KG = 110;
   const FUEL_PER_LAP_KG = 1.8;
   const SECONDS_PER_KG_PER_LAP = 0.03;
 
-  // Apply fuel correction to lap data
   const correctedLapData = useMemo(() => {
-    if (!lapData || !fuelCorrectionEnabled) {
-      return lapData;
-    }
-
-    // Only apply correction for first 60% of laps (fuel effect minimal after)
+    if (!lapData || !fuelCorrectionEnabled) return lapData;
     const maxLapForCorrection = Math.ceil(lapData.length * 0.6);
-
     return lapData.map((point) => {
       const lapNumber = point.LapNumber;
-      if (lapNumber > maxLapForCorrection) {
-        return point;
-      }
-
+      if (lapNumber > maxLapForCorrection) return point;
       const fuelLoad = TOTAL_FUEL_KG - lapNumber * FUEL_PER_LAP_KG;
       const correctionAmount = fuelLoad * SECONDS_PER_KG_PER_LAP;
-
-      // Apply correction to each driver's lap time
       const correctedPoint = { ...point };
       Object.keys(point).forEach((key) => {
         if (key !== 'LapNumber' && typeof point[key] === 'number') {
@@ -207,7 +208,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
             (point[key as keyof LapTimeDataPoint] as number) - correctionAmount;
         }
       });
-
       return correctedPoint;
     });
   }, [lapData, fuelCorrectionEnabled]);
@@ -224,10 +224,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
     });
     setSelectedDrivers((prev) => {
       if (prev.includes(driverCode)) {
-        if (prev.length > MIN_DRIVERS) {
-          return prev.filter((d) => d !== driverCode);
-        }
-        return prev; // Cannot remove if it would go below MIN_DRIVERS
+        if (prev.length > MIN_DRIVERS) return prev.filter((d) => d !== driverCode);
+        return prev;
       }
       return [...prev, driverCode];
     });
@@ -235,14 +233,11 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const isLoading = !staticData && isLoadingLapTimes;
 
-  // Calculate Fastest Laps
   const fastestLaps = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
-
     const stats = driversToDisplay.map((driver) => {
       let minTime = Infinity;
       let lapNum = -1;
-
       chartData.forEach((point) => {
         const time = point[driver] as number | null;
         if (time !== null && time < minTime) {
@@ -250,15 +245,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
           lapNum = point.LapNumber;
         }
       });
-
-      return {
-        driver,
-        fastestTime: minTime === Infinity ? null : minTime,
-        lapNumber: lapNum,
-      };
+      return { driver, fastestTime: minTime === Infinity ? null : minTime, lapNumber: lapNum };
     });
-
-    // Sort by fastest time
     return stats.sort((a, b) => {
       if (a.fastestTime === null) return 1;
       if (b.fastestTime === null) return -1;
@@ -269,17 +257,18 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
       return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="w-full h-[300px] flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] gap-4">
+          <p className="text-white text-[13px] font-medium uppercase tracking-wider">
+            Select drivers to compare
+          </p>
           <Button
             onClick={() => {
               trackInteraction('chart_data_loaded', { chart: 'lap_time', year, event, session });
               setShouldLoadChart(true);
             }}
-            className="bg-white hover:bg-gray-200 text-black font-black uppercase tracking-wider rounded-none"
+            className="rounded-lg bg-white hover:bg-white/90 text-black font-semibold text-[12px] uppercase tracking-wider"
             disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
           >
-            <Analytics01Icon className="w-4 h-4 mr-2" />
             Load Data
           </Button>
         </div>
@@ -288,17 +277,17 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
     if (isLoading) {
       return (
-        <div className="w-full h-[300px] flex items-center justify-center bg-black border border-gray-700">
+        <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
           <LoadingSpinnerF1 />
         </div>
       );
     }
     if (isError || !lapData) {
       return (
-        <div className="w-full h-[300px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
+        <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading lap times</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="font-semibold uppercase text-[13px]">Error loading lap times</p>
+          <p className="text-xs text-white mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
           {!staticData && (
@@ -306,7 +295,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-red-600 text-red-500 hover:bg-red-600 hover:text-white rounded-none uppercase font-black"
+              className="mt-4 rounded-lg border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold text-[11px] uppercase tracking-wider"
             >
               Back
             </Button>
@@ -316,14 +305,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
     }
     if (lapData.length === 0) {
       return (
-        <div className="w-full h-[300px] bg-black border border-gray-700 flex flex-col items-center justify-center text-gray-500 font-mono uppercase">
+        <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
           <p>No common lap data found.</p>
           {!staticData && (
             <Button
               onClick={() => setShouldLoadChart(false)}
               variant="outline"
               size="sm"
-              className="mt-4 border-gray-700 hover:bg-gray-800 rounded-none"
+              className="mt-4 rounded-lg border-white/[0.08] text-white hover:bg-white/[0.06] font-semibold text-[11px] uppercase tracking-wider"
             >
               Back
             </Button>
@@ -338,33 +327,45 @@ const RacingChart: React.FC<RacingChartProps> = ({
       <>
         <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
           <LineChart data={chartData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
             <XAxis
               dataKey="LapNumber"
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.15)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: 'Inter, sans-serif',
+              }}
               padding={{ left: 10, right: 10 }}
             />
             <YAxis
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.15)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 600,
+                fontFamily: 'Inter, sans-serif',
+              }}
               domain={['dataMin - 0.5', 'dataMax + 0.5']}
               tickFormatter={formatLapTime}
               allowDecimals={true}
-              width={60}
+              width={65}
             />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload || !payload.length) return null;
                 const lapNumber = label as number;
-                // Sort by time (value)
                 const sortedPayload = [...payload].sort(
                   (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
                 );
 
                 return (
-                  <div className="bg-black border border-gray-700 p-3 shadow-xl max-w-[600px] z-50">
-                    <div className="text-white font-black uppercase tracking-wider border-b border-gray-700 pb-2 mb-2 font-mono text-sm">
+                  <div
+                    className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[600px] z-50"
+                    style={inter}
+                  >
+                    <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
                       Lap {lapNumber}
                     </div>
                     <div className="space-y-2">
@@ -372,74 +373,58 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         const driverCode = String(entry.name);
                         const time = entry.value;
                         if (time === null) return null;
-
                         const headshot = getDriverImage(driverCode, year);
                         const color = entry.color;
-                        // Get enriched details for this lap
+                        const fullName = driverNameMap.get(driverCode) || driverCode;
                         const lapDetail = driverLapDetails?.[driverCode]?.find(
                           (l: EnrichedLapRecord) => l.lapNumber === lapNumber
                         );
 
-                        const compoundColors: Record<string, string> = {
-                          SOFT: '#FF3333',
-                          MEDIUM: '#FFC107',
-                          HARD: '#EEEEEE',
-                          INTERMEDIATE: '#4CAF50',
-                          WET: '#2196F3',
-                        };
-
                         return (
                           <div
                             key={driverCode}
-                            className="border-b border-gray-700/50 pb-2 last:border-0 last:pb-0"
+                            className="border-b border-white/[0.04] pb-2 last:border-0 last:pb-0"
                           >
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-black overflow-hidden shrink-0 border border-gray-700">
-                                {headshot ? (
-                                  <img
-                                    src={headshot}
-                                    alt={driverCode}
-                                    className="w-full h-full object-cover object-top"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">
-                                    {driverCode[0]}
-                                  </div>
-                                )}
-                              </div>
-                              <span className="text-xs font-black font-mono" style={{ color }}>
+                              <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                                <AvatarImage src={headshot} className="object-cover object-top" />
+                                <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                                  {driverCode[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-[12px] font-bold" style={{ color }}>
                                 {formatLapTime(time as number)}
                               </span>
-                              <span className="text-xs font-mono text-gray-400 font-black">
-                                {driverCode}
+                              <span className="text-[12px] font-semibold text-white/80">
+                                {fullName}
                               </span>
                               {lapDetail?.compound && (
                                 <span
-                                  className="text-[10px] font-black px-1.5 py-0.5"
+                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                                   style={{
                                     backgroundColor:
-                                      (compoundColors[lapDetail.compound] || '#666') + '22',
-                                    color: compoundColors[lapDetail.compound] || '#666',
+                                      (COMPOUND_COLORS[lapDetail.compound] || '#666') + '22',
+                                    color: COMPOUND_COLORS[lapDetail.compound] || '#666',
                                   }}
                                 >
                                   {lapDetail.compound[0]}
                                 </span>
                               )}
                               {lapDetail?.tyreLife != null && (
-                                <span className="text-[10px] text-gray-500 font-mono">
+                                <span className="text-[10px] text-white font-medium">
                                   L{lapDetail.tyreLife}
                                 </span>
                               )}
                               {lapDetail?.position != null && (
-                                <span className="text-[10px] text-gray-600 font-mono">
+                                <span className="text-[10px] text-white font-medium">
                                   P{lapDetail.position}
                                 </span>
                               )}
                               {lapDetail?.deleted && (
-                                <span className="text-[10px] text-red-500 font-black">DEL</span>
+                                <span className="text-[10px] text-red-400 font-bold">DEL</span>
                               )}
                               {lapDetail?.isPersonalBest && (
-                                <span className="text-[10px] text-green-400 font-black">PB</span>
+                                <span className="text-[10px] text-purple-400 font-bold">PB</span>
                               )}
                             </div>
                             {lapDetail &&
@@ -448,25 +433,25 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 lapDetail.sector3 != null) && (
                                 <div className="flex gap-3 mt-1 ml-8">
                                   {lapDetail.sector1 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] text-white">
                                       S1{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-white/70 font-medium">
                                         {lapDetail.sector1.toFixed(3)}
                                       </span>
                                     </span>
                                   )}
                                   {lapDetail.sector2 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] text-white">
                                       S2{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-white/70 font-medium">
                                         {lapDetail.sector2.toFixed(3)}
                                       </span>
                                     </span>
                                   )}
                                   {lapDetail.sector3 != null && (
-                                    <span className="text-[10px] font-mono text-gray-500">
+                                    <span className="text-[10px] text-white">
                                       S3{' '}
-                                      <span className="text-gray-300">
+                                      <span className="text-white/70 font-medium">
                                         {lapDetail.sector3.toFixed(3)}
                                       </span>
                                     </span>
@@ -480,14 +465,14 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   </div>
                 );
               }}
-              cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '3 3' }}
+              cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
             />
             <Legend
               wrapperStyle={{
                 paddingTop: '20px',
                 paddingBottom: '10px',
-                fontFamily: 'Geist Mono',
-                fontSize: '12px',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '11px',
               }}
               onClick={(e) => {
                 if (e && e.value) {
@@ -497,11 +482,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                     event,
                     session,
                   });
-                  if (focusedDriver === e.value) {
-                    setFocusedDriver(null);
-                  } else {
-                    setFocusedDriver(e.value);
-                  }
+                  if (focusedDriver === e.value) setFocusedDriver(null);
+                  else setFocusedDriver(e.value);
                 }
               }}
               onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
@@ -514,7 +496,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                     style={{
                       color: entry.color,
                       opacity: isDimmed ? 0.3 : 1,
-                      fontWeight: isFocused ? 'bold' : 'normal',
+                      fontWeight: isFocused ? 700 : 400,
                     }}
                   >
                     {value}
@@ -550,74 +532,83 @@ const RacingChart: React.FC<RacingChartProps> = ({
             })}
             <Brush
               dataKey="LapNumber"
-              height={30}
-              stroke="#333"
-              fill="#111"
+              height={24}
+              stroke="rgba(255,255,255,0.1)"
+              fill="rgba(255,255,255,0.03)"
               tickFormatter={() => ''}
-              travellerWidth={10}
+              travellerWidth={8}
             />
           </LineChart>
         </ResponsiveContainer>
 
         {/* Weather Banner */}
         {weatherData && (
-          <div className="flex items-center gap-4 px-4 py-2 bg-black border border-gray-700 text-xs font-mono text-white mb-4">
-            <span className="font-black text-gray-400 uppercase tracking-wider">CONDITIONS</span>
-            <span>
-              AIR <span className="text-white font-black">{weatherData.airTemp.toFixed(1)}°C</span>
+          <div
+            className="flex flex-wrap items-center gap-4 px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-[12px]"
+            style={inter}
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/80">
+              Conditions
             </span>
             <span>
-              TRACK{' '}
-              <span className="text-white font-black">{weatherData.trackTemp.toFixed(1)}°C</span>
+              Air{' '}
+              <span className="text-white font-semibold">{weatherData.airTemp.toFixed(1)}°C</span>
             </span>
             <span>
-              HUM <span className="text-white font-black">{weatherData.humidity.toFixed(0)}%</span>
+              Track{' '}
+              <span className="text-white font-semibold">{weatherData.trackTemp.toFixed(1)}°C</span>
             </span>
             <span>
-              WIND{' '}
-              <span className="text-white font-black">{weatherData.windSpeed.toFixed(1)} m/s</span>
+              Hum{' '}
+              <span className="text-white font-semibold">{weatherData.humidity.toFixed(0)}%</span>
             </span>
-            {weatherData.rainfall && <span className="text-blue-400 font-black">RAIN</span>}
+            <span>
+              Wind{' '}
+              <span className="text-white font-semibold">
+                {weatherData.windSpeed.toFixed(1)} m/s
+              </span>
+            </span>
+            {weatherData.rainfall && <span className="text-blue-400 font-semibold">Rain</span>}
           </div>
         )}
 
-        {/* Fastest Laps Table — enriched */}
-        <div className="border-t border-gray-700 pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Time01Icon className="w-5 h-5 text-red-600" />
-            <h4 className="text-sm font-black uppercase tracking-wider text-white">
+        {/* Fastest Laps Table */}
+        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.06]">
+            <Time01Icon className="w-4 h-4 text-red-400" />
+            <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
               Fastest Laps (Selection)
             </h4>
           </div>
-          <div className="overflow-x-auto border border-gray-700 bg-black">
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-black">
-                <TableRow className="border-gray-700 hover:bg-transparent">
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8">
+              <TableHeader>
+                <TableRow className="border-b border-white/[0.04] hover:bg-transparent">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8">
                     Driver
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     Time
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-center">
                     Lap
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     Gap
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-center">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-center">
                     Tyre
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     S1
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     S2
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     S3
                   </TableHead>
-                  <TableHead className="text-xs font-black text-gray-400 uppercase tracking-wider h-8 text-right">
+                  <TableHead className="text-[11px] font-medium text-white uppercase tracking-wider h-8 text-right">
                     ST
                   </TableHead>
                 </TableRow>
@@ -629,67 +620,59 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       ? stat.fastestTime - fastestLaps[0].fastestTime
                       : null;
                   const color = driverColor(stat.driver, year);
-                  // Get the enriched record for the fastest lap
                   const lapDetail = driverLapDetails?.[stat.driver]?.find(
                     (l: EnrichedLapRecord) => l.lapNumber === stat.lapNumber
                   );
-                  const compoundColors: Record<string, string> = {
-                    SOFT: '#FF3333',
-                    MEDIUM: '#FFC107',
-                    HARD: '#EEEEEE',
-                    INTERMEDIATE: '#4CAF50',
-                    WET: '#2196F3',
-                  };
 
                   return (
                     <TableRow
                       key={stat.driver}
-                      className="border-b border-gray-700/50 hover:bg-gray-800/30"
+                      className="border-b border-white/[0.04] hover:bg-white/[0.02] last:border-b-0"
                     >
-                      <TableCell className="py-2 font-mono font-black" style={{ color }}>
+                      <TableCell className="py-3 font-semibold text-[13px]" style={{ color }}>
                         {stat.driver}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-gray-300">
+                      <TableCell className="py-3 text-right text-white/70 text-[13px]">
                         {formatLapTime(stat.fastestTime)}
                       </TableCell>
-                      <TableCell className="py-2 text-center font-mono text-gray-500 text-xs">
+                      <TableCell className="py-3 text-center text-white text-[12px]">
                         {stat.lapNumber !== -1 ? `L${stat.lapNumber}` : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs">
+                      <TableCell className="py-3 text-right text-[12px]">
                         {index === 0 ? (
-                          <span className="text-purple-400 font-black">FASTEST</span>
+                          <span className="text-purple-400 font-bold">Fastest</span>
                         ) : (
-                          <span className="text-gray-500">
+                          <span className="text-white">
                             {gap !== null ? `+${gap.toFixed(3)}s` : '-'}
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="py-2 text-center">
+                      <TableCell className="py-3 text-center">
                         {lapDetail?.compound ? (
                           <span
-                            className="text-[10px] font-black px-1.5 py-0.5"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                             style={{
                               backgroundColor:
-                                (compoundColors[lapDetail.compound] || '#666') + '22',
-                              color: compoundColors[lapDetail.compound] || '#666',
+                                (COMPOUND_COLORS[lapDetail.compound] || '#666') + '22',
+                              color: COMPOUND_COLORS[lapDetail.compound] || '#666',
                             }}
                           >
                             {lapDetail.compound}
                           </span>
                         ) : (
-                          '-'
+                          <span className="text-white">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-3 text-right text-white text-[12px]">
                         {lapDetail?.sector1 != null ? lapDetail.sector1.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-3 text-right text-white text-[12px]">
                         {lapDetail?.sector2 != null ? lapDetail.sector2.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-3 text-right text-white text-[12px]">
                         {lapDetail?.sector3 != null ? lapDetail.sector3.toFixed(3) : '-'}
                       </TableCell>
-                      <TableCell className="py-2 text-right font-mono text-xs text-gray-400">
+                      <TableCell className="py-3 text-right text-white text-[12px]">
                         {lapDetail?.speedST != null ? `${lapDetail.speedST.toFixed(0)}` : '-'}
                       </TableCell>
                     </TableRow>
@@ -700,9 +683,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
           </div>
         </div>
 
-        {/* Deleted Laps & Speed Traps Summary */}
+        {/* Deleted Laps & Speed Traps */}
         {driverLapDetails && (
-          <div className="flex flex-col gap-0 border-t border-gray-700">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Deleted Laps */}
             {(() => {
               const deletedLaps = driversToDisplay.flatMap((drv) =>
@@ -712,32 +695,35 @@ const RacingChart: React.FC<RacingChartProps> = ({
               );
               if (deletedLaps.length === 0) return null;
               return (
-                <div className="px-4 py-3 border-r border-gray-700">
-                  <h4 className="text-base font-black uppercase italic text-white mb-2">
-                    Deleted Laps ({deletedLaps.length})
-                  </h4>
-                  <div className="space-y-1">
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Flag01Icon className="w-4 h-4 text-red-400" />
+                    <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
+                      Deleted Laps ({deletedLaps.length})
+                    </h4>
+                  </div>
+                  <div className="space-y-1.5">
                     {deletedLaps.slice(0, 10).map((dl, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm font-mono font-bold">
+                      <div key={i} className="flex items-center gap-3 text-[12px]">
                         <span
                           style={{ color: driverColor(dl.driver, year) }}
-                          className="font-black w-10"
+                          className="font-bold w-10"
                         >
                           {dl.driver}
                         </span>
-                        <span className="text-white">Lap {dl.lapNumber}</span>
+                        <span className="text-white/70">Lap {dl.lapNumber}</span>
                         {dl.lapTime != null && (
                           <span className="text-white">{formatLapTime(dl.lapTime)}</span>
                         )}
                         {dl.deletedReason && (
-                          <span className="text-red-400 text-xs bg-red-500/15 px-2 py-0.5 font-bold">
+                          <span className="text-red-400 text-[10px] bg-red-500/10 px-2 py-0.5 rounded-full font-semibold">
                             {dl.deletedReason}
                           </span>
                         )}
                       </div>
                     ))}
                     {deletedLaps.length > 10 && (
-                      <span className="text-xs text-gray-400 font-bold">
+                      <span className="text-[11px] text-white font-medium">
                         +{deletedLaps.length - 10} more
                       </span>
                     )}
@@ -746,7 +732,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               );
             })()}
 
-            {/* Speed Trap Comparison */}
+            {/* Speed Trap */}
             {(() => {
               const speedData = driversToDisplay
                 .map((drv) => {
@@ -774,10 +760,16 @@ const RacingChart: React.FC<RacingChartProps> = ({
               speedData.sort((a, b) => b.maxSpeed - a.maxSpeed);
               const chartHeight = Math.max(100, speedData.length * 50);
               return (
-                <div className="px-4 py-3">
-                  <h4 className="text-base font-black uppercase italic text-white mb-2">
-                    Speed Trap (km/h)
-                  </h4>
+                <div
+                  className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5"
+                  style={inter}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <ChartLineData01Icon className="w-4 h-4 text-white" />
+                    <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
+                      Speed Trap (km/h)
+                    </h4>
+                  </div>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <BarChart
                       data={speedData}
@@ -792,32 +784,35 @@ const RacingChart: React.FC<RacingChartProps> = ({
                           (dataMax: number) => Math.ceil(dataMax + 3),
                         ]}
                         tick={{
-                          fill: '#FFF',
-                          fontSize: 13,
-                          fontWeight: 900,
-                          fontFamily: 'Geist Mono',
+                          fill: 'rgba(255,255,255,0.5)',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          fontFamily: 'Inter, sans-serif',
                         }}
-                        stroke="#444"
+                        stroke="rgba(255,255,255,0.1)"
                       />
                       <YAxis
                         type="category"
                         dataKey="driver"
                         tick={{
                           fill: '#fff',
-                          fontSize: 14,
-                          fontWeight: 900,
-                          fontFamily: 'Geist Mono',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          fontFamily: 'Inter, sans-serif',
                         }}
                         width={48}
                         stroke="transparent"
                       />
                       <Tooltip
-                        cursor={{ fill: '#ffffff10' }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                         content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-black border border-gray-700 p-3 shadow-xl min-w-[150px]">
-                                <p className="text-white font-black font-mono border-b border-gray-700 pb-1 mb-2 text-base">
+                              <div
+                                className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl min-w-[150px]"
+                                style={inter}
+                              >
+                                <p className="text-white font-bold border-b border-white/[0.06] pb-1 mb-2 text-[13px]">
                                   {label}
                                 </p>
                                 {payload.map((entry, index) => (
@@ -832,10 +827,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                         opacity: entry.name === 'Max Speed' ? 0.9 : 0.3,
                                       }}
                                     />
-                                    <p className="text-sm font-bold text-gray-300 flex-1">
-                                      {entry.name}:
-                                    </p>
-                                    <span className="text-white font-black font-mono">
+                                    <p className="text-[12px] text-white flex-1">{entry.name}:</p>
+                                    <span className="text-white font-bold text-[12px]">
                                       {Number(entry.value).toFixed(1)} km/h
                                     </span>
                                   </div>
@@ -846,50 +839,26 @@ const RacingChart: React.FC<RacingChartProps> = ({
                           return null;
                         }}
                       />
-                      <Bar
-                        dataKey="maxSpeed"
-                        name="Max Speed"
-                        barSize={18}
-                        radius={[0, 4, 4, 0]}
-                        label={{
-                          position: 'right',
-                          fill: '#FFF',
-                          fontSize: 13,
-                          fontWeight: 'bold',
-                          formatter: (v: number) => `${v.toFixed(0)}`,
-                        }}
-                      >
+                      <Bar dataKey="maxSpeed" name="Max Speed" barSize={18} radius={[0, 4, 4, 0]}>
                         {speedData.map((entry, idx) => (
                           <Cell key={idx} fill={entry.color} fillOpacity={0.9} />
                         ))}
                       </Bar>
-                      <Bar
-                        dataKey="avgSpeed"
-                        name="Avg Speed"
-                        barSize={18}
-                        radius={[0, 4, 4, 0]}
-                        label={{
-                          position: 'right',
-                          fill: '#999',
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                          formatter: (v: number) => `${v.toFixed(0)}`,
-                        }}
-                      >
+                      <Bar dataKey="avgSpeed" name="Avg Speed" barSize={18} radius={[0, 4, 4, 0]}>
                         {speedData.map((entry, idx) => (
                           <Cell key={idx} fill={entry.color} fillOpacity={0.3} />
                         ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                  <div className="flex items-center gap-5 mt-1 justify-center">
+                  <div className="flex items-center gap-5 mt-2 justify-center">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-4 h-2.5 rounded-sm bg-gray-300 opacity-90" />
-                      <span className="text-xs text-white font-bold font-mono">MAX SPEED</span>
+                      <div className="w-4 h-2.5 rounded-sm bg-white/90" />
+                      <span className="text-[10px] text-white font-semibold uppercase">Max</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-4 h-2.5 rounded-sm bg-gray-300 opacity-30" />
-                      <span className="text-xs text-white font-bold font-mono">AVG SPEED</span>
+                      <div className="w-4 h-2.5 rounded-sm bg-white/30" />
+                      <span className="text-[10px] text-white font-semibold uppercase">Avg</span>
                     </div>
                   </div>
                 </div>
@@ -900,136 +869,116 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
         {/* Tyre Strategy & Degradation */}
         {driverLapDetails && (
-          <div className="border-t border-gray-700">
-            <div className="px-4 py-3">
-              <h4 className="text-base font-black uppercase italic text-white mb-3">
+          <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06]">
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
                 Tyre Strategy & Stint Pace
               </h4>
-              <div className="space-y-2">
-                {driversToDisplay.map((drv) => {
-                  const records = driverLapDetails[drv] || [];
-                  if (records.length === 0) return null;
-                  const stintMap = new Map<number, EnrichedLapRecord[]>();
-                  records.forEach((r: EnrichedLapRecord) => {
-                    if (r.stint != null) {
-                      if (!stintMap.has(r.stint)) stintMap.set(r.stint, []);
-                      stintMap.get(r.stint)!.push(r);
-                    }
-                  });
-                  const color = driverColor(drv, year);
-                  const headshot = getDriverImage(drv, year);
-                  const compoundColors: Record<string, string> = {
-                    SOFT: '#FF3333',
-                    MEDIUM: '#FFC107',
-                    HARD: '#EEEEEE',
-                    INTERMEDIATE: '#4CAF50',
-                    WET: '#2196F3',
-                  };
-                  const totalDriverLaps =
-                    records.length > 0
-                      ? records[records.length - 1]?.lapNumber || records.length
-                      : records.length;
-                  const stintEntries = Array.from(stintMap.entries());
+            </div>
+            <div className="divide-y divide-white/[0.04]">
+              {driversToDisplay.map((drv) => {
+                const records = driverLapDetails[drv] || [];
+                if (records.length === 0) return null;
+                const stintMap = new Map<number, EnrichedLapRecord[]>();
+                records.forEach((r: EnrichedLapRecord) => {
+                  if (r.stint != null) {
+                    if (!stintMap.has(r.stint)) stintMap.set(r.stint, []);
+                    stintMap.get(r.stint)!.push(r);
+                  }
+                });
+                const color = driverColor(drv, year);
+                const headshot = getDriverImage(drv, year);
+                const stintEntries = Array.from(stintMap.entries());
 
-                  return (
-                    <div key={drv} className="border border-gray-700 bg-black">
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <div
-                          className="w-7 h-7 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
-                          style={{ borderColor: color }}
-                        >
-                          {headshot ? (
-                            <img
-                              src={headshot}
-                              alt={drv}
-                              className="w-full h-full object-cover object-top"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
-                              {drv[0]}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-sm font-mono font-black" style={{ color }}>
-                          {drv}
-                        </span>
-                        <span className="text-xs font-mono text-gray-400 font-bold">
-                          {stintEntries.length} stint{stintEntries.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="flex flex-col border-t border-gray-700 divide-y divide-gray-800/50 bg-black/20">
-                        {stintEntries.map(([stintNum, laps]) => {
-                          const compound = laps[0]?.compound || '?';
-                          const lapCount = laps.length;
-                          const validTimes = laps
-                            .filter((l: EnrichedLapRecord) => l.lapTime != null && !l.deleted)
-                            .map((l: EnrichedLapRecord) => l.lapTime!);
-                          const avgTime =
-                            validTimes.length > 0
-                              ? validTimes.reduce((a, b) => a + b, 0) / validTimes.length
-                              : null;
-                          const bestTime = validTimes.length > 0 ? Math.min(...validTimes) : null;
-                          const tyreLifeEnd = laps[laps.length - 1]?.tyreLife;
-                          const freshTyre = laps[0]?.freshTyre;
-                          return (
-                            <div
-                              key={stintNum}
-                              className="flex items-center justify-between px-3 py-2 relative overflow-hidden group hover:bg-gray-800/30 transition-colors"
-                            >
-                              <div
-                                className="absolute left-0 top-0 bottom-0 w-1.5"
-                                style={{ backgroundColor: compoundColors[compound] || '#666' }}
-                              />
-                              <div className="flex items-center gap-4 pl-3">
-                                <span
-                                  className="text-sm font-black w-24"
-                                  style={{ color: compoundColors[compound] || '#FFF' }}
-                                >
-                                  {compound}
-                                </span>
-                                <span className="text-xs text-white font-mono font-bold">
-                                  Laps {laps[0]?.lapNumber}–{laps[laps.length - 1]?.lapNumber}{' '}
-                                  <span className="text-gray-500">({lapCount} laps)</span>
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-6 text-right">
-                                {freshTyre != null && (
-                                  <span
-                                    className={`text-[10px] uppercase font-mono font-black ${freshTyre ? 'text-green-500' : 'text-yellow-500'} hidden sm:inline-block`}
-                                  >
-                                    {freshTyre ? 'New' : 'Used'}
-                                  </span>
-                                )}
-                                {tyreLifeEnd != null && (
-                                  <span className="text-xs font-mono text-gray-400 font-bold hidden md:inline-block">
-                                    Life: {tyreLifeEnd}
-                                  </span>
-                                )}
-                                <div className="flex flex-col min-w-[100px] text-left">
-                                  {avgTime != null ? (
-                                    <span className="text-xs font-mono text-white font-black">
-                                      Avg: {formatLapTime(avgTime)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs font-mono text-gray-500 font-black">
-                                      Avg: N/A
-                                    </span>
-                                  )}
-                                  {bestTime != null && (
-                                    <span className="text-[10px] font-mono text-gray-400 font-bold">
-                                      Best: {formatLapTime(bestTime)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                return (
+                  <div key={drv} className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Avatar
+                        className="h-8 w-8 border border-white/[0.08]"
+                        style={{ borderColor: color }}
+                      >
+                        <AvatarImage src={headshot} className="object-cover object-top" />
+                        <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                          {drv[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[13px] font-bold" style={{ color }}>
+                        {drv}
+                      </span>
+                      <span className="text-[11px] text-white font-medium">
+                        {stintEntries.length} stint{stintEntries.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="space-y-1.5">
+                      {stintEntries.map(([stintNum, laps]) => {
+                        const compound = laps[0]?.compound || '?';
+                        const lapCount = laps.length;
+                        const validTimes = laps
+                          .filter((l: EnrichedLapRecord) => l.lapTime != null && !l.deleted)
+                          .map((l: EnrichedLapRecord) => l.lapTime!);
+                        const avgTime =
+                          validTimes.length > 0
+                            ? validTimes.reduce((a, b) => a + b, 0) / validTimes.length
+                            : null;
+                        const bestTime = validTimes.length > 0 ? Math.min(...validTimes) : null;
+                        const tyreLifeEnd = laps[laps.length - 1]?.tyreLife;
+                        const freshTyre = laps[0]?.freshTyre;
+                        return (
+                          <div
+                            key={stintNum}
+                            className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.02] relative overflow-hidden"
+                          >
+                            <div
+                              className="absolute left-0 top-0 bottom-0 w-1"
+                              style={{ backgroundColor: COMPOUND_COLORS[compound] || '#666' }}
+                            />
+                            <div className="flex items-center gap-4 pl-3">
+                              <span
+                                className="text-[12px] font-bold w-20"
+                                style={{ color: COMPOUND_COLORS[compound] || '#FFF' }}
+                              >
+                                {compound}
+                              </span>
+                              <span className="text-[11px] text-white font-medium">
+                                Laps {laps[0]?.lapNumber}–{laps[laps.length - 1]?.lapNumber}{' '}
+                                <span className="text-white">({lapCount} laps)</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-5 text-right">
+                              {freshTyre != null && (
+                                <span
+                                  className={`text-[10px] uppercase font-semibold ${freshTyre ? 'text-emerald-400' : 'text-amber-400'} hidden sm:inline-block`}
+                                >
+                                  {freshTyre ? 'New' : 'Used'}
+                                </span>
+                              )}
+                              {tyreLifeEnd != null && (
+                                <span className="text-[11px] text-white font-medium hidden md:inline-block">
+                                  Life: {tyreLifeEnd}
+                                </span>
+                              )}
+                              <div className="flex flex-col min-w-[100px] text-left">
+                                {avgTime != null ? (
+                                  <span className="text-[11px] text-white font-bold">
+                                    Avg: {formatLapTime(avgTime)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-white font-bold">Avg: N/A</span>
+                                )}
+                                {bestTime != null && (
+                                  <span className="text-[10px] text-white font-medium">
+                                    Best: {formatLapTime(bestTime)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1045,113 +994,219 @@ const RacingChart: React.FC<RacingChartProps> = ({
         exportRef.current = el;
       }}
       className={cn('space-y-6 relative', className)}
-      style={{ animationDelay: `${delay * 100} ms` } as React.CSSProperties}
+      style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6 border-b border-gray-700 pb-4">
+      <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase text-white tracking-wider">Lap Times</h3>
-          <ChartExportMenu
-            onExport={(format) =>
-              exportChart(format, {
-                title: 'Lap Times',
-                subtitle: fuelCorrectionEnabled
-                  ? 'Fuel-corrected lap times'
-                  : 'Raw lap times comparison',
-                year,
-                event,
-                session,
-                drivers: driversToDisplay,
-              })
-            }
-            isExporting={isExporting}
-          />
+          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">Lap Times</h3>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-gray-400 uppercase">Fuel Corrected</span>
-            <Switch
-              checked={fuelCorrectionEnabled}
-              onCheckedChange={(checked) => {
-                trackInteraction('fuel_correction_toggled', {
-                  enabled: checked,
-                  chart: 'lap_time',
+            <ChartExportMenu
+              onExport={(format) =>
+                exportChart(format, {
+                  title: 'Lap Times',
+                  subtitle: fuelCorrectionEnabled
+                    ? 'Fuel-corrected lap times'
+                    : 'Raw lap times comparison',
                   year,
                   event,
                   session,
-                });
-                setFuelCorrectionEnabled(checked);
-              }}
+                  drivers: driversToDisplay,
+                })
+              }
+              isExporting={isExporting}
             />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 text-gray-500 hover:text-white"
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-white uppercase tracking-wider">
+                Fuel
+              </span>
+              <Switch
+                checked={fuelCorrectionEnabled}
+                onCheckedChange={(checked) => {
+                  trackInteraction('fuel_correction_toggled', {
+                    enabled: checked,
+                    chart: 'lap_time',
+                    year,
+                    event,
+                    session,
+                  });
+                  setFuelCorrectionEnabled(checked);
+                }}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
+                  >
+                    <InformationCircleIcon className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-80 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+                  style={inter}
                 >
-                  <InformationCircleIcon className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 bg-gray-900 border-gray-800 text-gray-300">
-                <div className="space-y-2">
-                  <div className="font-bold text-white uppercase text-sm">Fuel Correction</div>
-                  <div className="text-xs space-y-1">
-                    <p>Applies correction for fuel weight (0.03s per kg)</p>
-                    <p className="text-gray-500">
-                      Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
-                    </p>
-                    <p className="text-gray-500">Applied to first 60% of laps only</p>
-                    <p className="text-gray-500 mt-2 italic">
-                      Formula: corrected = raw - (fuelLoad × 0.03)
-                    </p>
+                  <div className="space-y-2">
+                    <div className="font-bold text-white uppercase text-[12px] tracking-wider">
+                      Fuel Correction
+                    </div>
+                    <div className="text-[12px] space-y-1 text-white">
+                      <p>Applies correction for fuel weight (0.03s per kg)</p>
+                      <p className="text-white">
+                        Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
+                      </p>
+                      <p className="text-white">Applied to first 60% of laps only</p>
+                      <p className="text-white mt-2 italic">
+                        Formula: corrected = raw - (fuelLoad × 0.03)
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
         {!staticData && availableDrivers && (
-          <div className="flex flex-wrap gap-2">
-            {availableDrivers.map((driver) => {
-              const isSelected = selectedDrivers.includes(driver.code);
-              const headshot = getDriverImage(driver.code, year);
-              const color = driverColor(driver.code, year);
-
-              return (
-                <button
-                  key={driver.code}
-                  onClick={() => toggleDriver(driver.code)}
-                  className={cn(
-                    'flex items-center gap-2 px-2 py-1 border transition-all duration-200 group',
-                    isSelected
-                      ? 'bg-gray-900 border-gray-700 hover:border-gray-500'
-                      : 'bg-black border-transparent opacity-50 hover:opacity-100 hover:bg-gray-900'
-                  )}
-                  style={isSelected ? { borderLeftColor: color, borderLeftWidth: '3px' } : {}}
-                >
-                  <div className="w-6 h-6 rounded-full bg-gray-800 overflow-hidden border border-gray-700 shrink-0">
-                    {headshot ? (
-                      <img
-                        src={headshot}
-                        alt={driver.code}
-                        className="w-full h-full object-cover object-top"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                        {driver.code[0]}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      'text-xs font-mono font-bold',
-                      isSelected ? 'text-white' : 'text-gray-500'
-                    )}
+          <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
+                <span>
+                  {selectedDrivers.length === availableDrivers.length
+                    ? 'All Drivers'
+                    : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
+                </span>
+                <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
+              style={inter}
+              align="end"
+            >
+              <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                  {selectedDrivers.length} / {availableDrivers.length} visible
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      trackInteraction('select_all_drivers', {
+                        chart: 'lap_time',
+                        year,
+                        event,
+                        session,
+                      });
+                      setSelectedDrivers(availableDrivers.map((d) => d.code));
+                    }}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
                   >
-                    {driver.code}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    All
+                  </button>
+                  <button
+                    onClick={() => {
+                      trackInteraction('deselect_all_drivers', {
+                        chart: 'lap_time',
+                        year,
+                        event,
+                        session,
+                      });
+                      setSelectedDrivers(availableDrivers.slice(0, MIN_DRIVERS).map((d) => d.code));
+                    }}
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="h-[300px]">
+                <div className="grid gap-0.5">
+                  {availableDrivers.map((driver) => {
+                    const isSelected = selectedDrivers.includes(driver.code);
+                    const headshot = getDriverImage(driver.code, year);
+                    const color = driverColor(driver.code, year);
+                    const fullName = driverNameMap.get(driver.code) || driver.code;
+                    const isFavorite = favoriteDriver && driver.code === favoriteDriver;
+
+                    return (
+                      <button
+                        key={driver.code}
+                        onClick={() => toggleDriver(driver.code)}
+                        className={cn(
+                          'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                          isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                          isFavorite && isSelected && 'bg-red-500/[0.06]',
+                          focusedDriver && focusedDriver !== driver.code && '!opacity-20'
+                        )}
+                        onMouseEnter={() => setFocusedDriver(driver.code)}
+                        onMouseLeave={() => setFocusedDriver(null)}
+                      >
+                        {/* Check indicator */}
+                        <div
+                          className={cn(
+                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                            isSelected
+                              ? 'bg-red-500 border-red-500'
+                              : 'border-white/[0.15] bg-transparent'
+                          )}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+
+                        {/* Team color bar */}
+                        <div
+                          className={cn(
+                            'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                            isSelected ? 'opacity-100' : 'opacity-30'
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+
+                        {/* Headshot */}
+                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                            {driver.code[0]}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Name */}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span
+                            className={cn(
+                              'text-[12px] font-semibold truncate transition-colors',
+                              isFavorite ? 'text-red-400' : isSelected ? 'text-white' : 'text-white'
+                            )}
+                          >
+                            {fullName}
+                          </span>
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium',
+                              isSelected ? 'text-white/80' : 'text-white/80'
+                            )}
+                          >
+                            {driver.code}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 

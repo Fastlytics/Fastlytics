@@ -70,8 +70,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
   };
 
   // Render logic based on event type
-  let content = null;
-  let onClick = () => {};
+  let content: React.ReactNode;
+  let onClick: () => void;
 
   switch (event_name) {
     case 'race_analysis_viewed':

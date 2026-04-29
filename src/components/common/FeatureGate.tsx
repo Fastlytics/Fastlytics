@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LockKeyIcon } from 'hugeicons-react';

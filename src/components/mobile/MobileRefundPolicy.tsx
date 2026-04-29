@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Gauge } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';

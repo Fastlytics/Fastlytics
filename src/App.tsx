@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -33,6 +34,8 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConsentBanner from '@/components/auth/ConsentBanner';
 
+const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
+
 const queryClient = new QueryClient();
 
 // Layout component to add footer to pages
@@ -46,15 +49,9 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Landing layout with footer only on desktop (mobile has its own footer)
+// Landing layout — the new Landing page includes its own footer.
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
-  const isMobile = useIsMobile();
-  return (
-    <div className="min-h-screen flex flex-col">
-      {children}
-      {!isMobile && <LandingFooter />}
-    </div>
-  );
+  return <div className="min-h-screen flex flex-col">{children}</div>;
 };
 
 // Dashboard layout without footer
@@ -74,7 +71,7 @@ const App = () => (
             <ScrollToTop />
             <RouteTracker />
             <RouteTracker />
-            <Routes>
+            <SentryRoutes>
               {/* Landing Page Route (with LandingFooter) */}
               <Route
                 path="/"
@@ -231,7 +228,7 @@ const App = () => (
 
               {/* 404 page */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
+            </SentryRoutes>
           </BrowserRouter>
         </AuthProvider>
       </SeasonProvider>

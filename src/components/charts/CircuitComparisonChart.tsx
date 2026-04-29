@@ -19,14 +19,173 @@ import {
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
-import { UserIcon, Clock01Icon, Analytics01Icon, AlertCircleIcon } from 'hugeicons-react';
+import { AlertCircleIcon } from 'hugeicons-react';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+
+interface DriverSelectorProps {
+  label: string;
+  driverCode: string;
+  selectedLap: string | number;
+  onSelectDriver: (v: string) => void;
+  onSelectLap: (v: string | number) => void;
+  lapOptions: (number | 'fastest')[];
+  isLoadingDrivers: boolean;
+  isLoadingLaps: boolean;
+  otherDriver: string;
+  drivers?: SessionDriver[];
+  color: string;
+  year: number;
+  event: string;
+  session: string;
+}
+
+const DriverSelector: React.FC<DriverSelectorProps> = ({
+  label,
+  driverCode,
+  selectedLap,
+  onSelectDriver,
+  onSelectLap,
+  lapOptions,
+  isLoadingDrivers,
+  isLoadingLaps,
+  otherDriver,
+  drivers,
+  color,
+  year,
+  event,
+  session,
+}) => {
+  const { trackSelection } = useAnalytics();
+  const headshot = getDriverImage(driverCode, year);
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="relative">
+          <Avatar className="h-8 w-8 shrink-0 border-2" style={{ borderColor: color }}>
+            <AvatarImage src={headshot} className="object-cover object-top" />
+            <AvatarFallback
+              className="bg-[#1a1a1e] text-[10px] font-bold text-white"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              {driverCode ? driverCode[0] : '?'}
+            </AvatarFallback>
+          </Avatar>
+          <div
+            className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0c0c0e]"
+            style={{ backgroundColor: color }}
+          />
+        </div>
+        <span
+          className="text-[11px] font-semibold uppercase tracking-wider text-white"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          {label}
+        </span>
+      </div>
+      <Select
+        value={driverCode}
+        onValueChange={(value) => {
+          onSelectDriver(value);
+          onSelectLap('fastest');
+          trackSelection(`circuit_driver${label === 'Driver 1' ? '1' : '2'}`, value, {
+            year,
+            event,
+            session,
+          });
+        }}
+        disabled={isLoadingDrivers || !drivers}
+      >
+        <SelectTrigger
+          className="h-10 w-[200px] rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] font-semibold text-white transition-colors hover:border-white/[0.12] focus:ring-0 focus:border-white/[0.15]"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          <SelectValue placeholder="Select driver" />
+        </SelectTrigger>
+        <SelectContent className="min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl">
+          <SelectGroup>
+            <SelectLabel
+              className="text-[11px] font-semibold uppercase tracking-wider text-white"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Drivers
+            </SelectLabel>
+            {drivers?.map((driver) => {
+              const isDisabled = otherDriver === driver.code;
+              const dColor = driverColor(driver.code, year);
+              return (
+                <SelectItem
+                  key={`${label}-${driver.code}`}
+                  value={driver.code}
+                  disabled={isDisabled}
+                  className="text-[13px] text-white focus:bg-white/[0.06] focus:text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: dColor }}
+                    />
+                    <span className="whitespace-nowrap font-medium">
+                      {driver.name || driver.code}
+                    </span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      <div className="ml-auto">
+        <Select
+          value={String(selectedLap)}
+          onValueChange={(value) => {
+            onSelectLap(value === 'fastest' ? 'fastest' : parseInt(value));
+            trackSelection(`circuit_lap${label === 'Driver 1' ? '1' : '2'}`, value, {
+              year,
+              event,
+              session,
+            });
+          }}
+          disabled={isLoadingLaps || !driverCode || lapOptions.length <= 1}
+        >
+          <SelectTrigger
+            className="h-10 w-[100px] rounded-lg border border-white/[0.06] bg-white/[0.02] text-[12px] text-white/70 transition-colors hover:border-white/[0.1] focus:ring-0 focus:border-white/[0.12]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[9px] font-medium uppercase tracking-wider text-white">
+                Lap
+              </span>
+              <span className="font-bold text-white">
+                {selectedLap === 'fastest' ? 'Fastest' : selectedLap}
+              </span>
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl">
+            <SelectGroup>
+              {lapOptions.map((lapOpt) => (
+                <SelectItem
+                  key={`${label}-lap-${lapOpt}`}
+                  value={String(lapOpt)}
+                  className="text-[12px] text-white focus:bg-white/[0.06] focus:text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};
 
 interface CircuitComparisonChartProps {
   className?: string;
@@ -46,12 +205,6 @@ interface CircuitComparisonChartProps {
   }) => void;
 }
 
-interface LapTimeInfo {
-  lapNumber: number;
-  lapTime: string;
-  lapTimeRaw: number;
-}
-
 const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   className,
   delay = 0,
@@ -64,7 +217,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   onDriversSelected,
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  const { trackSelection } = useAnalytics();
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
   const [userSelectedDriver1, setUserSelectedDriver1] = useState<string | null>(null);
@@ -105,7 +257,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     [selectedDriver1, selectedDriver2]
   );
 
-  // State for hover tooltip
   const [hoveredSection, setHoveredSection] = useState<{
     name: string;
     advantage: number;
@@ -116,7 +267,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   } | null>(null);
 
   const handleSectionHover = (e: React.MouseEvent, section: TrackSection, advantage: number) => {
-    const rect = e.currentTarget.getBoundingClientRect();
     setHoveredSection({
       name: section.name,
       advantage: advantage,
@@ -230,225 +380,243 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   const renderContent = () => {
     if (!shouldLoadChart) {
       return (
-        <div className="w-full h-[450px] flex flex-col items-center justify-center bg-black border border-gray-700 gap-4">
-          <p className="text-gray-400 font-mono text-sm uppercase">Select drivers to compare</p>
+        <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+          <p className="text-[13px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Select two different drivers to compare
+          </p>
         </div>
       );
     }
 
     if (isLoading) {
       return (
-        <div className="w-full h-[500px] flex items-center justify-center bg-black border border-gray-700">
-          <LoadingSpinnerF1 />
+        <div className="flex h-[400px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+            <p
+              className="text-[12px] text-white animate-pulse"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Loading track data...
+            </p>
+          </div>
         </div>
       );
     }
 
     if (isError || !comparisonData) {
       return (
-        <div className="w-full h-[500px] bg-black border border-red-600 flex flex-col items-center justify-center text-red-500">
-          <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-black uppercase">Error loading comparison data</p>
-          <p className="text-xs text-gray-500 mt-1">
+        <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05]">
+          <AlertCircleIcon className="mb-3 h-9 w-9 text-red-400" />
+          <p
+            className="text-[14px] font-semibold text-red-400"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Error loading comparison data
+          </p>
+          <p className="mt-1 text-[12px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
-          {selectedDriver1 === selectedDriver2 && (
-            <p className="text-sm text-amber-400 mt-4 font-mono">Select two different drivers.</p>
-          )}
         </div>
       );
     }
 
     return (
-      <div className="relative w-full h-[400px] bg-black border border-gray-700 p-4 overflow-hidden group/chart">
-        <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
+      <div className="group/chart relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 pointer-events-none">
+          {[
+            { code: selectedDriver1, color: driver1Color },
+            { code: selectedDriver2, color: driver2Color },
+          ].map(({ code, color }) => (
+            <div key={code} className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <span
+                className="text-[12px] font-bold text-white/70"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {code}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver1Color }}></div>
-            <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver1}</span>
+            <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Lap {comparisonData.driver1LapNumber}
+            </span>
+            <span
+              className="text-[13px] font-bold text-white"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              {comparisonData.driver1LapTime}
+            </span>
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: driver1Color }} />
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: driver2Color }}></div>
-            <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver2}</span>
+            <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Lap {comparisonData.driver2LapNumber}
+            </span>
+            <span
+              className="text-[13px] font-bold text-white"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              {comparisonData.driver2LapTime}
+            </span>
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: driver2Color }} />
           </div>
         </div>
 
-        <svg viewBox="0 0 1000 500" className="w-full h-full">
-          <g transform="scale(1,-1) translate(0,-500)">
-            <path
-              d={comparisonData.circuitLayout}
-              fill="none"
-              stroke="#1a1a1a"
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {comparisonData.sections.map((section) => {
-              let strokeColor = '#333';
-              let advantage = 0;
+        <div className="h-[400px] w-full p-4">
+          <svg viewBox="0 0 1000 500" className="h-full w-full">
+            <g transform="scale(1,-1) translate(0,-500)">
+              <path
+                d={comparisonData.circuitLayout}
+                fill="none"
+                stroke="#1a1a1a"
+                strokeWidth="12"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {comparisonData.sections.map((section) => {
+                let strokeColor = '#222';
+                let advantage = 0;
 
-              if (section.driver1Advantage && section.driver1Advantage > 0) {
-                strokeColor = driver1Color;
-                advantage = section.driver1Advantage;
-              } else if (section.driver1Advantage && section.driver1Advantage < 0) {
-                strokeColor = driver2Color;
-                advantage = section.driver1Advantage;
-              }
+                if (section.driver1Advantage && section.driver1Advantage > 0) {
+                  strokeColor = driver1Color;
+                  advantage = section.driver1Advantage;
+                } else if (section.driver1Advantage && section.driver1Advantage < 0) {
+                  strokeColor = driver2Color;
+                  advantage = section.driver1Advantage;
+                }
 
-              return (
-                <path
-                  key={section.id}
-                  d={section.path}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="14"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-all duration-200 hover:stroke-[18] hover:opacity-100 cursor-crosshair opacity-90"
-                  onMouseEnter={(e) => handleSectionHover(e, section, advantage)}
-                  onMouseLeave={handleSectionLeave}
-                  onMouseMove={(e) => handleSectionHover(e, section, advantage)}
-                />
-              );
-            })}
-          </g>
-        </svg>
+                return (
+                  <path
+                    key={section.id}
+                    d={section.path}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="cursor-crosshair opacity-85 transition-all duration-300 hover:stroke-[18] hover:opacity-100"
+                    onMouseEnter={(e) => handleSectionHover(e, section, advantage)}
+                    onMouseLeave={handleSectionLeave}
+                    onMouseMove={(e) => handleSectionHover(e, section, advantage)}
+                  />
+                );
+              })}
+            </g>
+          </svg>
+        </div>
 
-        {/* Lap Info Overlay */}
-        {comparisonData && (
-          <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
-            <div className="flex items-center justify-end gap-2">
-              <span className="text-xs font-mono text-gray-500 uppercase">
-                Lap {comparisonData.driver1LapNumber}
-              </span>
-              <span className="text-xs font-mono text-white font-black">
-                {comparisonData.driver1LapTime}
-              </span>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver1Color }} />
-            </div>
-            <div className="flex items-center justify-end gap-2">
-              <span className="text-xs font-mono text-gray-500 uppercase">
-                Lap {comparisonData.driver2LapNumber}
-              </span>
-              <span className="text-xs font-mono text-white font-black">
-                {comparisonData.driver2LapTime}
-              </span>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: driver2Color }} />
-            </div>
-          </div>
-        )}
-
-        {/* Hover Tooltip */}
         {hoveredSection && (
           <div
-            className="fixed z-50 bg-black border border-gray-700 p-4 shadow-xl pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-15px] min-w-[200px]"
-            style={{ left: hoveredSection.x, top: hoveredSection.y }}
+            className="pointer-events-none fixed z-50 min-w-[200px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-4 shadow-2xl"
+            style={{
+              left: hoveredSection.x,
+              top: hoveredSection.y,
+              transform: 'translate(-50%, calc(-100% - 16px))',
+            }}
           >
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-gray-500 uppercase font-mono tracking-wider">
+              <div>
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-wider text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   Sector
-                </span>
-                <span className="text-sm font-black text-white font-mono">
+                </p>
+                <p
+                  className="text-[14px] font-bold text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   {hoveredSection.name}
-                </span>
+                </p>
               </div>
 
-              <div className="h-px w-full bg-gray-700" />
+              <div className="h-px w-full bg-white/[0.06]" />
 
-              {/* Driver 1 Stats */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                    {(() => {
-                      const headshot = getDriverImage(selectedDriver1, year);
-                      return headshot ? (
-                        <img
-                          src={headshot}
-                          alt={selectedDriver1}
-                          className="w-full h-full object-cover object-top"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                          {selectedDriver1[0]}
-                        </div>
-                      );
-                    })()}
+              {[
+                {
+                  code: selectedDriver1,
+                  color: driver1Color,
+                  speed: hoveredSection.driver1AvgSpeed,
+                },
+                {
+                  code: selectedDriver2,
+                  color: driver2Color,
+                  speed: hoveredSection.driver2AvgSpeed,
+                },
+              ].map(({ code, color, speed }) => (
+                <div key={code} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                      <AvatarImage
+                        src={getDriverImage(code, year)}
+                        className="object-cover object-top"
+                      />
+                      <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                        {code[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span
+                      className="text-[12px] font-bold text-white/70"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      {code}
+                    </span>
                   </div>
-                  <span className="text-xs font-mono text-gray-300 font-black">
-                    {selectedDriver1}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end">
-                  {hoveredSection.driver1AvgSpeed && (
+                  {speed && (
                     <div className="flex flex-col items-end">
-                      <span className="text-[8px] text-gray-500 uppercase font-mono">
+                      <span
+                        className="text-[9px] font-medium uppercase tracking-wider text-white"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
                         Avg Speed
                       </span>
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        {Math.round(hoveredSection.driver1AvgSpeed)} km/h
+                      <span
+                        className="text-[12px] font-semibold text-white"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        {Math.round(speed)} km/h
                       </span>
                     </div>
                   )}
                 </div>
-              </div>
+              ))}
 
-              {/* Driver 2 Stats */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                    {(() => {
-                      const headshot = getDriverImage(selectedDriver2, year);
-                      return headshot ? (
-                        <img
-                          src={headshot}
-                          alt={selectedDriver2}
-                          className="w-full h-full object-cover object-top"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                          {selectedDriver2[0]}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <span className="text-xs font-mono text-gray-300 font-black">
-                    {selectedDriver2}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end">
-                  {hoveredSection.driver2AvgSpeed && (
-                    <div className="flex flex-col items-end">
-                      <span className="text-[8px] text-gray-500 uppercase font-mono">
-                        Avg Speed
-                      </span>
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        {Math.round(hoveredSection.driver2AvgSpeed)} km/h
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-px w-full bg-gray-700" />
+              <div className="h-px w-full bg-white/[0.06]" />
 
               <div className="flex items-center gap-2">
                 {hoveredSection.advantage !== 0 ? (
                   <>
                     <div
-                      className="w-2 h-2 rounded-full"
+                      className="h-2 w-2 rounded-full"
                       style={{
                         backgroundColor: hoveredSection.advantage > 0 ? driver1Color : driver2Color,
                       }}
                     />
-                    <span className="text-xs font-mono text-white">
+                    <span
+                      className="text-[12px] font-bold text-white"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
                       {hoveredSection.advantage > 0 ? selectedDriver1 : selectedDriver2}
                     </span>
-                    <span className="text-xs font-mono text-red-500 font-black">
+                    <span
+                      className="text-[12px] font-bold text-red-400"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
                       -{Math.abs(hoveredSection.advantage).toFixed(3)}s
                     </span>
                   </>
                 ) : (
-                  <span className="text-xs font-mono text-gray-400">Equal Pace</span>
+                  <span
+                    className="text-[12px] text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    Equal pace
+                  </span>
                 )}
               </div>
             </div>
@@ -464,277 +632,72 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         chartRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('bg-black border border-gray-700 p-6', className)}
+      className={cn('animate-in fade-in slide-in-from-bottom-2 duration-500', className)}
     >
-      <div className="flex flex-col gap-6 mb-6 border-b border-gray-700 pb-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-black uppercase tracking-wider text-white flex items-center gap-2">
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <p
+            className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Head to Head
+          </p>
+          <p
+            className="mt-0.5 text-[18px] font-bold uppercase italic text-white"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
             {title || 'Track Dominance'}
-          </h3>
-          <ChartExportMenu
-            onExport={(format) =>
-              exportChart(format, {
-                title: title || 'Track Dominance',
-                subtitle: 'Sector-by-sector comparison between drivers',
-                year,
-                event,
-                session,
-                drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
-              })
-            }
-            isExporting={isExporting}
-          />
+          </p>
         </div>
+        <ChartExportMenu
+          onExport={(format) =>
+            exportChart(format, {
+              title: title || 'Track Dominance',
+              subtitle: 'Sector-by-sector comparison between drivers',
+              year,
+              event,
+              session,
+              drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
+            })
+          }
+          isExporting={isExporting}
+        />
+      </div>
 
-        {/* Driver Selection Area */}
+      <div className="mb-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="flex flex-col gap-4">
-          {/* Driver 1 Selector */}
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-black text-gray-400 uppercase w-16">Driver 1</span>
-            <Select
-              value={selectedDriver1}
-              onValueChange={(value) => {
-                setSelectedDriver1(value);
-                setSelectedLap1('fastest');
-                trackSelection('circuit_driver1', value, { year, event, session });
-              }}
-              disabled={isLoadingDrivers || !availableDrivers}
-            >
-              <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
-                <div className="flex items-center gap-2 w-full">
-                  {(() => {
-                    const driver = availableDrivers?.find((d) => d.code === selectedDriver1);
-                    const headshot = getDriverImage(selectedDriver1, year);
-                    const color = driverColor(selectedDriver1, year);
-
-                    if (!driver) return <span className="text-gray-500">Select Driver</span>;
-
-                    return (
-                      <>
-                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                          {headshot ? (
-                            <img
-                              src={headshot}
-                              alt={driver.code}
-                              className="w-full h-full object-cover object-top"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                              {driver.code[0]}
-                            </div>
-                          )}
-                        </div>
-                        <span className="font-mono font-black truncate">
-                          {driver.name || driver.code}
-                        </span>
-                        <div
-                          className="w-2 h-2 rounded-full ml-auto"
-                          style={{ backgroundColor: color }}
-                        ></div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[300px]">
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase">
-                    Select Driver
-                  </SelectLabel>
-                  {availableDrivers?.map((driver) => {
-                    const isDisabled = selectedDriver2 === driver.code;
-                    const headshot = getDriverImage(driver.code, year);
-                    const color = driverColor(driver.code, year);
-
-                    return (
-                      <SelectItem
-                        key={`d1-${driver.code}`}
-                        value={driver.code}
-                        disabled={isDisabled}
-                        className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                            {headshot ? (
-                              <img
-                                src={headshot}
-                                alt={driver.code}
-                                className="w-full h-full object-cover object-top"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                                {driver.code[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span>{driver.name || driver.code}</span>
-                          <div
-                            className="w-2 h-2 rounded-full ml-auto"
-                            style={{ backgroundColor: color }}
-                          ></div>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={String(selectedLap1)}
-              onValueChange={(value) => {
-                setSelectedLap1(value === 'fastest' ? 'fastest' : parseInt(value));
-                trackSelection('circuit_lap1', value, { year, event, session });
-              }}
-              disabled={isLoadingLaps1 || !selectedDriver1 || lapOptions1.length <= 1}
-            >
-              <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">
-                <div className="flex flex-col items-start leading-none gap-1">
-                  <span className="text-[8px] text-gray-500 uppercase font-black">Lap</span>
-                  <span className="font-mono font-black text-red-500">
-                    {selectedLap1 === 'fastest' ? 'FASTEST' : selectedLap1}
-                  </span>
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
-                <SelectGroup>
-                  {lapOptions1.map((lapOpt) => (
-                    <SelectItem
-                      key={`d1-lap-${lapOpt}`}
-                      value={String(lapOpt)}
-                      className="text-xs font-mono focus:bg-gray-900 focus:text-red-500"
-                    >
-                      {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Driver 2 Selector */}
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-black text-gray-400 uppercase w-16">Driver 2</span>
-            <Select
-              value={selectedDriver2}
-              onValueChange={(value) => {
-                setSelectedDriver2(value);
-                setSelectedLap2('fastest');
-                trackSelection('circuit_driver2', value, { year, event, session });
-              }}
-              disabled={isLoadingDrivers || !availableDrivers}
-            >
-              <SelectTrigger className="w-[200px] bg-black border-gray-700 text-white text-xs h-10 rounded-none focus:ring-red-600">
-                <div className="flex items-center gap-2 w-full">
-                  {(() => {
-                    const driver = availableDrivers?.find((d) => d.code === selectedDriver2);
-                    const headshot = getDriverImage(selectedDriver2, year);
-                    const color = driverColor(selectedDriver2, year);
-
-                    if (!driver) return <span className="text-gray-500">Select Driver</span>;
-
-                    return (
-                      <>
-                        <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                          {headshot ? (
-                            <img
-                              src={headshot}
-                              alt={driver.code}
-                              className="w-full h-full object-cover object-top"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                              {driver.code[0]}
-                            </div>
-                          )}
-                        </div>
-                        <span className="font-mono font-black truncate">
-                          {driver.name || driver.code}
-                        </span>
-                        <div
-                          className="w-2 h-2 rounded-full ml-auto"
-                          style={{ backgroundColor: color }}
-                        ></div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[300px]">
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase">
-                    Select Driver
-                  </SelectLabel>
-                  {availableDrivers?.map((driver) => {
-                    const isDisabled = selectedDriver1 === driver.code;
-                    const headshot = getDriverImage(driver.code, year);
-                    const color = driverColor(driver.code, year);
-
-                    return (
-                      <SelectItem
-                        key={`d2-${driver.code}`}
-                        value={driver.code}
-                        disabled={isDisabled}
-                        className="text-xs font-mono focus:bg-gray-900 focus:text-white pl-2"
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="w-6 h-6 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                            {headshot ? (
-                              <img
-                                src={headshot}
-                                alt={driver.code}
-                                className="w-full h-full object-cover object-top"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500 font-mono">
-                                {driver.code[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span>{driver.name || driver.code}</span>
-                          <div
-                            className="w-2 h-2 rounded-full ml-auto"
-                            style={{ backgroundColor: color }}
-                          ></div>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={String(selectedLap2)}
-              onValueChange={(value) => {
-                setSelectedLap2(value === 'fastest' ? 'fastest' : parseInt(value));
-                trackSelection('circuit_lap2', value, { year, event, session });
-              }}
-              disabled={isLoadingLaps2 || !selectedDriver2 || lapOptions2.length <= 1}
-            >
-              <SelectTrigger className="w-[100px] bg-transparent border-b border-gray-700 text-white text-xs h-10 rounded-none focus:ring-0 focus:border-red-600 hover:bg-gray-900/50 transition-colors ml-auto px-2">
-                <div className="flex flex-col items-start leading-none gap-1">
-                  <span className="text-[8px] text-gray-500 uppercase font-black">Lap</span>
-                  <span className="font-mono font-black text-red-500">
-                    {selectedLap2 === 'fastest' ? 'FASTEST' : selectedLap2}
-                  </span>
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-black border-gray-700 text-white rounded-none max-h-[200px]">
-                <SelectGroup>
-                  {lapOptions2.map((lapOpt) => (
-                    <SelectItem
-                      key={`d2-lap-${lapOpt}`}
-                      value={String(lapOpt)}
-                      className="text-xs font-mono focus:bg-gray-900 focus:text-red-500"
-                    >
-                      {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+          <DriverSelector
+            label="Driver 1"
+            driverCode={selectedDriver1}
+            selectedLap={selectedLap1}
+            onSelectDriver={setSelectedDriver1}
+            onSelectLap={setSelectedLap1}
+            lapOptions={lapOptions1}
+            isLoadingDrivers={isLoadingDrivers}
+            isLoadingLaps={isLoadingLaps1}
+            otherDriver={selectedDriver2}
+            drivers={availableDrivers}
+            color={driver1Color}
+            year={year}
+            event={event}
+            session={session}
+          />
+          <DriverSelector
+            label="Driver 2"
+            driverCode={selectedDriver2}
+            selectedLap={selectedLap2}
+            onSelectDriver={setSelectedDriver2}
+            onSelectLap={setSelectedLap2}
+            lapOptions={lapOptions2}
+            isLoadingDrivers={isLoadingDrivers}
+            isLoadingLaps={isLoadingLaps2}
+            otherDriver={selectedDriver1}
+            drivers={availableDrivers}
+            color={driver2Color}
+            year={year}
+            event={event}
+            session={session}
+          />
         </div>
       </div>
 

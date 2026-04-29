@@ -2,15 +2,24 @@ import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, LapTimesEnrichedResponse, EnrichedLapRecord } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDriverImage } from '@/utils/imageMapping';
+import { AlertCircleIcon } from 'hugeicons-react';
 
 const COMPOUND_COLORS: Record<string, string> = {
-  SOFT: '#FF3333',
-  MEDIUM: '#FFC107',
-  HARD: '#EEEEEE',
-  INTERMEDIATE: '#4CAF50',
-  WET: '#2196F3',
+  SOFT: '#ff2800',
+  MEDIUM: '#ffcc00',
+  HARD: '#ffffff',
+  INTERMEDIATE: '#43b02a',
+  WET: '#0067ad',
+};
+
+const COMPOUND_BG: Record<string, string> = {
+  SOFT: 'bg-[#ff2800]',
+  MEDIUM: 'bg-[#ffcc00]',
+  HARD: 'bg-white',
+  INTERMEDIATE: 'bg-[#43b02a]',
+  WET: 'bg-[#0067ad]',
 };
 
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -63,10 +72,6 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   const driverLapDetails = enrichedResponse?.driverLapDetails;
   const weatherData = enrichedResponse?.weather;
 
-  const color1 = driverColor(driver1, year);
-  const color2 = driverColor(driver2, year);
-
-  // Compute stint info per driver
   const driverStints = useMemo(() => {
     if (!driverLapDetails) return {} as Record<string, StintInfo[]>;
     const result: Record<string, StintInfo[]> = {};
@@ -105,7 +110,6 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
     return result;
   }, [driverLapDetails, drivers]);
 
-  // Deleted laps
   const deletedLaps = useMemo(() => {
     if (!driverLapDetails) return [];
     return drivers.flatMap((drv) =>
@@ -115,123 +119,195 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <LoadingSpinnerF1 />
+      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+        <div className="mb-6">
+          <p
+            className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Comparison
+          </p>
+          <p
+            className="mt-0.5 text-[18px] font-bold uppercase italic text-white"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Race Performance
+          </p>
+        </div>
+        <div className="flex h-[200px] items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+            <p
+              className="text-[12px] text-white animate-pulse"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Loading performance data...
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
+
   if (isError || !driverLapDetails) return null;
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Weather Strip */}
       {weatherData && (
-        <div className="flex items-center gap-5 px-4 py-2 bg-black border border-gray-700 text-sm font-mono text-white font-black">
-          <span className="text-xs font-black text-gray-400 uppercase tracking-wider mr-1">
-            CONDITIONS
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-t-xl border border-b-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-3">
+          <span
+            className="text-[11px] font-semibold uppercase tracking-wider text-white/80"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Conditions
           </span>
-          <span>
-            AIR <span className="font-black">{weatherData.airTemp.toFixed(1)}°C</span>
-          </span>
-          <span>
-            TRACK <span className="font-black">{weatherData.trackTemp.toFixed(1)}°C</span>
-          </span>
-          <span>
-            HUM <span className="font-black">{weatherData.humidity.toFixed(0)}%</span>
-          </span>
-          <span>
-            WIND <span className="font-black">{weatherData.windSpeed.toFixed(1)} m/s</span>
-          </span>
-          {weatherData.rainfall && <span className="text-blue-400 font-black">🌧 RAIN</span>}
+          <div
+            className="flex items-center gap-1.5 text-[12px]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <span className="text-white">Air</span>
+            <span className="font-semibold text-white">{weatherData.airTemp.toFixed(1)}°C</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 text-[12px]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <span className="text-white">Track</span>
+            <span className="font-semibold text-white">{weatherData.trackTemp.toFixed(1)}°C</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 text-[12px]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <span className="text-white">Humidity</span>
+            <span className="font-semibold text-white">{weatherData.humidity.toFixed(0)}%</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 text-[12px]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <span className="text-white">Wind</span>
+            <span className="font-semibold text-white">{weatherData.windSpeed.toFixed(1)} m/s</span>
+          </div>
+          {weatherData.rainfall && (
+            <span
+              className="rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-400"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              RAIN
+            </span>
+          )}
         </div>
       )}
 
       {/* Strategy Timeline */}
-      <div className="bg-black border-x border-gray-700 px-4 py-3">
-        <h4 className="text-base font-black uppercase italic text-white mb-3">Tyre Strategy</h4>
+      <div className="border-x border-white/[0.06] bg-[#0c0c0e] px-5 py-5">
+        <p
+          className="mb-4 text-[12px] font-semibold uppercase tracking-wider text-white/80"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          Strategy
+        </p>
         {drivers.map((drv, drvIdx) => {
           const stints = driverStints[drv] || [];
           const drvColor = driverColor(drv, year);
           const headshot = getDriverImage(drv, year);
           return (
-            <div key={drv} className={drvIdx > 0 ? 'mt-2' : ''}>
-              <div className="flex items-center gap-2 mb-1">
-                <div
-                  className="w-7 h-7 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
-                  style={{ borderColor: drvColor }}
+            <div
+              key={drv}
+              className={`${drvIdx > 0 ? 'mt-4' : ''} animate-in fade-in slide-in-from-left-2 duration-500`}
+              style={{ animationDelay: `${drvIdx * 150}ms` }}
+            >
+              <div className="mb-2 flex items-center gap-2.5">
+                <Avatar className="h-7 w-7 shrink-0 border-2" style={{ borderColor: drvColor }}>
+                  <AvatarImage src={headshot} className="object-cover object-top" />
+                  <AvatarFallback
+                    className="bg-[#1a1a1e] text-[10px] font-bold text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {drv}
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className="text-[13px] font-bold uppercase tracking-wide"
+                  style={{ color: drvColor, fontFamily: "'Inter', sans-serif" }}
                 >
-                  {headshot ? (
-                    <img
-                      src={headshot}
-                      alt={drv}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
-                      {drv[0]}
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm font-mono font-black" style={{ color: drvColor }}>
                   {drv}
                 </span>
               </div>
-              <div className="flex flex-col gap-1 border border-gray-800 bg-gray-900/40 p-1 rounded-sm">
-                {stints.map((stint) => (
+              <div className="flex flex-col gap-1.5">
+                {stints.map((stint, stintIdx) => (
                   <div
                     key={stint.stintNum}
-                    className="flex justify-between items-center bg-black px-3 py-2 border border-gray-800 transition-colors hover:bg-gray-800/50 group"
+                    className="group flex items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.02] px-3.5 py-2.5 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.04]"
+                    style={{ animationDelay: `${drvIdx * 150 + stintIdx * 80}ms` }}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-6 flex items-center justify-center rounded-[3px] shadow-sm"
-                        style={{ backgroundColor: COMPOUND_COLORS[stint.compound] || '#666' }}
+                        className={`flex h-7 w-11 items-center justify-center rounded-md ${COMPOUND_BG[stint.compound] || 'bg-white/30'}`}
                       >
-                        <span className="text-black font-black text-xs uppercase tracking-wider">
+                        <span
+                          className="text-[11px] font-bold uppercase text-black"
+                          style={{ fontFamily: "'Inter', sans-serif" }}
+                        >
                           {stint.compound[0]}
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
-                        <span className="text-sm text-white font-mono font-black">
+                      <div className="flex flex-col gap-0.5">
+                        <span
+                          className="text-[13px] font-bold text-white"
+                          style={{ fontFamily: "'Inter', sans-serif" }}
+                        >
                           L{stint.startLap}–{stint.endLap}
                         </span>
-                        <span className="text-[10px] sm:text-xs text-gray-400 font-mono font-bold">
-                          ({stint.lapCount} LAPS)
+                        <span
+                          className="text-[11px] text-white"
+                          style={{ fontFamily: "'Inter', sans-serif" }}
+                        >
+                          {stint.lapCount} laps
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-right">
-                      <div className="hidden sm:flex flex-col items-end">
+                    <div className="flex items-center gap-5">
+                      <div className="hidden sm:flex flex-col items-end gap-0.5">
                         {stint.avgTime != null && (
-                          <span className="text-xs font-mono text-gray-300">
-                            Avg:{' '}
-                            <span className="text-white font-black">
+                          <span
+                            className="text-[12px] text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
+                            Avg{' '}
+                            <span className="font-semibold text-white">
                               {formatLapTime(stint.avgTime)}
                             </span>
                           </span>
                         )}
                         {stint.bestTime != null && (
-                          <span className="text-[10px] font-mono text-gray-500">
-                            Best:{' '}
-                            <span className="text-gray-300 font-bold">
-                              {formatLapTime(stint.bestTime)}
-                            </span>
+                          <span
+                            className="text-[11px] text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
+                            Best <span className="text-white">{formatLapTime(stint.bestTime)}</span>
                           </span>
                         )}
                       </div>
 
-                      <div className="flex flex-col items-end min-w-[70px]">
+                      <div className="flex min-w-[64px] flex-col items-end gap-0.5">
                         <span
-                          className={`text-[10px] font-mono uppercase font-black ${
-                            stint.freshTyre ? 'text-green-400' : 'text-yellow-400'
+                          className={`text-[10px] font-semibold uppercase ${
+                            stint.freshTyre ? 'text-emerald-400' : 'text-amber-400'
                           }`}
+                          style={{ fontFamily: "'Inter', sans-serif" }}
                         >
                           {stint.freshTyre ? '● NEW' : '● USED'}
                         </span>
                         {stint.tyreLifeEnd != null && (
-                          <span className="text-[10px] font-mono text-gray-500 font-bold mt-0.5">
-                            Life: {stint.tyreLifeEnd}
+                          <span
+                            className="text-[10px] text-white"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
+                            Life {stint.tyreLifeEnd}
                           </span>
                         )}
                       </div>
@@ -246,29 +322,57 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
       {/* Deleted Laps */}
       {deletedLaps.length > 0 && (
-        <div className="bg-black border-x border-b border-gray-700 px-4 py-3">
-          <h4 className="text-base font-black uppercase italic text-white mb-2">
-            Deleted Laps ({deletedLaps.length})
-          </h4>
-          <div className="space-y-1">
+        <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-4">
+          <div className="mb-3 flex items-center gap-2">
+            <AlertCircleIcon className="h-3.5 w-3.5 text-red-400/60" />
+            <p
+              className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Deleted Laps ({deletedLaps.length})
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
             {deletedLaps.slice(0, 10).map((dl, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm font-mono font-bold">
-                <span style={{ color: driverColor(dl.driver, year) }} className="font-black w-10">
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.02]"
+              >
+                <span
+                  className="w-10 text-[12px] font-bold uppercase"
+                  style={{ color: driverColor(dl.driver, year), fontFamily: "'Inter', sans-serif" }}
+                >
                   {dl.driver}
                 </span>
-                <span className="text-white">Lap {dl.lapNumber}</span>
+                <span
+                  className="text-[12px] text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Lap {dl.lapNumber}
+                </span>
                 {dl.lapTime != null && (
-                  <span className="text-white">{formatLapTime(dl.lapTime)}</span>
+                  <span
+                    className="text-[12px] text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {formatLapTime(dl.lapTime)}
+                  </span>
                 )}
                 {dl.deletedReason && (
-                  <span className="text-red-400 text-xs bg-red-500/15 px-2 py-0.5 font-bold">
+                  <span
+                    className="rounded-md bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     {dl.deletedReason}
                   </span>
                 )}
               </div>
             ))}
             {deletedLaps.length > 10 && (
-              <span className="text-xs text-gray-400 font-bold">
+              <span
+                className="px-2 text-[11px] text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 +{deletedLaps.length - 10} more
               </span>
             )}

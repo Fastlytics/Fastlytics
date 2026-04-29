@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ScheduleEvent } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useNavigate } from 'react-router-dom';

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, PanInfo, useMotionValue } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useMotionValue } from 'motion/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft01Icon,
@@ -222,7 +222,7 @@ const MobileCountdown = ({ targetDate }: { targetDate: Date }) => {
         <React.Fragment key={item.label}>
           <div className="flex flex-col items-center">
             <div
-              className={`text-3xl font-black font-mono ${item.highlight ? 'text-red-600' : 'text-white'}`}
+              className={`text-3xl font-bold tabular-nums leading-none ${item.highlight ? 'text-red-400' : 'text-white'}`}
             >
               {pad(item.value)}
             </div>
@@ -261,7 +261,7 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-end justify-center"
+        className="fixed inset-0 z-[60] bg-black/90 flex items-end justify-center"
         onClick={onClose}
       >
         <motion.div
@@ -269,14 +269,14 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="w-full max-w-md bg-black border-t-2 border-white/20 pb-24"
+          className="w-full max-w-md rounded-t-2xl border-t border-white/[0.06] bg-[#0c0c0e] pb-24"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-center pt-3 pb-2">
             <div className="w-10 h-1 bg-gray-800" />
           </div>
-          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-            <h3 className="text-lg font-black uppercase italic tracking-tighter text-white">
+          <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-3">
+            <h3 className="text-[16px] font-bold uppercase italic tracking-tight text-white">
               Select Session
             </h3>
             <button onClick={onClose} className="p-2 hover:bg-white/10 transition-colors">
@@ -291,13 +291,13 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
                   onSelect('Summary');
                   onClose();
                 }}
-                className={`w-full p-4 text-left transition-all flex items-center justify-between border-2 ${
+                className={`w-full p-4 text-left transition-all flex items-center justify-between rounded-xl border ${
                   selectedSession === 'Summary'
-                    ? 'bg-red-600 border-red-600 text-white'
-                    : 'bg-black border-red-600/30 hover:border-red-600/60 text-red-500'
+                    ? 'border-red-500/30 bg-red-500/[0.12] text-red-400'
+                    : 'border-white/[0.06] bg-[#09090b] text-red-400/60 hover:border-red-500/30'
                 }`}
               >
-                <span className="text-base font-black uppercase tracking-wide">
+                <span className="text-[14px] font-semibold uppercase tracking-wide">
                   3-Day Testing Summary
                 </span>
                 {selectedSession === 'Summary' && <CheckmarkCircle02Icon className="w-5 h-5" />}
@@ -312,13 +312,13 @@ const SessionSelector: React.FC<SessionSelectorProps> = ({
                     onSelect(session.type);
                     onClose();
                   }}
-                  className={`w-full p-4 text-left transition-all flex items-center justify-between border-2 ${
+                  className={`w-full p-4 text-left transition-all flex items-center justify-between rounded-xl border ${
                     selectedSession === session.type
-                      ? 'bg-red-600 border-red-600 text-white'
-                      : 'bg-black border-white/10 hover:border-white/30 text-gray-300'
+                      ? 'border-white/[0.08] bg-white/[0.06] text-white'
+                      : 'border-white/[0.06] bg-[#09090b] text-white/60 hover:border-white/[0.1]'
                   }`}
                 >
-                  <span className="text-base font-black uppercase tracking-wide">
+                  <span className="text-[14px] font-semibold uppercase tracking-wide">
                     {session.name}
                   </span>
                   {selectedSession === session.type && (
@@ -388,7 +388,7 @@ const ScheduleSessionCard: React.FC<ScheduleSessionCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'overflow-hidden relative',
-        isNext ? 'bg-black border-2 border-red-600' : 'bg-black border border-white/10'
+        isNext ? 'bg-red-500/[0.04] border-red-500/30' : 'bg-[#0c0c0e] border-white/[0.06]'
       )}
     >
       {/* Decorative Corners for Next Session */}
@@ -516,7 +516,7 @@ const RaceBottomNav: React.FC<RaceBottomNavProps> = ({
   if (isSummarySession) return null; // Or return a simplified nav if needed later, but standard is to hide telemetry for summary
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t-2 border-white/10 safe-area-pb">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#09090b]/90 backdrop-blur-2xl safe-area-pb">
       <div className="flex items-center justify-around px-2 py-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -803,8 +803,8 @@ const ResultRow: React.FC<ResultRowProps> = ({
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       className={cn(
-        'transition-colors overflow-hidden rounded-xl border border-white/10',
-        isFavorite ? 'bg-red-900/10' : 'bg-black'
+        'overflow-hidden rounded-xl border transition-colors',
+        isFavorite ? 'border-red-500/20 bg-red-500/[0.04]' : 'border-white/[0.06] bg-[#0c0c0e]'
       )}
     >
       {/* Main Row - Clickable */}
@@ -1347,9 +1347,9 @@ const MobileRace: React.FC = () => {
   // Loading State
   if (isLoadingSessions) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
           <div className="text-red-600 font-black uppercase tracking-widest text-sm animate-pulse">
             Loading Race Data...
           </div>
@@ -1368,7 +1368,7 @@ const MobileRace: React.FC = () => {
       upcomingSession || sessionSchedule.sessions[sessionSchedule.sessions.length - 1];
 
     return (
-      <div className="min-h-screen bg-black text-white pb-20 font-sans">
+      <div className="min-h-screen bg-[#09090b] pb-20 text-white font-sans">
         <MobilePageHeader title={eventName} showBack />
 
         <div className="p-4 space-y-6">
@@ -1464,7 +1464,7 @@ const MobileRace: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-[80px] font-sans selection:bg-red-600 selection:text-white">
+    <div className="min-h-screen bg-[#09090b] pb-[80px] text-white font-sans selection:bg-red-500/20">
       <MobilePageHeader title={eventName} showBack />
 
       {/* Session Selector Header */}

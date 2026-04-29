@@ -10,6 +10,8 @@ import {
 import { DetailedRaceResult } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ArrowDown01Icon, ArrowUp01Icon, MinusSignIcon } from 'hugeicons-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getDriverImage } from '@/utils/imageMapping';
 
 const getTeamColorClass = (teamName: string | undefined): string => {
   if (!teamName) return 'gray';
@@ -126,22 +128,31 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
     .sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
 
   const renderPlacesChanged = (change: number | null, gridPos: number | undefined) => {
-    if (gridPos === 0) return <span className="text-gray-500 text-xs italic">PIT</span>;
+    if (gridPos === 0) return <span className="text-white text-xs italic">PIT</span>;
     if (change === null || change === 0) {
       return (
-        <span className="text-gray-600 flex items-center justify-center font-mono">
+        <span
+          className="text-white flex items-center justify-center"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
           <MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0
         </span>
       );
     } else if (change > 0) {
       return (
-        <span className="text-green-500 flex items-center justify-center font-mono font-black">
+        <span
+          className="text-emerald-400 flex items-center justify-center font-bold"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
           <ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}
         </span>
       );
     } else {
       return (
-        <span className="text-red-500 flex items-center justify-center font-mono font-black">
+        <span
+          className="text-red-400 flex items-center justify-center font-bold"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
           <ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}
         </span>
       );
@@ -149,31 +160,35 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
   };
 
   return (
-    <div className="bg-black border border-gray-700">
-      <div className="p-4 border-b border-gray-700">
-        <h4 className="text-sm font-black uppercase tracking-wider text-white">
+    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+      <div className="border-b border-white/[0.04] px-5 py-4">
+        <h4 className="text-[13px] font-medium uppercase tracking-wider text-white/80">
           Places Gained/Lost
         </h4>
       </div>
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-black border-b border-gray-700">
-            <TableRow className="border-gray-700 hover:bg-transparent">
-              <TableHead className="w-[50px] text-center text-gray-400 font-black uppercase text-xs">
+          <TableHeader>
+            <TableRow className="border-b border-white/[0.04] hover:bg-transparent">
+              <TableHead className="w-[50px] text-center text-[11px] font-medium uppercase tracking-wider text-white">
                 Pos
               </TableHead>
-              <TableHead className="text-gray-400 font-black uppercase text-xs">Driver</TableHead>
-              <TableHead className="text-gray-400 font-black uppercase text-xs">Team</TableHead>
-              <TableHead className="w-[90px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="text-[11px] font-medium uppercase tracking-wider text-white">
+                Driver
+              </TableHead>
+              <TableHead className="text-[11px] font-medium uppercase tracking-wider text-white">
+                Team
+              </TableHead>
+              <TableHead className="w-[90px] text-center text-[11px] font-medium uppercase tracking-wider text-white">
                 Change
               </TableHead>
-              <TableHead className="w-[120px] text-right text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[120px] text-right text-[11px] font-medium uppercase tracking-wider text-white">
                 Time
               </TableHead>
-              <TableHead className="w-[60px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[60px] text-center text-[11px] font-medium uppercase tracking-wider text-white">
                 Laps
               </TableHead>
-              <TableHead className="w-[70px] text-center text-gray-400 font-black uppercase text-xs">
+              <TableHead className="w-[70px] text-center text-[11px] font-medium uppercase tracking-wider text-white">
                 Grid
               </TableHead>
             </TableRow>
@@ -182,42 +197,58 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
             {calculatedResults.map((res) => (
               <TableRow
                 key={res.driverCode}
-                className="border-gray-700/50 hover:bg-gray-800/30 transition-colors group"
+                className="border-b border-white/[0.04] transition-colors last:border-b-0 group hover:bg-white/[0.02]"
               >
-                <TableCell className="text-center font-mono font-black text-gray-400 group-hover:text-white">
+                <TableCell className="text-center text-[14px] font-bold text-white group-hover:text-white">
                   {res.position ?? '-'}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-white">{res.fullName}</span>
-                    {isRookie(res.driverCode, year) && (
-                      <span className="text-[10px] px-1 py-0.5 bg-blue-900/50 text-blue-300 rounded border border-blue-800 font-mono">
-                        R
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2.5">
+                    <Avatar className="h-7 w-7 shrink-0 border border-white/[0.08]">
+                      <AvatarImage
+                        src={getDriverImage(res.driverCode, year)}
+                        className="object-cover object-top"
+                      />
+                      <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                        {res.driverCode}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[13px] font-semibold text-white truncate">
+                          {res.fullName}
+                        </span>
+                        {isRookie(res.driverCode, year) && (
+                          <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-blue-400 shrink-0">
+                            R
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-white/80">{res.driverCode}</span>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <span className="flex items-center gap-2">
                     <span
                       className={cn(
-                        'w-1.5 h-1.5 rounded-full',
+                        'h-1.5 w-1.5 rounded-full',
                         `bg-f1-${getTeamColorClass(res.team)}`
                       )}
-                    ></span>
-                    <span className="text-xs text-gray-400 uppercase">{res.team}</span>
+                    />
+                    <span className="text-[12px] text-white">{res.team}</span>
                   </span>
                 </TableCell>
-                <TableCell className="text-center text-xs">
+                <TableCell className="text-center text-[12px]">
                   {renderPlacesChanged(res.placesChanged, res.gridPosition)}
                 </TableCell>
-                <TableCell className="text-right text-sm font-mono text-gray-500">
+                <TableCell className="text-right text-[13px] text-white">
                   {formatRaceTime(res.time, res.position === 1)}
                 </TableCell>
-                <TableCell className="text-center font-mono text-gray-500">
+                <TableCell className="text-center text-[13px] text-white">
                   {res.laps ?? '-'}
                 </TableCell>
-                <TableCell className="text-center font-mono text-gray-500">
+                <TableCell className="text-center text-[13px] text-white">
                   {res.gridPosition === 0 ? 'PL' : (res.gridPosition ?? '-')}
                 </TableCell>
               </TableRow>

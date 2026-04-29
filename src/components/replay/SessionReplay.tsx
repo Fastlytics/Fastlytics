@@ -47,7 +47,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -825,12 +825,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       // Recalculate track index for smooth visual (mostly for consistency)
       const trackIdx = getTrackIndex(label, x, y, pathPoints); // Use label (e.g. VER_GHOST) for cache key
 
-      let refDist = 0;
-      if (pathDists.length > 0 && trackIdx < pathDists.length) {
-        refDist = pathDists[trackIdx];
-      } else {
-        refDist = dData.dist?.[absIdx] ?? 0;
-      }
+      const refDist =
+        pathDists.length > 0 && trackIdx < pathDists.length
+          ? pathDists[trackIdx]
+          : (dData.dist?.[absIdx] ?? 0);
 
       return {
         code: label, // We rename them to display logic 'VER (L5)'? Or just keep code unique like 'VER_L5'
@@ -882,12 +880,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
       // Calculate Standardized Distance (Reference Odometer)
       // If we have circuit_distances, use them. Otherwise fallback to raw.
-      let refDist = 0;
-      if (pathDists.length > 0 && trackIdx < pathDists.length) {
-        refDist = pathDists[trackIdx];
-      } else {
-        refDist = d.dist[safeIndex]; // fallback
-      }
+      const refDist =
+        pathDists.length > 0 && trackIdx < pathDists.length
+          ? pathDists[trackIdx]
+          : d.dist[safeIndex]; // fallback
 
       drivers[code] = {
         x,
@@ -1110,15 +1106,17 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     if (!data || isRace) return null;
 
     // 1. Determine Nominal Duration
-    let duration = 0;
     const s = session.toUpperCase();
-    if (s === 'Q1') duration = 18 * 60;
-    else if (s === 'Q2') duration = 15 * 60;
-    else if (s === 'Q3') duration = 12 * 60;
-    else if (s === 'SQ1') duration = 12 * 60;
-    else if (s === 'SQ2') duration = 10 * 60;
-    else if (s === 'SQ3') duration = 8 * 60;
-    else return null; // Practice or Unknown
+    const durationMap: Record<string, number> = {
+      Q1: 18 * 60,
+      Q2: 15 * 60,
+      Q3: 12 * 60,
+      SQ1: 12 * 60,
+      SQ2: 10 * 60,
+      SQ3: 8 * 60,
+    };
+    const duration = durationMap[s];
+    if (!duration) return null; // Practice or Unknown
 
     // 2. Adjust for Red Flags
     // We need to calculate how much time was LOST due to red flags UP TO currentTime.

@@ -161,8 +161,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
 
   return (
     <div ref={exportRef} className="space-y-0">
-      {/* View Mode Tabs with Export */}
-      <div className="flex border border-gray-700 bg-black" data-export-ignore>
+      {/* View Mode Tabs */}
+      <div
+        className="flex overflow-hidden rounded-t-xl border border-white/[0.06] bg-[#0c0c0e]"
+        data-export-ignore
+      >
         {(
           [
             ['compound', 'Compound Pace'],
@@ -173,17 +176,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
-            className={`flex-1 py-3 text-sm font-black uppercase tracking-wider transition-all ${
+            className={`flex-1 py-3 text-[12px] font-semibold uppercase tracking-wider transition-all ${
               viewMode === mode
-                ? 'bg-white text-black'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                ? 'bg-white/[0.08] text-white'
+                : 'text-white hover:bg-white/[0.03] hover:text-white/60'
             }`}
           >
             {label}
           </button>
         ))}
         {/* Export Button inside the tabs box */}
-        <div className="flex items-center justify-center px-4 border-l border-gray-700">
+        <div className="flex items-center justify-center border-l border-white/[0.04] px-4">
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -206,17 +209,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
 
       {/* ── COMPOUND PACE VIEW ── */}
       {viewMode === 'compound' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e]">
           {/* Compound Selector */}
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-white/[0.04]">
             {compoundData.compounds.map((comp) => (
               <button
                 key={comp}
                 onClick={() => setSelectedCompound(comp)}
-                className={`flex-1 py-2.5 text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-[12px] font-semibold uppercase tracking-wider transition-all ${
                   activeCompound === comp
                     ? 'border-b-2 text-white'
-                    : 'text-gray-500 hover:text-white'
+                    : 'text-white hover:text-white/60'
                 }`}
                 style={
                   activeCompound === comp
@@ -277,17 +280,20 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                       if (!active || !payload?.length) return null;
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-black border border-gray-600 p-3 shadow-xl min-w-[200px]">
-                          <div className="text-sm font-black mb-1.5" style={{ color: d.color }}>
+                        <div className="min-w-[200px] rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-3 shadow-xl">
+                          <div
+                            className="mb-1.5 text-[13px] font-semibold"
+                            style={{ color: d.color }}
+                          >
                             {d.team}
                           </div>
-                          <div className="text-sm font-mono text-white font-bold">
+                          <div className="text-[13px] font-semibold text-white">
                             Median: {formatLapTime(d.medianTime)}
                           </div>
-                          <div className="text-sm font-mono text-gray-300">
+                          <div className="text-[13px] text-white">
                             Gap: {d.gap === 0 ? 'LEADER' : `+${d.gap.toFixed(3)}s`}
                           </div>
-                          <div className="text-xs font-mono text-gray-400 mt-1">
+                          <div className="mt-1 text-[11px] text-white">
                             {d.lapCount} laps on {d.compound}
                           </div>
                         </div>
@@ -324,7 +330,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 font-mono text-sm">
+            <div className="flex items-center justify-center h-32 text-[13px] text-white">
               No data for {activeCompound}
             </div>
           )}
@@ -333,25 +339,25 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
 
       {/* ── SECTOR DOMINANCE VIEW ── */}
       {viewMode === 'sector' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e]">
           {sectorData.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left px-4 py-3 text-sm font-black uppercase text-gray-400 w-[140px]">
+                  <tr className="border-b border-white/[0.04]">
+                    <th className="w-[140px] px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-white">
                       Team
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="px-4 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-white">
                       Sector 1
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="px-4 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-white">
                       Sector 2
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="px-4 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-white">
                       Sector 3
                     </th>
-                    <th className="text-center px-4 py-3 text-sm font-black uppercase text-gray-400">
+                    <th className="px-4 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-white">
                       Total
                     </th>
                   </tr>
@@ -373,15 +379,15 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                     return (
                       <tr
                         key={row.teamName}
-                        className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors"
+                        className="border-b border-white/[0.04] transition-colors last:border-b-0 hover:bg-white/[0.02]"
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-3 h-3 rounded-full"
+                              className="h-2.5 w-2.5 rounded-full"
                               style={{ backgroundColor: teamColor }}
                             />
-                            <span className="text-sm font-black font-mono text-white">
+                            <span className="text-[13px] font-semibold text-white">
                               {row.teamName}
                             </span>
                           </div>
@@ -389,13 +395,13 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                         <td className="text-center px-4 py-3">
                           <div className="inline-flex flex-col items-center">
                             <span
-                              className="text-sm font-black font-mono"
+                              className="text-[13px] font-semibold"
                               style={{ color: sectorHeatColor(s1, bestS1) }}
                             >
                               {s1.toFixed(3)}
                             </span>
                             {s1 - bestS1 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-[11px] text-white">
                                 +{(s1 - bestS1).toFixed(3)}
                               </span>
                             )}
@@ -406,20 +412,22 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                                     (r.sector1Median ?? 999) ===
                                     Math.min(...sectorData.map((s) => s.sector1Median ?? 999))
                                 ) && (
-                                <span className="text-[10px] font-black text-green-400">BEST</span>
+                                <span className="text-[10px] font-semibold text-emerald-400">
+                                  BEST
+                                </span>
                               )}
                           </div>
                         </td>
                         <td className="text-center px-4 py-3">
                           <div className="inline-flex flex-col items-center">
                             <span
-                              className="text-sm font-black font-mono"
+                              className="text-[13px] font-semibold"
                               style={{ color: sectorHeatColor(s2, bestS2) }}
                             >
                               {s2.toFixed(3)}
                             </span>
                             {s2 - bestS2 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-[11px] text-white">
                                 +{(s2 - bestS2).toFixed(3)}
                               </span>
                             )}
@@ -430,20 +438,22 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                                     (r.sector2Median ?? 999) ===
                                     Math.min(...sectorData.map((s) => s.sector2Median ?? 999))
                                 ) && (
-                                <span className="text-[10px] font-black text-green-400">BEST</span>
+                                <span className="text-[10px] font-semibold text-emerald-400">
+                                  BEST
+                                </span>
                               )}
                           </div>
                         </td>
                         <td className="text-center px-4 py-3">
                           <div className="inline-flex flex-col items-center">
                             <span
-                              className="text-sm font-black font-mono"
+                              className="text-[13px] font-semibold"
                               style={{ color: sectorHeatColor(s3, bestS3) }}
                             >
                               {s3.toFixed(3)}
                             </span>
                             {s3 - bestS3 > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-[11px] text-white">
                                 +{(s3 - bestS3).toFixed(3)}
                               </span>
                             )}
@@ -454,17 +464,19 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                                     (r.sector3Median ?? 999) ===
                                     Math.min(...sectorData.map((s) => s.sector3Median ?? 999))
                                 ) && (
-                                <span className="text-[10px] font-black text-green-400">BEST</span>
+                                <span className="text-[10px] font-semibold text-emerald-400">
+                                  BEST
+                                </span>
                               )}
                           </div>
                         </td>
                         <td className="text-center px-4 py-3">
                           <div className="inline-flex flex-col items-center">
-                            <span className="text-sm font-black font-mono text-white">
+                            <span className="text-[13px] font-semibold text-white">
                               {formatLapTime(total)}
                             </span>
                             {totalDelta > 0.001 && (
-                              <span className="text-xs font-mono text-gray-500">
+                              <span className="text-[11px] text-white">
                                 +{totalDelta.toFixed(3)}
                               </span>
                             )}
@@ -477,7 +489,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
               </table>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500 font-mono text-sm">
+            <div className="flex items-center justify-center h-32 text-[13px] text-white">
               No sector data available
             </div>
           )}
@@ -486,7 +498,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
 
       {/* ── DRIVER BREAKDOWN VIEW ── */}
       {viewMode === 'drivers' && (
-        <div className="bg-black border-x border-b border-gray-700">
+        <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e]">
           {teamRanking.map((teamEntry, teamIdx) => {
             const drivers = driversByTeam[teamEntry.teamName] || [];
             const isExpanded = expandedTeam === teamEntry.teamName;
@@ -496,119 +508,109 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
             return (
               <div
                 key={teamEntry.teamName}
-                className={teamIdx > 0 ? 'border-t border-gray-700' : ''}
+                className={teamIdx > 0 ? 'border-t border-white/[0.04]' : ''}
               >
-                {/* Team Row — clickable */}
+                {/* Team Row */}
                 <button
                   onClick={() => setExpandedTeam(isExpanded ? null : teamEntry.teamName)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-800/40 transition-colors text-left"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02]"
                 >
-                  <span className="text-sm font-black text-gray-500 w-6">{teamIdx + 1}</span>
-                  <div
-                    className="w-3.5 h-3.5 rounded-full"
-                    style={{ backgroundColor: teamColor }}
-                  />
-                  <span className="text-sm font-black font-mono text-white flex-1">
+                  <span className="w-6 text-[13px] font-medium text-white">{teamIdx + 1}</span>
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: teamColor }} />
+                  <span className="flex-1 text-[13px] font-semibold text-white">
                     {teamEntry.teamName}
                   </span>
-                  <span className="text-sm font-mono font-bold text-white">
+                  <span className="text-[13px] font-semibold text-white">
                     {formatLapTime(teamEntry.medianTime)}
                   </span>
                   {teamIdx > 0 && (
-                    <span className="text-xs font-mono font-bold text-gray-400">
+                    <span className="text-[11px] text-white">
                       +{(teamEntry.medianTime - teamRanking[0].medianTime).toFixed(3)}
                     </span>
                   )}
                   {teamIdx === 0 && (
-                    <span className="text-xs font-black text-green-400">FASTEST</span>
+                    <span className="text-[10px] font-semibold text-emerald-400">FASTEST</span>
                   )}
-                  <span className="text-gray-500 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                  <span className="text-[10px] text-white">{isExpanded ? '▲' : '▼'}</span>
                 </button>
 
                 {/* Expanded driver detail */}
                 {isExpanded && (
-                  <div className="bg-gray-950 border-t border-gray-800 px-4 py-3">
+                  <div className="border-t border-white/[0.04] bg-white/[0.01] px-4 py-3">
                     {drivers.map((drv, drvIdx) => {
                       const drvColor = driverColor(drv.driverCode, year);
                       const headshot = getDriverImage(drv.driverCode, year);
                       const intraGap = drv.medianTime - teamBestPace;
 
-                      // Find this driver's compound breakdown from backend data
                       const driverCompounds =
                         paceData?.compoundPace?.filter(
                           (cp) => cp.teamName === teamEntry.teamName
                         ) || [];
 
-                      // Find this driver's sector data (approximate from team-level)
                       const teamSector = sectorData.find((s) => s.teamName === teamEntry.teamName);
 
                       return (
                         <div
                           key={drv.driverCode}
-                          className={`${drvIdx > 0 ? 'mt-3 pt-3 border-t border-gray-800' : ''}`}
+                          className={drvIdx > 0 ? 'mt-3 border-t border-white/[0.04] pt-3' : ''}
                         >
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="mb-2 flex items-center gap-3">
                             <div
-                              className="w-8 h-8 rounded-full bg-gray-800 overflow-hidden border-2 shrink-0"
+                              className="h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 bg-[#1a1a1e]"
                               style={{ borderColor: drvColor }}
                             >
                               {headshot ? (
                                 <img
                                   src={headshot}
                                   alt={drv.driverCode}
-                                  className="w-full h-full object-cover object-top"
+                                  className="h-full w-full object-cover object-top"
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-mono font-bold">
+                                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white">
                                   {drv.driverCode[0]}
                                 </div>
                               )}
                             </div>
-                            <span
-                              className="text-sm font-black font-mono"
-                              style={{ color: drvColor }}
-                            >
+                            <span className="text-[13px] font-semibold" style={{ color: drvColor }}>
                               {drv.driverCode}
                             </span>
-                            <span className="text-sm font-mono font-bold text-white">
+                            <span className="text-[13px] font-semibold text-white">
                               {formatLapTime(drv.medianTime)}
                             </span>
                             {intraGap > 0.001 && (
-                              <span className="text-xs font-mono text-red-400">
+                              <span className="text-[11px] text-red-400">
                                 +{intraGap.toFixed(3)}
                               </span>
                             )}
-                            <span className="text-xs font-mono text-gray-500 ml-auto">
+                            <span className="ml-auto text-[11px] text-white">
                               {drv.lapCount} laps
                             </span>
                           </div>
 
-                          {/* Compound breakdown (team-level from backend) */}
+                          {/* Compound breakdown */}
                           {driverCompounds.length > 0 && (
-                            <div className="flex gap-2 flex-wrap mb-2">
+                            <div className="mb-2 flex flex-wrap gap-2">
                               {driverCompounds.map((cp) => (
                                 <div
                                   key={cp.compound}
-                                  className="flex items-center gap-1.5 border border-gray-800 px-2.5 py-1"
+                                  className="flex items-center gap-1.5 rounded-md border border-white/[0.06] px-2.5 py-1"
                                 >
                                   <span
-                                    className="w-2 h-2 rounded-full"
+                                    className="h-2 w-2 rounded-full"
                                     style={{
                                       backgroundColor: COMPOUND_COLORS[cp.compound] || '#666',
                                     }}
                                   />
                                   <span
-                                    className="text-xs font-black"
+                                    className="text-[11px] font-semibold"
                                     style={{ color: COMPOUND_COLORS[cp.compound] || '#FFF' }}
                                   >
                                     {cp.compound[0]}
                                   </span>
-                                  <span className="text-xs font-mono text-white font-bold">
+                                  <span className="text-[11px] font-semibold text-white">
                                     {formatLapTime(cp.medianTime)}
                                   </span>
-                                  <span className="text-[10px] font-mono text-gray-500">
-                                    ({cp.lapCount})
-                                  </span>
+                                  <span className="text-[10px] text-white">({cp.lapCount})</span>
                                 </div>
                               ))}
                             </div>
@@ -617,19 +619,19 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                           {/* Sector splits */}
                           {teamSector && teamSector.sector1Median && (
                             <div className="flex gap-4">
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-[11px] text-white">
                                 S1{' '}
                                 <span className="text-white">
                                   {teamSector.sector1Median?.toFixed(3)}
                                 </span>
                               </span>
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-[11px] text-white">
                                 S2{' '}
                                 <span className="text-white">
                                   {teamSector.sector2Median?.toFixed(3)}
                                 </span>
                               </span>
-                              <span className="text-xs font-mono text-gray-300 font-bold">
+                              <span className="text-[11px] text-white">
                                 S3{' '}
                                 <span className="text-white">
                                   {teamSector.sector3Median?.toFixed(3)}

@@ -9,8 +9,7 @@ import {
   SessionIncident,
 } from '@/lib/api';
 import PositionChart from '@/components/charts/PositionChart';
-import { AlertCircleIcon, Menu01Icon, Analytics01Icon, ChartLineData01Icon } from 'hugeicons-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AlertCircleIcon, ChartLineData01Icon, Menu01Icon } from 'hugeicons-react';
 import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -80,11 +79,19 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin"></div>
-          <div className="text-gray-500 font-mono text-xs animate-pulse uppercase">
-            Loading Position Data...
+      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+        <div className="mb-6">
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
+            Positions
+          </p>
+          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+            Lap-by-Lap Positions
+          </p>
+        </div>
+        <div className="flex h-[500px] items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+            <div className="text-[12px] text-white animate-pulse">Loading position data...</div>
           </div>
         </div>
       </div>
@@ -93,53 +100,72 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isError || !lapPositionsData || !sessionResultsData) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
-        <div className="text-center text-red-500">
-          <AlertCircleIcon className="w-10 h-10 mx-auto mb-3" />
-          <p className="font-black uppercase tracking-wider text-lg">Error Loading Data</p>
-          <p className="text-xs text-gray-500 mt-2 font-mono">
-            {combinedError?.message || 'Could not fetch position data.'}
+      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+        <div className="mb-6">
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
+            Positions
           </p>
+          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+            Lap-by-Lap Positions
+          </p>
+        </div>
+        <div className="flex h-[500px] items-center justify-center">
+          <div className="text-center text-red-400">
+            <AlertCircleIcon className="mx-auto mb-3 h-9 w-9" />
+            <p className="text-[14px] font-semibold">Error Loading Data</p>
+            <p className="mt-1 text-[12px] text-white">
+              {combinedError?.message || 'Could not fetch position data.'}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-black p-0 h-[600px] flex flex-col">
+    <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
+            Positions
+          </p>
+          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+            Lap-by-Lap Positions
+          </p>
+        </div>
+      </div>
+
       <Tabs
         defaultValue="overview"
-        className="w-full h-full flex flex-col"
+        className="w-full"
         onValueChange={(value) => {
           trackInteraction('positions_subtab_changed', { tab: value });
           setActiveTab(value);
         }}
         value={activeTab}
       >
-        <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-6 shrink-0">
-          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              <ChartLineData01Icon className="w-3 h-3 mr-2" />
-              Chart
-            </TabsTrigger>
-            <TabsTrigger
-              value="analysis"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              <Menu01Icon className="w-3 h-3 mr-2" />
-              Analysis
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <div className="flex-1 min-h-0 relative">
-          <TabsContent
+        <TabsList className="h-auto w-full gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 sm:w-auto">
+          <TabsTrigger
             value="overview"
-            className="h-full mt-0 animate-in fade-in zoom-in-95 duration-300"
+            className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
           >
+            <ChartLineData01Icon className="mr-1.5 h-3.5 w-3.5" />
+            Chart
+          </TabsTrigger>
+          <TabsTrigger
+            value="analysis"
+            className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
+          >
+            <Menu01Icon className="mr-1.5 h-3.5 w-3.5" />
+            Analysis
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent
+          value="overview"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+        >
+          <div className="h-[600px]">
             <PositionChart
               lapData={lapPositionsData}
               incidents={incidentsData}
@@ -147,16 +173,16 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
               year={year}
               favoriteDriver={favoriteDriver}
             />
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          <TabsContent
-            value="analysis"
-            className="h-full mt-0 overflow-y-auto pr-2 animate-in fade-in zoom-in-95 duration-300 space-y-6"
-          >
-            <KeyMomentsHighlight lapData={lapPositionsData} />
-            <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
-          </TabsContent>
-        </div>
+        <TabsContent
+          value="analysis"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6"
+        >
+          <KeyMomentsHighlight lapData={lapPositionsData} />
+          <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
+        </TabsContent>
       </Tabs>
     </div>
   );
