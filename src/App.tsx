@@ -16,6 +16,8 @@ import DriverStandings from './pages/DriverStandings';
 import Calendar from './pages/Calendar';
 import ChampionshipProgression from './pages/ChampionshipProgression';
 import TeamPaceAnalysis from './pages/TeamPaceAnalysis';
+import DriverProfile from './pages/DriverProfile';
+import TeamProfile from './pages/TeamProfile';
 
 import NotFound from './pages/NotFound';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -222,6 +224,24 @@ const App = () => (
                 element={
                   <DashboardLayout>
                     <SessionReplayPage />
+                  </DashboardLayout>
+                }
+              />
+
+              {/* Bio Pages */}
+              <Route
+                path="/drivers/:slug"
+                element={
+                  <DashboardLayout>
+                    <DriverProfile />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/teams/:slug"
+                element={
+                  <DashboardLayout>
+                    <TeamProfile />
                   </DashboardLayout>
                 }
               />

@@ -2,23 +2,6 @@ import { useMemo } from 'react';
 import { SessionReplayData } from '@/lib/api';
 import { DriverFrameState } from '@/components/replay/replay-utils';
 
-function findTrackIndex(x: number, y: number, points: number[][]): number {
-  if (!points || points.length === 0) return 0;
-  const len = points.length;
-  let bestIdx = 0;
-  let minDistSq = Infinity;
-  for (let i = 0; i < len; i += 3) {
-    const px = points[i][0];
-    const py = points[i][1];
-    const dSq = (px - x) ** 2 + (py - y) ** 2;
-    if (dSq < minDistSq) {
-      minDistSq = dSq;
-      bestIdx = i;
-    }
-  }
-  return bestIdx;
-}
-
 function findNearestTimeIndex(time: number, timeline: number[]): number {
   if (!timeline.length) return 0;
   if (time <= timeline[0]) return 0;
@@ -42,6 +25,89 @@ function findNearestTimeIndex(time: number, timeline: number[]): number {
   return time - timeline[high] <= timeline[low] - time ? high : low;
 }
 
+/** Pre-compute nearest circuit-point index for every driver at every frame. */
+function buildTrackIndices(
+  drivers: SessionReplayData['drivers'],
+  circuitPoints: number[][]
+): Record<string, number[]> {
+  if (!circuitPoints || circuitPoints.length === 0) return {};
+  const result: Record<string, number[]> = {};
+  const plen = circuitPoints.length;
+
+  for (const [code, d] of Object.entries(drivers)) {
+    if (!d.x || !d.y) continue;
+    const len = d.x.length;
+    const arr = new Array<number>(len);
+    for (let i = 0; i < len; i++) {
+      const px = d.x[i];
+      const py = d.y[i];
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      for (let j = 0; j < plen; j += 3) {
+        const dx = circuitPoints[j][0] - px;
+        const dy = circuitPoints[j][1] - py;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestDist) {
+          bestDist = d2;
+          bestIdx = j;
+        }
+      }
+      arr[i] = bestIdx;
+    }
+    result[code] = arr;
+  }
+  return result;
+}
+
+/** Pre-compute tyre age for every driver at every frame in a single forward pass. */
+function buildTyreAges(drivers: SessionReplayData['drivers']): Record<string, number[]> {
+  const result: Record<string, number[]> = {};
+  for (const [code, d] of Object.entries(drivers)) {
+    if (!d.tyre || !d.lap) continue;
+    const len = d.tyre.length;
+    const arr = new Array<number>(len);
+    let stintStartLap = d.lap[0];
+    let currentTyre = d.tyre[0];
+    for (let i = 0; i < len; i++) {
+      if (d.tyre[i] !== currentTyre) {
+        currentTyre = d.tyre[i];
+        stintStartLap = d.lap[i];
+      }
+      arr[i] = Math.max(1, d.lap[i] - stintStartLap + 1);
+    }
+    result[code] = arr;
+  }
+  return result;
+}
+
+/** Pre-compute active track-status code for every frame. */
+function buildTrackStatusByFrame(
+  time: number[],
+  trackStatuses: SessionReplayData['track_statuses']
+): string[] {
+  if (!time.length) return [];
+  const result = new Array<string>(time.length);
+  let statusIdx = 0;
+  for (let i = 0; i < time.length; i++) {
+    const t = time[i];
+    while (
+      statusIdx < trackStatuses.length &&
+      trackStatuses[statusIdx].end_time !== null &&
+      trackStatuses[statusIdx].end_time! < t
+    ) {
+      statusIdx++;
+    }
+    const active =
+      statusIdx < trackStatuses.length &&
+      t >= trackStatuses[statusIdx].start_time &&
+      (trackStatuses[statusIdx].end_time === null || t <= trackStatuses[statusIdx].end_time)
+        ? trackStatuses[statusIdx].status
+        : '1'; // default green
+    result[i] = active;
+  }
+  return result;
+}
+
 export function useReplayData(data: SessionReplayData | null, currentTime: number) {
   const timeline = data?.time;
 
@@ -50,18 +116,34 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     return findNearestTimeIndex(currentTime, timeline);
   }, [timeline, currentTime]);
 
+  // Pre-compute expensive lookups once when data changes (enrich-on-merge)
+  const precomputed = useMemo(() => {
+    if (!data) {
+      return {
+        trackIndices: {} as Record<string, number[]>,
+        tyreAges: {} as Record<string, number[]>,
+        trackStatusByFrame: [] as string[],
+      };
+    }
+    return {
+      trackIndices: buildTrackIndices(data.drivers, data.circuit_points || []),
+      tyreAges: buildTyreAges(data.drivers),
+      trackStatusByFrame: buildTrackStatusByFrame(data.time || [], data.track_statuses || []),
+    };
+  }, [data]);
+
   const currentFrameDrivers = useMemo(() => {
     if (!data) return {};
     const drivers: Record<string, DriverFrameState> = {};
-    const pathPoints = data.circuit_points || [];
     const pathDists = data.circuit_distances || [];
+    const { trackIndices } = precomputed;
 
     for (const [code, d] of Object.entries(data.drivers)) {
       const x = d.x?.[safeIndex];
       const y = d.y?.[safeIndex];
       if (typeof x !== 'number' || typeof y !== 'number') continue;
 
-      const trackIdx = findTrackIndex(x, y, pathPoints);
+      const trackIdx = trackIndices[code]?.[safeIndex] ?? 0;
       const refDist =
         pathDists.length > 0 && trackIdx < pathDists.length
           ? pathDists[trackIdx]
@@ -82,10 +164,12 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
         throttle: d.throttle?.[safeIndex] ?? 0,
         brake: d.brake?.[safeIndex] ?? 0,
         track_index: trackIdx,
+        gap: d.gap?.[safeIndex] ?? null,
+        interval: d.interval?.[safeIndex] ?? null,
       };
     }
     return drivers;
-  }, [data, safeIndex]);
+  }, [data, safeIndex, precomputed]);
 
   const totalDuration = useMemo(() => {
     if (!data?.time?.length) return 0;
@@ -147,24 +231,13 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
   }, [data]);
 
   const tyreAgeMap = useMemo(() => {
-    if (!data?.drivers) return {};
+    if (!data?.drivers || safeIndex < 0) return {};
     const result: Record<string, number> = {};
-    for (const [code, d] of Object.entries(data.drivers)) {
-      if (!d.tyre || !d.lap || safeIndex < 0) {
-        result[code] = 0;
-        continue;
-      }
-      const currentTyre = d.tyre[safeIndex];
-      const currentLap = d.lap[safeIndex];
-      let stintStartLap = currentLap;
-      for (let i = safeIndex - 1; i >= 0; i--) {
-        if (d.tyre[i] !== currentTyre) break;
-        stintStartLap = d.lap[i];
-      }
-      result[code] = Math.max(1, currentLap - stintStartLap + 1);
+    for (const [code] of Object.entries(data.drivers)) {
+      result[code] = precomputed.tyreAges[code]?.[safeIndex] ?? 0;
     }
     return result;
-  }, [data, safeIndex]);
+  }, [data, safeIndex, precomputed.tyreAges]);
 
   return {
     safeIndex,
@@ -174,5 +247,6 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     driverLapStartTimes,
     driverLapStartIndices,
     tyreAgeMap,
+    trackStatusByFrame: precomputed.trackStatusByFrame,
   };
 }

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { CloudRain, Thermometer, Droplets, Wind } from 'lucide-react';
+import { CloudRain, Thermometer, Droplets, Wind, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface WeatherData {
   time: number;
@@ -20,6 +21,8 @@ interface WeatherOverlayProps {
 }
 
 const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ weather, currentTime, className }) => {
+  const { position, isDragging, handleMouseDown } = useDraggable({ x: 12, y: 12 });
+
   const currentWeather = useMemo(() => {
     if (!weather || weather.length === 0) return null;
 
@@ -87,10 +90,15 @@ const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ weather, currentTime, c
   if (items.length === 0) return null;
 
   return (
-    <div className={cn('absolute top-0 left-0 z-20 p-3', className)}>
+    <div
+      className={cn('absolute z-20', isDragging ? 'cursor-grabbing' : 'cursor-default', className)}
+      style={{ left: position.x, top: position.y }}
+      onMouseDown={handleMouseDown}
+    >
       <div className="bg-[#0c0c0e]/90 backdrop-blur border border-white/[0.06] rounded-lg overflow-hidden">
-        <div className="px-3 py-2 border-b border-white/[0.04]">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.04]" data-grip>
+          <GripVertical size={12} className="text-white cursor-grab" />
+          <span className="text-[10px] font-normal uppercase tracking-wider text-white">
             Conditions
           </span>
         </div>
@@ -100,14 +108,12 @@ const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ weather, currentTime, c
               key={item.label}
               className="flex items-center gap-2 px-3 py-1.5 border-b border-white/[0.04] last:border-b-0"
             >
-              <span className={cn('text-white/40', item.active && 'text-blue-400')}>
-                {item.icon}
-              </span>
-              <span className="text-[11px] text-white/40 min-w-[50px]">{item.label}</span>
+              <span className={cn('text-white', item.active && 'text-blue-400')}>{item.icon}</span>
+              <span className="text-[11px] text-white font-normal min-w-[50px]">{item.label}</span>
               <span
                 className={cn(
-                  'text-[11px] font-mono font-semibold tabular-nums ml-auto',
-                  item.active ? 'text-blue-400' : 'text-white/70'
+                  'text-[11px] font-mono font-medium tabular-nums ml-auto',
+                  item.active ? 'text-blue-400' : 'text-white'
                 )}
               >
                 {item.value}

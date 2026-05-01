@@ -71,10 +71,12 @@ const RaceControlMessages: React.FC<RaceControlMessagesProps> = ({
 
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold text-sm tracking-wider uppercase opacity-90">
+                <span className="font-semibold text-sm tracking-wider uppercase text-white">
                   {msg.flag || config.type}
                 </span>
-                <span className="text-[10px] font-mono opacity-60">{formatTime(msg.time)}</span>
+                <span className="text-[10px] font-mono font-light text-white">
+                  {formatTime(msg.time)}
+                </span>
               </div>
               <span className="text-white font-medium text-sm leading-tight break-words">
                 {msg.message}
@@ -83,7 +85,7 @@ const RaceControlMessages: React.FC<RaceControlMessagesProps> = ({
 
             <button
               onClick={() => onDismiss(id)}
-              className="text-white/50 hover:text-white transition-colors p-1 shrink-0"
+              className="text-white hover:text-white transition-colors p-1 shrink-0"
             >
               <X size={16} />
             </button>

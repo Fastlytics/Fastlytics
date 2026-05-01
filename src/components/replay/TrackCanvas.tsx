@@ -1,9 +1,8 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { renderTrack, TrackRendererConfig } from './TrackRenderer';
-import { DriverFrameState, getSpeedHeatmapSegments } from './replay-utils';
+import React, { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { DriverFrameState, getTrailPoints } from './replay-utils';
 
 interface TrackCanvasProps {
-  circuitPoints: number[][];
   circuitLayout: string;
   trackColor: string;
   drivers: Record<string, DriverFrameState>;
@@ -13,19 +12,14 @@ interface TrackCanvasProps {
   visibility: Record<string, string>;
   viewState: { scale: number; x: number; y: number };
   showHeatmap: boolean;
+  heatmapSegments: { path: string; color: string }[];
   sectorMarkers: { x: number; y: number; angle: number; label: string }[];
-  safeIndex: number;
   driverArrays: Record<string, { x: number[]; y: number[] }>;
-  onMouseDown: (e: React.MouseEvent) => void;
-  onMouseMove: (e: React.MouseEvent) => void;
-  onMouseUp: () => void;
-  onMouseLeave: () => void;
+  safeIndex: number;
   onClickDriver: (code: string) => void;
-  className?: string;
 }
 
 const TrackCanvas: React.FC<TrackCanvasProps> = ({
-  circuitPoints,
   circuitLayout,
   trackColor,
   drivers,
@@ -35,163 +29,197 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
   visibility,
   viewState,
   showHeatmap,
+  heatmapSegments,
   sectorMarkers,
-  safeIndex,
   driverArrays,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
-  onMouseLeave,
+  safeIndex,
   onClickDriver,
-  className,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animFrameRef = useRef<number>(0);
-
-  const buildHeatmapSegments = useCallback((): { color: string; points: [number, number][] }[] => {
-    if (!showHeatmap || !selectedDriver || !circuitPoints.length) return [];
-
-    const dArrays = driverArrays[selectedDriver];
-    if (!dArrays) return [];
-
-    const pathLen = circuitPoints.length;
-    const speedArray: number[] = new Array(pathLen).fill(0);
-    const len = dArrays.x.length;
-    const sampleRange = Math.min(len, 25 * 120);
-    const start = Math.max(0, safeIndex - sampleRange);
-    const end = Math.min(len - 1, safeIndex);
-
-    for (let i = start; i <= end; i++) {
-      const px = dArrays.x[i];
-      const py = dArrays.y[i];
-      let bestIdx = 0;
-      let bestDist = Infinity;
-      for (let j = 0; j < pathLen; j += 3) {
-        const dx = circuitPoints[j][0] - px;
-        const dy = circuitPoints[j][1] - py;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < bestDist) {
-          bestDist = d2;
-          bestIdx = j;
-        }
-      }
-      const speedVal = driverArrays[selectedDriver]
-        ? ((driverArrays[selectedDriver] as { speed?: number[] }).speed?.[i] ?? 0)
-        : 0;
-      speedArray[bestIdx] = speedVal;
+  const driverTrails = useMemo(() => {
+    const trails: Record<string, { x: number; y: number; opacity: number }[]> = {};
+    for (const [code] of Object.entries(drivers)) {
+      if (visibility[code] === 'hidden') continue;
+      const arrays = driverArrays[code.replace('_GHOST', '')];
+      if (!arrays) continue;
+      const trailLength = selectedDriver === code ? 20 : 8;
+      trails[code] = getTrailPoints(arrays.x, arrays.y, safeIndex, trailLength);
     }
-
-    const segments = getSpeedHeatmapSegments(circuitPoints, speedArray, 350);
-    return segments.map((seg) => {
-      const points: [number, number][] = [];
-      const parts = seg.path.split(/[ML]\s*/).filter(Boolean);
-      for (const part of parts) {
-        const [x, y] = part.trim().split(',').map(Number);
-        if (!isNaN(x) && !isNaN(y)) points.push([x, y]);
-      }
-      return { color: seg.color, points };
-    });
-  }, [showHeatmap, selectedDriver, circuitPoints, safeIndex, driverArrays]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resizeCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-    };
-
-    resizeCanvas();
-
-    const config: TrackRendererConfig = {
-      circuitPoints,
-      circuitLayout,
-      trackColor,
-      drivers,
-      driverColors,
-      driverNumbers,
-      selectedDriver,
-      visibility,
-      viewState,
-      showHeatmap,
-      heatmapSegments: buildHeatmapSegments(),
-      sectorMarkers,
-      safeIndex,
-      driverArrays,
-      trailLength: 15,
-    };
-
-    renderTrack(ctx, canvas, config);
-
-    const observer = new ResizeObserver(() => {
-      resizeCanvas();
-      renderTrack(ctx, canvas, config);
-    });
-    observer.observe(canvas);
-
-    return () => observer.disconnect();
-  }, [
-    circuitPoints,
-    circuitLayout,
-    trackColor,
-    drivers,
-    driverColors,
-    driverNumbers,
-    selectedDriver,
-    visibility,
-    viewState,
-    showHeatmap,
-    sectorMarkers,
-    safeIndex,
-    driverArrays,
-    buildHeatmapSegments,
-  ]);
-
-  const handleCanvasClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      const scaleX = rect.width / 1000;
-      const scaleY = rect.height / 500;
-      const fitScale = Math.min(scaleX, scaleY);
-      const offsetX = (rect.width - 1000 * fitScale) / 2;
-      const offsetY = (rect.height - 500 * fitScale) / 2;
-
-      for (const [code, car] of Object.entries(drivers)) {
-        const cx = car.x * fitScale + offsetX;
-        const cy = car.y * fitScale + offsetY;
-        const dist = Math.sqrt((clickX - cx) ** 2 + (clickY - cy) ** 2);
-        if (dist < 15) {
-          onClickDriver(code);
-          return;
-        }
-      }
-    },
-    [drivers, onClickDriver]
-  );
+    return trails;
+  }, [drivers, visibility, driverArrays, safeIndex, selectedDriver]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={className}
-      style={{ width: '100%', height: '100%' }}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
-      onClick={handleCanvasClick}
-    />
+    <div
+      className="w-full h-full origin-top-left will-change-transform"
+      style={{
+        transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
+      }}
+    >
+      <svg
+        viewBox="0 0 1000 500"
+        className="w-full h-full pointer-events-none"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Track */}
+        <path
+          d={circuitLayout}
+          fill="none"
+          stroke={trackColor}
+          strokeWidth="12"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-colors duration-500 ease-in-out"
+        />
+        <path
+          d={circuitLayout}
+          fill="none"
+          stroke="#2a2a2e"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="4 4"
+          className="opacity-30"
+        />
+
+        {/* Heatmap */}
+        {showHeatmap &&
+          heatmapSegments.map((seg, i) => (
+            <path
+              key={`heatmap-${i}`}
+              d={seg.path}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.8}
+            />
+          ))}
+
+        {/* Sector Markers */}
+        {sectorMarkers.map((marker) => {
+          const lineLen = 18;
+          const dx = Math.cos((marker.angle * Math.PI) / 180) * lineLen;
+          const dy = Math.sin((marker.angle * Math.PI) / 180) * lineLen;
+          const isSF = marker.label === 'S/F';
+          return (
+            <g key={marker.label} className="opacity-70">
+              <line
+                x1={marker.x - dx}
+                y1={marker.y - dy}
+                x2={marker.x + dx}
+                y2={marker.y + dy}
+                stroke={isSF ? '#ffffff' : '#9ca3af'}
+                strokeWidth={isSF ? 3 : 2}
+                strokeLinecap="round"
+              />
+              {isSF && (
+                <line
+                  x1={marker.x - dx * 0.6}
+                  y1={marker.y - dy * 0.6}
+                  x2={marker.x + dx * 0.6}
+                  y2={marker.y + dy * 0.6}
+                  stroke="#000000"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 3"
+                  strokeLinecap="round"
+                />
+              )}
+              <text
+                x={marker.x + dx * 1.4}
+                y={marker.y + dy * 1.4}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill={isSF ? '#ffffff' : '#9ca3af'}
+                fontSize={isSF ? 10 : 9}
+                fontWeight={isSF ? 'bold' : 'normal'}
+                className="select-none"
+              >
+                {marker.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Trails */}
+        {Object.entries(driverTrails).map(([code, trail]) =>
+          trail.map((pt, i) => (
+            <circle
+              key={`trail-${code}-${i}`}
+              cx={pt.x}
+              cy={pt.y}
+              r={2}
+              fill={driverColors[code.replace('_GHOST', '')] || '#ffffff'}
+              opacity={pt.opacity * 0.5}
+            />
+          ))
+        )}
+
+        {/* Cars */}
+        {Object.entries(drivers).map(([code, car]) => {
+          if (visibility[code] === 'hidden') return null;
+
+          const color = car.color || driverColors[code] || '#ffffff';
+          const isSelected = selectedDriver === code;
+          const isDimmed = visibility[code] === 'out-dimmed';
+          const driverNumber = driverNumbers?.[code.replace('_GHOST', '')];
+
+          return (
+            <g
+              key={code}
+              transform={`translate(${car.x}, ${car.y})`}
+              className={cn(
+                'transition-transform duration-75 ease-linear cursor-pointer pointer-events-auto',
+                isDimmed && 'opacity-50'
+              )}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClickDriver(code);
+              }}
+            >
+              {isSelected && (
+                <circle
+                  r={12}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={2}
+                  className="animate-ping opacity-75"
+                />
+              )}
+
+              <circle r={isSelected ? 8 : 5} fill={color} stroke="#000000" strokeWidth={1} />
+
+              {driverNumber !== undefined && (
+                <text
+                  y={0.5}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#000000"
+                  fontSize={isSelected ? 7 : 5}
+                  fontWeight="bold"
+                  className="select-none"
+                >
+                  {String(driverNumber)}
+                </text>
+              )}
+
+              {isSelected && (
+                <text
+                  y={-15}
+                  textAnchor="middle"
+                  fill={color}
+                  fontSize={12}
+                  fontWeight="bold"
+                  className="drop-shadow-md select-none"
+                >
+                  {car.originalCode || code.replace('_GHOST', '')}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 };
 

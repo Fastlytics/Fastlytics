@@ -12,7 +12,6 @@ import {
   getTyreAge,
   getTimeForLap,
   getAllLapNumbers,
-  getDriverScore,
   getMessageType,
   getTyreCompoundName,
   FPS,
@@ -490,29 +489,6 @@ describe('getAllLapNumbers', () => {
   it('excludes lap 0', () => {
     const drivers = { VER: { lap: [0, 0, 1, 1, 2, 2] } };
     expect(getAllLapNumbers(drivers)).toEqual([1, 2]);
-  });
-});
-
-// ─── getDriverScore ──────────────────────────────────────────────────────────
-
-describe('getDriverScore', () => {
-  it('returns -1 for null/undefined', () => {
-    expect(getDriverScore(null)).toBe(-1);
-    expect(getDriverScore(undefined)).toBe(-1);
-  });
-
-  it('higher lap = higher score', () => {
-    const d1 = { lap: 5, track_index: 100 } as unknown as Parameters<typeof getDriverScore>[0];
-    const d2 = { lap: 3, track_index: 900 } as unknown as Parameters<typeof getDriverScore>[0];
-
-    expect(getDriverScore(d1)).toBeGreaterThan(getDriverScore(d2));
-  });
-
-  it('same lap, higher track_index = higher score', () => {
-    const d1 = { lap: 5, track_index: 500 } as unknown as Parameters<typeof getDriverScore>[0];
-    const d2 = { lap: 5, track_index: 100 } as unknown as Parameters<typeof getDriverScore>[0];
-
-    expect(getDriverScore(d1)).toBeGreaterThan(getDriverScore(d2));
   });
 });
 

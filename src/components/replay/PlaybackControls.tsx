@@ -22,8 +22,6 @@ interface PlaybackControlsProps {
   onSpeedChange: () => void;
   onToggleFullscreen: () => void;
   onToggleHeatmap: () => void;
-  onHoverMove: (time: number, pos: number) => void;
-  onHoverLeave: () => void;
   /** Jump to a specific lap */
   onSeekToLap: (lap: number) => void;
 }
@@ -37,8 +35,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   hasStarted,
   showSpeedHeatmap,
   seekbarStatusSegments,
-  hoverTime,
-  hoverPos,
   availableLaps,
   currentLap,
   formatTime,
@@ -124,7 +120,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
               </button>
 
-              <span className="text-[14px] font-mono font-bold tabular-nums text-white/80 min-w-[5ch]">
+              <span className="text-[14px] font-mono font-bold tabular-nums text-white min-w-[5ch]">
                 {formatTime(currentTime)}
               </span>
 
@@ -137,11 +133,11 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                       if (idx > 0) onSeekToLap(availableLaps[idx - 1]);
                     }}
                     disabled={availableLaps.indexOf(currentLap) <= 0}
-                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white/50 hover:text-white"
+                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white hover:text-white"
                   >
                     <ChevronLeft size={14} />
                   </button>
-                  <span className="text-[11px] font-mono font-semibold text-white/60 min-w-[4ch] text-center tabular-nums">
+                  <span className="text-[11px] font-mono font-medium text-white min-w-[4ch] text-center tabular-nums">
                     L{currentLap}
                   </span>
                   <button
@@ -150,7 +146,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                       if (idx < availableLaps.length - 1) onSeekToLap(availableLaps[idx + 1]);
                     }}
                     disabled={availableLaps.indexOf(currentLap) >= availableLaps.length - 1}
-                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white/50 hover:text-white"
+                    className="p-1 hover:bg-white/[0.06] rounded-md disabled:opacity-20 disabled:cursor-not-allowed transition-colors text-white hover:text-white"
                   >
                     <ChevronRight size={14} />
                   </button>
@@ -167,7 +163,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                   'flex items-center justify-center w-8 h-8 rounded-lg border transition-all text-[11px]',
                   showSpeedHeatmap
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
-                    : 'border-white/[0.06] bg-white/[0.03] text-white/40 hover:bg-white/[0.06] hover:text-white/60'
+                    : 'border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white'
                 )}
                 title={
                   showSpeedHeatmap
@@ -181,7 +177,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               {/* Speed Control */}
               <button
                 onClick={onSpeedChange}
-                className="h-8 px-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[11px] font-mono font-bold text-white/60 hover:bg-white/[0.06] hover:text-white transition-all tabular-nums min-w-[3ch] text-center"
+                className="h-8 px-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[11px] font-mono font-medium text-white hover:bg-white/[0.06] hover:text-white transition-all tabular-nums min-w-[3ch] text-center"
               >
                 {playbackSpeed}x
               </button>
@@ -189,7 +185,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               {/* Fullscreen */}
               <button
                 onClick={onToggleFullscreen}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white/40 hover:bg-white/[0.06] hover:text-white transition-all"
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all"
               >
                 {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
               </button>

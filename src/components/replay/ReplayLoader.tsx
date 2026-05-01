@@ -58,7 +58,7 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
   }, [year, event, session]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-white/90 font-mono">
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-white font-mono">
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
@@ -90,11 +90,11 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
         />
       </div>
 
-      <div className="text-[13px] font-medium tracking-wide text-white/70 h-6">
+      <div className="text-[13px] font-medium tracking-wide text-white h-6">
         {progress.message ? progress.message : `Loading${dots}`}
       </div>
 
-      <div className="text-[11px] text-white/30 mt-1 font-mono tabular-nums">
+      <div className="text-[11px] text-white font-light mt-1 font-mono tabular-nums">
         {Math.round(progress.percent * 100)}%
       </div>
     </div>

@@ -42,23 +42,27 @@ const QualifyingCountdown: React.FC<QualifyingCountdownProps> = ({
         )}
       >
         {isFinished ? (
-          <Flag size={14} className="text-white/40" />
+          <Flag size={14} className="text-white" />
         ) : (
           <Timer
             size={14}
-            className={cn('tabular-nums', isRed ? 'text-red-400 animate-pulse' : 'text-white/40')}
+            className={cn('tabular-nums', isRed ? 'text-red-400 animate-pulse' : 'text-white')}
           />
         )}
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-white/40">
+          <span className="text-[11px] font-normal uppercase tracking-wider text-white">
             {phase}
           </span>
           <span className="h-3 w-px bg-white/[0.08]" />
           <span
             className={cn(
               'text-[18px] font-mono font-bold tabular-nums tracking-tight',
-              isFinished ? 'text-white/40' : isRed ? 'text-red-400 animate-pulse' : 'text-white'
+              isFinished
+                ? 'text-white font-normal'
+                : isRed
+                  ? 'text-red-400 animate-pulse'
+                  : 'text-white'
             )}
           >
             {isFinished ? 'FINISHED' : formatted}
