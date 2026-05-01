@@ -62,10 +62,10 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
 
       {/* Speed */}
       <div className="px-4 py-3 text-center border-b border-white/[0.04]">
-        <div className="text-[32px] font-mono font-bold text-white tabular-nums leading-none">
+        <div className="text-[32px] font-bold text-white tabular-nums leading-none">
           {Math.round(speed)}
         </div>
-        <div className="text-[9px] font-light uppercase tracking-wider text-white mt-1">km/h</div>
+        <div className="text-[9px] font-normal uppercase tracking-wider text-white mt-1">km/h</div>
         {speedHistory.length > 1 && (
           <div className="mt-2 flex justify-center">
             <SpeedSparkline speeds={speedHistory} width={160} height={30} color={driverColor} />
@@ -76,16 +76,16 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
       {/* Gear & RPM */}
       <div className="grid grid-cols-2 border-b border-white/[0.04]">
         <div className="px-3 py-2 text-center border-r border-white/[0.04]">
-          <div className="text-[18px] font-mono font-bold text-white tabular-nums">
+          <div className="text-[18px] font-bold text-white tabular-nums">
             {gear > 0 ? gear : 'N'}
           </div>
-          <div className="text-[9px] font-light uppercase tracking-wider text-white">Gear</div>
+          <div className="text-[9px] font-normal uppercase tracking-wider text-white">Gear</div>
         </div>
         <div className="px-3 py-2 text-center">
-          <div className="text-[14px] font-mono font-medium text-white tabular-nums">
+          <div className="text-[14px] font-medium text-white tabular-nums">
             {(rpm / 1000).toFixed(1)}k
           </div>
-          <div className="text-[9px] font-light uppercase tracking-wider text-white">RPM</div>
+          <div className="text-[9px] font-normal uppercase tracking-wider text-white">RPM</div>
         </div>
       </div>
 
@@ -94,10 +94,10 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         {/* Throttle */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[9px] font-light uppercase tracking-wider text-white">
+            <span className="text-[9px] font-normal uppercase tracking-wider text-white">
               Throttle
             </span>
-            <span className="text-[9px] font-mono text-white font-normal tabular-nums">
+            <span className="text-[9px] text-white font-normal tabular-nums">
               {Math.round(throttle)}%
             </span>
           </div>
@@ -112,8 +112,10 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         {/* Brake */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[9px] font-light uppercase tracking-wider text-white">Brake</span>
-            <span className="text-[9px] font-mono text-white font-normal tabular-nums">
+            <span className="text-[9px] font-normal uppercase tracking-wider text-white">
+              Brake
+            </span>
+            <span className="text-[9px] text-white font-normal tabular-nums">
               {Math.round(brake)}%
             </span>
           </div>
@@ -136,7 +138,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         <span
           className={cn(
             'text-[10px] font-bold uppercase tracking-widest',
-            drs > 0 ? 'text-emerald-400' : 'text-white font-light'
+            drs > 0 ? 'text-emerald-400' : 'text-white font-normal'
           )}
         >
           DRS {drs > 0 ? 'Active' : 'Inactive'}

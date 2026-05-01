@@ -112,7 +112,7 @@ const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ weather, currentTime, c
               <span className="text-[11px] text-white font-normal min-w-[50px]">{item.label}</span>
               <span
                 className={cn(
-                  'text-[11px] font-mono font-medium tabular-nums ml-auto',
+                  'text-[11px] font-medium tabular-nums ml-auto',
                   item.active ? 'text-blue-400' : 'text-white'
                 )}
               >

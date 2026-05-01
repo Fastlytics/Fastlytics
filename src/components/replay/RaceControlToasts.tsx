@@ -86,9 +86,7 @@ const RaceControlToasts: React.FC<RaceControlToastsProps> = ({
                 <span className="font-semibold text-[11px] tracking-wider uppercase text-white">
                   {msg.flag || config.type}
                 </span>
-                <span className="text-[10px] font-mono font-light text-white tabular-nums">
-                  {formatTime(msg.time)}
-                </span>
+                <span className="text-[10px] text-white tabular-nums">{formatTime(msg.time)}</span>
               </div>
               <span className="text-white font-medium text-[13px] leading-tight break-words">
                 {msg.message}

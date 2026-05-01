@@ -57,7 +57,7 @@ const QualifyingCountdown: React.FC<QualifyingCountdownProps> = ({
           <span className="h-3 w-px bg-white/[0.08]" />
           <span
             className={cn(
-              'text-[18px] font-mono font-bold tabular-nums tracking-tight',
+              'text-[18px] font-bold tabular-nums tracking-tight',
               isFinished
                 ? 'text-white font-normal'
                 : isRed

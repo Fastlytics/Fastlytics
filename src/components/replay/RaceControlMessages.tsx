@@ -74,9 +74,7 @@ const RaceControlMessages: React.FC<RaceControlMessagesProps> = ({
                 <span className="font-semibold text-sm tracking-wider uppercase text-white">
                   {msg.flag || config.type}
                 </span>
-                <span className="text-[10px] font-mono font-light text-white">
-                  {formatTime(msg.time)}
-                </span>
+                <span className="text-[10px] text-white">{formatTime(msg.time)}</span>
               </div>
               <span className="text-white font-medium text-sm leading-tight break-words">
                 {msg.message}

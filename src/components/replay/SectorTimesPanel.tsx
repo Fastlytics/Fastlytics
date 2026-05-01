@@ -101,8 +101,8 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
           {driverSectors.map((lap) => (
             <div key={lap.lap} className="px-3 py-2 border-b border-white/[0.04] last:border-b-0">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-white font-normal">L{lap.lap}</span>
-                <span className="text-[10px] font-mono text-white font-medium">{lap.time_str}</span>
+                <span className="text-[10px] text-white font-normal">L{lap.lap}</span>
+                <span className="text-[10px] text-white font-medium">{lap.time_str}</span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {(['s1', 's2', 's3'] as const).map((sector) => {
@@ -118,7 +118,7 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
                       </div>
                       <div
                         className={cn(
-                          'text-[11px] font-mono font-medium tabular-nums',
+                          'text-[11px] font-medium tabular-nums',
                           fastest ? 'text-purple-400' : 'text-white'
                         )}
                       >

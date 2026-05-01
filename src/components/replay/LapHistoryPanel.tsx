@@ -62,7 +62,7 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
             </span>
           </div>
           {personalBest && (
-            <span className="text-[9px] font-mono text-purple-400 tabular-nums">
+            <span className="text-[9px] text-purple-400 tabular-nums">
               PB {personalBest.time_str}
             </span>
           )}
@@ -80,14 +80,14 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-white font-normal tabular-nums w-5">
+                    <span className="text-[10px] text-white font-normal tabular-nums w-5">
                       L{lap.lap}
                     </span>
                     {isPb && <Trophy size={10} className="text-purple-400" />}
                   </div>
                   <span
                     className={cn(
-                      'text-[11px] font-mono font-medium tabular-nums',
+                      'text-[11px] font-medium tabular-nums',
                       isPb ? 'text-purple-400' : 'text-white'
                     )}
                   >
