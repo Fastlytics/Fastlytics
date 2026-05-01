@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
+import { useDraggable } from '@/hooks/useDraggable';
 import SpeedSparkline from './SpeedSparkline';
 
 interface TelemetryOverlayProps {
@@ -25,59 +26,14 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
   speedHistory = [],
   className,
 }) => {
-  const [position, setPosition] = useState({ x: 16, y: 180 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(
-    null
-  );
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !dragRef.current) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      setPosition({
-        x: Math.max(0, dragRef.current.initX + dx),
-        y: Math.max(0, dragRef.current.initY + dy),
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      dragRef.current = null;
-    };
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
+  const { position, isDragging, handleMouseDown } = useDraggable({ x: 16, y: 180 });
 
   if (!driverCode || !telemetry) return null;
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-grip]')) {
-      setIsDragging(true);
-      dragRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        initX: position.x,
-        initY: position.y,
-      };
-    }
-  };
 
   const { speed, gear, throttle, brake, drs, rpm } = telemetry;
 
   return (
     <div
-      ref={panelRef}
       className={cn(
         'absolute z-30 w-48 select-none',
         'bg-[#0c0c0e]/90 backdrop-blur border border-white/[0.06] rounded-lg overflow-hidden',
@@ -93,14 +49,14 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         data-grip
       >
         <div className="flex items-center gap-2">
-          <GripVertical size={12} className="text-white/20 cursor-grab" />
-          <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">
+          <GripVertical size={12} className="text-white cursor-grab" />
+          <span className="text-[10px] font-normal uppercase tracking-wider text-white">
             Telemetry
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: driverColor }} />
-          <span className="text-[11px] font-bold text-white/70">{driverCode}</span>
+          <span className="text-[11px] font-semibold text-white">{driverCode}</span>
         </div>
       </div>
 
@@ -109,9 +65,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         <div className="text-[32px] font-mono font-bold text-white tabular-nums leading-none">
           {Math.round(speed)}
         </div>
-        <div className="text-[9px] font-medium uppercase tracking-wider text-white/25 mt-1">
-          km/h
-        </div>
+        <div className="text-[9px] font-light uppercase tracking-wider text-white mt-1">km/h</div>
         {speedHistory.length > 1 && (
           <div className="mt-2 flex justify-center">
             <SpeedSparkline speeds={speedHistory} width={160} height={30} color={driverColor} />
@@ -122,16 +76,16 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
       {/* Gear & RPM */}
       <div className="grid grid-cols-2 border-b border-white/[0.04]">
         <div className="px-3 py-2 text-center border-r border-white/[0.04]">
-          <div className="text-[18px] font-mono font-bold text-white/80 tabular-nums">
+          <div className="text-[18px] font-mono font-bold text-white tabular-nums">
             {gear > 0 ? gear : 'N'}
           </div>
-          <div className="text-[9px] font-medium uppercase tracking-wider text-white/20">Gear</div>
+          <div className="text-[9px] font-light uppercase tracking-wider text-white">Gear</div>
         </div>
         <div className="px-3 py-2 text-center">
-          <div className="text-[14px] font-mono font-bold text-white/60 tabular-nums">
+          <div className="text-[14px] font-mono font-medium text-white tabular-nums">
             {(rpm / 1000).toFixed(1)}k
           </div>
-          <div className="text-[9px] font-medium uppercase tracking-wider text-white/20">RPM</div>
+          <div className="text-[9px] font-light uppercase tracking-wider text-white">RPM</div>
         </div>
       </div>
 
@@ -140,10 +94,10 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         {/* Throttle */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[9px] font-medium uppercase tracking-wider text-white/20">
+            <span className="text-[9px] font-light uppercase tracking-wider text-white">
               Throttle
             </span>
-            <span className="text-[9px] font-mono text-white/40 tabular-nums">
+            <span className="text-[9px] font-mono text-white font-normal tabular-nums">
               {Math.round(throttle)}%
             </span>
           </div>
@@ -158,10 +112,8 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         {/* Brake */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[9px] font-medium uppercase tracking-wider text-white/20">
-              Brake
-            </span>
-            <span className="text-[9px] font-mono text-white/40 tabular-nums">
+            <span className="text-[9px] font-light uppercase tracking-wider text-white">Brake</span>
+            <span className="text-[9px] font-mono text-white font-normal tabular-nums">
               {Math.round(brake)}%
             </span>
           </div>
@@ -184,7 +136,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         <span
           className={cn(
             'text-[10px] font-bold uppercase tracking-widest',
-            drs > 0 ? 'text-emerald-400' : 'text-white/15'
+            drs > 0 ? 'text-emerald-400' : 'text-white font-light'
           )}
         >
           DRS {drs > 0 ? 'Active' : 'Inactive'}

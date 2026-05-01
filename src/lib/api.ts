@@ -1066,6 +1066,8 @@ export interface ReplayDriverData {
   tyre: number[];
   throttle: number[];
   brake: number[];
+  gap?: (string | null)[];
+  interval?: (string | null)[];
 }
 
 export interface ReplayDriversMap {
@@ -1216,4 +1218,77 @@ export const fetchSessionReplayChunk = async (
     chunk_id: chunkId.toString(),
   });
   return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`, { signal });
+};
+
+// --- Bio Pages ---
+
+export interface DriverCareerSummary {
+  seasons: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  fastestLaps: number;
+  points: number;
+  dnfs: number;
+}
+
+export interface DriverSeason {
+  season: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  fastestLaps: number;
+  points: number;
+  dnfs: number;
+  team: string;
+  position?: number | null;
+}
+
+export interface DriverCareer {
+  driverId: string;
+  code: string;
+  name: string;
+  nationality: string;
+  dateOfBirth: string;
+  careerSummary: DriverCareerSummary;
+  seasons: DriverSeason[];
+}
+
+export interface TeamCareerSummary {
+  seasons: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  points: number;
+  constructorsChampionships: number;
+}
+
+export interface TeamSeason {
+  season: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  points: number;
+  drivers: string[];
+  position?: number | null;
+}
+
+export interface TeamCareer {
+  constructorId: string;
+  name: string;
+  nationality: string;
+  careerSummary: TeamCareerSummary;
+  seasons: TeamSeason[];
+}
+
+export const fetchDriverCareer = async (slug: string): Promise<DriverCareer> => {
+  return request<DriverCareer>(`/api/driver/${encodeURIComponent(slug)}/career`);
+};
+
+export const fetchTeamCareer = async (slug: string): Promise<TeamCareer> => {
+  return request<TeamCareer>(`/api/team/${encodeURIComponent(slug)}/career`);
 };

@@ -32,11 +32,8 @@ const LandingNavbar = () => {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5">
-          <FastlyticsLogo size={28} />
-          <span className="text-[15px] font-bold italic tracking-[-0.02em] text-white">
-            FASTLYTICS
-          </span>
+        <Link to="/" className="flex items-center">
+          <FastlyticsLogo size={15} />
         </Link>
 
         {/* Desktop nav */}

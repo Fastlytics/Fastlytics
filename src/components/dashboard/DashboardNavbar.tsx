@@ -136,11 +136,8 @@ const DashboardNavbar = () => {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2.5">
-          <FastlyticsLogo size={32} />
-          <span className="text-[17px] font-bold uppercase italic tracking-[-0.02em] text-white">
-            Fastlytics
-          </span>
+        <Link to="/dashboard" className="flex items-center">
+          <FastlyticsLogo size={17} />
         </Link>
 
         {/* Desktop nav */}

@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
+import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDraggable } from '@/hooks/useDraggable';
 
 interface CompletedLap {
   driver: string;
@@ -37,6 +39,8 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
   fastestSectors,
   className,
 }) => {
+  const { position, isDragging, handleMouseDown } = useDraggable({ x: 256, y: 12 });
+
   const driverSectors = useMemo(() => {
     if (!completedLaps || !selectedDriver) return null;
 
@@ -78,50 +82,55 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
   return (
     <div
       className={cn(
-        'absolute top-0 left-64 z-20 w-52',
-        'bg-[#0c0c0e]/90 backdrop-blur border border-white/[0.06] rounded-lg overflow-hidden',
+        'absolute z-20 w-52',
+        isDragging ? 'cursor-grabbing' : 'cursor-default',
         'hidden md:block',
         className
       )}
+      style={{ left: position.x, top: position.y }}
+      onMouseDown={handleMouseDown}
     >
-      <div className="px-3 py-2 border-b border-white/[0.04]">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">
-          Sectors — {selectedDriver}
-        </span>
-      </div>
-      <div className="flex flex-col">
-        {driverSectors.map((lap) => (
-          <div key={lap.lap} className="px-3 py-2 border-b border-white/[0.04] last:border-b-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono text-white/30">L{lap.lap}</span>
-              <span className="text-[10px] font-mono text-white/50">{lap.time_str}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              {(['s1', 's2', 's3'] as const).map((sector) => {
-                const time = lap[sector];
-                const fastest = isFastest(sector, time);
-                return (
-                  <div
-                    key={sector}
-                    className={cn('text-center py-1 rounded', fastest && 'bg-purple-500/10')}
-                  >
-                    <div className="text-[9px] font-medium uppercase tracking-wider text-white/20">
-                      {sector.toUpperCase()}
-                    </div>
+      <div className="bg-[#0c0c0e]/90 backdrop-blur border border-white/[0.06] rounded-lg overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.04]" data-grip>
+          <GripVertical size={12} className="text-white cursor-grab" />
+          <span className="text-[10px] font-normal uppercase tracking-wider text-white">
+            Sectors — {selectedDriver}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          {driverSectors.map((lap) => (
+            <div key={lap.lap} className="px-3 py-2 border-b border-white/[0.04] last:border-b-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-mono text-white font-normal">L{lap.lap}</span>
+                <span className="text-[10px] font-mono text-white font-medium">{lap.time_str}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {(['s1', 's2', 's3'] as const).map((sector) => {
+                  const time = lap[sector];
+                  const fastest = isFastest(sector, time);
+                  return (
                     <div
-                      className={cn(
-                        'text-[11px] font-mono font-semibold tabular-nums',
-                        fastest ? 'text-purple-400' : 'text-white/60'
-                      )}
+                      key={sector}
+                      className={cn('text-center py-1 rounded', fastest && 'bg-purple-500/10')}
                     >
-                      {formatSectorTime(time)}
+                      <div className="text-[9px] font-normal uppercase tracking-wider text-white">
+                        {sector.toUpperCase()}
+                      </div>
+                      <div
+                        className={cn(
+                          'text-[11px] font-mono font-medium tabular-nums',
+                          fastest ? 'text-purple-400' : 'text-white'
+                        )}
+                      >
+                        {formatSectorTime(time)}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

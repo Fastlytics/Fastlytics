@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Gauge } from 'lucide-react';
 import {
   DashboardSquare01Icon,
   Menu01Icon,
@@ -15,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-import { useAuth } from '@/contexts/AuthContext'; // Keep import for now
+import { useAuth } from '@/contexts/AuthContext';
+import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 
 const Navbar = () => {
   const isMobile = useIsMobile();
@@ -79,20 +79,8 @@ const Navbar = () => {
       >
         <div className="w-full mx-auto h-full px-4 sm:px-8 lg:px-12 flex justify-between items-center">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-3">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6, ease: 'easeInOut' }}
-            >
-              <Gauge className="h-7 w-7 text-red-500" />
-            </motion.div>
-            <motion.span
-              className="font-bold text-lg md:text-xl text-white"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            >
-              Fast<span className="text-red-500">lytics</span>
-            </motion.span>
+          <Link to="/dashboard" className="flex items-center">
+            <FastlyticsLogo size={20} />
           </Link>
 
           {/* Desktop Navigation */}
@@ -171,13 +159,10 @@ const Navbar = () => {
                   <div className="flex items-center justify-between">
                     <Link
                       to="/dashboard"
-                      className="flex items-center space-x-3"
+                      className="flex items-center"
                       onClick={() => setDrawerOpen(false)}
                     >
-                      <Gauge className="h-6 w-6 text-red-500" />
-                      <span className="font-bold text-lg">
-                        Fast<span className="text-red-500">lytics</span>
-                      </span>
+                      <FastlyticsLogo size={18} />
                     </Link>
                     <DrawerClose asChild>
                       <motion.button

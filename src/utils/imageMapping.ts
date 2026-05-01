@@ -180,6 +180,24 @@ export const getDriverImage = (driverCode: string, year: number): string => {
   return driverImages2025[code] || '';
 };
 
+export const getDriverImagesByCode = (driverCode: string): { year: number; url: string }[] => {
+  if (!driverCode) return [];
+  const code = driverCode.toUpperCase();
+  const results: { year: number; url: string }[] = [];
+
+  const years = [2026, 2025, 2024, 2023] as const;
+  const maps = [driverImages2026, driverImages2025, driverImages2024, driverImages2023];
+
+  years.forEach((year, i) => {
+    const url = maps[i][code];
+    if (url) {
+      results.push({ year, url });
+    }
+  });
+
+  return results;
+};
+
 export const getCarImage = (teamName: string, year: number): string => {
   if (!teamName) return '';
 

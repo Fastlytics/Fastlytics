@@ -23,6 +23,8 @@ interface LeaderboardDriver {
     timestamp: number;
     compound: string;
   } | null;
+  gap?: string | null;
+  interval?: string | null;
 }
 
 interface LeaderboardProps {
@@ -61,19 +63,19 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
     <div className="absolute top-0 right-0 max-h-full h-auto w-64 bg-[#0c0c0e]/90 backdrop-blur border-l border-b border-white/[0.06] overflow-y-auto hidden md:block z-10">
       {/* Header */}
       <div className="p-3 border-b border-white/[0.04] flex justify-between items-center">
-        <span className="text-[12px] font-medium uppercase tracking-wider text-white/35">
+        <span className="text-[12px] font-normal uppercase tracking-wider text-white">
           {isRace ? 'Leaderboard' : 'Classification'}
         </span>
         {isRace ? (
-          <span className="text-[12px] font-medium uppercase tracking-wider text-white/35">
-            LAP <span className="text-white/60 font-mono">{leaderboard[0]?.lap || 0}</span>
-            <span className="text-white/20"> / {totalLaps}</span>
+          <span className="text-[12px] font-normal uppercase tracking-wider text-white">
+            LAP <span className="text-white font-medium font-mono">{leaderboard[0]?.lap || 0}</span>
+            <span className="text-white font-light"> / {totalLaps}</span>
           </span>
         ) : sessionTimeRemaining ? (
           <span
             className={cn(
               'text-[12px] font-mono font-bold tabular-nums tracking-tight',
-              sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white/60'
+              sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white font-medium'
             )}
           >
             {sessionTimeRemaining.formatted}
@@ -85,7 +87,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
       <div className="flex flex-col">
         {leaderboard.map((driver, index) => {
           const isOut = driverVisuals.outStatus?.[driver.code];
-          let intervalText = 'LEADER';
+          let intervalText: string;
           let isPitting = false;
 
           if (pitIntervals?.[driver.code]) {
@@ -99,13 +101,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           } else if (isPitting) {
             intervalText = 'PIT';
           } else if (isRace) {
-            if (index > 0) {
-              const leader = leaderboard[index - 1];
-              const distA = leader.lap * circuitLength + (leader.ref_dist || 0);
-              const distB = driver.lap * circuitLength + (driver.ref_dist || 0);
-              const deltaMeters = Math.max(0, distA - distB);
-              const speedMs = Math.max(10, (driver.speed || 0) / 3.6);
-              intervalText = `+${(deltaMeters / speedMs).toFixed(1)}s`;
+            if (index === 0) {
+              intervalText = 'LEADER';
+            } else if (driver.interval) {
+              intervalText = driver.interval;
+            } else if (driver.gap) {
+              intervalText = driver.gap;
+            } else {
+              intervalText = '—';
             }
           } else {
             const bestLap = driver.bestLap;
@@ -139,7 +142,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
               )}
             >
               {/* Position */}
-              <span className="w-5 text-center text-[14px] font-bold text-white/30 tabular-nums">
+              <span className="w-5 text-center text-[14px] font-normal text-white tabular-nums">
                 {driver.pos}
               </span>
 
@@ -176,7 +179,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                   className="h-3.5 w-3.5 object-contain opacity-80"
                 />
                 {age !== undefined && age > 0 && (
-                  <span className="text-[9px] font-mono text-white/30 tabular-nums">{age}</span>
+                  <span className="text-[9px] font-mono text-white font-normal tabular-nums">
+                    {age}
+                  </span>
                 )}
               </div>
 
@@ -187,11 +192,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                     PIT
                   </span>
                 ) : intervalText === 'OUT' ? (
-                  <span className="text-white/25 font-bold uppercase">OUT</span>
+                  <span className="text-white font-normal uppercase">OUT</span>
                 ) : intervalText === 'LEADER' ? (
-                  <span className="text-white/30 font-bold uppercase">LEADER</span>
+                  <span className="text-white font-normal uppercase">LEADER</span>
                 ) : (
-                  <span className="text-white/50">{intervalText}</span>
+                  <span className="text-white font-medium">{intervalText}</span>
                 )}
               </span>
             </div>

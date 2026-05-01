@@ -1,152 +1,258 @@
+import { cn } from '@/lib/utils';
+
+const letters = 'fastlytics'.split('');
+
+interface FastlyticsLogoProps {
+  size?: number;
+  className?: string;
+}
+
 /**
- * FastlyticsLogo — minimalist cyber-brutalist mark.
- * A bold geometric F paired with raw telemetry bars.
- * On hover: deconstruct shift, glitch shadow, scan sweep, grid reveal.
+ * FastlyticsLogo — hi-tech telemetry wordmark.
+ * Full text rendered in brand font with data-themed decorations:
+ * corner brackets, telemetry bars, scan sweep, glitch shadow,
+ * blinking terminal cursor, data dots, and a travelling pulse baseline.
  */
-const FastlyticsLogo = ({ size = 28 }: { size?: number }) => {
+const FastlyticsLogo = ({ size = 28, className }: FastlyticsLogoProps) => {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <span
+      className={cn('inline-flex items-center select-none cursor-pointer', className)}
+      style={{
+        fontFamily: "'Geist', 'Inter', sans-serif",
+        fontWeight: 800,
+        fontSize: size,
+        lineHeight: 1.15,
+        color: '#ffffff',
+      }}
       aria-label="Fastlytics"
       role="img"
-      style={{ cursor: 'pointer' }}
     >
       <style>{`
-        .fl-container { transition: filter 0.3s ease; }
-        .fl-container:hover { filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.35)); }
-
-        /* Deconstruct: F blocks drift apart on hover */
-        .fl-stem {
-          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        @keyframes fl-cursor-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.25; }
         }
-        .fl-container:hover .fl-stem { transform: translate(-1px, 0); }
 
-        .fl-top {
-          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        .fl-wrap {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35em;
+          padding: 0.2em 0.35em;
+          transform: skewX(-6deg);
         }
-        .fl-container:hover .fl-top { transform: translate(1px, -1px); }
 
-        .fl-mid {
-          transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        .fl-text {
+          position: relative;
+          display: inline-flex;
+          letter-spacing: -0.04em;
         }
-        .fl-container:hover .fl-mid { transform: translate(-0.5px, 1px); }
 
-        /* Telemetry bars: staggered lift on hover */
-        .fl-bar {
-          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-                      opacity 0.3s ease;
+        .fl-letter {
+          display: inline-block;
+          transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                      color 0.3s ease,
+                      text-shadow 0.3s ease;
         }
-        .fl-container:hover .fl-bar-1 { transform: translateY(-2px); transition-delay: 0.05s; }
-        .fl-container:hover .fl-bar-2 { transform: translateY(-3px); transition-delay: 0.1s; }
-        .fl-container:hover .fl-bar-3 { transform: translateY(-4px); transition-delay: 0.15s; }
+
+        .fl-wrap:hover .fl-letter {
+          color: #ef4444;
+          text-shadow: 0 0 0.35em rgba(239, 68, 68, 0.4);
+        }
+        .fl-wrap:hover .fl-letter:nth-child(1)  { transform: translateY(-0.06em); transition-delay: 0.00s; }
+        .fl-wrap:hover .fl-letter:nth-child(2)  { transform: translateY(-0.14em); transition-delay: 0.03s; }
+        .fl-wrap:hover .fl-letter:nth-child(3)  { transform: translateY(-0.06em); transition-delay: 0.06s; }
+        .fl-wrap:hover .fl-letter:nth-child(4)  { transform: translateY(-0.14em); transition-delay: 0.09s; }
+        .fl-wrap:hover .fl-letter:nth-child(5)  { transform: translateY(-0.06em); transition-delay: 0.12s; }
+        .fl-wrap:hover .fl-letter:nth-child(6)  { transform: translateY(-0.14em); transition-delay: 0.15s; }
+        .fl-wrap:hover .fl-letter:nth-child(7)  { transform: translateY(-0.06em); transition-delay: 0.18s; }
+        .fl-wrap:hover .fl-letter:nth-child(8)  { transform: translateY(-0.14em); transition-delay: 0.21s; }
+        .fl-wrap:hover .fl-letter:nth-child(9)  { transform: translateY(-0.06em); transition-delay: 0.24s; }
+        .fl-wrap:hover .fl-letter:nth-child(10) { transform: translateY(-0.14em); transition-delay: 0.27s; }
 
         /* Glitch shadow layer */
         .fl-glitch {
-          transition: opacity 0.25s ease, transform 0.25s ease;
+          position: absolute;
+          inset: 0;
+          display: inline-flex;
+          letter-spacing: -0.04em;
+          color: #ef4444;
           opacity: 0;
-          transform: translate(0, 0);
+          transform: translate(0.05em, 0.03em);
+          transition: opacity 0.25s ease;
+          pointer-events: none;
         }
-        .fl-container:hover .fl-glitch {
-          opacity: 0.12;
-          transform: translate(1.5px, 0.5px);
+        .fl-wrap:hover .fl-glitch {
+          opacity: 0.15;
         }
 
-        /* Scan line sweep */
+        /* Baseline with travelling data pulse */
+        .fl-baseline {
+          position: absolute;
+          bottom: -0.08em;
+          left: -0.05em;
+          right: -0.05em;
+          height: 0.06em;
+          background: rgba(255,255,255,0.12);
+          border-radius: 0.02em;
+          transition: background 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+          transform-origin: left;
+          pointer-events: none;
+          overflow: hidden;
+        }
+        .fl-baseline::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0.45em;
+          height: 100%;
+          background: #ef4444;
+          opacity: 0;
+          border-radius: 0.02em;
+          box-shadow: 0 0 0.25em rgba(239, 68, 68, 0.6);
+          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s;
+        }
+        .fl-wrap:hover .fl-baseline {
+          background: rgba(239, 68, 68, 0.25);
+          transform: scaleX(1.04);
+        }
+        .fl-wrap:hover .fl-baseline::after {
+          opacity: 0.9;
+          transform: translateX(6em);
+        }
+
+        /* Vertical scan sweep */
         .fl-scan {
-          transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-          transform: translateY(-36px);
-        }
-        .fl-container:hover .fl-scan {
-          transform: translateY(36px);
-        }
-
-        /* Grid reveal */
-        .fl-grid line {
-          transition: opacity 0.35s ease;
+          position: absolute;
+          top: -0.15em;
+          bottom: -0.15em;
+          left: -0.3em;
+          width: 0.12em;
+          background: linear-gradient(to bottom, transparent, rgba(239,68,68,0.55), transparent);
           opacity: 0;
+          transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.1s;
+          pointer-events: none;
         }
-        .fl-container:hover .fl-grid line {
-          opacity: 1;
+        .fl-wrap:hover .fl-scan {
+          opacity: 0.8;
+          transform: translateX(5.8em);
         }
 
-        /* Corner marks */
-        .fl-reg {
-          stroke-opacity: 0.1;
-          transition: stroke-opacity 0.3s ease;
+        /* Telemetry bars */
+        .fl-bar {
+          display: inline-block;
+          width: 0.1em;
+          background: #ef4444;
+          border-radius: 0.02em;
+          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      opacity 0.3s ease,
+                      box-shadow 0.3s ease;
+          opacity: 0.6;
         }
-        .fl-container:hover .fl-reg {
-          stroke-opacity: 0.3;
+        .fl-bar-1 { height: 0.45em; }
+        .fl-bar-2 { height: 0.65em; }
+        .fl-bar-3 { height: 0.85em; }
+        .fl-wrap:hover .fl-bar-1 { transform: translateY(-0.12em); transition-delay: 0.05s; opacity: 1; box-shadow: 0 0 0.35em rgba(239,68,68,0.4); }
+        .fl-wrap:hover .fl-bar-2 { transform: translateY(-0.2em);  transition-delay: 0.10s; opacity: 1; box-shadow: 0 0 0.35em rgba(239,68,68,0.4); }
+        .fl-wrap:hover .fl-bar-3 { transform: translateY(-0.28em); transition-delay: 0.15s; opacity: 1; box-shadow: 0 0 0.35em rgba(239,68,68,0.4); }
+
+        /* Corner brackets */
+        .fl-corner {
+          position: absolute;
+          width: 0.3em;
+          height: 0.3em;
+          transition: border-color 0.3s ease;
+        }
+        .fl-corner-tl { top: -0.02em; left: -0.02em; border-top: 0.07em solid rgba(255,255,255,0.15); border-left: 0.07em solid rgba(255,255,255,0.15); }
+        .fl-corner-tr { top: -0.02em; right: -0.02em; border-top: 0.07em solid rgba(255,255,255,0.15); border-right: 0.07em solid rgba(255,255,255,0.15); }
+        .fl-corner-bl { bottom: -0.02em; left: -0.02em; border-bottom: 0.07em solid rgba(255,255,255,0.15); border-left: 0.07em solid rgba(255,255,255,0.15); }
+        .fl-corner-br { bottom: -0.02em; right: -0.02em; border-bottom: 0.07em solid rgba(255,255,255,0.15); border-right: 0.07em solid rgba(255,255,255,0.15); }
+        .fl-wrap:hover .fl-corner { border-color: rgba(239, 68, 68, 0.4); }
+
+        /* Data dots */
+        .fl-dot {
+          position: absolute;
+          width: 0.08em;
+          height: 0.08em;
+          background: rgba(239, 68, 68, 0.3);
+          border-radius: 50%;
+          transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .fl-wrap:hover .fl-dot {
+          opacity: 1;
+          transform: scale(1.8);
+          background: rgba(239, 68, 68, 0.8);
+        }
+
+        /* Terminal cursor */
+        .fl-cursor {
+          display: inline-block;
+          width: 0.1em;
+          height: 0.75em;
+          background: rgba(239, 68, 68, 0.4);
+          margin-left: 0.06em;
+          vertical-align: middle;
+          animation: fl-cursor-blink 1.2s step-end infinite;
+        }
+        .fl-wrap:hover .fl-cursor {
+          background: #ef4444;
         }
       `}</style>
 
-      <g className="fl-container">
-        {/* Background slab */}
-        <rect width="32" height="32" rx="4" fill="#0A0A0C" />
-        <rect x="0.5" y="0.5" width="31" height="31" rx="3.5" stroke="white" strokeOpacity="0.05" />
+      <span className="fl-wrap">
+        {/* Corner brackets */}
+        <span className="fl-corner fl-corner-tl" aria-hidden="true" />
+        <span className="fl-corner fl-corner-tr" aria-hidden="true" />
+        <span className="fl-corner fl-corner-bl" aria-hidden="true" />
+        <span className="fl-corner fl-corner-br" aria-hidden="true" />
 
-        {/* Exposed grid */}
-        <g className="fl-grid" stroke="white" strokeOpacity="0.03" strokeWidth="0.5">
-          <line x1="8" y1="0" x2="8" y2="32" />
-          <line x1="16" y1="0" x2="16" y2="32" />
-          <line x1="24" y1="0" x2="24" y2="32" />
-          <line x1="0" y1="8" x2="32" y2="8" />
-          <line x1="0" y1="16" x2="32" y2="16" />
-          <line x1="0" y1="24" x2="32" y2="24" />
-        </g>
+        {/* Wordmark */}
+        <span className="fl-text">
+          {letters.map((letter, i) => (
+            <span key={i} className="fl-letter">
+              {letter}
+            </span>
+          ))}
 
-        {/* Scan line */}
-        <rect
-          className="fl-scan"
-          x="0"
-          y="0"
-          width="32"
-          height="2.5"
-          fill="url(#fl-scan-grad)"
-          opacity="0.6"
-        />
+          {/* Glitch duplicate */}
+          <span className="fl-glitch" aria-hidden="true">
+            {letters.map((letter, i) => (
+              <span key={i} className="fl-letter">
+                {letter}
+              </span>
+            ))}
+          </span>
 
-        {/* The F mark */}
-        <rect className="fl-stem" x="6" y="5" width="5" height="22" rx="1" fill="white" />
-        <rect className="fl-top" x="6" y="5" width="18" height="5" rx="1" fill="white" />
-        <rect className="fl-mid" x="6" y="14" width="12" height="4" rx="1" fill="white" />
+          {/* Baseline with data pulse */}
+          <span className="fl-baseline" aria-hidden="true" />
+
+          {/* Scan sweep */}
+          <span className="fl-scan" aria-hidden="true" />
+
+          {/* Data dots */}
+          <span className="fl-dot" style={{ top: '-0.18em', left: '0.2em' }} aria-hidden="true" />
+          <span className="fl-dot" style={{ top: '-0.1em', left: '0.9em' }} aria-hidden="true" />
+          <span className="fl-dot" style={{ top: '-0.22em', left: '1.8em' }} aria-hidden="true" />
+          <span className="fl-dot" style={{ top: '-0.14em', left: '2.7em' }} aria-hidden="true" />
+          <span className="fl-dot" style={{ top: '-0.2em', left: '3.6em' }} aria-hidden="true" />
+          <span className="fl-dot" style={{ top: '-0.08em', left: '4.5em' }} aria-hidden="true" />
+        </span>
 
         {/* Telemetry bars */}
-        <rect className="fl-bar fl-bar-1" x="20" y="20" width="2.5" height="7" fill="#EF4444" />
-        <rect className="fl-bar fl-bar-2" x="24" y="16" width="2.5" height="11" fill="#EF4444" />
-        <rect className="fl-bar fl-bar-3" x="28" y="12" width="2.5" height="15" fill="#EF4444" />
+        <span
+          style={{ display: 'inline-flex', alignItems: 'flex-end', gap: '0.06em', height: '0.9em' }}
+          aria-hidden="true"
+        >
+          <span className="fl-bar fl-bar-1" />
+          <span className="fl-bar fl-bar-2" />
+          <span className="fl-bar fl-bar-3" />
+        </span>
 
-        {/* Glitch layer */}
-        <g className="fl-glitch">
-          <rect x="6" y="5" width="5" height="22" rx="1" fill="#EF4444" />
-          <rect x="6" y="5" width="18" height="5" rx="1" fill="#EF4444" />
-          <rect x="6" y="14" width="12" height="4" rx="1" fill="#EF4444" />
-        </g>
-
-        {/* Corner registration marks */}
-        <g className="fl-reg" stroke="white" strokeWidth="0.5">
-          <line x1="2" y1="2" x2="5" y2="2" />
-          <line x1="2" y1="2" x2="2" y2="5" />
-          <line x1="30" y1="2" x2="27" y2="2" />
-          <line x1="30" y1="2" x2="30" y2="5" />
-          <line x1="2" y1="30" x2="5" y2="30" />
-          <line x1="2" y1="30" x2="2" y2="27" />
-          <line x1="30" y1="30" x2="27" y2="30" />
-          <line x1="30" y1="30" x2="30" y2="27" />
-        </g>
-
-        <defs>
-          <linearGradient id="fl-scan-grad" x1="0" y1="0" x2="32" y2="0">
-            <stop offset="0%" stopColor="#EF4444" stopOpacity="0" />
-            <stop offset="50%" stopColor="#EF4444" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </g>
-    </svg>
+        {/* Terminal cursor */}
+        <span className="fl-cursor" aria-hidden="true" />
+      </span>
+    </span>
   );
 };
 

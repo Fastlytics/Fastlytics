@@ -83,21 +83,21 @@ const RaceControlToasts: React.FC<RaceControlToastsProps> = ({
 
             <div className="flex flex-col flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold text-[11px] tracking-wider uppercase opacity-80">
+                <span className="font-semibold text-[11px] tracking-wider uppercase text-white">
                   {msg.flag || config.type}
                 </span>
-                <span className="text-[10px] font-mono opacity-40 tabular-nums">
+                <span className="text-[10px] font-mono font-light text-white tabular-nums">
                   {formatTime(msg.time)}
                 </span>
               </div>
-              <span className="text-white/90 font-medium text-[13px] leading-tight break-words">
+              <span className="text-white font-medium text-[13px] leading-tight break-words">
                 {msg.message}
               </span>
             </div>
 
             <button
               onClick={() => onDismiss(id)}
-              className="text-white/30 hover:text-white transition-colors p-1 shrink-0"
+              className="text-white hover:text-white transition-colors p-1 shrink-0"
             >
               <X size={14} />
             </button>

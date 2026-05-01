@@ -47,7 +47,7 @@ const ReplayToolbar: React.FC<ReplayToolbarProps> = ({ toggles, onToggle, classN
             'flex items-center justify-center w-8 h-8 rounded-lg border transition-all',
             item.active
               ? 'bg-white/[0.08] border-white/[0.1] text-white'
-              : 'bg-[#0c0c0e]/80 border-white/[0.04] text-white/30 hover:text-white/60 hover:border-white/[0.08]'
+              : 'bg-[#0c0c0e]/80 border-white/[0.04] text-white font-normal hover:text-white hover:font-medium hover:border-white/[0.08]'
           )}
           title={`${item.label} (${item.key === 'raceControl' ? 'R' : item.key === 'heatmap' ? 'H' : item.label[0]})`}
         >

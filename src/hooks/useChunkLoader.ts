@@ -27,10 +27,8 @@ interface ChunkLoaderState {
 }
 
 const CONCURRENT_LIMIT = 4;
-const PREFETCH_CHUNKS = 4;
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
-const EVICTION_DISTANCE_SEC = 120;
 
 function isAbortError(error: unknown) {
   return (
@@ -113,6 +111,7 @@ export function useChunkLoader(
   const generationRef = useRef(0);
   const loadChunkRef = useRef<(chunkId: number) => Promise<void>>();
   const scheduleNextChunksRef = useRef<() => void>();
+  const mergeTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     metadataRef.current = metadata;
@@ -169,6 +168,12 @@ export function useChunkLoader(
         tyre: ([] as number[]).concat(...parts.map((p) => p.data.tyre || [])),
         throttle: ([] as number[]).concat(...parts.map((p) => p.data.throttle || [])),
         brake: ([] as number[]).concat(...parts.map((p) => p.data.brake || [])),
+        gap: ([] as (string | null)[]).concat(
+          ...parts.map((p) => (p.data as ReplayDriverData).gap || [])
+        ),
+        interval: ([] as (string | null)[]).concat(
+          ...parts.map((p) => (p.data as ReplayDriverData).interval || [])
+        ),
       };
     }
 
@@ -189,6 +194,16 @@ export function useChunkLoader(
     }));
   }, []);
 
+  const scheduleMerge = useCallback(() => {
+    if (mergeTimeoutRef.current) {
+      window.clearTimeout(mergeTimeoutRef.current);
+    }
+    mergeTimeoutRef.current = window.setTimeout(() => {
+      mergeTimeoutRef.current = null;
+      mergeAllChunks();
+    }, 80);
+  }, [mergeAllChunks]);
+
   const enqueueChunks = useCallback((chunkIds: number[]) => {
     const queued = new Set(priorityQueueRef.current);
     const loaded = chunksMapRef.current;
@@ -200,26 +215,6 @@ export function useChunkLoader(
       priorityQueueRef.current.push(id);
       queued.add(id);
     }
-  }, []);
-
-  const evictDistantChunks = useCallback((currentTime: number, manifest: ChunkManifest[]) => {
-    if (chunksMapRef.current.size <= PREFETCH_CHUNKS) return false;
-
-    const keepStart = currentTime - EVICTION_DISTANCE_SEC;
-    const keepEnd = currentTime + EVICTION_DISTANCE_SEC;
-    let evicted = false;
-
-    for (const [id, chunk] of chunksMapRef.current) {
-      const entry = manifest.find((c) => c.id === id);
-      const start = entry?.start ?? chunk.start;
-      const end = entry?.end ?? chunk.end;
-      if (end < keepStart || start > keepEnd) {
-        chunksMapRef.current.delete(id);
-        evicted = true;
-      }
-    }
-
-    return evicted;
   }, []);
 
   const scheduleNextChunks = useCallback(() => {
@@ -265,7 +260,7 @@ export function useChunkLoader(
           end: chunk.end_time,
         });
 
-        mergeAllChunks();
+        scheduleMerge();
       } catch (err) {
         if (gen !== generationRef.current) return;
         if (!signal?.aborted && !isAbortError(err)) {
@@ -279,7 +274,7 @@ export function useChunkLoader(
         }
       }
     },
-    [year, event, session, mergeAllChunks]
+    [year, event, session, scheduleMerge]
   );
 
   useEffect(() => {
@@ -302,17 +297,11 @@ export function useChunkLoader(
       const targetChunk = manifest[resolvedIndex];
       if (!targetChunk) return;
 
-      const evicted = evictDistantChunks(time, manifest);
-      if (evicted) mergeAllChunks();
-
-      const chunkIds = manifest
-        .slice(resolvedIndex, resolvedIndex + PREFETCH_CHUNKS)
-        .map((c) => c.id);
-      enqueueChunks(chunkIds);
-
+      // Ensure the target chunk is queued (no eviction — we keep everything)
+      enqueueChunks([targetChunk.id]);
       scheduleNextChunks();
     },
-    [enqueueChunks, evictDistantChunks, mergeAllChunks, scheduleNextChunks]
+    [enqueueChunks, scheduleNextChunks]
   );
 
   useEffect(() => {
@@ -341,15 +330,35 @@ export function useChunkLoader(
     });
 
     if (manifest.length > 0) {
-      const initial = [0, 1, 2, 3].filter((i) => i < manifest.length);
-      enqueueChunks(initial);
+      // Load chunk 0 immediately so playback can start ASAP
+      enqueueChunks([0]);
       scheduleNextChunksRef.current?.();
     }
 
     return () => {
       abortRef.current?.abort();
+      if (mergeTimeoutRef.current) {
+        window.clearTimeout(mergeTimeoutRef.current);
+        mergeTimeoutRef.current = null;
+      }
     };
   }, [enqueueChunks, metadata]);
+
+  // Background preloader: enqueue ALL remaining chunks as soon as chunk 0 is loaded
+  useEffect(() => {
+    if (!metadata) return;
+    const meta = metadata as SessionReplayMetadata;
+    const manifest = meta.chunk_manifest || [];
+    if (manifest.length <= 1) return;
+
+    const loaded = state.loadedChunks;
+    if (!loaded.has(0)) return; // Wait for chunk 0 first
+
+    const allIds = manifest.map((c) => c.id);
+    const remaining = allIds.filter((id) => !loaded.has(id));
+    enqueueChunks(remaining);
+    scheduleNextChunksRef.current?.();
+  }, [metadata, state.loadedChunks, enqueueChunks]);
 
   const checkBuffering = useCallback(
     (currentTime: number, isPlaying: boolean) => {

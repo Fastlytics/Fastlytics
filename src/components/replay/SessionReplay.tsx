@@ -9,6 +9,7 @@ import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useCamera } from '@/hooks/useCamera';
 import {
   getSectorMarkers,
+  getSpeedHeatmapSegments,
   getTrackStatusSegments,
   getTimeForLap,
   getAllLapNumbers,
@@ -54,7 +55,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     isLoading: isMetaLoading,
     error: metaError,
   } = useQuery<SessionReplayData>({
-    queryKey: ['sessionReplayMetadata', year, event, session],
+    queryKey: ['sessionReplayMetadata', year, event, session, 'v2'],
     queryFn: () => fetchSessionReplayMetadata(year, event, session),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
@@ -101,14 +102,23 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     currentTime
   );
 
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+
   const activeTotalDuration = useMemo(() => {
     const meta = metadata as SessionReplayMetadata | undefined;
     const manifest = meta?.chunk_manifest;
     return meta?.total_duration ?? manifest?.[manifest.length - 1]?.end ?? totalDuration;
   }, [metadata, totalDuration]);
 
+  // Throttle seekTo to chunk-loader: only seek on significant jumps (user drag), not normal playback
+  const prevSeekTimeRef = useRef(currentTime);
   useEffect(() => {
-    seekTo(currentTime);
+    const delta = Math.abs(currentTime - prevSeekTimeRef.current);
+    if (delta > 3) {
+      seekTo(currentTime);
+    }
+    prevSeekTimeRef.current = currentTime;
   }, [currentTime, seekTo]);
 
   const { leaderboardOrder, leaderboard, driverVisuals } = useLeaderboard(
@@ -197,21 +207,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
   }, [isRace, session, data, currentTime]);
 
-  const trackColor = useMemo(() => {
-    if (!data?.race_control_messages) return '#1a1a1e';
-    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
+  const trackColorTimeline = useMemo(() => {
+    if (!data?.race_control_messages?.length) return [];
+    const segments: { start: number; end: number; color: string }[] = [];
+    let currentColor = '#1a1a1e';
+    let segStart = 0;
 
-    for (let i = data.race_control_messages.length - 1; i >= 0; i--) {
-      const msg = data.race_control_messages[i];
-      if (msg.time > currentTime) continue;
+    for (const msg of data.race_control_messages) {
       const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
+      let newColor = currentColor;
       if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
-        if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
-        return '#dc2626';
-      }
-      if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED'))
-        return '#1a1a1e';
-      if (
+        newColor = '#dc2626';
+      } else if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED')) {
+        newColor = '#1a1a1e';
+      } else if (
         (text.includes('YELLOW') ||
           text.includes('SAFETY CAR') ||
           text.includes('VIRTUAL') ||
@@ -221,11 +230,29 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         !text.includes('INVESTIGATION') &&
         !text.includes('BLUE')
       ) {
-        return '#ca8a04';
+        newColor = '#ca8a04';
+      }
+
+      if (newColor !== currentColor) {
+        segments.push({ start: segStart, end: msg.time, color: currentColor });
+        currentColor = newColor;
+        segStart = msg.time;
+      }
+    }
+    segments.push({ start: segStart, end: Infinity, color: currentColor });
+    return segments;
+  }, [data?.race_control_messages]);
+
+  const trackColor = useMemo(() => {
+    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
+    for (let i = trackColorTimeline.length - 1; i >= 0; i--) {
+      const seg = trackColorTimeline[i];
+      if (currentTime >= seg.start && currentTime < seg.end) {
+        return seg.color;
       }
     }
     return '#1a1a1e';
-  }, [currentTime, data, isQualifying, sessionTimeRemaining]);
+  }, [currentTime, trackColorTimeline, isQualifying, sessionTimeRemaining]);
 
   const sectorMarkers = useMemo(() => {
     if (!data?.circuit_points || !data?.circuit_distances) return [];
@@ -262,7 +289,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     function tick(time: number) {
       if (previousTimeRef.current !== null) {
         const deltaTime = (time - previousTimeRef.current) / 1000;
-        if (isPlaying) {
+        if (isPlayingRef.current) {
           setCurrentTime((prevTime) => {
             const newTime = prevTime + deltaTime * playbackSpeed;
             if (newTime >= activeTotalDuration) {
@@ -274,17 +301,24 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         }
       }
       previousTimeRef.current = time;
-      requestRef.current = requestAnimationFrame(tick);
+      if (isPlayingRef.current) {
+        requestRef.current = requestAnimationFrame(tick);
+      } else {
+        requestRef.current = null;
+      }
     },
-    [isPlaying, playbackSpeed, activeTotalDuration, setCurrentTime, setIsPlaying]
+    [playbackSpeed, activeTotalDuration, setCurrentTime, setIsPlaying]
   );
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(animate);
+    if (isPlaying) {
+      previousTimeRef.current = null;
+      requestRef.current = requestAnimationFrame(animate);
+    }
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [animate]);
+  }, [isPlaying, animate]);
 
   const handleDriverClick = useCallback(
     (code: string) => {
@@ -301,6 +335,54 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     }
     return result;
   }, [data?.drivers]);
+
+  const [speedHeatmapSegments, setSpeedHeatmapSegments] = useState<
+    { path: string; color: string }[]
+  >([]);
+  const heatmapComputeIdRef = useRef(0);
+
+  useEffect(() => {
+    if (
+      !showSpeedHeatmap ||
+      !selectedDriver ||
+      !data?.circuit_points ||
+      !data?.drivers[selectedDriver]
+    ) {
+      setSpeedHeatmapSegments([]);
+      return;
+    }
+
+    const id = ++heatmapComputeIdRef.current;
+    const timer = setTimeout(() => {
+      if (id !== heatmapComputeIdRef.current) return;
+      const driverData = data.drivers[selectedDriver];
+      const pathPoints = data.circuit_points;
+      const speedArray: number[] = new Array(pathPoints.length).fill(0);
+      const len = driverData.x.length;
+      const sampleRange = Math.min(len, 25 * 120);
+      const start = Math.max(0, safeIndex - sampleRange);
+      const end = Math.min(len - 1, safeIndex);
+      for (let i = start; i <= end; i++) {
+        const px = driverData.x[i];
+        const py = driverData.y[i];
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        for (let j = 0; j < pathPoints.length; j += 3) {
+          const dx = pathPoints[j][0] - px;
+          const dy = pathPoints[j][1] - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestDist) {
+            bestDist = d2;
+            bestIdx = j;
+          }
+        }
+        speedArray[bestIdx] = driverData.speed[i];
+      }
+      setSpeedHeatmapSegments(getSpeedHeatmapSegments(pathPoints, speedArray, 350));
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [showSpeedHeatmap, selectedDriver, data, safeIndex]);
 
   const recentSpeedHistory = useMemo(() => {
     if (!selectedDriver || !data?.drivers?.[selectedDriver]?.speed) return [];
@@ -346,7 +428,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           )}
 
           <TrackCanvas
-            circuitPoints={data.circuit_points || []}
             circuitLayout={data.circuit_layout}
             trackColor={trackColor}
             drivers={currentFrameDrivers}
@@ -362,13 +443,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             visibility={driverVisuals.visibility}
             viewState={viewState}
             showHeatmap={showSpeedHeatmap}
+            heatmapSegments={speedHeatmapSegments}
             sectorMarkers={sectorMarkers}
-            safeIndex={safeIndex}
             driverArrays={driverArrays}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            safeIndex={safeIndex}
             onClickDriver={handleDriverClick}
           />
         </div>
@@ -381,87 +459,91 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           </div>
         )}
 
-        <RaceControlToasts
-          messages={data.race_control_messages}
-          currentTime={currentTime}
-          dismissedMessages={dismissedMessages}
-          formatTime={formatTime}
-          onDismiss={dismissMessage}
-        />
+        {isFullscreen && (
+          <>
+            <RaceControlToasts
+              messages={data.race_control_messages}
+              currentTime={currentTime}
+              dismissedMessages={dismissedMessages}
+              formatTime={formatTime}
+              onDismiss={dismissMessage}
+            />
 
-        <ReplayToolbar
-          toggles={{
-            weather: showWeather,
-            raceControl: showRaceControlFeed,
-            sectors: showSectorTimes,
-            telemetry: showTelemetry,
-            lapHistory: showLapHistory,
-            heatmap: showSpeedHeatmap,
-          }}
-          onToggle={{
-            weather: () => setShowWeather((v) => !v),
-            raceControl: () => setShowRaceControlFeed((v) => !v),
-            sectors: () => setShowSectorTimes((v) => !v),
-            telemetry: () => setShowTelemetry((v) => !v),
-            lapHistory: () => setShowLapHistory((v) => !v),
-            heatmap: () => setShowSpeedHeatmap((v) => !v),
-          }}
-        />
+            <ReplayToolbar
+              toggles={{
+                weather: showWeather,
+                raceControl: showRaceControlFeed,
+                sectors: showSectorTimes,
+                telemetry: showTelemetry,
+                lapHistory: showLapHistory,
+                heatmap: showSpeedHeatmap,
+              }}
+              onToggle={{
+                weather: () => setShowWeather((v) => !v),
+                raceControl: () => setShowRaceControlFeed((v) => !v),
+                sectors: () => setShowSectorTimes((v) => !v),
+                telemetry: () => setShowTelemetry((v) => !v),
+                lapHistory: () => setShowLapHistory((v) => !v),
+                heatmap: () => setShowSpeedHeatmap((v) => !v),
+              }}
+            />
 
-        {showWeather && <WeatherOverlay weather={data.weather} currentTime={currentTime} />}
+            {showWeather && <WeatherOverlay weather={data.weather} currentTime={currentTime} />}
 
-        {showRaceControlFeed && (
-          <RaceControlFeed
-            messages={data.race_control_messages}
-            currentTime={currentTime}
-            formatTime={formatTime}
-          />
-        )}
+            {showRaceControlFeed && (
+              <RaceControlFeed
+                messages={data.race_control_messages}
+                currentTime={currentTime}
+                formatTime={formatTime}
+              />
+            )}
 
-        {isQualifying && sessionTimeRemaining && (
-          <QualifyingCountdown
-            remaining={sessionTimeRemaining.remaining}
-            isRed={sessionTimeRemaining.isRed}
-            formatted={sessionTimeRemaining.formatted}
-            sessionName={session}
-          />
-        )}
+            {isQualifying && sessionTimeRemaining && (
+              <QualifyingCountdown
+                remaining={sessionTimeRemaining.remaining}
+                isRed={sessionTimeRemaining.isRed}
+                formatted={sessionTimeRemaining.formatted}
+                sessionName={session}
+              />
+            )}
 
-        {showSectorTimes && (
-          <SectorTimesPanel
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-            fastestSectors={data.fastest_sectors}
-          />
-        )}
+            {showSectorTimes && (
+              <SectorTimesPanel
+                completedLaps={data.completed_laps}
+                currentTime={currentTime}
+                selectedDriver={selectedDriver}
+                fastestSectors={data.fastest_sectors}
+              />
+            )}
 
-        {showLapHistory && (
-          <LapHistoryPanel
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-          />
-        )}
+            {showLapHistory && (
+              <LapHistoryPanel
+                completedLaps={data.completed_laps}
+                currentTime={currentTime}
+                selectedDriver={selectedDriver}
+              />
+            )}
 
-        {showTelemetry && (
-          <TelemetryOverlay
-            driverCode={selectedDriver}
-            telemetry={
-              selectedDriver && currentFrameDrivers[selectedDriver]
-                ? {
-                    speed: currentFrameDrivers[selectedDriver].speed,
-                    gear: currentFrameDrivers[selectedDriver].gear,
-                    throttle: currentFrameDrivers[selectedDriver].throttle,
-                    brake: currentFrameDrivers[selectedDriver].brake,
-                    drs: currentFrameDrivers[selectedDriver].drs,
-                    rpm: currentFrameDrivers[selectedDriver].rpm,
-                  }
-                : null
-            }
-            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-            speedHistory={recentSpeedHistory}
-          />
+            {showTelemetry && (
+              <TelemetryOverlay
+                driverCode={selectedDriver}
+                telemetry={
+                  selectedDriver && currentFrameDrivers[selectedDriver]
+                    ? {
+                        speed: currentFrameDrivers[selectedDriver].speed,
+                        gear: currentFrameDrivers[selectedDriver].gear,
+                        throttle: currentFrameDrivers[selectedDriver].throttle,
+                        brake: currentFrameDrivers[selectedDriver].brake,
+                        drs: currentFrameDrivers[selectedDriver].drs,
+                        rpm: currentFrameDrivers[selectedDriver].rpm,
+                      }
+                    : null
+                }
+                driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+                speedHistory={recentSpeedHistory}
+              />
+            )}
+          </>
         )}
 
         <Leaderboard

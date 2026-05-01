@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { SessionReplayData } from '@/lib/api';
-import { DriverFrameState, getDriverScore } from '@/components/replay/replay-utils';
+import { DriverFrameState, getGapSortKey } from '@/components/replay/replay-utils';
 
 interface LeaderboardItem {
   pos: number;
@@ -24,79 +24,51 @@ interface LeaderboardItem {
   } | null;
 }
 
+/**
+ * Sort exclusively by official timing data:
+ * 1. Grid position for the very start of the race (first ~200m)
+ * 2. Gap-to-leader from F1 timing feed
+ * 3. Drivers with missing timing data are pushed to the bottom
+ */
+function sortByOfficialTiming(
+  drivers: Record<string, DriverFrameState>,
+  gridPositions?: Record<string, number>
+): string[] {
+  return Object.entries(drivers)
+    .sort(([codeA, a], [codeB, b]) => {
+      // Start of race: use official grid positions
+      if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
+        const gA = gridPositions?.[codeA] ?? 99;
+        const gB = gridPositions?.[codeB] ?? 99;
+        return gA - gB;
+      }
+
+      // Official gap-to-leader sorting (never falls back to track position)
+      return getGapSortKey(a.gap) - getGapSortKey(b.gap);
+    })
+    .map(([code]) => code);
+}
+
 export function useLeaderboard(
   data: SessionReplayData | null,
   activeDrivers: Record<string, DriverFrameState>,
   isRace: boolean,
-  isPlaying: boolean,
+  _isPlaying: boolean,
   currentTime: number
 ) {
-  const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
-
   const getSortedOrder = useCallback(
     (drivers: Record<string, DriverFrameState>): string[] => {
-      return Object.entries(drivers)
-        .sort(([, a], [, b]) => {
-          if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
-            const gA = data?.driver_grid_positions?.[a.code ?? ''] ?? 99;
-            const gB = data?.driver_grid_positions?.[b.code ?? ''] ?? 99;
-            return gA - gB;
-          }
-          return getDriverScore(b) - getDriverScore(a);
-        })
-        .map(([code]) => code);
+      return sortByOfficialTiming(drivers, data?.driver_grid_positions);
     },
     [data?.driver_grid_positions]
   );
 
-  useEffect(() => {
-    if (!data) return;
+  const leaderboardOrder = useMemo(() => {
+    if (!data) return [];
+    return getSortedOrder(activeDrivers);
+  }, [activeDrivers, data, getSortedOrder]);
 
-    if (!isPlaying || leaderboardOrder.length === 0) {
-      const newOrder = getSortedOrder(activeDrivers);
-      if (JSON.stringify(newOrder) !== JSON.stringify(leaderboardOrder)) {
-        setLeaderboardOrder(newOrder); // eslint-disable-line react-hooks/set-state-in-effect -- initial sort
-      }
-      return;
-    }
-
-    const OVERTAKE_THRESHOLD = 0.5;
-    const newOrder = [...leaderboardOrder];
-    let swapped = false;
-
-    for (let i = 0; i < newOrder.length - 1; i++) {
-      const driverA = newOrder[i];
-      const driverB = newOrder[i + 1];
-      const dA = activeDrivers[driverA];
-      const dB = activeDrivers[driverB];
-
-      if (!dA || !dB) continue;
-
-      if (dA.dist! < 200 && dB.dist! < 200) {
-        const gA = data?.driver_grid_positions?.[driverA] ?? 99;
-        const gB = data?.driver_grid_positions?.[driverB] ?? 99;
-        if (gB < gA) {
-          newOrder[i] = driverB;
-          newOrder[i + 1] = driverA;
-          swapped = true;
-        }
-        continue;
-      }
-
-      const scoreA = getDriverScore(dA);
-      const scoreB = getDriverScore(dB);
-      if (scoreB > scoreA + OVERTAKE_THRESHOLD) {
-        newOrder[i] = driverB;
-        newOrder[i + 1] = driverA;
-        swapped = true;
-      }
-    }
-
-    if (swapped) {
-      setLeaderboardOrder(newOrder);
-    }
-  }, [activeDrivers, isPlaying, data, getSortedOrder, leaderboardOrder]);
-
+  // For non-race sessions: sort by best lap time (official timing)
   const timingStandings = useMemo(() => {
     if (isRace || !data?.completed_laps) return null;
 
