@@ -68,13 +68,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
         </span>
         {isRace ? (
           <span className="text-[12px] font-normal uppercase tracking-wider text-white">
-            LAP <span className="text-white font-medium font-mono">{leaderboard[0]?.lap || 0}</span>
-            <span className="text-white font-light"> / {totalLaps}</span>
+            LAP <span className="text-white font-medium">{leaderboard[0]?.lap || 0}</span>
+            <span className="text-white font-normal"> / {totalLaps}</span>
           </span>
         ) : sessionTimeRemaining ? (
           <span
             className={cn(
-              'text-[12px] font-mono font-bold tabular-nums tracking-tight',
+              'text-[12px] font-bold tabular-nums tracking-tight',
               sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white font-medium'
             )}
           >
@@ -179,14 +179,12 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                   className="h-3.5 w-3.5 object-contain opacity-80"
                 />
                 {age !== undefined && age > 0 && (
-                  <span className="text-[9px] font-mono text-white font-normal tabular-nums">
-                    {age}
-                  </span>
+                  <span className="text-[9px] text-white font-normal tabular-nums">{age}</span>
                 )}
               </div>
 
               {/* Interval / Status */}
-              <span className="text-[11px] font-mono w-12 text-right tabular-nums shrink-0">
+              <span className="text-[11px] w-12 text-right tabular-nums shrink-0">
                 {isPitting ? (
                   <span className="inline-flex items-center rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-400">
                     PIT

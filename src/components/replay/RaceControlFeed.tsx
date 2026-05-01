@@ -55,9 +55,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
               Race Control
             </span>
           </div>
-          <span className="text-[10px] font-mono font-light text-white tabular-nums">
-            {visibleMessages.length}
-          </span>
+          <span className="text-[10px] text-white tabular-nums">{visibleMessages.length}</span>
         </div>
         <div ref={scrollRef} className="overflow-y-auto max-h-52 p-2 space-y-1">
           {visibleMessages.map((msg, index) => {
@@ -74,7 +72,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
                   config.border
                 )}
               >
-                <span className="text-[10px] font-mono font-light text-white tabular-nums shrink-0 mt-0.5">
+                <span className="text-[10px] text-white tabular-nums shrink-0 mt-0.5">
                   {formatTime(msg.time)}
                 </span>
                 <span className="text-[11px] text-white font-medium leading-tight break-words">

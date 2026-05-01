@@ -120,7 +120,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
               </button>
 
-              <span className="text-[14px] font-mono font-bold tabular-nums text-white min-w-[5ch]">
+              <span className="text-[14px] font-bold tabular-nums text-white min-w-[5ch]">
                 {formatTime(currentTime)}
               </span>
 
@@ -137,7 +137,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                   >
                     <ChevronLeft size={14} />
                   </button>
-                  <span className="text-[11px] font-mono font-medium text-white min-w-[4ch] text-center tabular-nums">
+                  <span className="text-[11px] font-medium text-white min-w-[4ch] text-center tabular-nums">
                     L{currentLap}
                   </span>
                   <button
@@ -177,7 +177,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               {/* Speed Control */}
               <button
                 onClick={onSpeedChange}
-                className="h-8 px-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[11px] font-mono font-medium text-white hover:bg-white/[0.06] hover:text-white transition-all tabular-nums min-w-[3ch] text-center"
+                className="h-8 px-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] text-[11px] font-medium text-white hover:bg-white/[0.06] hover:text-white transition-all tabular-nums min-w-[3ch] text-center"
               >
                 {playbackSpeed}x
               </button>

@@ -194,14 +194,14 @@ export function useChunkLoader(
     }));
   }, []);
 
+  const MERGE_DEBOUNCE_MS = 1000;
+
   const scheduleMerge = useCallback(() => {
-    if (mergeTimeoutRef.current) {
-      window.clearTimeout(mergeTimeoutRef.current);
-    }
+    if (mergeTimeoutRef.current) return; // already pending
     mergeTimeoutRef.current = window.setTimeout(() => {
       mergeTimeoutRef.current = null;
       mergeAllChunks();
-    }, 80);
+    }, MERGE_DEBOUNCE_MS);
   }, [mergeAllChunks]);
 
   const enqueueChunks = useCallback((chunkIds: number[]) => {
@@ -300,8 +300,18 @@ export function useChunkLoader(
       // Ensure the target chunk is queued (no eviction — we keep everything)
       enqueueChunks([targetChunk.id]);
       scheduleNextChunks();
+
+      // If target chunk is already downloaded but not yet merged, force a merge
+      // so the seeked region is immediately playable.
+      if (chunksMapRef.current.has(targetChunk.id) && !state.loadedChunks.has(targetChunk.id)) {
+        if (mergeTimeoutRef.current) {
+          window.clearTimeout(mergeTimeoutRef.current);
+          mergeTimeoutRef.current = null;
+        }
+        mergeAllChunks();
+      }
     },
-    [enqueueChunks, scheduleNextChunks]
+    [enqueueChunks, scheduleNextChunks, mergeAllChunks, state.loadedChunks]
   );
 
   useEffect(() => {
