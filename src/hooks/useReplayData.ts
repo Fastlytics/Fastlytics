@@ -25,6 +25,58 @@ function findNearestTimeIndex(time: number, timeline: number[]): number {
   return time - timeline[high] <= timeline[low] - time ? high : low;
 }
 
+function findFrameWindow(time: number, timeline: number[]) {
+  if (!timeline.length) return { prevIndex: 0, nextIndex: 0, alpha: 0 };
+  if (time <= timeline[0]) return { prevIndex: 0, nextIndex: 0, alpha: 0 };
+  const lastIndex = timeline.length - 1;
+  if (time >= timeline[lastIndex]) return { prevIndex: lastIndex, nextIndex: lastIndex, alpha: 0 };
+
+  let low = 0;
+  let high = lastIndex;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const value = timeline[mid];
+
+    if (value === time) return { prevIndex: mid, nextIndex: mid, alpha: 0 };
+    if (value < time) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  const prevIndex = Math.max(0, high);
+  const nextIndex = Math.min(lastIndex, low);
+  const start = timeline[prevIndex];
+  const end = timeline[nextIndex];
+  const alpha = end === start ? 0 : (time - start) / (end - start);
+
+  return { prevIndex, nextIndex, alpha };
+}
+
+const lerp = (start: number, end: number, alpha: number) => start + (end - start) * alpha;
+
+function interpolateArray(
+  values: number[] | undefined,
+  prevIndex: number,
+  nextIndex: number,
+  alpha: number,
+  fallback = 0
+) {
+  if (!values?.length) return fallback;
+  const start = values[prevIndex];
+  const end = values[nextIndex];
+  if (typeof start !== 'number') return fallback;
+  if (typeof end !== 'number') return start;
+  return lerp(start, end, alpha);
+}
+
+function stepArray<T>(values: T[] | undefined, index: number, fallback: T): T {
+  if (!values?.length) return fallback;
+  return values[index] ?? fallback;
+}
+
 /** Pre-compute nearest circuit-point index for every driver at every frame. */
 function buildTrackIndices(
   drivers: SessionReplayData['drivers'],
@@ -116,6 +168,11 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     return findNearestTimeIndex(currentTime, timeline);
   }, [timeline, currentTime]);
 
+  const frameWindow = useMemo(() => {
+    if (!timeline?.length) return { prevIndex: 0, nextIndex: 0, alpha: 0 };
+    return findFrameWindow(currentTime, timeline);
+  }, [timeline, currentTime]);
+
   // Pre-compute expensive lookups once when data changes (enrich-on-merge)
   const precomputed = useMemo(() => {
     if (!data) {
@@ -137,39 +194,40 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     const drivers: Record<string, DriverFrameState> = {};
     const pathDists = data.circuit_distances || [];
     const { trackIndices } = precomputed;
+    const { prevIndex, nextIndex, alpha } = frameWindow;
 
     for (const [code, d] of Object.entries(data.drivers)) {
-      const x = d.x?.[safeIndex];
-      const y = d.y?.[safeIndex];
-      if (typeof x !== 'number' || typeof y !== 'number') continue;
+      const x = interpolateArray(d.x, prevIndex, nextIndex, alpha, NaN);
+      const y = interpolateArray(d.y, prevIndex, nextIndex, alpha, NaN);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
       const trackIdx = trackIndices[code]?.[safeIndex] ?? 0;
       const refDist =
         pathDists.length > 0 && trackIdx < pathDists.length
           ? pathDists[trackIdx]
-          : d.dist[safeIndex];
+          : interpolateArray(d.dist, prevIndex, nextIndex, alpha, 0);
 
       drivers[code] = {
         x,
         y,
-        dist: d.dist[safeIndex],
+        dist: interpolateArray(d.dist, prevIndex, nextIndex, alpha, 0),
         ref_dist: refDist,
-        rel_dist: d.rel_dist[safeIndex],
-        speed: d.speed?.[safeIndex] ?? 0,
-        gear: d.gear?.[safeIndex] ?? 0,
-        drs: d.drs?.[safeIndex] ?? 0,
-        rpm: d.rpm?.[safeIndex] ?? 0,
-        lap: d.lap?.[safeIndex] ?? 0,
-        tyre: d.tyre?.[safeIndex] ?? 0,
-        throttle: d.throttle?.[safeIndex] ?? 0,
-        brake: d.brake?.[safeIndex] ?? 0,
+        rel_dist: interpolateArray(d.rel_dist, prevIndex, nextIndex, alpha, 0),
+        speed: interpolateArray(d.speed, prevIndex, nextIndex, alpha, 0),
+        gear: stepArray(d.gear, prevIndex, 0),
+        drs: stepArray(d.drs, prevIndex, 0),
+        rpm: interpolateArray(d.rpm, prevIndex, nextIndex, alpha, 0),
+        lap: stepArray(d.lap, prevIndex, 0),
+        tyre: stepArray(d.tyre, prevIndex, 0),
+        throttle: interpolateArray(d.throttle, prevIndex, nextIndex, alpha, 0),
+        brake: interpolateArray(d.brake, prevIndex, nextIndex, alpha, 0),
         track_index: trackIdx,
-        gap: d.gap?.[safeIndex] ?? null,
-        interval: d.interval?.[safeIndex] ?? null,
+        gap: stepArray(d.gap, prevIndex, null),
+        interval: stepArray(d.interval, prevIndex, null),
       };
     }
     return drivers;
-  }, [data, safeIndex, precomputed]);
+  }, [data, safeIndex, precomputed, frameWindow]);
 
   const totalDuration = useMemo(() => {
     if (!data?.time?.length) return 0;
@@ -231,13 +289,13 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
   }, [data]);
 
   const tyreAgeMap = useMemo(() => {
-    if (!data?.drivers || safeIndex < 0) return {};
+    if (!data?.drivers) return {};
     const result: Record<string, number> = {};
     for (const [code] of Object.entries(data.drivers)) {
-      result[code] = precomputed.tyreAges[code]?.[safeIndex] ?? 0;
+      result[code] = precomputed.tyreAges[code]?.[frameWindow.prevIndex] ?? 0;
     }
     return result;
-  }, [data, safeIndex, precomputed.tyreAges]);
+  }, [data, frameWindow.prevIndex, precomputed.tyreAges]);
 
   return {
     safeIndex,
