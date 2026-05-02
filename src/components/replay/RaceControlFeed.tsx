@@ -1,8 +1,19 @@
 import React, { useRef, useEffect } from 'react';
-import { GripVertical } from 'lucide-react';
+import {
+  Flag,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
+  Search,
+  Zap,
+  ZapOff,
+  Info,
+  Clock,
+} from 'lucide-react';
 import { getMessageType } from './replay-utils';
 import { cn } from '@/lib/utils';
-import { useDraggable } from '@/hooks/useDraggable';
+import WidgetShell from './WidgetShell';
+import { WidgetBounds, WidgetLayout } from '@/hooks/useReplayWidgets';
 
 interface RaceControlMessage {
   time: number;
@@ -10,21 +21,50 @@ interface RaceControlMessage {
   flag?: string;
 }
 
+const iconMap: Record<
+  string,
+  React.ComponentType<{ size?: number; className?: string; fill?: string }>
+> = {
+  Flag,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
+  Search,
+  Zap,
+  ZapOff,
+  Info,
+};
+
 interface RaceControlFeedProps {
   messages: RaceControlMessage[];
   currentTime: number;
-  formatTime: (seconds: number) => string;
-  className?: string;
+  onSeek: (time: number) => void;
+  layout: WidgetLayout;
+  onUpdateLayout: (updates: Partial<WidgetLayout>) => void;
+  bounds: WidgetBounds;
+  onClose?: () => void;
 }
+
+const formatRaceTime = (seconds: number): string => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
 
 const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
   messages,
   currentTime,
-  formatTime,
-  className,
+  onSeek,
+  layout,
+  onUpdateLayout,
+  bounds,
+  onClose,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { position, isDragging, handleMouseDown } = useDraggable({ x: 16, y: 350 });
 
   const visibleMessages = messages.filter((m) => m.time <= currentTime);
 
@@ -37,53 +77,68 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
   if (visibleMessages.length === 0) return null;
 
   return (
-    <div
-      className={cn(
-        'absolute z-20 w-80 max-h-64',
-        isDragging ? 'cursor-grabbing' : 'cursor-default',
-        'hidden md:block',
-        className
-      )}
-      style={{ left: position.x, top: position.y }}
-      onMouseDown={handleMouseDown}
+    <WidgetShell
+      title="Race Control"
+      icon={<Flag size={12} className="text-white/60" />}
+      layout={layout}
+      bounds={bounds}
+      onUpdateLayout={onUpdateLayout}
+      onClose={onClose}
     >
-      <div className="bg-[#0c0c0e]/90 backdrop-blur border border-white/[0.06] rounded-lg overflow-hidden">
-        <div className="px-3 py-2 border-b border-white/[0.04] flex items-center justify-between">
-          <div className="flex items-center gap-2" data-grip>
-            <GripVertical size={12} className="text-white cursor-grab" />
-            <span className="text-[10px] font-normal uppercase tracking-wider text-white">
-              Race Control
-            </span>
-          </div>
-          <span className="text-[10px] text-white tabular-nums">{visibleMessages.length}</span>
-        </div>
-        <div ref={scrollRef} className="overflow-y-auto max-h-52 p-2 space-y-1">
-          {visibleMessages.map((msg, index) => {
-            const config = getMessageType(msg);
-            const isLatest = index === visibleMessages.length - 1;
+      <div ref={scrollRef} className="h-full overflow-y-auto pr-1 space-y-1.5 scrollbar-hide">
+        {visibleMessages.map((msg, index) => {
+          const config = getMessageType(msg);
+          const Icon = iconMap[config.iconName] || Info;
+          const isLatest = index === visibleMessages.length - 1;
 
-            return (
+          return (
+            <button
+              key={`${msg.time}-${msg.message}-${index}`}
+              onClick={() => onSeek(msg.time)}
+              className={cn(
+                'w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-all',
+                'border-l-[3px]',
+                isLatest ? 'bg-white/[0.05]' : 'hover:bg-white/[0.04]',
+                config.border,
+                'group'
+              )}
+            >
               <div
-                key={`${msg.time}-${msg.message}-${index}`}
                 className={cn(
-                  'flex items-start gap-2 px-2 py-1.5 rounded-md transition-colors',
-                  'border-l-2',
-                  isLatest ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]',
-                  config.border
+                  'shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5',
+                  'bg-black/20'
                 )}
               >
-                <span className="text-[10px] text-white tabular-nums shrink-0 mt-0.5">
-                  {formatTime(msg.time)}
-                </span>
-                <span className="text-[11px] text-white font-medium leading-tight break-words">
+                <Icon
+                  size={13}
+                  className={config.color}
+                  fill={config.fill ? 'currentColor' : 'none'}
+                />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span
+                    className={cn('text-[9px] font-bold uppercase tracking-wider', config.color)}
+                  >
+                    {msg.flag || config.type}
+                  </span>
+                  <div className="flex items-center gap-1 text-white/30">
+                    <Clock size={9} />
+                    <span className="text-[10px] tabular-nums font-medium">
+                      {formatRaceTime(msg.time)}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] text-white/80 font-medium leading-snug break-words group-hover:text-white transition-colors">
                   {msg.message}
                 </span>
               </div>
-            );
-          })}
-        </div>
+            </button>
+          );
+        })}
       </div>
-    </div>
+    </WidgetShell>
   );
 };
 

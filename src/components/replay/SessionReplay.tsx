@@ -7,6 +7,7 @@ import { useReplayState } from '@/hooks/useReplayState';
 import { useReplayData } from '@/hooks/useReplayData';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useCamera } from '@/hooks/useCamera';
+import { useReplayWidgets, WidgetId } from '@/hooks/useReplayWidgets';
 import {
   getSectorMarkers,
   getSpeedHeatmapSegments,
@@ -42,20 +43,123 @@ interface SessionReplayMetadata extends SessionReplayData {
   total_duration?: number;
 }
 
+function interpolateSeriesValue(timeline: number[], values: number[], time: number) {
+  if (!timeline.length || !values.length) return 0;
+  if (time <= timeline[0]) return values[0] ?? 0;
+  const lastIndex = Math.min(timeline.length, values.length) - 1;
+  if (time >= timeline[lastIndex]) return values[lastIndex] ?? 0;
+
+  let low = 0;
+  let high = lastIndex;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const sampleTime = timeline[mid];
+
+    if (sampleTime === time) return values[mid] ?? 0;
+    if (sampleTime < time) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  const prevIndex = Math.max(0, high);
+  const nextIndex = Math.min(lastIndex, low);
+  const prevTime = timeline[prevIndex];
+  const nextTime = timeline[nextIndex];
+  const prevValue = values[prevIndex] ?? 0;
+  const nextValue = values[nextIndex] ?? prevValue;
+  const alpha = nextTime === prevTime ? 0 : (time - prevTime) / (nextTime - prevTime);
+
+  return prevValue + (nextValue - prevValue) * alpha;
+}
+
+function sampleRecentSeries(
+  timeline: number[] | undefined,
+  values: number[] | undefined,
+  currentTime: number,
+  durationSeconds = 6,
+  sampleCount = 150
+) {
+  if (!timeline?.length || !values?.length) return [];
+
+  const startTime = Math.max(timeline[0], currentTime - durationSeconds);
+  const endTime = Math.min(currentTime, timeline[Math.min(timeline.length, values.length) - 1]);
+  if (endTime <= startTime) return [interpolateSeriesValue(timeline, values, endTime)];
+
+  return Array.from({ length: sampleCount }, (_, index) => {
+    const alpha = sampleCount === 1 ? 1 : index / (sampleCount - 1);
+    return interpolateSeriesValue(timeline, values, startTime + (endTime - startTime) * alpha);
+  });
+}
+
+const normalizeBrakeValue = (value: number) =>
+  Number.isFinite(value) && value >= 0 && value <= 1 ? value * 100 : value;
+
+const normalizeBrakeSeries = (values: number[] | undefined) =>
+  values?.map((value) => normalizeBrakeValue(value)) ?? [];
+
+function findSectorBoundaryTime(
+  timeline: number[] | undefined,
+  laps: number[] | undefined,
+  relativeDistances: number[] | undefined,
+  lap: number,
+  boundary: number,
+  fallbackTime: number
+) {
+  if (!timeline?.length || !laps?.length || !relativeDistances?.length) return fallbackTime;
+  if (boundary <= 0) return fallbackTime;
+
+  const limit = Math.min(timeline.length, laps.length, relativeDistances.length);
+  for (let i = 1; i < limit; i++) {
+    if (laps[i] !== lap) continue;
+
+    const previousRel = laps[i - 1] === lap ? relativeDistances[i - 1] : 0;
+    const currentRel = relativeDistances[i];
+    if (previousRel <= boundary && currentRel >= boundary) {
+      const span = currentRel - previousRel;
+      const alpha = span === 0 ? 0 : (boundary - previousRel) / span;
+      return timeline[i - 1] + (timeline[i] - timeline[i - 1]) * alpha;
+    }
+  }
+
+  return fallbackTime;
+}
+
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
   const { trackEvent, trackPageView } = useAnalytics();
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
 
   useEffect(() => {
     trackPageView('session_replay', { year, event, session });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, event, session]);
 
+  useEffect(() => {
+    const updateViewportSize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    updateViewportSize();
+    window.addEventListener('resize', updateViewportSize);
+    document.addEventListener('fullscreenchange', updateViewportSize);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportSize);
+      document.removeEventListener('fullscreenchange', updateViewportSize);
+    };
+  }, []);
+
   const {
     data: metadata,
     isLoading: isMetaLoading,
     error: metaError,
   } = useQuery<SessionReplayData>({
-    queryKey: ['sessionReplayMetadata', year, event, session, 'v2'],
+    queryKey: ['sessionReplayMetadata', year, event, session, 'precision-v3'],
     queryFn: () => fetchSessionReplayMetadata(year, event, session),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
@@ -64,6 +168,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   const {
     replayData: data,
     loadedChunks,
+    loadedDuration,
+    isFullyLoaded,
     seekTo,
   } = useChunkLoader(metadata ?? null, year, event, session);
 
@@ -97,10 +203,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     dismissMessage,
   } = useReplayState(0, () => {});
 
-  const { safeIndex, currentFrameDrivers, totalDuration, totalLaps, tyreAgeMap } = useReplayData(
-    data,
-    currentTime
-  );
+  const {
+    safeIndex,
+    currentFrameDrivers,
+    totalDuration,
+    totalLaps,
+    driverLapStartTimes,
+    tyreAgeMap,
+  } = useReplayData(data, currentTime);
 
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
@@ -292,6 +402,13 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         if (isPlayingRef.current) {
           setCurrentTime((prevTime) => {
             const newTime = prevTime + deltaTime * playbackSpeed;
+            const playableTime = isFullyLoaded
+              ? activeTotalDuration
+              : Math.max(0, loadedDuration - 0.25);
+            if (newTime >= playableTime && playableTime < activeTotalDuration) {
+              setIsPlaying(false);
+              return playableTime;
+            }
             if (newTime >= activeTotalDuration) {
               setIsPlaying(false);
               return activeTotalDuration;
@@ -307,7 +424,14 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         requestRef.current = null;
       }
     },
-    [playbackSpeed, activeTotalDuration, setCurrentTime, setIsPlaying]
+    [
+      playbackSpeed,
+      activeTotalDuration,
+      loadedDuration,
+      isFullyLoaded,
+      setCurrentTime,
+      setIsPlaying,
+    ]
   );
 
   useEffect(() => {
@@ -385,12 +509,115 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   }, [showSpeedHeatmap, selectedDriver, data, safeIndex]);
 
   const recentSpeedHistory = useMemo(() => {
-    if (!selectedDriver || !data?.drivers?.[selectedDriver]?.speed) return [];
-    const speedArray = data.drivers[selectedDriver].speed;
-    const windowSize = 150; // 6 seconds at 25fps
-    const start = Math.max(0, safeIndex - windowSize);
-    return speedArray.slice(start, safeIndex + 1);
-  }, [data, selectedDriver, safeIndex]);
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(data?.time, data?.drivers?.[selectedDriver]?.speed, currentTime);
+  }, [data, selectedDriver, currentTime]);
+
+  const recentThrottleHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(data?.time, data?.drivers?.[selectedDriver]?.throttle, currentTime);
+  }, [data, selectedDriver, currentTime]);
+
+  const recentBrakeHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return normalizeBrakeSeries(
+      sampleRecentSeries(data?.time, data?.drivers?.[selectedDriver]?.brake, currentTime)
+    );
+  }, [data, selectedDriver, currentTime]);
+
+  const recentRpmHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(data?.time, data?.drivers?.[selectedDriver]?.rpm, currentTime);
+  }, [data, selectedDriver, currentTime]);
+
+  const liveLapTime = useMemo(() => {
+    if (!selectedDriver) return null;
+    const driver = currentFrameDrivers[selectedDriver];
+    if (!driver) return null;
+    const lapStart = driverLapStartTimes[selectedDriver]?.[driver.lap];
+    if (typeof lapStart !== 'number') return null;
+    return Math.max(0, currentTime - lapStart);
+  }, [currentFrameDrivers, currentTime, driverLapStartTimes, selectedDriver]);
+
+  const liveSector = useMemo(() => {
+    if (!selectedDriver || !data?.time) return null;
+    const driver = currentFrameDrivers[selectedDriver];
+    const driverData = data.drivers[selectedDriver];
+    if (!driver || !driverData) return null;
+
+    const lapStart = driverLapStartTimes[selectedDriver]?.[driver.lap];
+    if (typeof lapStart !== 'number') return null;
+
+    const relativeDistance = Number.isFinite(driver.rel_dist ?? NaN)
+      ? Math.max(0, Math.min(0.999999, driver.rel_dist ?? 0))
+      : 0;
+    const label = relativeDistance < 1 / 3 ? 'S1' : relativeDistance < 2 / 3 ? 'S2' : 'S3';
+    const boundary = label === 'S1' ? 0 : label === 'S2' ? 1 / 3 : 2 / 3;
+    const sectorStart = findSectorBoundaryTime(
+      data.time,
+      driverData.lap,
+      driverData.rel_dist,
+      driver.lap,
+      boundary,
+      lapStart
+    );
+
+    return { label, time: Math.max(0, currentTime - sectorStart) };
+  }, [currentFrameDrivers, currentTime, data, driverLapStartTimes, selectedDriver]);
+
+  // Container size measurement for widget layout
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [rootRef]);
+
+  const widgetBounds = useMemo(() => {
+    const width = isFullscreen ? viewportSize.width : containerSize.width || 1200;
+    const height = isFullscreen ? viewportSize.height : containerSize.height || 800;
+    const padding = 8;
+    const leaderboardWidth = isFullscreen && width >= 768 ? 256 : 0;
+    return {
+      minX: padding,
+      minY: padding,
+      maxX: Math.max(padding + 200, width - leaderboardWidth - padding),
+      maxY: Math.max(padding + 120, height - padding),
+    };
+  }, [
+    containerSize.height,
+    containerSize.width,
+    isFullscreen,
+    viewportSize.height,
+    viewportSize.width,
+  ]);
+
+  const { layouts, updateLayout } = useReplayWidgets(
+    containerSize.width || 1200,
+    containerSize.height || 800,
+    widgetBounds
+  );
+
+  const selectedDriverFullData = useMemo(() => {
+    if (!selectedDriver || !data?.drivers?.[selectedDriver]) return null;
+    const d = data.drivers[selectedDriver];
+    return {
+      speed: d.speed,
+      throttle: d.throttle,
+      brake: normalizeBrakeSeries(d.brake),
+      rpm: d.rpm,
+      time: data.time || [],
+    };
+  }, [data, selectedDriver]);
 
   const isLoading = isMetaLoading || !data || loadedChunks.size === 0;
 
@@ -405,13 +632,116 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     );
   if (!data) return null;
 
+  const visibleWidgetIds: { id: WidgetId; condition: boolean }[] = [
+    { id: 'weather', condition: showWeather },
+    { id: 'racecontrol', condition: showRaceControlFeed },
+    { id: 'sectors', condition: showSectorTimes },
+    { id: 'laphistory', condition: showLapHistory },
+    { id: 'telemetry', condition: showTelemetry },
+  ];
+
+  const renderWidget = (id: WidgetId) => {
+    switch (id) {
+      case 'weather':
+        return (
+          <WeatherOverlay
+            key={id}
+            weather={data.weather}
+            currentTime={currentTime}
+            layout={layouts.weather}
+            onUpdateLayout={(u) => updateLayout('weather', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowWeather(false)}
+          />
+        );
+      case 'racecontrol':
+        return (
+          <RaceControlFeed
+            key={id}
+            messages={data.race_control_messages}
+            currentTime={currentTime}
+            onSeek={(time) => setCurrentTime(time)}
+            layout={layouts.racecontrol}
+            onUpdateLayout={(u) => updateLayout('racecontrol', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowRaceControlFeed(false)}
+          />
+        );
+      case 'sectors':
+        return (
+          <SectorTimesPanel
+            key={id}
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+            fastestSectors={data.fastest_sectors}
+            liveSector={liveSector}
+            layout={layouts.sectors}
+            onUpdateLayout={(u) => updateLayout('sectors', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowSectorTimes(false)}
+          />
+        );
+      case 'laphistory':
+        return (
+          <LapHistoryPanel
+            key={id}
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+            driverData={selectedDriverFullData}
+            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+            onSeekToLap={(lap) => {
+              const time = getTimeForLap(data.drivers, data.time, lap);
+              if (time !== null) setCurrentTime(time);
+            }}
+            layout={layouts.laphistory}
+            onUpdateLayout={(u) => updateLayout('laphistory', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowLapHistory(false)}
+          />
+        );
+      case 'telemetry':
+        return (
+          <TelemetryOverlay
+            key={id}
+            driverCode={selectedDriver}
+            telemetry={
+              selectedDriver && currentFrameDrivers[selectedDriver]
+                ? {
+                    speed: currentFrameDrivers[selectedDriver].speed,
+                    gear: currentFrameDrivers[selectedDriver].gear,
+                    throttle: currentFrameDrivers[selectedDriver].throttle,
+                    brake: normalizeBrakeValue(currentFrameDrivers[selectedDriver].brake),
+                    drs: currentFrameDrivers[selectedDriver].drs,
+                    rpm: currentFrameDrivers[selectedDriver].rpm,
+                  }
+                : null
+            }
+            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+            speedHistory={recentSpeedHistory}
+            throttleHistory={recentThrottleHistory}
+            brakeHistory={recentBrakeHistory}
+            rpmHistory={recentRpmHistory}
+            liveLapTime={liveLapTime}
+            layout={layouts.telemetry}
+            onUpdateLayout={(u) => updateLayout('telemetry', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowTelemetry(false)}
+          />
+        );
+    }
+
+    return null;
+  };
+
   return (
     <div
       ref={rootRef}
       className={cn(
-        'flex flex-col bg-[#09090b] text-white overflow-hidden',
+        'relative flex flex-col bg-[#09090b] text-white overflow-hidden',
         isFullscreen
-          ? 'h-full'
+          ? 'h-screen w-screen'
           : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl border border-white/[0.06] shadow-2xl'
       )}
     >
@@ -488,59 +818,12 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
               }}
             />
 
-            {showWeather && <WeatherOverlay weather={data.weather} currentTime={currentTime} />}
-
-            {showRaceControlFeed && (
-              <RaceControlFeed
-                messages={data.race_control_messages}
-                currentTime={currentTime}
-                formatTime={formatTime}
-              />
-            )}
-
             {isQualifying && sessionTimeRemaining && (
               <QualifyingCountdown
                 remaining={sessionTimeRemaining.remaining}
                 isRed={sessionTimeRemaining.isRed}
                 formatted={sessionTimeRemaining.formatted}
                 sessionName={session}
-              />
-            )}
-
-            {showSectorTimes && (
-              <SectorTimesPanel
-                completedLaps={data.completed_laps}
-                currentTime={currentTime}
-                selectedDriver={selectedDriver}
-                fastestSectors={data.fastest_sectors}
-              />
-            )}
-
-            {showLapHistory && (
-              <LapHistoryPanel
-                completedLaps={data.completed_laps}
-                currentTime={currentTime}
-                selectedDriver={selectedDriver}
-              />
-            )}
-
-            {showTelemetry && (
-              <TelemetryOverlay
-                driverCode={selectedDriver}
-                telemetry={
-                  selectedDriver && currentFrameDrivers[selectedDriver]
-                    ? {
-                        speed: currentFrameDrivers[selectedDriver].speed,
-                        gear: currentFrameDrivers[selectedDriver].gear,
-                        throttle: currentFrameDrivers[selectedDriver].throttle,
-                        brake: currentFrameDrivers[selectedDriver].brake,
-                        drs: currentFrameDrivers[selectedDriver].drs,
-                        rpm: currentFrameDrivers[selectedDriver].rpm,
-                      }
-                    : null
-                }
-                driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-                speedHistory={recentSpeedHistory}
               />
             )}
           </>
@@ -563,6 +846,12 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           onFollow={follow}
         />
       </div>
+
+      {isFullscreen && (
+        <div className="absolute inset-0 z-[45] pointer-events-none">
+          {visibleWidgetIds.map(({ id, condition }) => (condition ? renderWidget(id) : null))}
+        </div>
+      )}
 
       {!hasStarted && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-500">
