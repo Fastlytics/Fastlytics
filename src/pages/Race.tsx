@@ -60,6 +60,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { getTeamColorClass } from '@/lib/teamColors';
 import ThrottleChart from '@/components/charts/ThrottleChart';
 import BrakeChart from '@/components/charts/BrakeChart';
 import RPMChart from '@/components/charts/RPMChart';
@@ -76,26 +77,6 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 // --- Helper Functions ---
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
-
-type TeamColorClass = string;
-
-const getTeamColorClass = (teamName: string | undefined): string => {
-  if (!teamName) return 'gray';
-  const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (simpleName.includes('mclaren')) return 'mclaren';
-  if (simpleName.includes('mercedes')) return 'mercedes';
-  if (simpleName.includes('redbull')) return 'redbull';
-  if (simpleName.includes('ferrari')) return 'ferrari';
-  if (simpleName.includes('alpine')) return 'alpine';
-  if (simpleName.includes('astonmartin')) return 'astonmartin';
-  if (simpleName.includes('williams')) return 'williams';
-  if (simpleName.includes('haas')) return 'haas';
-  if (simpleName.includes('audi')) return 'audi';
-  if (simpleName.includes('cadillac')) return 'cadillac';
-  if (simpleName.includes('sauber')) return 'kicksauber';
-  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'racingbulls';
-  return 'gray';
-};
 
 const parseLapTime = (timeStr: string | null | undefined): number => {
   if (!timeStr) return Infinity;

@@ -10,112 +10,13 @@ import { getNationalityCountryCode } from '@/utils/countryUtils';
 import { cn } from '@/lib/utils';
 import { useSeason } from '@/contexts/SeasonContext';
 import { SEO } from '@/components/layout/SEO';
+import {
+  StatBox,
+  ProfileSeasonRow,
+  SeasonHistoryTable,
+} from '@/components/standings/ProfileComponents';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
-
-const StatBox = ({
-  label,
-  value,
-  delay = 0,
-}: {
-  label: string;
-  value: string | number;
-  delay?: number;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
-    className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 text-center"
-  >
-    <div className="text-2xl font-bold tabular-nums text-white">{value}</div>
-    <div className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/30">
-      {label}
-    </div>
-  </motion.div>
-);
-
-const SeasonRow = ({
-  season,
-  index,
-  isCurrent,
-  isRookie,
-  isChampion,
-}: {
-  season: DriverCareer['seasons'][number];
-  index: number;
-  isCurrent: boolean;
-  isRookie: boolean;
-  isChampion: boolean;
-}) => (
-  <motion.tr
-    initial={{ opacity: 0, x: -8 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ duration: 0.3, delay: index * 0.025 }}
-    className={cn(
-      'border-b border-white/[0.04] transition-colors hover:bg-white/[0.02]',
-      isCurrent && 'border-l-2 border-l-red-500 bg-red-500/[0.02]',
-      isChampion && !isCurrent && 'border-l-2 border-l-amber-500 bg-amber-500/[0.02]'
-    )}
-  >
-    <td className="py-3 px-4">
-      <div className="flex items-center gap-2">
-        <span className="text-[15px] font-bold tabular-nums text-white">{season.season}</span>
-        {isCurrent && (
-          <span className="rounded-full border border-red-500/20 bg-red-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
-            Current
-          </span>
-        )}
-        {isRookie && (
-          <span className="rounded-full border border-amber-500/20 bg-amber-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            Rookie
-          </span>
-        )}
-        {isChampion && (
-          <span className="rounded-full border border-amber-500/20 bg-amber-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-            Champion
-          </span>
-        )}
-      </div>
-    </td>
-    <td className="py-3 px-4 text-[14px] text-white/60">{season.team}</td>
-    <td className="py-3 px-4 text-center text-[14px] font-medium tabular-nums text-white">
-      {season.races}
-    </td>
-    <td className="py-3 px-4 text-center text-[14px] font-medium tabular-nums text-white">
-      {season.wins}
-    </td>
-    <td className="py-3 px-4 text-center text-[14px] font-medium tabular-nums text-white">
-      {season.podiums}
-    </td>
-    <td className="py-3 px-4 text-center text-[14px] font-medium tabular-nums text-white">
-      {season.poles}
-    </td>
-    <td className="py-3 px-4 text-center text-[14px] font-medium tabular-nums text-white">
-      {season.fastestLaps}
-    </td>
-    <td className="py-3 px-4 text-center text-[14px] font-bold tabular-nums text-white">
-      {season.points}
-    </td>
-    <td className="py-3 px-4 text-center">
-      {season.position ? (
-        <span
-          className={cn(
-            'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
-            season.position === 1 && 'bg-amber-500/20 text-amber-400',
-            season.position === 2 && 'bg-zinc-500/20 text-zinc-300',
-            season.position === 3 && 'bg-orange-500/20 text-orange-400',
-            season.position > 3 && 'bg-white/[0.04] text-white/40'
-          )}
-        >
-          {season.position}
-        </span>
-      ) : (
-        <span className="text-[12px] text-white/20">—</span>
-      )}
-    </td>
-  </motion.tr>
-);
 
 const DriverProfile = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -227,7 +128,6 @@ const DriverProfile = () => {
 
         {/* Hero */}
         <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-end">
-          {/* Image */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,7 +156,6 @@ const DriverProfile = () => {
                   )}
                 </div>
               </div>
-              {/* Season selector */}
               {availableImages.length > 1 && (
                 <div className="relative z-10 flex items-center justify-center gap-1.5 pb-4">
                   {availableImages.map((img) => (
@@ -281,7 +180,6 @@ const DriverProfile = () => {
             </div>
           </motion.div>
 
-          {/* Info & Quick Stats */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -327,44 +225,59 @@ const DriverProfile = () => {
         </div>
 
         {/* Season Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h2 className="mb-4 text-xl font-bold uppercase italic tracking-[-0.025em] text-white">
-            Season by Season
-          </h2>
-          <div className="overflow-hidden rounded-xl border border-white/[0.06]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#0c0c0e] text-[11px] font-bold uppercase tracking-wider text-white/30">
-                  <th className="py-3 px-4 text-left">Season</th>
-                  <th className="py-3 px-4 text-left">Team</th>
-                  <th className="py-3 px-4 text-center">Races</th>
-                  <th className="py-3 px-4 text-center">Wins</th>
-                  <th className="py-3 px-4 text-center">Podiums</th>
-                  <th className="py-3 px-4 text-center">Poles</th>
-                  <th className="py-3 px-4 text-center">FL</th>
-                  <th className="py-3 px-4 text-center">Points</th>
-                  <th className="py-3 px-4 text-center">WDC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {career.seasons.map((season, i) => (
-                  <SeasonRow
-                    key={season.season}
-                    season={season}
-                    index={i}
-                    isCurrent={season.season === selectedYear}
-                    isRookie={season.season === rookieSeason}
-                    isChampion={season.position === 1}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+        <SeasonHistoryTable>
+          <thead>
+            <tr className="bg-[#0c0c0e] text-[11px] font-bold uppercase tracking-wider text-white/30">
+              <th className="py-3 px-4 text-left">Season</th>
+              <th className="py-3 px-4 text-left">Team</th>
+              <th className="py-3 px-4 text-center">Races</th>
+              <th className="py-3 px-4 text-center">Wins</th>
+              <th className="py-3 px-4 text-center">Podiums</th>
+              <th className="py-3 px-4 text-center">Poles</th>
+              <th className="py-3 px-4 text-center">FL</th>
+              <th className="py-3 px-4 text-center">Points</th>
+              <th className="py-3 px-4 text-center">WDC</th>
+            </tr>
+          </thead>
+          <tbody>
+            {career.seasons.map((season, i) => {
+              const badges = [];
+              if (season.season === rookieSeason)
+                badges.push({ label: 'Rookie', color: 'amber' as const });
+              return (
+                <ProfileSeasonRow
+                  key={season.season}
+                  season={season}
+                  index={i}
+                  isCurrent={season.season === selectedYear}
+                  isChampion={season.position === 1}
+                  badges={badges}
+                  columns={[
+                    <span className="text-[14px] text-white/60">{season.team}</span>,
+                    <span className="text-[14px] font-medium tabular-nums text-white">
+                      {season.races}
+                    </span>,
+                    <span className="text-[14px] font-medium tabular-nums text-white">
+                      {season.wins}
+                    </span>,
+                    <span className="text-[14px] font-medium tabular-nums text-white">
+                      {season.podiums}
+                    </span>,
+                    <span className="text-[14px] font-medium tabular-nums text-white">
+                      {season.poles}
+                    </span>,
+                    <span className="text-[14px] font-medium tabular-nums text-white">
+                      {season.fastestLaps}
+                    </span>,
+                    <span className="text-[14px] font-bold tabular-nums text-white">
+                      {season.points}
+                    </span>,
+                  ]}
+                />
+              );
+            })}
+          </tbody>
+        </SeasonHistoryTable>
       </main>
     </div>
   );

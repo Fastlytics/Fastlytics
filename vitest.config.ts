@@ -9,7 +9,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
     css: true,
-    exclude: ['**/node_modules/**', '**/.kilocode/**', '**/dist/**', '**/build/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/.kilocode/**',
+      '**/.agents/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/projects/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
