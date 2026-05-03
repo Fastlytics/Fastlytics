@@ -26,6 +26,7 @@ import {
   PlayCircle02Icon,
 } from 'hugeicons-react';
 import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
+import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { RacingChart } from '@/components/charts/RacingChart';
 import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
 import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
@@ -73,6 +74,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileRace } from '@/components/mobile';
 import TireIcon from '@/components/mobile/tireicon';
 import { GatedRoute } from '@/components/common/GatedRoute';
+import { getCountryCode } from '@/utils/countryUtils';
 
 // --- Helper Functions ---
 
@@ -851,6 +853,26 @@ const Race = () => {
     return { days, hours, minutes, seconds };
   }, [nextSession, now]);
 
+  const scheduleHeroDate = useMemo(() => {
+    if (!sessionSchedule?.sessions.length) return 'Dates TBD';
+    const sortedDates = sessionSchedule.sessions
+      .map((session) => new Date(session.date))
+      .sort((a, b) => a.getTime() - b.getTime());
+    const anchorDate = nextSession
+      ? new Date(nextSession.date)
+      : sortedDates[sortedDates.length - 1];
+    return anchorDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }, [nextSession, sessionSchedule]);
+
+  const scheduleHeroCountryCode = useMemo(() => {
+    if (!sessionSchedule) return undefined;
+    const code = getCountryCode(sessionSchedule.country || sessionSchedule.location);
+    return code !== 'xx' ? code : undefined;
+  }, [sessionSchedule]);
+
   const formatTimeStr = (timeStr: string | null) => {
     if (!timeStr) return '-';
     if (is24Hour) return timeStr;
@@ -1055,61 +1077,19 @@ const Race = () => {
           sessionSchedule ? (
             <div className="space-y-10">
               {/* Hero Countdown */}
-              <div className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 md:p-10">
-                <div className="absolute right-4 top-4 text-white/[0.03] transition-opacity group-hover:text-white/[0.05]">
-                  <Flag01Icon className="h-48 w-48" />
-                </div>
-                <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <div className="mb-3 flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                      </span>
-                      <span className="text-[12px] font-semibold uppercase tracking-wider text-red-400">
-                        Upcoming Session
-                      </span>
-                    </div>
-                    <h2 className="mb-2 text-2xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-3xl">
-                      Countdown to {nextSession ? nextSession.name : 'Race Weekend'}
-                    </h2>
-                    <div className="text-[15px] text-white/50">
-                      {nextSession
-                        ? new Date(nextSession.date).toLocaleDateString(undefined, {
-                            weekday: 'long',
-                            month: 'long',
-                            day: 'numeric',
-                          })
-                        : 'Dates TBD'}
-                    </div>
-                  </div>
-                  {countdown ? (
-                    <div className="flex gap-5 sm:gap-7">
-                      {[
-                        { label: 'DAYS', value: countdown.days },
-                        { label: 'HRS', value: countdown.hours },
-                        { label: 'MIN', value: countdown.minutes },
-                        { label: 'SEC', value: countdown.seconds },
-                      ].map((item) => (
-                        <div key={item.label} className="text-center">
-                          <div
-                            className={`text-4xl font-bold tabular-nums leading-none sm:text-5xl ${item.label === 'SEC' ? 'text-red-400' : 'text-white'}`}
-                          >
-                            {item.value.toString().padStart(2, '0')}
-                          </div>
-                          <div className="mt-1 text-[10px] uppercase tracking-widest text-white/35">
-                            {item.label}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-3xl font-bold uppercase italic text-red-400">
-                      Session in Progress
-                    </div>
-                  )}
-                </div>
-              </div>
+              <EventHeroCard
+                eyebrow="Upcoming Session"
+                title={sessionSchedule.eventName}
+                displayDate={scheduleHeroDate}
+                location={sessionSchedule.location}
+                countryCode={scheduleHeroCountryCode}
+                countryAlt={sessionSchedule.country || sessionSchedule.location}
+                isSprint={sessionSchedule.eventFormat?.toLowerCase().includes('sprint')}
+                nextSession={
+                  nextSession ? { name: nextSession.name, date: new Date(nextSession.date) } : null
+                }
+                countdownFallbackLabel={countdown ? undefined : 'Session in Progress'}
+              />
 
               {/* Schedule */}
               <div>

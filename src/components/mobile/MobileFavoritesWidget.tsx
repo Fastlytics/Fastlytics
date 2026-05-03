@@ -40,7 +40,7 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
   const { selectedYear } = useSeason();
   const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
-  const { favoriteDriver, remainingPoints, driverRivals } = useFavoritesWidgetData(
+  const { favoriteDriver, favoriteTeam, remainingPoints, driverRivals } = useFavoritesWidgetData(
     profile,
     drivers,
     teams,

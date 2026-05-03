@@ -18,7 +18,7 @@ const FastlyticsLogo = ({ size = 28, className }: FastlyticsLogoProps) => {
     <span
       className={cn('inline-flex items-center select-none cursor-pointer', className)}
       style={{
-        fontFamily: "'Geist', 'Inter', sans-serif",
+        fontFamily: "'Inter', sans-serif",
         fontWeight: 800,
         fontSize: size,
         lineHeight: 1.15,

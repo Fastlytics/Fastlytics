@@ -19,8 +19,8 @@ export interface ChartExportData {
 }
 
 const PNG_SCALE = 4;
-const FONT = 'Geist, system-ui, -apple-system, sans-serif';
-const MONO = 'Geist Mono, monospace';
+const FONT = 'Inter, system-ui, -apple-system, sans-serif';
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
 
 /** Map 3-letter driver codes to last names. */
 const DRIVER_LAST_NAMES: Record<string, string> = {

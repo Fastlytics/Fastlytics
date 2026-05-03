@@ -463,7 +463,7 @@ const ChampionshipProgression = () => {
                 />
                 <YAxis
                   stroke="#666"
-                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold', fontFamily: 'Geist' }}
+                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold', fontFamily: 'Inter' }}
                   tickLine={false}
                   axisLine={false}
                   domain={[

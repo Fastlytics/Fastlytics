@@ -37,6 +37,8 @@ import MobileTelemetry from './MobileTelemetry';
 import { getDriverImage } from '@/utils/imageMapping';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { getTeamColorClass } from '@/lib/teamColors';
+import MobileEventHeroCard from './MobileEventHeroCard';
+import { getCountryCode } from '@/utils/countryUtils';
 
 // --- Helper Functions ---
 
@@ -167,58 +169,6 @@ const calculateFullRaceTime = (
   } catch {
     return null;
   }
-};
-
-// Countdown Component
-const MobileCountdown = ({ targetDate }: { targetDate: Date }) => {
-  const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
-
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const difference = +targetDate - +new Date();
-      if (difference > 0) {
-        return {
-          d: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          h: Math.floor((difference / (1000 * 60 * 60)) % 24),
-          m: Math.floor((difference / 1000 / 60) % 60),
-          s: Math.floor((difference / 1000) % 60),
-        };
-      }
-      return { d: 0, h: 0, m: 0, s: 0 };
-    };
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- timer initialization requires immediate setState
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  const pad = (n: number) => n.toString().padStart(2, '0');
-
-  return (
-    <div className="flex items-center justify-center gap-3">
-      {[
-        { value: timeLeft.d, label: 'Days' },
-        { value: timeLeft.h, label: 'Hrs' },
-        { value: timeLeft.m, label: 'Min' },
-        { value: timeLeft.s, label: 'Sec', highlight: true },
-      ].map((item, idx) => (
-        <React.Fragment key={item.label}>
-          <div className="flex flex-col items-center">
-            <div
-              className={`text-3xl font-bold tabular-nums leading-none ${item.highlight ? 'text-red-400' : 'text-white'}`}
-            >
-              {pad(item.value)}
-            </div>
-            <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
-              {item.label}
-            </div>
-          </div>
-          {idx < 3 && <span className="text-2xl font-bold text-gray-700 -mt-4">:</span>}
-        </React.Fragment>
-      ))}
-    </div>
-  );
 };
 
 // Session Selector Modal
@@ -1350,6 +1300,13 @@ const MobileRace: React.FC = () => {
     const upcomingSession = sessionSchedule.sessions.find((s) => new Date(s.date) > now);
     const nextSession =
       upcomingSession || sessionSchedule.sessions[sessionSchedule.sessions.length - 1];
+    const nextSessionDate = nextSession ? new Date(nextSession.date) : null;
+    const scheduleHeroDate = nextSessionDate
+      ? nextSessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : 'Dates TBD';
+    const scheduleHeroCountryCode = getCountryCode(
+      sessionSchedule.country || sessionSchedule.location
+    );
 
     return (
       <div className="min-h-screen bg-[#09090b] pb-20 text-white font-sans">
@@ -1357,18 +1314,17 @@ const MobileRace: React.FC = () => {
 
         <div className="p-4 space-y-6">
           {/* Countdown */}
-          {nextSession && new Date(nextSession.date) > now && (
-            <div className="py-8">
-              <div className="text-center mb-6">
-                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Next Session
-                </h2>
-                <h1 className="text-3xl font-black uppercase italic text-white">
-                  {nextSession.name}
-                </h1>
-              </div>
-              <MobileCountdown targetDate={new Date(nextSession.date)} />
-            </div>
+          {nextSession && new Date(nextSession.date) > now && nextSessionDate && (
+            <MobileEventHeroCard
+              eyebrow="Upcoming Session"
+              title={sessionSchedule.eventName.replace('Grand Prix', 'GP')}
+              displayDate={scheduleHeroDate}
+              location={sessionSchedule.location}
+              countryCode={scheduleHeroCountryCode !== 'xx' ? scheduleHeroCountryCode : undefined}
+              countryAlt={sessionSchedule.country || sessionSchedule.location}
+              isSprint={sessionSchedule.eventFormat?.toLowerCase().includes('sprint')}
+              nextSession={{ name: nextSession.name, date: nextSessionDate }}
+            />
           )}
 
           {/* Schedule List */}

@@ -1,154 +1,14 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Calendar01Icon,
-  FlashIcon,
-  ChampionIcon,
-  ArrowRight01Icon,
-  Clock01Icon,
-} from 'hugeicons-react';
+import { Calendar01Icon, ChampionIcon } from 'hugeicons-react';
 import MobileLayout from './MobileLayout';
 import MobilePageHeader from './MobilePageHeader';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { ProcessedRaceEvent } from '@/lib/calendarUtils';
+import MobileEventHeroCard from './MobileEventHeroCard';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
-
-const HeroCountdown = ({ targetDate }: { targetDate: Date }) => {
-  const calculateTimeLeft = () => {
-    const difference = +targetDate - +new Date();
-    if (difference > 0) {
-      return {
-        d: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        h: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        m: Math.floor((difference / 1000 / 60) % 60),
-        s: Math.floor((difference / 1000) % 60),
-      };
-    }
-    return { d: 0, h: 0, m: 0, s: 0 };
-  };
-
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetDate]);
-
-  const pad = (n: number) => n.toString().padStart(2, '0');
-
-  return (
-    <div className="flex items-center justify-center gap-2">
-      {[
-        { value: timeLeft.d, label: 'D' },
-        { value: timeLeft.h, label: 'H' },
-        { value: timeLeft.m, label: 'M' },
-        { value: timeLeft.s, label: 'S', highlight: true },
-      ].map((item, idx) => (
-        <React.Fragment key={item.label}>
-          <div className="flex flex-col items-center">
-            <div
-              className={`text-2xl font-black font-sans ${item.highlight ? 'text-red-500' : 'text-white'}`}
-            >
-              {pad(item.value)}
-            </div>
-            <div className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">
-              {item.label}
-            </div>
-          </div>
-          {idx < 3 && <span className="text-xl font-bold text-gray-700 -mt-3">:</span>}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-};
-
-interface NextRaceHeroProps {
-  event: ProcessedRaceEvent & { countryCode?: string };
-  nextSession: { name: string; date: Date } | null;
-  selectedYear: number;
-}
-
-const NextRaceHero: React.FC<NextRaceHeroProps> = ({ event, nextSession, selectedYear }) => {
-  const navigate = useNavigate();
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden bg-red-500/[0.04] border-2 border-red-500/50 rounded-xl shadow-[0_0_60px_rgba(239,68,68,0.08)]"
-      onClick={() => {
-        navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
-      }}
-    >
-      {/* Top pulse bar */}
-      <div className="relative h-0.5 w-full bg-red-500/20">
-        <div className="absolute inset-0 animate-[shimmer_3s_linear_infinite] bg-gradient-to-r from-transparent via-red-500/60 to-transparent bg-[length:200%_100%]" />
-      </div>
-
-      <div className="relative p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-            </span>
-            <span className="text-xs font-black uppercase tracking-wider text-red-500">
-              Next Grand Prix
-            </span>
-          </div>
-          <span className="text-xs font-sans text-red-400/50 uppercase">
-            Round {event.RoundNumber}
-          </span>
-        </div>
-
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-14 h-10 overflow-hidden border-2 border-red-500/20 flex-shrink-0 rounded-md">
-            {event.countryCode && (
-              <img
-                src={`https://flagcdn.com/h80/${event.countryCode}.png`}
-                alt={event.Country || event.Location}
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-black uppercase italic tracking-tight text-red-400 leading-tight">
-              {event.EventName.replace('Grand Prix', 'GP')}
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-gray-400 font-sans uppercase">{event.displayDate}</span>
-              {event.isSprint && (
-                <span className="text-[9px] font-black uppercase bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded-sm flex items-center gap-0.5">
-                  <FlashIcon className="w-2.5 h-2.5" /> Sprint
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {nextSession && (
-          <div className="bg-red-500/[0.05] p-3 border-2 border-red-500/20 rounded-md">
-            <div className="flex items-center justify-center gap-1.5 mb-2">
-              <Clock01Icon className="w-3 h-3 text-red-500" />
-              <span className="text-[10px] uppercase tracking-wider text-gray-400 font-sans">
-                Until <span className="text-red-400 font-bold">{nextSession.name}</span>
-              </span>
-            </div>
-            <HeroCountdown targetDate={nextSession.date} />
-          </div>
-        )}
-
-        <div className="mt-3 flex items-center justify-center gap-1.5 text-red-500">
-          <span className="text-xs font-black uppercase tracking-wider">View Race Hub</span>
-          <ArrowRight01Icon className="w-3.5 h-3.5" />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 interface MobileRaceCardProps {
   event: ProcessedRaceEvent;
@@ -387,7 +247,25 @@ const MobileCalendar: React.FC = () => {
         {/* Next Race Hero Card */}
         {nextRace && filter !== 'completed' && (
           <div className="px-4 pb-4">
-            <NextRaceHero event={nextRace} nextSession={nextSession} selectedYear={selectedYear} />
+            {nextSession && (
+              <MobileEventHeroCard
+                eyebrow="Next Grand Prix"
+                title={nextRace.EventName.replace('Grand Prix', 'GP')}
+                displayDate={nextRace.displayDate}
+                location={nextRace.Location}
+                countryCode={nextRace.countryCode || undefined}
+                countryAlt={nextRace.Country || nextRace.Location}
+                roundLabel={`Round ${nextRace.RoundNumber}`}
+                isSprint={nextRace.isSprint}
+                nextSession={nextSession}
+                ctaLabel="View Race Hub"
+                onClick={() => {
+                  navigate(
+                    `/race/${selectedYear}-${nextRace.EventName.toLowerCase().replace(/\s+/g, '-')}`
+                  );
+                }}
+              />
+            )}
           </div>
         )}
 
