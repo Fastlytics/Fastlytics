@@ -80,7 +80,7 @@ import { getCountryCode } from '@/utils/countryUtils';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
-const parseLapTime = (timeStr: string | null | undefined): number => {
+export const parseRaceLapTime = (timeStr: string | null | undefined): number => {
   if (!timeStr) return Infinity;
   try {
     const parts = timeStr.split(/[:.]/);
@@ -94,10 +94,11 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
   }
   return Infinity;
 };
+const parseLapTime = parseRaceLapTime;
 
 const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
 
-const parseTestingSessionAlias = (
+export const parseRaceTestingSessionAlias = (
   sessionType: string
 ): { day: number; window: 'morning' | 'afternoon' } | null => {
   const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
@@ -107,14 +108,19 @@ const parseTestingSessionAlias = (
     window: match[2].toUpperCase() === 'AM' ? 'morning' : 'afternoon',
   };
 };
+const parseTestingSessionAlias = parseRaceTestingSessionAlias;
 
-const resolveSessionForAnalysis = (sessionType: string): string => {
+export const resolveRaceSessionForAnalysis = (sessionType: string): string => {
   const parsed = parseTestingSessionAlias(sessionType);
   if (!parsed) return sessionType;
   return `FP${parsed.day}`;
 };
+const resolveSessionForAnalysis = resolveRaceSessionForAnalysis;
 
-const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = false): string => {
+export const formatRaceSessionTime = (
+  timeStr: string | null | undefined,
+  isWinner: boolean = false
+): string => {
   if (!timeStr) return '-';
   if (isWinner) {
     try {
@@ -167,6 +173,7 @@ const formatRaceTime = (timeStr: string | null | undefined, isWinner: boolean = 
   }
   return timeStr;
 };
+const formatRaceTime = formatRaceSessionTime;
 
 // --- Components ---
 

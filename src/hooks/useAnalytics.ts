@@ -5,15 +5,16 @@ import { logger } from '@/lib/logger';
 import { getSessionId } from '@/lib/session';
 import { fetchTrackingData, TrackingData } from '@/lib/tracking';
 import posthog from 'posthog-js';
+import { hasAnalyticsConsent } from '@/lib/consent';
 
 /** Get the user's local hour bucket (0-23) and day-of-week for access pattern analysis */
 const getAccessTimeMeta = () => {
   const now = new Date();
   return {
     local_hour: now.getHours(),
-    local_day: now.toLocaleDateString('en-US', { weekday: 'short' }), // Mon, Tue, etc.
+    local_day: now.toLocaleDateString('en-US', { weekday: 'short' }),
     local_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    local_date: now.toISOString().slice(0, 10), // 2026-02-28
+    local_date: now.toISOString().slice(0, 10),
   };
 };
 
@@ -23,15 +24,18 @@ export const useAnalytics = () => {
   const sessionId = useRef<string>(getSessionId());
   const [trackingData, setTrackingData] = useState<Partial<TrackingData>>({});
 
-  // Fetch advanced tracking data on mount
+  // Fetch advanced tracking data on mount (only if analytics consent given)
   useEffect(() => {
-    fetchTrackingData().then((data) => setTrackingData(data));
+    if (hasAnalyticsConsent()) {
+      fetchTrackingData().then((data) => setTrackingData(data));
+    }
   }, []);
 
-  // Track time-on-page when component unmounts
+  // Track time-on-page when component unmounts (only if analytics consent given)
   useEffect(() => {
     pageEntryTime.current = Date.now();
     return () => {
+      if (!hasAnalyticsConsent()) return;
       const timeSpent = Math.round((Date.now() - pageEntryTime.current) / 1000);
       if (timeSpent > 1) {
         posthog.capture('time_on_page', {
@@ -45,9 +49,11 @@ export const useAnalytics = () => {
 
   const trackEvent = useCallback(
     async (eventName: string, data?: Record<string, unknown>) => {
+      if (!hasAnalyticsConsent()) return;
+
       const enrichedData = {
         ...data,
-        ...trackingData, // Includes IP, Geolocation, Device Fingerprint, ISP
+        ...trackingData,
         page_path: window.location.pathname,
         page_url: window.location.href,
         referrer: document.referrer || undefined,
@@ -59,14 +65,14 @@ export const useAnalytics = () => {
         ...getAccessTimeMeta(),
       };
 
-      // 1. Track in PostHog (always available, handles anonymous users)
+      // 1. PostHog
       try {
         posthog.capture(eventName, enrichedData);
       } catch (error) {
         logger.warn('PostHog tracking failed:', error);
       }
 
-      // 2. Track in Umami (if available) — send enriched data for parity
+      // 2. Umami
       if (window.umami) {
         try {
           window.umami.track(eventName, enrichedData);
@@ -75,7 +81,7 @@ export const useAnalytics = () => {
         }
       }
 
-      // 3. Track in Supabase (ALL users — anonymous and authenticated)
+      // 3. Supabase — first-party operational analytics, still gated for strict compliance
       try {
         const { error } = await supabase.from('user_activity').insert({
           user_id: user?.id ?? null,
@@ -83,7 +89,6 @@ export const useAnalytics = () => {
           event_name: eventName,
           event_data: enrichedData,
         });
-
         if (error) {
           logger.error('Supabase analytics tracking failed:', error);
         }

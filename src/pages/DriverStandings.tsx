@@ -125,6 +125,7 @@ const DriverStandings = () => {
                   points={driver.points}
                   wins={driver.wins}
                   podiums={driver.podiums}
+                  transparent
                   leaderLabel={
                     position === 1
                       ? championshipStatus === 'champion'
@@ -133,21 +134,15 @@ const DriverStandings = () => {
                       : undefined
                   }
                 >
-                  <Avatar
+                  <img
+                    src={getDriverImage(driver.code, selectedYear)}
+                    alt={driver.name}
                     className={
                       position === 1
-                        ? 'mb-4 h-36 w-36 border border-amber-500/20'
-                        : 'mb-4 h-36 w-36 border border-white/[0.08]'
+                        ? 'mb-4 h-44 w-44 rounded-full object-cover object-top border border-amber-500/20'
+                        : 'mb-4 h-40 w-40 rounded-full object-cover object-top border border-white/[0.08]'
                     }
-                  >
-                    <AvatarImage
-                      src={getDriverImage(driver.code, selectedYear)}
-                      className="object-cover object-top"
-                    />
-                    <AvatarFallback className="bg-[#1a1a1e] text-[14px] font-bold">
-                      {driver.code}
-                    </AvatarFallback>
-                  </Avatar>
+                  />
                   <div className="text-[12px] font-medium tracking-wider text-white/40">
                     {driver.team}
                   </div>
