@@ -429,7 +429,7 @@ const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, r
                       <XAxis
                         dataKey="LapNumber"
                         stroke="#666"
-                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'Geist' }}
+                        tick={{ fill: '#888', fontSize: 10, fontFamily: 'Inter' }}
                         interval="preserveStartEnd"
                         tickLine={false}
                         axisLine={false}

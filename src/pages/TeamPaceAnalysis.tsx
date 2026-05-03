@@ -465,7 +465,7 @@ const TeamPaceAnalysis = () => {
                             fill="#666"
                             fontSize={12}
                             fontWeight="bold"
-                            fontFamily="Geist"
+                            fontFamily="Inter"
                             style={{ textTransform: 'uppercase' }}
                           >
                             {payload.value}
