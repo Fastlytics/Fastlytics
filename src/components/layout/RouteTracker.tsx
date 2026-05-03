@@ -2,11 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { logger } from '@/lib/logger';
+import { hasAnalyticsConsent } from '@/lib/consent';
 
 /**
  * Tracks route changes and captures navigation analytics.
- * Captures: page path, referrer (previous page), time spent on previous page,
- * query params, and navigation pattern.
+ * All tracking is gated behind analytics consent.
  */
 const RouteTracker = () => {
   const location = useLocation();
@@ -14,6 +14,12 @@ const RouteTracker = () => {
   const pageEntryTime = useRef<number>(0);
 
   useEffect(() => {
+    if (!hasAnalyticsConsent()) {
+      prevPath.current = location.pathname;
+      pageEntryTime.current = Date.now();
+      return;
+    }
+
     const currentPath = location.pathname;
     const timeOnPrevPage = prevPath.current
       ? Math.round((Date.now() - pageEntryTime.current) / 1000)
@@ -36,7 +42,6 @@ const RouteTracker = () => {
       logger.warn('Route tracking failed:', error);
     }
 
-    // Track in Umami too
     if (window.umami) {
       try {
         window.umami.track('pageview', {

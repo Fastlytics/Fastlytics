@@ -11,6 +11,7 @@ interface PodiumCardProps {
   podiums: number;
   leaderLabel?: string;
   delay?: number;
+  transparent?: boolean;
   children: React.ReactNode;
 }
 
@@ -76,6 +77,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
   podiums,
   leaderLabel,
   delay,
+  transparent,
   children,
 }) => {
   const cfg = positionConfig[position];
@@ -90,7 +92,8 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
     >
       <div
         className={cn(
-          'group relative overflow-hidden rounded-xl bg-[#0c0c0e] transition-colors',
+          'group relative overflow-hidden rounded-xl transition-colors',
+          !transparent && 'bg-[#0c0c0e]',
           cfg.border,
           cfg.shadow,
           'border'
@@ -147,7 +150,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
               className={cn(
                 'rounded-lg border p-3 text-center',
                 cfg.statBorder,
-                cfg.statBg,
+                !transparent && cfg.statBg,
                 !isP1 && 'p-2.5'
               )}
             >
@@ -165,7 +168,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
               className={cn(
                 'rounded-lg border p-3 text-center',
                 cfg.statBorder,
-                cfg.statBg,
+                !transparent && cfg.statBg,
                 !isP1 && 'p-2.5'
               )}
             >

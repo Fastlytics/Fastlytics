@@ -41,15 +41,19 @@ import {
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
-const isTestingEvent = (event: ScheduleEvent): boolean =>
+export const isTestingDashboardEvent = (event: ScheduleEvent): boolean =>
   event.EventFormat?.toLowerCase().includes('test') ?? false;
+const isTestingEvent = isTestingDashboardEvent;
 
-const getEventStartDate = (event: ScheduleEvent): Date =>
+export const getDashboardEventStartDate = (event: ScheduleEvent): Date =>
   new Date(event.Session1Date || event.EventDate);
+const getEventStartDate = getDashboardEventStartDate;
 
-const toRaceSlug = (eventName: string): string => eventName.toLowerCase().replace(/\s+/g, '-');
+export const toDashboardRaceSlug = (eventName: string): string =>
+  eventName.toLowerCase().replace(/\s+/g, '-');
+const toRaceSlug = toDashboardRaceSlug;
 
-const parseLapTime = (timeStr: string | null | undefined): number => {
+export const parseDashboardLapTime = (timeStr: string | null | undefined): number => {
   if (!timeStr) return Number.POSITIVE_INFINITY;
   const cleaned = timeStr.startsWith('+') ? timeStr.slice(1) : timeStr;
   const parts = cleaned.split(/[:.]/);
@@ -57,9 +61,10 @@ const parseLapTime = (timeStr: string | null | undefined): number => {
   if (parts.length === 2) return Number(parts[0]) + Number(parts[1]) / 1000;
   return Number.POSITIVE_INFINITY;
 };
+const parseLapTime = parseDashboardLapTime;
 
 const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
-const getTestingSessionOrder = (sessionType: string): number => {
+export const getDashboardTestingSessionOrder = (sessionType: string): number => {
   const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
   if (match) {
     const day = Number(match[1]);
@@ -71,6 +76,7 @@ const getTestingSessionOrder = (sessionType: string): number => {
   if (sessionType === 'FP3') return 31;
   return -1;
 };
+const getTestingSessionOrder = getDashboardTestingSessionOrder;
 
 const Dashboard = () => {
   const [now] = useState(() => Date.now());
@@ -84,7 +90,11 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { data: schedule = [], isLoading: isLoadingSchedule } = useQuery<ScheduleEvent[]>({
+  const {
+    data: schedule = [],
+    isLoading: isLoadingSchedule,
+    isError: isScheduleError,
+  } = useQuery<ScheduleEvent[]>({
     queryKey: ['schedule', selectedYear],
     queryFn: () => fetchSchedule(selectedYear),
   });
@@ -116,12 +126,20 @@ const Dashboard = () => {
   );
   const isTestingMode = !hasRaceResults && !hasRaceWeekendStarted && testingEvents.length > 0;
 
-  const { data: teamStandings = [], isLoading: isLoadingTeams } = useQuery<TeamStanding[]>({
+  const {
+    data: teamStandings = [],
+    isLoading: isLoadingTeams,
+    isError: isTeamsError,
+  } = useQuery<TeamStanding[]>({
     queryKey: ['teamStandings', selectedYear],
     queryFn: () => fetchTeamStandings(selectedYear),
   });
 
-  const { data: driverStandings = [], isLoading: isLoadingDrivers } = useQuery<DriverStanding[]>({
+  const {
+    data: driverStandings = [],
+    isLoading: isLoadingDrivers,
+    isError: isDriversError,
+  } = useQuery<DriverStanding[]>({
     queryKey: ['driverStandings', selectedYear],
     queryFn: () => fetchDriverStandings(selectedYear),
   });
@@ -301,6 +319,27 @@ const Dashboard = () => {
   }, [profile, driverStandings]);
 
   const isMobile = useIsMobile();
+  const hasCriticalDashboardError = isScheduleError || isTeamsError || isDriversError;
+
+  if (hasCriticalDashboardError) {
+    return (
+      <div style={inter} className="min-h-screen bg-[#09090b] text-white">
+        <SEO
+          title="F1 Dashboard — Fastlytics"
+          description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule."
+          keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+        />
+        <div className="flex min-h-screen items-center justify-center px-6 text-center">
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold uppercase text-white">Unable to load dashboard</h1>
+            <p className="text-sm text-white/50">
+              Critical dashboard data could not be loaded. Please try again shortly.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Mobile view ──────────────────────────────────────────────────────────
   if (isMobile) {
@@ -643,7 +682,7 @@ const TestingCommandCenter = ({
 );
 
 // Helper type so TestingCommandCenter can infer the shape
-function buildEmptyTestingInsights() {
+export function buildEmptyTestingInsights() {
   return {
     fastest: [] as DetailedRaceResult[],
     mileage: [] as DetailedRaceResult[],
