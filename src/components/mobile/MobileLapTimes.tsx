@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { driverColor } from '@/lib/driverColor';
+import { getTeamColorClass } from '@/lib/teamColors';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -67,22 +68,6 @@ const formatLapTime = (totalSeconds: number | null): string => {
   const seconds = totalSeconds % 60;
   const formattedSeconds = seconds.toFixed(3).padStart(6, '0');
   return `${minutes}:${formattedSeconds}`;
-};
-
-const getTeamColorClass = (teamName: string | undefined): string => {
-  if (!teamName) return 'gray';
-  const simpleName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (simpleName.includes('mclaren')) return 'mclaren';
-  if (simpleName.includes('mercedes')) return 'mercedes';
-  if (simpleName.includes('redbull')) return 'redbull';
-  if (simpleName.includes('ferrari')) return 'ferrari';
-  if (simpleName.includes('alpine')) return 'alpine';
-  if (simpleName.includes('astonmartin')) return 'astonmartin';
-  if (simpleName.includes('williams')) return 'williams';
-  if (simpleName.includes('haas')) return 'haas';
-  if (simpleName.includes('sauber')) return 'alfaromeo';
-  if (simpleName.includes('racingbulls') || simpleName.includes('alphatauri')) return 'alphatauri';
-  return 'gray';
 };
 
 const MobileLapTimes: React.FC<MobileLapTimesProps> = ({ year, event, session, raceResults }) => {

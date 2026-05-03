@@ -16,14 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchLapTimes,
-  fetchSessionDrivers,
-  SessionDriver,
-  LapTimeDataPoint,
-  LapTimesEnrichedResponse,
-  EnrichedLapRecord,
-} from '@/lib/api';
+import { EnrichedLapRecord } from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import {
   AlertCircleIcon,
@@ -47,12 +40,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getDriverImage } from '@/utils/imageMapping';
-import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLapChartData, MIN_DRIVERS } from '@/hooks/useLapChartData';
 
 const formatLapTime = (totalSeconds: number | null): string => {
   if (totalSeconds === null || isNaN(totalSeconds)) {
@@ -88,8 +80,6 @@ interface RacingChartProps {
   rivalDriver?: string | null;
 }
 
-const MIN_DRIVERS = 2;
-
 const RacingChart: React.FC<RacingChartProps> = ({
   className,
   delay = 0,
@@ -103,91 +93,44 @@ const RacingChart: React.FC<RacingChartProps> = ({
   favoriteDriver,
   rivalDriver,
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartVisRef = useChartVisibility({
-    chartName: 'lap_time_chart',
-    page: 'race',
-    meta: { year, event, session },
-  });
-  const { trackInteraction } = useAnalytics();
-  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
-
-  const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
-  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
   const [fuelCorrectionEnabled, setFuelCorrectionEnabled] = useState(false);
   const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
 
-  const getInitialDrivers = () => {
-    if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
-    const defaults: string[] = [];
-    if (favoriteDriver) defaults.push(favoriteDriver);
-    if (rivalDriver) defaults.push(rivalDriver);
-    return defaults;
-  };
-
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
-
-  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60 * 24,
-    enabled: !staticData && !!year && !!event && !!session,
-  });
-
-  const driverNameMap = useMemo(() => {
-    if (!availableDrivers) return new Map<string, string>();
-    const map = new Map<string, string>();
-    availableDrivers.forEach((d) => {
-      if (d.code && d.name) map.set(d.code, d.name);
-    });
-    return map;
-  }, [availableDrivers]);
-
-  const effectiveDrivers = useMemo(() => {
-    if (staticData) return selectedDrivers;
-    const validCodes = availableDrivers ? new Set(availableDrivers.map((d) => d.code)) : null;
-    const validSelected = validCodes
-      ? selectedDrivers.filter((d) => validCodes.has(d))
-      : selectedDrivers;
-    if (validSelected.length >= MIN_DRIVERS) return validSelected;
-    if (!availableDrivers) return validSelected;
-    const needed = MIN_DRIVERS - validSelected.length;
-    const candidates = availableDrivers
-      .filter((d) => !validSelected.includes(d.code))
-      .slice(0, needed)
-      .map((d) => d.code);
-    return [...validSelected, ...candidates];
-  }, [selectedDrivers, availableDrivers, staticData]);
-
-  const driversToDisplay = useMemo(
-    () => (staticData ? initialDrivers || [] : effectiveDrivers),
-    [staticData, initialDrivers, effectiveDrivers]
-  );
-
   const {
-    data: enrichedResponse,
-    isLoading: isLoadingLapTimes,
+    chartRef,
+    chartVisRef,
+    exportRef,
+    exportChart,
+    isExporting,
+    shouldLoadChart,
+    setShouldLoadChart,
+    focusedDriver,
+    setFocusedDriver,
+    selectedDrivers,
+    availableDrivers,
+    isLoadingDrivers,
+    driverNameMap,
+    effectiveDrivers,
+    driversToDisplay,
+    lapData: rawLapData,
+    isLoadingLapTimes,
     error,
     isError,
-  } = useQuery<LapTimesEnrichedResponse>({
-    queryKey: ['lapTimes', year, event, session, ...effectiveDrivers.sort()],
-    queryFn: () => fetchLapTimes(year, event, session, effectiveDrivers),
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 15,
-    retry: 1,
-    enabled:
-      !staticData &&
-      !!year &&
-      !!event &&
-      !!session &&
-      effectiveDrivers.length >= MIN_DRIVERS &&
-      shouldLoadChart,
+    isLoading,
+    toggleDriver,
+    trackInteraction,
+    enrichedResponse,
+  } = useLapChartData({
+    year,
+    event,
+    session,
+    initialDrivers,
+    staticData,
+    autoLoad,
+    favoriteDriver,
+    rivalDriver,
+    chartName: 'lap_time_chart',
   });
-
-  const lapData = staticData || enrichedResponse?.lapComparison;
-  const driverLapDetails = enrichedResponse?.driverLapDetails;
-  const weatherData = enrichedResponse?.weather;
 
   const TOTAL_FUEL_KG = 110;
   const FUEL_PER_LAP_KG = 1.8;
@@ -210,28 +153,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
       });
       return correctedPoint;
     });
-  }, [lapData, fuelCorrectionEnabled]);
+  }, [rawLapData, fuelCorrectionEnabled]);
 
   const chartData = correctedLapData;
-
-  const toggleDriver = (driverCode: string) => {
-    trackInteraction('driver_toggled', {
-      driver: driverCode,
-      chart: 'lap_time',
-      year,
-      event,
-      session,
-    });
-    setSelectedDrivers((prev) => {
-      if (prev.includes(driverCode)) {
-        if (prev.length > MIN_DRIVERS) return prev.filter((d) => d !== driverCode);
-        return prev;
-      }
-      return [...prev, driverCode];
-    });
-  };
-
-  const isLoading = !staticData && isLoadingLapTimes;
 
   const fastestLaps = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];

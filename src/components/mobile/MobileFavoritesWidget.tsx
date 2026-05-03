@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
+import { useFavoritesWidgetData } from '@/hooks/useFavoritesWidgetData';
 import {
   ChampionIcon,
   UserGroupIcon,
@@ -39,161 +40,12 @@ const MobileFavoritesWidget: React.FC<MobileFavoritesWidgetProps> = ({
   const { selectedYear } = useSeason();
   const getDriverImageForYear = (driverCode: string) => getDriverImage(driverCode, selectedYear);
 
-  const favoriteDriver = useMemo(() => {
-    if (!profile?.favorite_driver || !drivers.length) return null;
-    return drivers.find(
-      (d) =>
-        d.code === profile.favorite_driver ||
-        d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
-    );
-  }, [profile, drivers]);
-
-  const favoriteTeam = useMemo(() => {
-    if (!profile?.favorite_team || !teams.length) return null;
-    return teams.find(
-      (t) =>
-        t.team === profile.favorite_team ||
-        t.team.toLowerCase().includes(profile.favorite_team.toLowerCase())
-    );
-  }, [profile, teams]);
-
-  // Calculate remaining points in the season
-  // 2025+: 25 pts per race (no fastest lap bonus), 8 pts for sprint = 33 max for sprint weekend
-  // 2019-2024: 26 pts per race (25 + 1 fastest lap), 8 pts for sprint = 34 max for sprint weekend
-  const remainingPoints = useMemo(() => {
-    if (!schedule || schedule.length === 0) return 0;
-    const now = new Date();
-    let points = 0;
-
-    // Determine the season year from the first event
-    const seasonYear = schedule[0]?.EventDate
-      ? new Date(schedule[0].EventDate).getFullYear()
-      : getCurrentSeasonYear();
-    const hasFastestLapPoint = seasonYear >= 2019 && seasonYear <= 2024;
-    const raceMaxPoints = hasFastestLapPoint ? 26 : 25; // 25 for win + 1 fastest lap (2019-2024 only)
-
-    schedule.forEach((event) => {
-      const raceDate = event.Session5Date
-        ? new Date(event.Session5Date)
-        : event.EventDate
-          ? new Date(event.EventDate)
-          : null;
-      if (raceDate && raceDate > now) {
-        points += raceMaxPoints;
-      }
-      if (event.EventFormat.toLowerCase().includes('sprint')) {
-        const sessions = [
-          { name: event.Session1, date: event.Session1Date },
-          { name: event.Session2, date: event.Session2Date },
-          { name: event.Session3, date: event.Session3Date },
-          { name: event.Session4, date: event.Session4Date },
-          { name: event.Session5, date: event.Session5Date },
-        ];
-        const sprintSession = sessions.find((s) => s.name?.toLowerCase() === 'sprint');
-        if (sprintSession && sprintSession.date) {
-          if (new Date(sprintSession.date) > now) {
-            points += 8;
-          }
-        } else if (raceDate && raceDate > now) {
-          points += 8;
-        }
-      }
-    });
-    return points;
-  }, [schedule]);
-
-  // Full rivalry tracker with title contention logic
-  const driverRivals = useMemo(() => {
-    if (!favoriteDriver || drivers.length < 2) return null;
-
-    const index = drivers.findIndex((d) => d === favoriteDriver);
-    const leader = drivers[0];
-
-    // Title Contender Logic - same as desktop (ensure leader has points)
-    const isTitleContender =
-      leader.points > 0 && leader.points - favoriteDriver.points <= remainingPoints;
-
-    // Rivalry Status Logic
-    const getRivalryStatus = (rival: DriverStanding | null) => {
-      if (!rival) return 'none';
-      const gap = Math.abs(favoriteDriver.points - rival.points);
-      if (gap > remainingPoints) return 'confirmed';
-      return 'active';
-    };
-
-    // Determine which drivers to display
-    type DisplayDriver = {
-      driver: DriverStanding;
-      label: string;
-      status: string;
-      type: 'leader' | 'ahead' | 'you' | 'behind' | 'rival';
-    };
-    let displayDrivers: DisplayDriver[] = [];
-
-    if (isTitleContender) {
-      // Title Contender Mode
-      const contenders = drivers.filter((d) => leader.points - d.points <= remainingPoints);
-      const contenderIndex = contenders.findIndex((d) => d.code === favoriteDriver.code);
-
-      if (contenderIndex === 0) {
-        // P1 (Leader)
-        displayDrivers = [
-          { driver: favoriteDriver, label: 'LEADER', status: 'active', type: 'you' },
-          ...(contenders[1]
-            ? [{ driver: contenders[1], label: 'RIVAL', status: 'active', type: 'rival' as const }]
-            : []),
-        ];
-      } else if (contenderIndex === 1) {
-        // P2
-        displayDrivers = [
-          { driver: contenders[0], label: 'LEADER', status: 'active', type: 'leader' },
-          { driver: favoriteDriver, label: 'CONTENDER', status: 'active', type: 'you' },
-        ];
-      } else {
-        // P3 or lower
-        const immediateAhead = contenders[contenderIndex - 1];
-        displayDrivers = [
-          { driver: contenders[0], label: 'LEADER', status: 'active', type: 'leader' },
-          { driver: favoriteDriver, label: 'CONTENDER', status: 'active', type: 'you' },
-        ];
-      }
-    } else {
-      // Standard Mode: Ahead / You / Behind
-      const ahead = index > 0 ? drivers[index - 1] : null;
-      const behind = index < drivers.length - 1 ? drivers[index + 1] : null;
-
-      if (ahead) {
-        displayDrivers.push({
-          driver: ahead,
-          label: getRivalryStatus(ahead) === 'confirmed' ? 'LOCKED' : 'AHEAD',
-          status: getRivalryStatus(ahead),
-          type: 'ahead',
-        });
-      }
-
-      displayDrivers.push({
-        driver: favoriteDriver,
-        label: 'YOUR FAV',
-        status: 'active',
-        type: 'you',
-      });
-
-      if (behind) {
-        displayDrivers.push({
-          driver: behind,
-          label: getRivalryStatus(behind) === 'confirmed' ? 'SAFE' : 'BEHIND',
-          status: getRivalryStatus(behind),
-          type: 'behind',
-        });
-      }
-    }
-
-    return {
-      displayDrivers,
-      isTitleContender,
-      gapToLeader: leader.points - favoriteDriver.points,
-    };
-  }, [favoriteDriver, drivers, remainingPoints]);
+  const { favoriteDriver, remainingPoints, driverRivals } = useFavoritesWidgetData(
+    profile,
+    drivers,
+    teams,
+    schedule
+  );
 
   if (isLoading) {
     return (

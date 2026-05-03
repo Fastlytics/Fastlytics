@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -26,14 +26,13 @@ import { driverColor } from '@/lib/driverColor';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { Button } from '@/components/ui/button';
-import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUpDownIcon } from 'hugeicons-react';
+import { useLapChartData, MIN_DRIVERS } from '@/hooks/useLapChartData';
 
 const formatGap = (gap: number | null): string => {
   if (gap === null || isNaN(gap)) return 'N/A';
@@ -57,8 +56,6 @@ interface GapToLeaderChartProps {
   rivalDriver?: string | null;
 }
 
-const MIN_DRIVERS = 2;
-
 const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   className,
   delay = 0,
@@ -72,88 +69,42 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   favoriteDriver,
   rivalDriver,
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartVisRef = useChartVisibility({
-    chartName: 'gap_to_leader_chart',
-    page: 'race',
-    meta: { year, event, session },
-  });
-  const { trackInteraction } = useAnalytics();
-  const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
-
-  const [shouldLoadChart, setShouldLoadChart] = useState(autoLoad || !!staticData);
-  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
-  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
-
-  const getInitialDrivers = () => {
-    if (initialDrivers && initialDrivers.length >= MIN_DRIVERS) return initialDrivers;
-    const defaults: string[] = [];
-    if (favoriteDriver) defaults.push(favoriteDriver);
-    if (rivalDriver) defaults.push(rivalDriver);
-    return defaults;
-  };
-
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
-
-  const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
-    queryKey: ['sessionDrivers', year, event, session],
-    queryFn: () => fetchSessionDrivers(year, event, session),
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60 * 24,
-    enabled: !staticData && !!year && !!event && !!session,
-  });
-
-  const driverNameMap = useMemo(() => {
-    if (!availableDrivers) return new Map<string, string>();
-    const map = new Map<string, string>();
-    availableDrivers.forEach((d) => {
-      if (d.code && d.name) map.set(d.code, d.name);
-    });
-    return map;
-  }, [availableDrivers]);
-
-  const effectiveDrivers = useMemo(() => {
-    if (staticData) return selectedDrivers;
-    const validCodes = availableDrivers ? new Set(availableDrivers.map((d) => d.code)) : null;
-    const validSelected = validCodes
-      ? selectedDrivers.filter((d) => validCodes.has(d))
-      : selectedDrivers;
-    if (validSelected.length >= MIN_DRIVERS) return validSelected;
-    if (!availableDrivers) return validSelected;
-    const needed = MIN_DRIVERS - validSelected.length;
-    const candidates = availableDrivers
-      .filter((d) => !validSelected.includes(d.code))
-      .slice(0, needed)
-      .map((d) => d.code);
-    return [...validSelected, ...candidates];
-  }, [selectedDrivers, availableDrivers, staticData]);
-
-  const driversToDisplay = useMemo(
-    () => (staticData ? initialDrivers || [] : effectiveDrivers),
-    [staticData, initialDrivers, effectiveDrivers]
-  );
+  const [isDriverPopoverOpen, setIsDriverPopoverOpen] = React.useState(false);
 
   const {
-    data: fetchedEnrichedData,
-    isLoading: isLoadingLapTimes,
+    chartRef,
+    chartVisRef,
+    exportRef,
+    exportChart,
+    isExporting,
+    shouldLoadChart,
+    setShouldLoadChart,
+    focusedDriver,
+    setFocusedDriver,
+    selectedDrivers,
+    availableDrivers,
+    isLoadingDrivers,
+    driverNameMap,
+    effectiveDrivers,
+    driversToDisplay,
+    lapData,
+    isLoadingLapTimes,
     error,
     isError,
-  } = useQuery<LapTimesEnrichedResponse>({
-    queryKey: ['lapTimes', year, event, session, ...effectiveDrivers.sort()],
-    queryFn: () => fetchLapTimes(year, event, session, effectiveDrivers),
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 15,
-    retry: 1,
-    enabled:
-      !staticData &&
-      !!year &&
-      !!event &&
-      !!session &&
-      effectiveDrivers.length >= MIN_DRIVERS &&
-      shouldLoadChart,
+    isLoading,
+    toggleDriver,
+    trackInteraction,
+  } = useLapChartData({
+    year,
+    event,
+    session,
+    initialDrivers,
+    staticData,
+    autoLoad,
+    favoriteDriver,
+    rivalDriver,
+    chartName: 'gap_to_leader_chart',
   });
-
-  const lapData = staticData || fetchedEnrichedData?.lapComparison;
 
   const gapData = useMemo(() => {
     if (!lapData || lapData.length === 0) return [];
@@ -199,25 +150,6 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
     return gapPoints;
   }, [lapData, driversToDisplay]);
-
-  const toggleDriver = (driverCode: string) => {
-    trackInteraction('driver_toggled', {
-      driver: driverCode,
-      chart: 'gap_to_leader',
-      year,
-      event,
-      session,
-    });
-    setSelectedDrivers((prev) => {
-      if (prev.includes(driverCode)) {
-        if (prev.length > MIN_DRIVERS) return prev.filter((d) => d !== driverCode);
-        return prev;
-      }
-      return [...prev, driverCode];
-    });
-  };
-
-  const isLoading = !staticData && isLoadingLapTimes;
 
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {

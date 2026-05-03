@@ -1,5 +1,4 @@
 import React from 'react';
-import type { CustomTooltipProps } from '@/types';
 import {
   LineChart,
   Line,
@@ -12,8 +11,8 @@ import {
 import { fetchTelemetryBrake, BrakeDataPoint } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
-import { getDriverImage } from '@/utils/imageMapping';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
+import { DriverChartTooltip } from './shared/DriverChartTooltip';
 
 interface BrakeChartProps {
   className?: string;
@@ -36,75 +35,6 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
-  // Custom Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-    selectedDriver,
-  }: CustomTooltipProps<BrakeDataPoint> & { selectedDriver?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const headshot = getDriverImage(selectedDriver, year);
-      const color = driverColor(selectedDriver, year);
-
-      return (
-        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={selectedDriver}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-[10px] text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {selectedDriver[0]}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span
-                  className="text-xs font-semibold text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  {selectedDriver}
-                </span>
-                <span
-                  className="text-[10px] text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  DIST: {Math.round(label)}m
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span
-                className="text-[9px] text-white uppercase tracking-wider"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                Brake
-              </span>
-              <span
-                className="text-xl font-black text-white"
-                style={{ color: color, fontFamily: "'Inter', sans-serif" }}
-              >
-                {Math.round(data.Brake)} <span className="text-xs text-white">%</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <TelemetryChartWrapper<BrakeDataPoint[]>
       className={className}
@@ -118,7 +48,7 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       queryKey={(driver, lapVal) => ['brakeTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryBrake(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
-      renderChart={(data, color, selectedDriver) => (
+      renderChart={(data, _color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart
             data={data}
@@ -156,7 +86,15 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
               width={40}
             />
             <Tooltip
-              content={<CustomTooltip selectedDriver={selectedDriver} />}
+              content={
+                <DriverChartTooltip
+                  selectedDriver={selectedDriver}
+                  year={year}
+                  valueKey="Brake"
+                  unit="%"
+                  title="Brake"
+                />
+              }
               cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeDasharray: '4 4' }}
             />
             <Line
@@ -179,7 +117,6 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       )}
       renderStats={(data) => {
         const brakes = data.map((d) => d.Brake);
-        const avgBrake = brakes.reduce((a, b) => a + b, 0) / brakes.length;
         const hardBraking = brakes.filter((b) => b >= 80).length;
         const hardBrakingPercentage = (hardBraking / brakes.length) * 100;
 
