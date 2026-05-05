@@ -26,9 +26,18 @@ interface ChunkLoaderState {
   loadedDuration: number;
 }
 
-const CONCURRENT_LIMIT = 4;
+type LoadedChunk = {
+  time: number[];
+  drivers: ReplayDriversMap;
+  start: number;
+  end: number;
+};
+
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
+const BUFFER_BEHIND_CHUNKS = 1;
+const BUFFER_AHEAD_CHUNKS = 2;
+const BUFFER_HEADROOM_SECONDS = 15;
 
 function isAbortError(error: unknown) {
   return (
@@ -79,18 +88,109 @@ async function fetchChunkWithRetry(
   throw new Error('Unreachable');
 }
 
-type LoadedChunk = {
-  time: number[];
-  drivers: ReplayDriversMap;
-  start: number;
-  end: number;
-};
+function getChunkIndexForTime(manifest: ChunkManifest[], time: number) {
+  if (manifest.length === 0) return -1;
+
+  const targetIndex = manifest.findIndex((chunk) => time >= chunk.start && time < chunk.end);
+  if (targetIndex !== -1) return targetIndex;
+  if (time < manifest[0].start) return 0;
+  return manifest.length - 1;
+}
+
+function buildDesiredChunkIds(currentIndex: number, totalChunks: number) {
+  const ids: number[] = [];
+
+  for (let offset = 0; offset <= BUFFER_AHEAD_CHUNKS; offset++) {
+    const id = currentIndex + offset;
+    if (id >= 0 && id < totalChunks) ids.push(id);
+  }
+
+  for (let offset = 1; offset <= BUFFER_BEHIND_CHUNKS; offset++) {
+    const id = currentIndex - offset;
+    if (id >= 0 && id < totalChunks) ids.push(id);
+  }
+
+  return ids;
+}
+
+function mergeBufferedChunks(
+  meta: SessionReplayData,
+  chunkIds: number[],
+  chunksMap: Map<number, LoadedChunk>
+): SessionReplayData | null {
+  const sortedIds = [...chunkIds].sort((a, b) => a - b).filter((id) => chunksMap.has(id));
+  if (sortedIds.length === 0) return null;
+
+  const timeParts: number[][] = [];
+  const driverParts: Record<string, Partial<ReplayDriverData>[]> = {};
+
+  for (const id of sortedIds) {
+    const chunk = chunksMap.get(id)!;
+    timeParts.push(chunk.time);
+    for (const [code, driverData] of Object.entries(chunk.drivers)) {
+      if (!driverParts[code]) driverParts[code] = [];
+      driverParts[code].push(driverData);
+    }
+  }
+
+  const mergedDrivers: Record<string, ReplayDriverData> = {};
+  const driverCodes = new Set([
+    ...Object.keys(meta.driver_colors || {}),
+    ...Object.keys(driverParts),
+  ]);
+
+  for (const code of driverCodes) {
+    const parts = driverParts[code] || [];
+    mergedDrivers[code] = {
+      x: ([] as number[]).concat(...parts.map((part) => part.x || [])),
+      y: ([] as number[]).concat(...parts.map((part) => part.y || [])),
+      dist: ([] as number[]).concat(...parts.map((part) => part.dist || [])),
+      rel_dist: ([] as number[]).concat(...parts.map((part) => part.rel_dist || [])),
+      speed: ([] as number[]).concat(...parts.map((part) => part.speed || [])),
+      gear: ([] as number[]).concat(...parts.map((part) => part.gear || [])),
+      drs: ([] as number[]).concat(...parts.map((part) => part.drs || [])),
+      rpm: ([] as number[]).concat(...parts.map((part) => part.rpm || [])),
+      lap: ([] as number[]).concat(...parts.map((part) => part.lap || [])),
+      tyre: ([] as number[]).concat(...parts.map((part) => part.tyre || [])),
+      throttle: ([] as number[]).concat(...parts.map((part) => part.throttle || [])),
+      brake: ([] as number[]).concat(...parts.map((part) => part.brake || [])),
+      gap: ([] as (string | null)[]).concat(...parts.map((part) => part.gap || [])),
+      interval: ([] as (string | null)[]).concat(...parts.map((part) => part.interval || [])),
+    };
+  }
+
+  return {
+    ...meta,
+    time: ([] as number[]).concat(...timeParts),
+    drivers: mergedDrivers,
+  };
+}
+
+function getContiguousLoadedDuration(
+  manifest: ChunkManifest[],
+  chunksMap: Map<number, LoadedChunk>,
+  currentIndex: number
+) {
+  if (currentIndex < 0 || currentIndex >= manifest.length || !chunksMap.has(currentIndex)) {
+    return 0;
+  }
+
+  let end = chunksMap.get(currentIndex)?.end ?? 0;
+  for (let index = currentIndex + 1; index < manifest.length; index++) {
+    const chunk = chunksMap.get(index);
+    if (!chunk) break;
+    end = chunk.end;
+  }
+
+  return end;
+}
 
 export function useChunkLoader(
   metadata: SessionReplayData | null,
   year: number,
   event: string,
-  session: string
+  session: string,
+  currentTime: number
 ) {
   const [state, setState] = useState<ChunkLoaderState>({
     replayData: null,
@@ -100,225 +200,189 @@ export function useChunkLoader(
     loadedDuration: 0,
   });
 
-  const dataRef = useRef<SessionReplayData | null>(null);
+  const metadataRef = useRef<SessionReplayData | null>(null);
+  const currentTimeRef = useRef(currentTime);
   const chunksMapRef = useRef<Map<number, LoadedChunk>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const fetchingSetRef = useRef<Set<number>>(new Set());
   const failedSetRef = useRef<Set<number>>(new Set());
-  const totalChunksRef = useRef(0);
-  const priorityQueueRef = useRef<number[]>([]);
-  const metadataRef = useRef<SessionReplayData | null>(null);
   const generationRef = useRef(0);
+  const targetChunkIndexRef = useRef(0);
+  const desiredChunkIdsRef = useRef<number[]>([]);
   const loadChunkRef = useRef<(chunkId: number) => Promise<void>>();
-  const scheduleNextChunksRef = useRef<() => void>();
-  const mergeTimeoutRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    metadataRef.current = metadata;
-  }, [metadata]);
+  const updateStateFromBuffer = useCallback(() => {
+    const meta = metadataRef.current as SessionReplayMetadata | null;
+    const manifest = meta?.chunk_manifest || [];
+    const desiredChunkIds = desiredChunkIdsRef.current;
+    const currentChunkIndex = targetChunkIndexRef.current;
+    const loadedChunkIds = desiredChunkIds.filter((id) => chunksMapRef.current.has(id));
+    const replayData = meta
+      ? mergeBufferedChunks(meta, loadedChunkIds, chunksMapRef.current)
+      : null;
+    const loadedDuration = getContiguousLoadedDuration(
+      manifest,
+      chunksMapRef.current,
+      currentChunkIndex
+    );
+    const totalDuration = meta?.total_duration ?? manifest[manifest.length - 1]?.end ?? 0;
+    const currentChunkLoaded = chunksMapRef.current.has(currentChunkIndex);
+    const shouldBuffer =
+      manifest.length > 0 &&
+      currentTimeRef.current < totalDuration &&
+      (!currentChunkLoaded || currentTimeRef.current + BUFFER_HEADROOM_SECONDS > loadedDuration);
 
-  const mergeAllChunks = useCallback(() => {
-    const meta = metadataRef.current;
-    if (!meta) return;
+    setState({
+      replayData,
+      loadedChunks: new Set(loadedChunkIds),
+      totalChunks: manifest.length,
+      isBuffering: shouldBuffer,
+      loadedDuration,
+    });
+  }, []);
 
-    const chunks = chunksMapRef.current;
-    if (chunks.size === 0) {
-      dataRef.current = null;
-      setState((prev) => ({
-        ...prev,
-        replayData: null,
-        loadedChunks: new Set(),
-        loadedDuration: 0,
-      }));
+  const scheduleNextChunk = useCallback(() => {
+    if (fetchingSetRef.current.size > 0) return;
+
+    for (const chunkId of desiredChunkIdsRef.current) {
+      if (chunksMapRef.current.has(chunkId)) continue;
+      if (fetchingSetRef.current.has(chunkId)) continue;
+      if (failedSetRef.current.has(chunkId)) continue;
+      loadChunkRef.current?.(chunkId);
       return;
-    }
-
-    const sortedIds = [...chunks.keys()].sort((a, b) => a - b);
-
-    const timeParts: number[][] = [];
-    const driverParts: Record<string, { key: string; data: Partial<ReplayDriverData> }[]> = {};
-
-    for (const id of sortedIds) {
-      const chunk = chunks.get(id)!;
-      timeParts.push(chunk.time);
-      for (const [code, dData] of Object.entries(chunk.drivers)) {
-        if (!driverParts[code]) driverParts[code] = [];
-        driverParts[code].push({ key: String(id), data: dData });
-      }
-    }
-
-    const mergedTime = ([] as number[]).concat(...timeParts);
-
-    const initDrivers: Record<string, ReplayDriverData> = {};
-    const driverColors = meta.driver_colors || {};
-    const allDriverCodes = new Set([...Object.keys(driverColors), ...Object.keys(driverParts)]);
-
-    for (const code of allDriverCodes) {
-      const parts = driverParts[code] || [];
-      initDrivers[code] = {
-        x: ([] as number[]).concat(...parts.map((p) => p.data.x || [])),
-        y: ([] as number[]).concat(...parts.map((p) => p.data.y || [])),
-        dist: ([] as number[]).concat(...parts.map((p) => p.data.dist || [])),
-        rel_dist: ([] as number[]).concat(...parts.map((p) => p.data.rel_dist || [])),
-        speed: ([] as number[]).concat(...parts.map((p) => p.data.speed || [])),
-        gear: ([] as number[]).concat(...parts.map((p) => p.data.gear || [])),
-        drs: ([] as number[]).concat(...parts.map((p) => p.data.drs || [])),
-        rpm: ([] as number[]).concat(...parts.map((p) => p.data.rpm || [])),
-        lap: ([] as number[]).concat(...parts.map((p) => p.data.lap || [])),
-        tyre: ([] as number[]).concat(...parts.map((p) => p.data.tyre || [])),
-        throttle: ([] as number[]).concat(...parts.map((p) => p.data.throttle || [])),
-        brake: ([] as number[]).concat(...parts.map((p) => p.data.brake || [])),
-        gap: ([] as (string | null)[]).concat(
-          ...parts.map((p) => (p.data as ReplayDriverData).gap || [])
-        ),
-        interval: ([] as (string | null)[]).concat(
-          ...parts.map((p) => (p.data as ReplayDriverData).interval || [])
-        ),
-      };
-    }
-
-    const merged: SessionReplayData = {
-      ...meta,
-      time: mergedTime,
-      drivers: initDrivers,
-    };
-
-    dataRef.current = merged;
-
-    const lastTime = mergedTime.length > 0 ? mergedTime[mergedTime.length - 1] : 0;
-    setState((prev) => ({
-      ...prev,
-      replayData: merged,
-      loadedChunks: new Set(sortedIds),
-      loadedDuration: lastTime,
-    }));
-  }, []);
-
-  const MERGE_DEBOUNCE_MS = 1000;
-
-  const scheduleMerge = useCallback(() => {
-    if (mergeTimeoutRef.current) return; // already pending
-    mergeTimeoutRef.current = window.setTimeout(() => {
-      mergeTimeoutRef.current = null;
-      mergeAllChunks();
-    }, MERGE_DEBOUNCE_MS);
-  }, [mergeAllChunks]);
-
-  const enqueueChunks = useCallback((chunkIds: number[]) => {
-    const queued = new Set(priorityQueueRef.current);
-    const loaded = chunksMapRef.current;
-    const fetching = fetchingSetRef.current;
-    const failed = failedSetRef.current;
-
-    for (const id of chunkIds) {
-      if (loaded.has(id) || fetching.has(id) || failed.has(id) || queued.has(id)) continue;
-      priorityQueueRef.current.push(id);
-      queued.add(id);
-    }
-  }, []);
-
-  const scheduleNextChunks = useCallback(() => {
-    const activeCount = fetchingSetRef.current.size;
-    const slotsAvailable = CONCURRENT_LIMIT - activeCount;
-
-    if (slotsAvailable <= 0) return;
-
-    const loaded = chunksMapRef.current;
-    const fetching = fetchingSetRef.current;
-    const failed = failedSetRef.current;
-
-    const pending: number[] = [];
-
-    while (priorityQueueRef.current.length > 0 && pending.length < slotsAvailable) {
-      const id = priorityQueueRef.current.shift()!;
-      if (!loaded.has(id) && !fetching.has(id) && !failed.has(id)) {
-        pending.push(id);
-      }
-    }
-
-    for (let i = 0; i < Math.min(pending.length, slotsAvailable); i++) {
-      loadChunkRef.current?.(pending[i]);
     }
   }, []);
 
   const loadChunk = useCallback(
     async (chunkId: number) => {
-      if (fetchingSetRef.current.has(chunkId)) return;
-      if (chunksMapRef.current.has(chunkId)) return;
+      if (fetchingSetRef.current.has(chunkId) || chunksMapRef.current.has(chunkId)) return;
 
       const gen = generationRef.current;
       const signal = abortRef.current?.signal;
       fetchingSetRef.current.add(chunkId);
+      updateStateFromBuffer();
 
       try {
         const chunk = await fetchChunkWithRetry(year, event, session, chunkId, signal);
         if (gen !== generationRef.current) return;
+
         chunksMapRef.current.set(chunkId, {
           time: chunk.time,
           drivers: chunk.drivers,
           start: chunk.start_time,
           end: chunk.end_time,
         });
-
-        scheduleMerge();
+        failedSetRef.current.delete(chunkId);
+        updateStateFromBuffer();
       } catch (err) {
         if (gen !== generationRef.current) return;
         if (!signal?.aborted && !isAbortError(err)) {
           console.error(`Failed to load chunk ${chunkId}:`, err);
           failedSetRef.current.add(chunkId);
+          updateStateFromBuffer();
         }
       } finally {
         if (gen === generationRef.current) {
           fetchingSetRef.current.delete(chunkId);
-          scheduleNextChunksRef.current?.();
+          scheduleNextChunk();
+          updateStateFromBuffer();
         }
       }
     },
-    [year, event, session, scheduleMerge]
+    [event, scheduleNextChunk, session, updateStateFromBuffer, year]
   );
 
   useEffect(() => {
     loadChunkRef.current = loadChunk;
   }, [loadChunk]);
 
-  useEffect(() => {
-    scheduleNextChunksRef.current = scheduleNextChunks;
-  }, [scheduleNextChunks]);
+  const alignBuffer = useCallback(
+    (time: number, hardReset = false) => {
+      const meta = metadataRef.current as SessionReplayMetadata | null;
+      const manifest = meta?.chunk_manifest || [];
+      if (manifest.length === 0) {
+        setState({
+          replayData: null,
+          loadedChunks: new Set(),
+          totalChunks: 0,
+          isBuffering: false,
+          loadedDuration: 0,
+        });
+        return;
+      }
+
+      const nextChunkIndex = getChunkIndexForTime(manifest, time);
+      const desiredChunkIds = buildDesiredChunkIds(nextChunkIndex, manifest.length);
+      const desiredSet = new Set(desiredChunkIds);
+      const shouldResetFetches =
+        hardReset || [...fetchingSetRef.current].some((chunkId) => !desiredSet.has(chunkId));
+
+      if (shouldResetFetches) {
+        generationRef.current += 1;
+        abortRef.current?.abort();
+        abortRef.current = new AbortController();
+        fetchingSetRef.current.clear();
+        failedSetRef.current.clear();
+      }
+
+      targetChunkIndexRef.current = nextChunkIndex;
+      desiredChunkIdsRef.current = desiredChunkIds;
+
+      for (const chunkId of [...chunksMapRef.current.keys()]) {
+        if (!desiredSet.has(chunkId)) {
+          chunksMapRef.current.delete(chunkId);
+        }
+      }
+
+      updateStateFromBuffer();
+      scheduleNextChunk();
+    },
+    [scheduleNextChunk, updateStateFromBuffer]
+  );
 
   const seekTo = useCallback(
     (time: number) => {
-      const meta = metadataRef.current as SessionReplayMetadata | null;
-      const manifest = meta?.chunk_manifest || [];
-      if (manifest.length === 0) return;
-
-      const targetIndex = manifest.findIndex((c) => time >= c.start && time < c.end);
-      const resolvedIndex =
-        targetIndex === -1 ? (time < manifest[0].start ? 0 : manifest.length - 1) : targetIndex;
-      const targetChunk = manifest[resolvedIndex];
-      if (!targetChunk) return;
-
-      // Ensure the target chunk is queued (no eviction — we keep everything)
-      enqueueChunks([targetChunk.id]);
-      scheduleNextChunks();
-
-      // If target chunk is already downloaded but not yet merged, force a merge
-      // so the seeked region is immediately playable.
-      if (chunksMapRef.current.has(targetChunk.id) && !state.loadedChunks.has(targetChunk.id)) {
-        if (mergeTimeoutRef.current) {
-          window.clearTimeout(mergeTimeoutRef.current);
-          mergeTimeoutRef.current = null;
-        }
-        mergeAllChunks();
-      }
+      currentTimeRef.current = time;
+      alignBuffer(time, true);
     },
-    [enqueueChunks, scheduleNextChunks, mergeAllChunks, state.loadedChunks]
+    [alignBuffer]
   );
 
   useEffect(() => {
+    metadataRef.current = metadata;
+  }, [metadata]);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
     if (!metadata) return;
 
     const meta = metadata as SessionReplayMetadata;
     const manifest = meta.chunk_manifest || [];
+    if (manifest.length === 0) return;
+
+    const currentChunkIndex = getChunkIndexForTime(manifest, currentTime);
+    const currentChunkLoaded = chunksMapRef.current.has(currentChunkIndex);
+    const shouldRealign =
+      targetChunkIndexRef.current !== currentChunkIndex ||
+      !currentChunkLoaded ||
+      currentTime + BUFFER_HEADROOM_SECONDS > state.loadedDuration;
+
+    if (shouldRealign) {
+      alignBuffer(currentTime);
+      return;
+    }
+
+    const totalDuration = meta.total_duration ?? manifest[manifest.length - 1]?.end ?? 0;
+    const shouldBuffer =
+      currentTime < totalDuration && currentTime + BUFFER_HEADROOM_SECONDS > state.loadedDuration;
+
+    setState((prev) =>
+      prev.isBuffering === shouldBuffer ? prev : { ...prev, isBuffering: shouldBuffer }
+    );
+  }, [alignBuffer, currentTime, metadata, state.loadedDuration]);
+
+  useEffect(() => {
+    if (!metadata) return;
 
     generationRef.current += 1;
     abortRef.current?.abort();
@@ -326,64 +390,38 @@ export function useChunkLoader(
     chunksMapRef.current.clear();
     fetchingSetRef.current.clear();
     failedSetRef.current.clear();
-    totalChunksRef.current = manifest.length;
-    priorityQueueRef.current = [];
-    dataRef.current = null;
+    desiredChunkIdsRef.current = [];
+    targetChunkIndexRef.current = 0;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialization/reset on metadata change
-    setState({
-      replayData: null,
-      loadedChunks: new Set<number>(),
-      totalChunks: manifest.length,
-      isBuffering: false,
-      loadedDuration: 0,
-    });
-
-    if (manifest.length > 0) {
-      // Load chunk 0 immediately so playback can start ASAP
-      enqueueChunks([0]);
-      scheduleNextChunksRef.current?.();
-    }
+    alignBuffer(currentTimeRef.current, true);
 
     return () => {
       abortRef.current?.abort();
-      if (mergeTimeoutRef.current) {
-        window.clearTimeout(mergeTimeoutRef.current);
-        mergeTimeoutRef.current = null;
-      }
     };
-  }, [enqueueChunks, metadata]);
+  }, [alignBuffer, metadata]);
 
-  // Background preloader: enqueue ALL remaining chunks as soon as chunk 0 is loaded
-  useEffect(() => {
-    if (!metadata) return;
-    const meta = metadata as SessionReplayMetadata;
-    const manifest = meta.chunk_manifest || [];
-    if (manifest.length <= 1) return;
+  const checkBuffering = useCallback((time: number, isPlaying: boolean) => {
+    const meta = metadataRef.current as SessionReplayMetadata | null;
+    const manifest = meta?.chunk_manifest || [];
+    if (!isPlaying || manifest.length === 0) return false;
 
-    const loaded = state.loadedChunks;
-    if (!loaded.has(0)) return; // Wait for chunk 0 first
+    const totalDuration = meta?.total_duration ?? manifest[manifest.length - 1]?.end ?? 0;
+    const currentChunkIndex = getChunkIndexForTime(manifest, time);
+    const loadedDuration = getContiguousLoadedDuration(
+      manifest,
+      chunksMapRef.current,
+      currentChunkIndex
+    );
+    const currentChunkLoaded = chunksMapRef.current.has(currentChunkIndex);
+    const shouldBuffer =
+      time < totalDuration &&
+      (!currentChunkLoaded || time + BUFFER_HEADROOM_SECONDS > loadedDuration);
 
-    const allIds = manifest.map((c) => c.id);
-    const remaining = allIds.filter((id) => !loaded.has(id));
-    enqueueChunks(remaining);
-    scheduleNextChunksRef.current?.();
-  }, [metadata, state.loadedChunks, enqueueChunks]);
-
-  const checkBuffering = useCallback(
-    (currentTime: number, isPlaying: boolean) => {
-      const meta = metadataRef.current as SessionReplayMetadata | null;
-      const totalDur = meta?.total_duration || 9999;
-      const loadedDur = state.loadedDuration;
-      const fullyLoaded = state.loadedChunks.size >= state.totalChunks && state.totalChunks > 0;
-
-      const shouldBuffer =
-        isPlaying && currentTime < totalDur && !fullyLoaded && currentTime + 10 > loadedDur;
-      setState((prev) => ({ ...prev, isBuffering: shouldBuffer }));
-      return shouldBuffer;
-    },
-    [state.loadedDuration, state.loadedChunks.size, state.totalChunks]
-  );
+    setState((prev) =>
+      prev.isBuffering === shouldBuffer ? prev : { ...prev, isBuffering: shouldBuffer }
+    );
+    return shouldBuffer;
+  }, []);
 
   return {
     replayData: state.replayData,
@@ -393,6 +431,6 @@ export function useChunkLoader(
     loadedDuration: state.loadedDuration,
     seekTo,
     checkBuffering,
-    isFullyLoaded: state.loadedChunks.size >= state.totalChunks && state.totalChunks > 0,
+    isFullyLoaded: false,
   };
 }

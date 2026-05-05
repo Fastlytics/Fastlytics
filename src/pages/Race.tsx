@@ -1621,7 +1621,21 @@ const Race = () => {
                   featureName="Lap Times Analysis"
                   description="Detailed lap-by-lap timing data with pace distribution analysis and comparison charts"
                 >
-                  <section id="laptimes" className="animate-in fade-in duration-500">
+                  <section
+                    id="laptimes"
+                    className="animate-in fade-in duration-500 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6"
+                  >
+                    <div className="mb-6 flex items-center justify-between">
+                      <div>
+                        <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
+                          Lap Times
+                        </p>
+                        <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
+                          Lap Time Comparison
+                        </p>
+                      </div>
+                    </div>
+
                     <Tabs
                       defaultValue="history"
                       value={lapAnalysisMode}
@@ -1631,32 +1645,30 @@ const Race = () => {
                       }}
                       className="w-full"
                     >
-                      <div className="flex flex-col md:flex-row justify-end items-start md:items-center mb-6 gap-4">
-                        <TabsList className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 h-auto gap-1">
-                          <TabsTrigger
-                            value="history"
-                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
-                          >
-                            Lap History
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="pace"
-                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
-                          >
-                            Pace Distribution
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="gap"
-                            className="rounded-md data-[state=active]:bg-white/[0.08] data-[state=active]:text-white text-white/40 text-[12px] font-semibold uppercase tracking-wider py-1.5 px-4 transition-all hover:text-white/60"
-                          >
-                            Gap to Leader
-                          </TabsTrigger>
-                        </TabsList>
-                      </div>
+                      <TabsList className="h-auto w-full gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 sm:w-auto">
+                        <TabsTrigger
+                          value="history"
+                          className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
+                        >
+                          Lap History
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="pace"
+                          className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
+                        >
+                          Pace Distribution
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="gap"
+                          className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
+                        >
+                          Gap to Leader
+                        </TabsTrigger>
+                      </TabsList>
 
                       <TabsContent
                         value="history"
-                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                        className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
                       >
                         {(() => {
                           const favDriverCode = profile?.favorite_driver;
@@ -1694,7 +1706,7 @@ const Race = () => {
 
                       <TabsContent
                         value="pace"
-                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                        className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
                       >
                         {(() => {
                           const favDriverCode = profile?.favorite_driver;
@@ -1732,7 +1744,7 @@ const Race = () => {
 
                       <TabsContent
                         value="gap"
-                        className="mt-0 animate-in fade-in zoom-in-95 duration-300"
+                        className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
                       >
                         {(() => {
                           const favDriverCode = profile?.favorite_driver;

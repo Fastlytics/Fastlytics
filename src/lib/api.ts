@@ -528,19 +528,89 @@ export const fetchSessionDrivers = async (
   return request<SessionDriver[]>(`/api/session/drivers?${params.toString()}`);
 };
 
-/** Fetches enriched lap time comparison data for multiple drivers. */
+const MAX_DRIVERS_PER_REQUEST = 20;
+
+/** Fetches enriched lap time comparison data for multiple drivers.
+ *  Batches requests when driver count exceeds the API limit.
+ */
 export const fetchLapTimes = async (
   year: number,
   event: string,
   session: string,
   drivers: string[]
 ): Promise<LapTimesEnrichedResponse> => {
+  const makeRequest = (batch: string[]) => {
+    const params = new URLSearchParams();
+    params.append('year', year.toString());
+    params.append('event', event);
+    params.append('session', session);
+    batch.forEach((driver) => params.append('drivers', driver));
+    return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
+  };
+
+  if (drivers.length <= MAX_DRIVERS_PER_REQUEST) {
+    return makeRequest(drivers);
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < drivers.length; i += MAX_DRIVERS_PER_REQUEST) {
+    batches.push(drivers.slice(i, i + MAX_DRIVERS_PER_REQUEST));
+  }
+
+  const responses = await Promise.all(batches.map(makeRequest));
+
+  // Merge lapComparison by LapNumber
+  const lapMap = new Map<number, LapTimeDataPoint>();
+  responses.forEach((res) => {
+    res.lapComparison.forEach((point) => {
+      const existing = lapMap.get(point.LapNumber);
+      if (existing) {
+        Object.assign(existing, point);
+      } else {
+        lapMap.set(point.LapNumber, { ...point });
+      }
+    });
+  });
+
+  const mergedLapComparison = Array.from(lapMap.values()).sort((a, b) => a.LapNumber - b.LapNumber);
+
+  // Merge driverLapDetails
+  const mergedDriverLapDetails: Record<string, EnrichedLapRecord[]> = {};
+  responses.forEach((res) => {
+    Object.entries(res.driverLapDetails).forEach(([driver, records]) => {
+      mergedDriverLapDetails[driver] = records;
+    });
+  });
+
+  // Weather should be identical across batches; take first non-null
+  const mergedWeather = responses.find((r) => r.weather)?.weather ?? null;
+
+  return {
+    lapComparison: mergedLapComparison,
+    driverLapDetails: mergedDriverLapDetails,
+    weather: mergedWeather,
+  };
+};
+
+export interface LapGapsResponse {
+  lapGaps: LapTimeDataPoint[];
+  usesOfficialTiming: boolean;
+}
+
+/** Fetches official lap-by-lap gap-to-leader data from FastF1 timing API. */
+export const fetchLapGaps = async (
+  year: number,
+  event: string,
+  session: string,
+  drivers: string[]
+): Promise<LapGapsResponse> => {
   const params = new URLSearchParams();
   params.append('year', year.toString());
   params.append('event', event);
   params.append('session', session);
+  // Gap data is lightweight (one number per lap per driver), so allow all drivers
   drivers.forEach((driver) => params.append('drivers', driver));
-  return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
+  return request<LapGapsResponse>(`/api/laptimes/gaps?${params.toString()}`);
 };
 
 /** Fetches speed telemetry data for a specific lap. */
@@ -1077,6 +1147,7 @@ export interface ReplayDriversMap {
 export interface SessionReplayData {
   time: number[]; // Shared timeline
   drivers: ReplayDriversMap;
+  total_laps?: number;
   driver_colors: { [code: string]: string };
   driver_grid_positions: Record<string, number>;
   driver_info?: Record<

@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { EnrichedLapRecord } from '@/lib/api';
+import { EnrichedLapRecord, LapTimeDataPoint } from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import {
   AlertCircleIcon,
@@ -120,6 +120,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
     toggleDriver,
     trackInteraction,
     enrichedResponse,
+    setSelectedDrivers,
   } = useLapChartData({
     year,
     event,
@@ -132,14 +133,17 @@ const RacingChart: React.FC<RacingChartProps> = ({
     chartName: 'lap_time_chart',
   });
 
+  const weatherData = enrichedResponse?.weather;
+  const driverLapDetails = enrichedResponse?.driverLapDetails;
+
   const TOTAL_FUEL_KG = 110;
   const FUEL_PER_LAP_KG = 1.8;
   const SECONDS_PER_KG_PER_LAP = 0.03;
 
   const correctedLapData = useMemo(() => {
-    if (!lapData || !fuelCorrectionEnabled) return lapData;
-    const maxLapForCorrection = Math.ceil(lapData.length * 0.6);
-    return lapData.map((point) => {
+    if (!rawLapData || !fuelCorrectionEnabled) return rawLapData;
+    const maxLapForCorrection = Math.ceil(rawLapData.length * 0.6);
+    return rawLapData.map((point) => {
       const lapNumber = point.LapNumber;
       if (lapNumber > maxLapForCorrection) return point;
       const fuelLoad = TOTAL_FUEL_KG - lapNumber * FUEL_PER_LAP_KG;
@@ -206,13 +210,15 @@ const RacingChart: React.FC<RacingChartProps> = ({
         </div>
       );
     }
-    if (isError || !lapData) {
+    if (isError || !chartData) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
           <p className="font-semibold uppercase text-[13px]">Error loading lap times</p>
           <p className="text-xs text-white mt-1">
-            {(error as Error)?.message || 'Could not fetch data.'}
+            {typeof (error as Error)?.message === 'string'
+              ? (error as Error).message
+              : 'Could not fetch data.'}
           </p>
           {!staticData && (
             <Button
@@ -227,7 +233,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
         </div>
       );
     }
-    if (lapData.length === 0) {
+    if (chartData.length === 0) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
           <p>No common lap data found.</p>
@@ -921,8 +927,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">Lap Times</h3>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-3">
             <ChartExportMenu
               onExport={(format) =>

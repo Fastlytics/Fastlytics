@@ -58,7 +58,15 @@ export const request = async <T>(
       let errorDetail = `HTTP error! status: ${response.status}`;
       try {
         const errorData = await response.json();
-        errorDetail = errorData.detail || errorDetail;
+        if (typeof errorData.detail === 'string') {
+          errorDetail = errorData.detail;
+        } else if (errorData.detail != null) {
+          errorDetail = JSON.stringify(errorData.detail);
+        } else if (typeof errorData.message === 'string') {
+          errorDetail = errorData.message;
+        } else if (errorData != null) {
+          errorDetail = JSON.stringify(errorData);
+        }
       } catch {
         /* Ignore */
       }

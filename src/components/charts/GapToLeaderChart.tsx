@@ -13,13 +13,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchLapTimes,
-  fetchSessionDrivers,
-  SessionDriver,
-  LapTimeDataPoint,
-  LapTimesEnrichedResponse,
-} from '@/lib/api';
+import { fetchLapGaps, LapTimeDataPoint, LapGapsResponse } from '@/lib/api';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { AlertCircleIcon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
@@ -87,13 +81,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     driverNameMap,
     effectiveDrivers,
     driversToDisplay,
-    lapData,
-    isLoadingLapTimes,
     error,
     isError,
     isLoading,
     toggleDriver,
     trackInteraction,
+    setSelectedDrivers,
   } = useLapChartData({
     year,
     event,
@@ -106,50 +99,28 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     chartName: 'gap_to_leader_chart',
   });
 
+  // Fetch official lap-by-lap gap-to-leader data from FastF1 timing API
+  const { data: lapGapsResponse, isLoading: isLoadingGaps } = useQuery<LapGapsResponse>({
+    queryKey: ['lapGaps', year, event, session, ...effectiveDrivers.sort()],
+    queryFn: () => fetchLapGaps(year, event, session, effectiveDrivers),
+    enabled:
+      !staticData &&
+      !!year &&
+      !!event &&
+      !!session &&
+      effectiveDrivers.length >= MIN_DRIVERS &&
+      shouldLoadChart,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
+    retry: 1,
+  });
+
   const gapData = useMemo(() => {
-    if (!lapData || lapData.length === 0) return [];
-    const cumulativeTimes: Record<string, number[]> = {};
-    driversToDisplay.forEach((driver) => {
-      cumulativeTimes[driver] = [];
-      let cumulative = 0;
-      lapData.forEach((point) => {
-        const time = point[driver] as number | null;
-        cumulative += time || 0;
-        cumulativeTimes[driver].push(cumulative);
-      });
-    });
+    if (staticData) return staticData;
+    return lapGapsResponse?.lapGaps || [];
+  }, [lapGapsResponse, staticData]);
 
-    const leaderPerLap = lapData.map((point) => {
-      let minCumulative = Infinity;
-      let leader: string | null = null;
-      driversToDisplay.forEach((driver) => {
-        const lapIndex = point.LapNumber - 1;
-        if (cumulativeTimes[driver][lapIndex] < minCumulative) {
-          minCumulative = cumulativeTimes[driver][lapIndex];
-          leader = driver;
-        }
-      });
-      return leader;
-    });
-
-    const gapPoints = lapData.map((point) => {
-      const lapIndex = point.LapNumber - 1;
-      const leader = leaderPerLap[lapIndex];
-      const gapPoint: LapTimeDataPoint = { LapNumber: point.LapNumber };
-      driversToDisplay.forEach((driver) => {
-        if (point[driver] !== null && leader !== null && cumulativeTimes[leader]) {
-          const driverCumulative = cumulativeTimes[driver][lapIndex];
-          const leaderCumulative = cumulativeTimes[leader][lapIndex];
-          gapPoint[driver] = driverCumulative - leaderCumulative;
-        } else {
-          gapPoint[driver] = null;
-        }
-      });
-      return gapPoint;
-    });
-
-    return gapPoints;
-  }, [lapData, driversToDisplay]);
+  const isLoadingAll = isLoadingGaps;
 
   const renderContent = () => {
     if (!shouldLoadChart && !staticData) {
@@ -177,7 +148,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       );
     }
 
-    if (isLoading) {
+    if (isLoadingAll) {
       return (
         <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
           <LoadingSpinnerF1 />
@@ -185,11 +156,11 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       );
     }
 
-    if (isError || !lapData) {
+    if (isError) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
           <AlertCircleIcon className="w-10 h-10 mb-2" />
-          <p className="font-semibold uppercase text-[13px]">Error loading lap times</p>
+          <p className="font-semibold uppercase text-[13px]">Error loading lap gaps</p>
           <p className="text-xs text-white mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
           </p>
@@ -207,7 +178,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       );
     }
 
-    if (lapData.length === 0 || gapData.length === 0) {
+    if (gapData.length === 0) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
           <p>No common lap data found.</p>
@@ -395,10 +366,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">
-            Gap to Leader
-          </h3>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-3">
             <ChartExportMenu
               onExport={(format) =>

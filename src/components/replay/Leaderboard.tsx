@@ -40,6 +40,8 @@ interface LeaderboardProps {
   pitIntervals?: Record<string, { start: number; end: number }[]>;
   circuitLength: number;
   tyreAge?: Record<string, number>;
+  showIntervals?: boolean;
+  onToggleIntervals?: () => void;
   onSelectDriver: (code: string | null) => void;
   onFollow: () => void;
 }
@@ -56,6 +58,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   pitIntervals,
   circuitLength,
   tyreAge,
+  showIntervals = true,
+  onToggleIntervals,
   onSelectDriver,
   onFollow,
 }) => {
@@ -66,21 +70,39 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
         <span className="text-[12px] font-normal uppercase tracking-wider text-white">
           {isRace ? 'Leaderboard' : 'Classification'}
         </span>
-        {isRace ? (
-          <span className="text-[12px] font-normal uppercase tracking-wider text-white">
-            LAP <span className="text-white font-medium">{leaderboard[0]?.lap || 0}</span>
-            <span className="text-white font-normal"> / {totalLaps}</span>
-          </span>
-        ) : sessionTimeRemaining ? (
-          <span
-            className={cn(
-              'text-[12px] font-bold tabular-nums tracking-tight',
-              sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white font-medium'
-            )}
-          >
-            {sessionTimeRemaining.formatted}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {isRace && onToggleIntervals && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleIntervals();
+              }}
+              className="px-1.5 py-0.5 rounded bg-white/[0.06] hover:bg-white/[0.10] text-white/70 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-wider"
+              title={
+                showIntervals
+                  ? 'Showing interval to car ahead (click for gap to leader)'
+                  : 'Showing gap to leader (click for interval to car ahead)'
+              }
+            >
+              {showIntervals ? 'INT' : 'GAP'}
+            </button>
+          )}
+          {isRace ? (
+            <span className="text-[12px] font-normal uppercase tracking-wider text-white">
+              LAP <span className="text-white font-medium">{leaderboard[0]?.lap || 0}</span>
+              <span className="text-white font-normal"> / {totalLaps}</span>
+            </span>
+          ) : sessionTimeRemaining ? (
+            <span
+              className={cn(
+                'text-[12px] font-bold tabular-nums tracking-tight',
+                sessionTimeRemaining.isRed ? 'text-red-400 animate-pulse' : 'text-white font-medium'
+              )}
+            >
+              {sessionTimeRemaining.formatted}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Driver Rows */}
@@ -103,12 +125,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           } else if (isRace) {
             if (index === 0) {
               intervalText = 'LEADER';
-            } else if (driver.interval) {
-              intervalText = driver.interval;
-            } else if (driver.gap) {
-              intervalText = driver.gap;
+            } else if (showIntervals) {
+              intervalText = driver.interval || driver.gap || '—';
             } else {
-              intervalText = '—';
+              intervalText = driver.gap || driver.interval || '—';
             }
           } else {
             const bestLap = driver.bestLap;
