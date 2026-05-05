@@ -24,6 +24,7 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
   const [showSectorTimes, setShowSectorTimes] = useState(true);
   const [showTelemetry, setShowTelemetry] = useState(true);
   const [showLapHistory, setShowLapHistory] = useState(true);
+  const [showIntervals, setShowIntervals] = useState(true);
   const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
 
   const totalDurationRef = useRef(totalDuration);
@@ -49,6 +50,7 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
     setShowSectorTimes(true);
     setShowTelemetry(true);
     setShowLapHistory(true);
+    setShowIntervals(true);
     setDismissedMessages(new Set());
   }, []);
 
@@ -123,6 +125,10 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
         case 'I':
           setShowLapHistory((prev) => !prev);
           break;
+        case 'g':
+        case 'G':
+          setShowIntervals((prev) => !prev);
+          break;
       }
     };
 
@@ -153,6 +159,8 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
     setShowTelemetry,
     showLapHistory,
     setShowLapHistory,
+    showIntervals,
+    setShowIntervals,
     dismissedMessages,
     reset,
     cycleSpeed,

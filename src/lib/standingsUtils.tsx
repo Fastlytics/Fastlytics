@@ -33,6 +33,7 @@ export const getChangeIndicator = (change: number | undefined, size: 'sm' | 'md'
 };
 
 export const rookiesByYear: { [year: string]: string[] } = {
+  '2026': ['LIN'],
   '2025': ['ANT', 'BOR', 'DOO', 'BEA', 'HAD', 'LAW', 'COL'],
   '2024': ['BEA', 'COL'],
   '2023': ['PIA', 'SAR', 'DEV'],

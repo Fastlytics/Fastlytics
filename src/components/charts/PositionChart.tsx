@@ -47,6 +47,7 @@ interface CustomLegendPayload {
   value?: string;
   color?: string;
   id?: string;
+  dataKey?: string;
 }
 
 interface PositionChartProps {
@@ -112,6 +113,15 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
   const [currentLap, setCurrentLap] = useState<number>(0);
 
+  const getLegendDriverCode = (entry?: CustomLegendPayload | null) => {
+    if (!entry) return null;
+
+    const rawDriverCode = entry.dataKey || entry.id || entry.value;
+    if (!rawDriverCode) return null;
+
+    return String(rawDriverCode).replace(/\s+\((?:dashed|dotted)\)$/, '');
+  };
+
   const toggleDriverFocus = (driver: string) => {
     setFocusedDriver((prev) => (prev === driver ? null : driver));
   };
@@ -138,7 +148,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const renderContent = () => {
     if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
       return (
-        <div className="w-full h-[400px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">
+        <div className="w-full h-[480px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">
           No position data found or provided.
         </div>
       );
@@ -147,7 +157,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
     const teamGroups = groupDriversByTeam(selectedDrivers, year);
 
     return (
-      <ResponsiveContainer width="100%" height={400} className="export-chart-container">
+      <ResponsiveContainer width="100%" height={480} className="export-chart-container">
         <LineChart data={positionData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
           <XAxis
@@ -250,10 +260,6 @@ const PositionChart: React.FC<PositionChartProps> = ({
             wrapperStyle={{ paddingTop: '20px', fontFamily: 'Inter, sans-serif', fontSize: '11px' }}
             payload={selectedDrivers.map((driverCode) => {
               const color = driverColor(driverCode, year);
-              let team = '';
-              Object.entries(teamGroups).forEach(([teamName, drivers]) => {
-                if (drivers.includes(driverCode)) team = teamName;
-              });
               let teammates: string[] = [];
               Object.values(teamGroups).forEach((drivers) => {
                 if (drivers.includes(driverCode)) teammates = drivers;
@@ -279,12 +285,36 @@ const PositionChart: React.FC<PositionChartProps> = ({
                     : driverCode,
                 type: 'line',
                 id: driverCode,
+                dataKey: driverCode,
                 color: color,
               };
             })}
-            onClick={(e: CustomLegendPayload) => e && e.id && toggleDriverFocus(String(e.id))}
-            onMouseEnter={(e: CustomLegendPayload) => e && e.id && setFocusedDriver(String(e.id))}
+            onClick={(e: CustomLegendPayload) => {
+              const driverCode = getLegendDriverCode(e);
+              if (driverCode) toggleDriverFocus(driverCode);
+            }}
+            onMouseEnter={(e: CustomLegendPayload) => {
+              const driverCode = getLegendDriverCode(e);
+              if (driverCode) setFocusedDriver(driverCode);
+            }}
             onMouseLeave={() => setFocusedDriver(null)}
+            formatter={(value, entry) => {
+              const driverCode = getLegendDriverCode(entry as CustomLegendPayload) || String(value);
+              const isFocused = focusedDriver === driverCode;
+              const isDimmed = focusedDriver && focusedDriver !== driverCode;
+
+              return (
+                <span
+                  style={{
+                    color: entry.color,
+                    opacity: isDimmed ? 0.3 : 1,
+                    fontWeight: isFocused ? 700 : 400,
+                  }}
+                >
+                  {value}
+                </span>
+              );
+            }}
           />
 
           {incidents.map((incident, index) => (
@@ -330,7 +360,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 type="monotone"
                 dataKey={driverCode}
                 stroke={color}
-                strokeWidth={lineStyle.strokeWidth}
+                strokeWidth={focusedDriver === driverCode ? 4 : lineStyle.strokeWidth}
                 strokeDasharray={lineStyle.strokeDasharray}
                 dot={false}
                 activeDot={{ r: 5, strokeWidth: 0, fill: color }}
@@ -370,23 +400,19 @@ const PositionChart: React.FC<PositionChartProps> = ({
       className={cn('', className)}
       style={{ animationDelay: `${delay * 100}ms`, ...inter } as React.CSSProperties}
     >
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-3">
-            <ChartExportMenu
-              onExport={(format) =>
-                exportChart(format, {
-                  title: 'Position Changes',
-                  subtitle: 'Lap-by-lap position changes throughout the race',
-                  year,
-                  drivers: selectedDrivers,
-                })
-              }
-              isExporting={isExporting}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-4 mb-4">
+        <div className="flex items-center justify-end gap-3">
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Position Changes',
+                subtitle: 'Lap-by-lap position changes throughout the race',
+                year,
+                drivers: selectedDrivers,
+              })
+            }
+            isExporting={isExporting}
+          />
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
               <Button

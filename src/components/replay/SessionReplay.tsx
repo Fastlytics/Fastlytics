@@ -13,7 +13,6 @@ import {
   getSpeedHeatmapSegments,
   getTrackStatusSegments,
   getTimeForLap,
-  getAllLapNumbers,
 } from './replay-utils';
 
 import ReplayLoader from './ReplayLoader';
@@ -166,16 +165,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   });
 
   const {
-    replayData: data,
-    loadedChunks,
-    loadedDuration,
-    isFullyLoaded,
-    seekTo,
-  } = useChunkLoader(metadata ?? null, year, event, session);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const {
     isPlaying,
     setIsPlaying,
     hasStarted,
@@ -197,6 +186,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     setShowTelemetry,
     showLapHistory,
     setShowLapHistory,
+    showIntervals,
+    setShowIntervals,
     dismissedMessages,
     reset: resetState,
     cycleSpeed,
@@ -204,10 +195,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   } = useReplayState(0, () => {});
 
   const {
+    replayData: data,
+    loadedChunks,
+    loadedDuration,
+    isFullyLoaded,
+    seekTo,
+  } = useChunkLoader(metadata ?? null, year, event, session, currentTime);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
     safeIndex,
     currentFrameDrivers,
     totalDuration,
-    totalLaps,
+    totalLaps: derivedTotalLaps,
     driverLapStartTimes,
     tyreAgeMap,
   } = useReplayData(data, currentTime);
@@ -220,6 +221,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const manifest = meta?.chunk_manifest;
     return meta?.total_duration ?? manifest?.[manifest.length - 1]?.end ?? totalDuration;
   }, [metadata, totalDuration]);
+
+  const totalLaps = useMemo(() => {
+    const meta = metadata as SessionReplayMetadata | undefined;
+    return meta?.total_laps ?? meta?.circuit_metadata?.total_laps ?? derivedTotalLaps;
+  }, [metadata, derivedTotalLaps]);
 
   // Throttle seekTo to chunk-loader: only seek on significant jumps (user drag), not normal playback
   const prevSeekTimeRef = useRef(currentTime);
@@ -375,9 +381,31 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   }, [data?.track_statuses, activeTotalDuration]);
 
   const availableLaps = useMemo(() => {
-    if (!data?.drivers) return [];
-    return getAllLapNumbers(data.drivers);
-  }, [data?.drivers]);
+    if (totalLaps > 0) {
+      return Array.from({ length: totalLaps }, (_, index) => index + 1);
+    }
+
+    const lapSet = new Set<number>();
+    for (const lap of metadata?.completed_laps || []) {
+      if (lap.lap > 0) lapSet.add(lap.lap);
+    }
+    return [...lapSet].sort((a, b) => a - b);
+  }, [metadata?.completed_laps, totalLaps]);
+
+  const getSeekTimeForLap = useCallback(
+    (lap: number) => {
+      const lapTimestamps = (metadata?.completed_laps || [])
+        .filter((entry) => entry.lap === lap)
+        .map((entry) => entry.timestamp);
+
+      if (lapTimestamps.length > 0) {
+        return Math.min(...lapTimestamps);
+      }
+
+      return data ? getTimeForLap(data.drivers, data.time, lap) : null;
+    },
+    [data, metadata?.completed_laps]
+  );
 
   const currentLap = useMemo(() => {
     const code = selectedDriver || leaderboard[0]?.code;
@@ -692,7 +720,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             driverData={selectedDriverFullData}
             driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
             onSeekToLap={(lap) => {
-              const time = getTimeForLap(data.drivers, data.time, lap);
+              const time = getSeekTimeForLap(lap);
               if (time !== null) setCurrentTime(time);
             }}
             layout={layouts.laphistory}
@@ -842,6 +870,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           pitIntervals={data.pit_intervals}
           circuitLength={data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000}
           tyreAge={tyreAgeMap}
+          showIntervals={showIntervals}
+          onToggleIntervals={() => setShowIntervals((v) => !v)}
           onSelectDriver={(code) => setSelectedDriver(code)}
           onFollow={follow}
         />
@@ -892,7 +922,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         availableLaps={availableLaps}
         currentLap={currentLap}
         onSeekToLap={(lap) => {
-          const time = getTimeForLap(data.drivers, data.time, lap);
+          const time = getSeekTimeForLap(lap);
           if (time !== null) setCurrentTime(time);
         }}
       />

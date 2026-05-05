@@ -1,6 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion } from 'motion/react';
 import {
   fetchDriverStandings,
   DriverStanding,
@@ -29,7 +28,7 @@ import {
   StandingsEmptyState,
   StandingsTableRow,
 } from '@/components/standings/StandingsPageLayout';
-import { PodiumCard } from '@/components/standings/PodiumCard';
+import { DriverPodium } from '@/components/standings/DriverPodium';
 import { SEO } from '@/components/layout/SEO';
 
 const DriverStandings = () => {
@@ -114,43 +113,22 @@ const DriverStandings = () => {
       ) : driverStandings && driverStandings.length > 0 ? (
         <>
           {/* Podium Section */}
-          <div className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-3 md:items-end">
-            {top3.map((driver, i) => {
-              const position = (i + 1) as 1 | 2 | 3;
-              return (
-                <PodiumCard
-                  key={driver.code}
-                  position={position}
-                  colorClass={getTeamColorClass(driver.team)}
-                  points={driver.points}
-                  wins={driver.wins}
-                  podiums={driver.podiums}
-                  transparent
-                  leaderLabel={
-                    position === 1
-                      ? championshipStatus === 'champion'
-                        ? 'World Champion'
-                        : 'Championship Leader'
-                      : undefined
-                  }
-                >
-                  <img
-                    src={getDriverImage(driver.code, selectedYear)}
-                    alt={driver.name}
-                    className={
-                      position === 1
-                        ? 'mb-4 h-44 w-44 rounded-full object-cover object-top border border-amber-500/20'
-                        : 'mb-4 h-40 w-40 rounded-full object-cover object-top border border-white/[0.08]'
-                    }
-                  />
-                  <div className="text-[12px] font-medium tracking-wider text-white/40">
-                    {driver.team}
-                  </div>
-                  <div className="mt-1 text-[18px] font-bold text-white">{driver.name}</div>
-                </PodiumCard>
-              );
-            })}
-          </div>
+          <DriverPodium
+            drivers={top3.map((driver, i) => ({
+              position: (i + 1) as 1 | 2 | 3,
+              name: driver.name,
+              team: driver.team,
+              code: driver.code,
+              points: driver.points,
+              wins: driver.wins,
+              podiums: driver.podiums,
+              image: getDriverImage(driver.code, selectedYear),
+              colorClass: getTeamColorClass(driver.team),
+            }))}
+            leaderLabel={
+              championshipStatus === 'champion' ? 'World Champion' : 'Championship Leader'
+            }
+          />
 
           {/* Rest of the Grid */}
           <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">

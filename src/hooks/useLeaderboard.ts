@@ -22,6 +22,8 @@ interface LeaderboardItem {
     timestamp: number;
     compound: string;
   } | null;
+  gap?: string | null;
+  interval?: string | null;
 }
 
 /**
@@ -111,7 +113,7 @@ export function useLeaderboard(
             bestLap: null,
           };
         })
-        .filter((d): d is LeaderboardItem => d !== null);
+        .filter((d) => d !== null) as LeaderboardItem[];
     }
 
     if (timingStandings) {

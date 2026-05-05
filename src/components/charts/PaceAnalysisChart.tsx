@@ -189,10 +189,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
       style={inter}
     >
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[16px] font-bold uppercase tracking-wider text-white">
-            Race Pace Distribution
-          </h3>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-3">
             <ChartExportMenu
               onExport={(format) =>
