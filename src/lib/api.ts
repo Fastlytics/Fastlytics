@@ -1274,6 +1274,64 @@ export interface ReplayChunk {
   drivers: ReplayDriversMap;
 }
 
+export interface LandingReplayAvailable {
+  year: number;
+  event: string;
+  session: string;
+  selected_drivers: string[];
+  source_window: {
+    start: number;
+    end: number;
+    duration: number;
+  };
+  chunk: {
+    id: number;
+    start: number;
+    end: number;
+    count: number;
+    drivers: number;
+  };
+}
+
+export interface LandingReplayMetadata {
+  session_info: SessionReplayData['session_info'];
+  circuit_layout: string;
+  circuit_metadata?: SessionReplayData['circuit_metadata'];
+  sector_boundaries?: SessionReplayData['sector_boundaries'];
+  fastest_sectors?: SessionReplayData['fastest_sectors'];
+  driver_colors: SessionReplayData['driver_colors'];
+  driver_grid_positions: SessionReplayData['driver_grid_positions'];
+  driver_info?: SessionReplayData['driver_info'];
+  session_results?: SessionReplayData['session_results'];
+  pit_intervals?: SessionReplayData['pit_intervals'];
+  driver_end_times?: SessionReplayData['driver_end_times'];
+  driver_stints?: SessionReplayData['driver_stints'];
+  track_statuses: SessionReplayData['track_statuses'];
+  race_control_messages: SessionReplayData['race_control_messages'];
+  weather?: SessionReplayData['weather'];
+  completed_laps?: SessionReplayData['completed_laps'];
+  selected_drivers: string[];
+  source_chunk_id: number;
+  source_window: {
+    start: number;
+    end: number;
+    duration: number;
+  };
+  total_laps?: number;
+  source_total_duration: number;
+  chunk_manifest?: {
+    id: number;
+    start: number;
+    end: number;
+    count: number;
+    drivers: number;
+  }[];
+}
+
+export interface LandingReplayChunk extends ReplayChunk {
+  selected_drivers: string[];
+}
+
 /** Fetches a session replay chunk. */
 export const fetchSessionReplayChunk = async (
   year: number,
@@ -1289,6 +1347,42 @@ export const fetchSessionReplayChunk = async (
     chunk_id: chunkId.toString(),
   });
   return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`, { signal });
+};
+
+export const fetchAvailableLandingReplays = async (
+  year?: number
+): Promise<LandingReplayAvailable[]> => {
+  const params = new URLSearchParams();
+  if (typeof year === 'number') params.set('year', year.toString());
+  const query = params.toString();
+  return request<LandingReplayAvailable[]>(
+    `/api/landing-replay/available${query ? `?${query}` : ''}`
+  );
+};
+
+export const fetchLandingReplayMetadata = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<LandingReplayMetadata> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<LandingReplayMetadata>(`/api/landing-replay/metadata?${params.toString()}`);
+};
+
+export const fetchLandingReplayChunk = async (
+  year: number,
+  event: string,
+  session: string,
+  chunkId = 1,
+  signal?: AbortSignal
+): Promise<LandingReplayChunk> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    chunk_id: chunkId.toString(),
+  });
+  return request<LandingReplayChunk>(`/api/landing-replay/chunk?${params.toString()}`, { signal });
 };
 
 // --- Bio Pages ---

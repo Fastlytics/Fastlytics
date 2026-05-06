@@ -38,6 +38,7 @@ const RETRY_DELAYS = [1000, 2000, 4000];
 const BUFFER_BEHIND_CHUNKS = 1;
 const BUFFER_AHEAD_CHUNKS = 2;
 const BUFFER_HEADROOM_SECONDS = 15;
+const MAX_CACHED_CHUNKS = 10;
 
 function isAbortError(error: unknown) {
   return (
@@ -111,6 +112,66 @@ function buildDesiredChunkIds(currentIndex: number, totalChunks: number) {
   }
 
   return ids;
+}
+
+function buildBackgroundChunkIds(
+  currentIndex: number,
+  totalChunks: number,
+  desiredChunkIds: number[]
+) {
+  const desiredSet = new Set(desiredChunkIds);
+  const ids: number[] = [];
+
+  for (let distance = 1; distance < totalChunks; distance++) {
+    const ahead = currentIndex + BUFFER_AHEAD_CHUNKS + distance;
+    if (ahead < totalChunks && !desiredSet.has(ahead)) ids.push(ahead);
+
+    const behind = currentIndex - BUFFER_BEHIND_CHUNKS - distance;
+    if (behind >= 0 && !desiredSet.has(behind)) ids.push(behind);
+  }
+
+  return ids;
+}
+
+function pruneCachedChunks(
+  chunksMap: Map<number, LoadedChunk>,
+  targetChunkIndex: number,
+  desiredChunkIds: number[],
+  backgroundChunkIds: number[]
+) {
+  const keepChunkIds: number[] = [];
+  const seen = new Set<number>();
+
+  for (const id of [...desiredChunkIds, ...backgroundChunkIds]) {
+    if (!chunksMap.has(id) || seen.has(id)) continue;
+    keepChunkIds.push(id);
+    seen.add(id);
+    if (keepChunkIds.length >= MAX_CACHED_CHUNKS) break;
+  }
+
+  if (!seen.has(targetChunkIndex) && chunksMap.has(targetChunkIndex)) {
+    keepChunkIds.unshift(targetChunkIndex);
+    seen.add(targetChunkIndex);
+  }
+
+  while (keepChunkIds.length > MAX_CACHED_CHUNKS) {
+    let removableIndex = -1;
+    for (let index = keepChunkIds.length - 1; index >= 0; index--) {
+      if (!desiredChunkIds.includes(keepChunkIds[index])) {
+        removableIndex = index;
+        break;
+      }
+    }
+    if (removableIndex === -1) break;
+    keepChunkIds.splice(removableIndex, 1);
+  }
+
+  const keepSet = new Set(keepChunkIds);
+  for (const chunkId of [...chunksMap.keys()]) {
+    if (!keepSet.has(chunkId)) {
+      chunksMap.delete(chunkId);
+    }
+  }
 }
 
 function mergeBufferedChunks(
@@ -209,16 +270,16 @@ export function useChunkLoader(
   const generationRef = useRef(0);
   const targetChunkIndexRef = useRef(0);
   const desiredChunkIdsRef = useRef<number[]>([]);
+  const backgroundChunkIdsRef = useRef<number[]>([]);
   const loadChunkRef = useRef<(chunkId: number) => Promise<void>>();
 
   const updateStateFromBuffer = useCallback(() => {
     const meta = metadataRef.current as SessionReplayMetadata | null;
     const manifest = meta?.chunk_manifest || [];
-    const desiredChunkIds = desiredChunkIdsRef.current;
+    const mergedChunkIds = [...chunksMapRef.current.keys()].sort((a, b) => a - b);
     const currentChunkIndex = targetChunkIndexRef.current;
-    const loadedChunkIds = desiredChunkIds.filter((id) => chunksMapRef.current.has(id));
     const replayData = meta
-      ? mergeBufferedChunks(meta, loadedChunkIds, chunksMapRef.current)
+      ? mergeBufferedChunks(meta, mergedChunkIds, chunksMapRef.current)
       : null;
     const loadedDuration = getContiguousLoadedDuration(
       manifest,
@@ -234,7 +295,7 @@ export function useChunkLoader(
 
     setState({
       replayData,
-      loadedChunks: new Set(loadedChunkIds),
+      loadedChunks: new Set(mergedChunkIds),
       totalChunks: manifest.length,
       isBuffering: shouldBuffer,
       loadedDuration,
@@ -245,6 +306,30 @@ export function useChunkLoader(
     if (fetchingSetRef.current.size > 0) return;
 
     for (const chunkId of desiredChunkIdsRef.current) {
+      if (chunksMapRef.current.has(chunkId)) continue;
+      if (fetchingSetRef.current.has(chunkId)) continue;
+      if (failedSetRef.current.has(chunkId)) continue;
+      loadChunkRef.current?.(chunkId);
+      return;
+    }
+
+    const meta = metadataRef.current as SessionReplayMetadata | null;
+    const manifest = meta?.chunk_manifest || [];
+    const currentChunkIndex = targetChunkIndexRef.current;
+    const currentChunkLoaded = chunksMapRef.current.has(currentChunkIndex);
+    const loadedDuration = getContiguousLoadedDuration(
+      manifest,
+      chunksMapRef.current,
+      currentChunkIndex
+    );
+    const isPrimaryBufferHealthy =
+      manifest.length > 0 &&
+      currentChunkLoaded &&
+      currentTimeRef.current + BUFFER_HEADROOM_SECONDS <= loadedDuration;
+
+    if (!isPrimaryBufferHealthy) return;
+
+    for (const chunkId of backgroundChunkIdsRef.current) {
       if (chunksMapRef.current.has(chunkId)) continue;
       if (fetchingSetRef.current.has(chunkId)) continue;
       if (failedSetRef.current.has(chunkId)) continue;
@@ -272,6 +357,12 @@ export function useChunkLoader(
           start: chunk.start_time,
           end: chunk.end_time,
         });
+        pruneCachedChunks(
+          chunksMapRef.current,
+          targetChunkIndexRef.current,
+          desiredChunkIdsRef.current,
+          backgroundChunkIdsRef.current
+        );
         failedSetRef.current.delete(chunkId);
         updateStateFromBuffer();
       } catch (err) {
@@ -313,6 +404,11 @@ export function useChunkLoader(
 
       const nextChunkIndex = getChunkIndexForTime(manifest, time);
       const desiredChunkIds = buildDesiredChunkIds(nextChunkIndex, manifest.length);
+      const backgroundChunkIds = buildBackgroundChunkIds(
+        nextChunkIndex,
+        manifest.length,
+        desiredChunkIds
+      );
       const desiredSet = new Set(desiredChunkIds);
       const shouldResetFetches =
         hardReset || [...fetchingSetRef.current].some((chunkId) => !desiredSet.has(chunkId));
@@ -327,12 +423,9 @@ export function useChunkLoader(
 
       targetChunkIndexRef.current = nextChunkIndex;
       desiredChunkIdsRef.current = desiredChunkIds;
+      backgroundChunkIdsRef.current = backgroundChunkIds;
 
-      for (const chunkId of [...chunksMapRef.current.keys()]) {
-        if (!desiredSet.has(chunkId)) {
-          chunksMapRef.current.delete(chunkId);
-        }
-      }
+      pruneCachedChunks(chunksMapRef.current, nextChunkIndex, desiredChunkIds, backgroundChunkIds);
 
       updateStateFromBuffer();
       scheduleNextChunk();
@@ -391,6 +484,7 @@ export function useChunkLoader(
     fetchingSetRef.current.clear();
     failedSetRef.current.clear();
     desiredChunkIdsRef.current = [];
+    backgroundChunkIdsRef.current = [];
     targetChunkIndexRef.current = 0;
 
     alignBuffer(currentTimeRef.current, true);

@@ -118,3 +118,4 @@ bun.lockb
 stylelint.config.mjs
 skills-lock.json
 knip.json
+.deepsec

@@ -4,30 +4,30 @@
 version: 2
 updates:
   # NPM Package Updates
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '03:00'
     open-pull-requests-limit: 10
     pull-request-branch-name:
-      separator: "/"
+      separator: '/'
     reviewers:
-      - "subhashhhhhh"
+      - 'subhashhhhhh'
     assignees:
-      - "subhashhhhhh"
+      - 'subhashhhhhh'
     labels:
-      - "dependencies"
-      - "automated"
+      - 'dependencies'
+      - 'automated'
     commit-message:
-      prefix: "chore"
-      include: "scope"
+      prefix: 'chore'
+      include: 'scope'
     # Group updates by type
     groups:
       dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'

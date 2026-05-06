@@ -87,6 +87,8 @@ const Speedometer: React.FC<SpeedometerProps> = ({
   const needleX = center + (arcRadius - 6) * Math.cos(needleRad);
   const needleY = center + (arcRadius - 6) * Math.sin(needleRad);
 
+  const activeColor = driverColor || 'rgba(255,255,255,0.92)';
+
   return (
     <div className="flex flex-col items-center justify-center">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -102,7 +104,7 @@ const Speedometer: React.FC<SpeedometerProps> = ({
           <path
             d={activeArcPath}
             fill="none"
-            stroke="rgba(255,255,255,0.92)"
+            stroke={activeColor}
             strokeWidth={6}
             strokeLinecap="round"
           />
@@ -117,12 +119,12 @@ const Speedometer: React.FC<SpeedometerProps> = ({
           y1={center}
           x2={needleX}
           y2={needleY}
-          stroke="rgba(255,255,255,0.92)"
+          stroke={activeColor}
           strokeWidth={2}
           strokeLinecap="round"
         />
         {/* Center dot */}
-        <circle cx={center} cy={center} r={4} fill="rgba(255,255,255,0.92)" />
+        <circle cx={center} cy={center} r={4} fill={activeColor} />
         <circle cx={center} cy={center} r={2} fill="#0e0e12" />
       </svg>
       <div className="flex items-baseline gap-1 -mt-2">
