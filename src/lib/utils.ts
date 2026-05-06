@@ -1,11 +1,10 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import { Gauge } from "lucide-react"
-import React from "react"
-
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { Gauge } from 'lucide-react';
+import React from 'react';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 // --- Tire Compound Colors ---
@@ -29,7 +28,7 @@ export const getCompoundColor = (compound: string | undefined | null): string =>
 // Function to format time in seconds to MM:SS.ms
 export function formatTime(totalSeconds: number): string {
   if (isNaN(totalSeconds) || totalSeconds < 0) {
-    return "--:--.---"; // Return placeholder for invalid input
+    return '--:--.---'; // Return placeholder for invalid input
   }
 
   const minutes = Math.floor(totalSeconds / 60);
@@ -44,4 +43,3 @@ export function formatTime(totalSeconds: number): string {
 }
 
 // Add other utility functions if needed
-
