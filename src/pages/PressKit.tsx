@@ -1,9 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
+import { LandingFooter } from '@/components/landing/LandingSections';
 import { Button } from '@/components/ui/button';
 import { Download01Icon, Copy01Icon, Tick01Icon } from 'hugeicons-react';
 import { SEO } from '@/components/layout/SEO';
+import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
+
+const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
 interface LogoAsset {
   name: string;
@@ -93,15 +97,12 @@ const LogoCard = ({
   onCopy: (filename: string) => void;
 }) => {
   const bgClass = asset.bg === 'dark' ? 'bg-[#0a0a0a]' : 'bg-[#f5f5f5]';
-  const borderClass = asset.bg === 'dark' ? 'border-zinc-800' : 'border-zinc-300';
-  const textClass = asset.bg === 'dark' ? 'text-white' : 'text-black';
+  const borderClass = asset.bg === 'dark' ? 'border-white/[0.06]' : 'border-zinc-300';
 
   return (
-    <div
-      className={`bg-zinc-900/50 border border-zinc-800 p-6 hover:border-red-600/50 transition-colors group h-full flex flex-col`}
-    >
+    <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 transition-colors hover:border-white/[0.1] flex flex-col">
       <div
-        className={`${bgClass} border ${borderClass} p-6 flex items-center justify-center h-40 mb-5`}
+        className={`${bgClass} border ${borderClass} p-5 flex items-center justify-center h-36 mb-4 rounded-lg`}
       >
         <img
           src={`/brand/${asset.filename}`}
@@ -111,15 +112,15 @@ const LogoCard = ({
         />
       </div>
 
-      <h3 className={`text-lg font-black uppercase italic mb-2 ${textClass}`}>{asset.name}</h3>
-      <p className="text-sm text-gray-400 mb-4 flex-grow">{asset.description}</p>
+      <h3 className="text-[15px] font-semibold text-white mb-1.5">{asset.name}</h3>
+      <p className="text-[13px] text-white/35 mb-4 flex-grow">{asset.description}</p>
 
       <div className="flex gap-2 mt-auto">
         <a href={`/brand/${asset.filename}`} download>
           <Button
             variant="outline"
             size="sm"
-            className="border-zinc-700 text-white hover:bg-zinc-800 hover:text-white gap-1.5"
+            className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
           >
             <Download01Icon className="w-3.5 h-3.5" />
             SVG
@@ -128,12 +129,12 @@ const LogoCard = ({
         <Button
           variant="outline"
           size="sm"
-          className="border-zinc-700 text-white hover:bg-zinc-800 hover:text-white gap-1.5"
+          className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
           onClick={() => onCopy(asset.filename)}
         >
           {isCopied ? (
             <>
-              <Tick01Icon className="w-3.5 h-3.5 text-green-400" />
+              <Tick01Icon className="w-3.5 h-3.5 text-emerald-400" />
               Copied
             </>
           ) : (
@@ -159,251 +160,259 @@ const PressKit = () => {
       setCopiedFile(filename);
       setTimeout(() => setCopiedFile(null), 2000);
     } catch {
-      // fallback: open in new tab
       window.open(`/brand/${filename}`, '_blank');
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden">
+    <div
+      style={INTER_STYLE}
+      className="min-h-screen bg-[#09090b] text-white antialiased selection:bg-red-500/30"
+    >
       <SEO
         title="Press Kit"
         description="Download the Fastlytics logo in multiple formats — full logo, icon only, wordmark, light/dark mode, and animated variants. Free to use for media and partners."
         keywords={['fastlytics logo', 'press kit', 'brand assets', 'f1 analytics brand']}
       />
-
       <LandingNavbar />
 
-      <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic mb-6">
-            Press <span className="text-red-600">Kit</span>
-          </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-medium">
-            Official Fastlytics brand assets. Download logos for use in media coverage, partner
-            integrations, and promotional materials.
-          </p>
-        </motion.div>
+      <main className="pt-28 pb-20 px-5 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
+              Brand
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+              Press Kit
+            </h1>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
+              Official Fastlytics brand assets. Download logos for use in media coverage, partner
+              integrations, and promotional materials.
+            </p>
+          </motion.div>
 
-        {/* Primary Logo */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-3">
-            Primary <span className="text-red-600">Logo</span>
-          </h2>
-          <p className="text-gray-400 mb-8">
-            The full Fastlytics logo with icon and wordmark. Use this as the default logo in most
-            contexts.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {primaryLogos.map((asset) => (
-              <LogoCard
-                key={asset.filename}
-                asset={asset}
-                isCopied={copiedFile === asset.filename}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
-        </motion.section>
+          {/* Primary Logos */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <h2 className="text-[18px] font-semibold text-white mb-2">Primary Logo</h2>
+            <p className="text-[14px] text-white/35 mb-6">
+              The full Fastlytics logo with icon and wordmark. Use this as the default logo in most
+              contexts.
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {primaryLogos.map((asset) => (
+                <LogoCard
+                  key={asset.filename}
+                  asset={asset}
+                  isCopied={copiedFile === asset.filename}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+          </motion.section>
 
-        {/* Icon Only */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-3">
-            Icon <span className="text-red-600">Only</span>
-          </h2>
-          <p className="text-gray-400 mb-8">
-            The isolated brand mark without the wordmark. Ideal for favicons, app icons, and compact
-            spaces.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {iconLogos.map((asset) => (
-              <LogoCard
-                key={asset.filename}
-                asset={asset}
-                isCopied={copiedFile === asset.filename}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
-        </motion.section>
+          {/* Icon Logos */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <h2 className="text-[18px] font-semibold text-white mb-2">Icon Only</h2>
+            <p className="text-[14px] text-white/35 mb-6">
+              The isolated brand mark without the wordmark. Ideal for favicons, app icons, and
+              compact spaces.
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {iconLogos.map((asset) => (
+                <LogoCard
+                  key={asset.filename}
+                  asset={asset}
+                  isCopied={copiedFile === asset.filename}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+          </motion.section>
 
-        {/* Wordmark */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-3">
-            Word<span className="text-red-600">mark</span>
-          </h2>
-          <p className="text-gray-400 mb-8">
-            The typographic FASTLYTICS logo without the icon. For text-only placements and inline
-            usage.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {wordmarkLogos.map((asset) => (
-              <LogoCard
-                key={asset.filename}
-                asset={asset}
-                isCopied={copiedFile === asset.filename}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
-        </motion.section>
+          {/* Wordmark Logos */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <h2 className="text-[18px] font-semibold text-white mb-2">Wordmark</h2>
+            <p className="text-[14px] text-white/35 mb-6">
+              The typographic FASTLYTICS logo without the icon. For text-only placements and inline
+              usage.
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {wordmarkLogos.map((asset) => (
+                <LogoCard
+                  key={asset.filename}
+                  asset={asset}
+                  isCopied={copiedFile === asset.filename}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+          </motion.section>
 
-        {/* Animated */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-3">
-            Ani<span className="text-red-600">mated</span>
-          </h2>
-          <p className="text-gray-400 mb-8">
-            The Fastlytics logo with animated racing bars. Renders with CSS animation in the browser
-            — useful for video intros, loading screens, and digital presentations.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {animatedLogos.map((asset) => (
-              <LogoCard
-                key={asset.filename}
-                asset={asset}
-                isCopied={copiedFile === asset.filename}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
-        </motion.section>
+          {/* Animated Logos */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <h2 className="text-[18px] font-semibold text-white mb-2">Animated</h2>
+            <p className="text-[14px] text-white/35 mb-6">
+              The Fastlytics logo with animated racing bars. Renders with CSS animation in the
+              browser — useful for video intros, loading screens, and digital presentations.
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {animatedLogos.map((asset) => (
+                <LogoCard
+                  key={asset.filename}
+                  asset={asset}
+                  isCopied={copiedFile === asset.filename}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+          </motion.section>
 
-        {/* Usage Guidelines */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-3">
-            Usage <span className="text-red-600">Guidelines</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-zinc-900/50 border border-zinc-800 p-6">
-              <h3 className="text-lg font-black uppercase italic text-green-400 mb-4">Do</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li className="flex items-start gap-2">
-                  <Tick01Icon className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  Use the light-mode logo on dark backgrounds and the dark-mode logo on light
-                  backgrounds.
-                </li>
-                <li className="flex items-start gap-2">
-                  <Tick01Icon className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  Maintain clear space around the logo equal to the height of the icon.
-                </li>
-                <li className="flex items-start gap-2">
-                  <Tick01Icon className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  Scale the logo proportionally — never stretch or squash it.
-                </li>
-                <li className="flex items-start gap-2">
-                  <Tick01Icon className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                  Link the logo back to{' '}
-                  <a
-                    href="https://fastlytics.app"
-                    className="text-red-400 hover:text-red-300 underline"
+          {/* Usage Guidelines */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
+          >
+            <h2 className="text-[18px] font-semibold text-white mb-6">Usage Guidelines</h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+                <h3 className="text-[14px] font-semibold text-emerald-400 mb-4">Do</h3>
+                <ul className="space-y-3 text-[13px] text-white/40">
+                  <li className="flex items-start gap-2.5">
+                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>
+                      Use the light-mode logo on dark backgrounds and the dark-mode logo on light
+                      backgrounds.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>
+                      Maintain clear space around the logo equal to the height of the icon.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>Scale the logo proportionally — never stretch or squash it.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <span>
+                      Link the logo back to{' '}
+                      <a
+                        href="https://fastlytics.app"
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        fastlytics.app
+                      </a>{' '}
+                      when used on the web.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+                <h3 className="text-[14px] font-semibold text-red-400 mb-4">Don't</h3>
+                <ul className="space-y-3 text-[13px] text-white/40">
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                      ✕
+                    </span>
+                    <span>Change the logo colors or modify the red (#ff2a1a) accent.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                      ✕
+                    </span>
+                    <span>Rotate, skew, or apply effects to the logo.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                      ✕
+                    </span>
+                    <span>Use the Fastlytics logo to imply endorsement without permission.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                      ✕
+                    </span>
+                    <span>Use the logo as your own brand identity or in a confusing manner.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Download All */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center"
+          >
+            <div className="flex items-center justify-center gap-2.5 mb-4">
+              <FastlyticsLogo size={24} />
+              <span className="text-[15px] font-bold italic tracking-[-0.02em] text-white">
+                FASTLYTICS
+              </span>
+            </div>
+            <p className="text-[14px] text-white/35 mb-6 max-w-lg mx-auto">
+              All logo variants are available under{' '}
+              <code className="bg-white/[0.04] px-1.5 py-0.5 rounded text-[12px] font-mono text-white/50">
+                /brand/
+              </code>{' '}
+              on the Fastlytics CDN. Use the download buttons above or hotlink directly.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2.5">
+              {[...primaryLogos, ...iconLogos, ...wordmarkLogos, ...animatedLogos].map((asset) => (
+                <a key={asset.filename} href={`/brand/${asset.filename}`} download>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-white/[0.08] bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
                   >
-                    fastlytics.app
-                  </a>{' '}
-                  when used on the web.
-                </li>
-              </ul>
+                    <Download01Icon className="w-3.5 h-3.5" />
+                    {asset.filename}
+                  </Button>
+                </a>
+              ))}
             </div>
-            <div className="bg-zinc-900/50 border border-zinc-800 p-6">
-              <h3 className="text-lg font-black uppercase italic text-red-500 mb-4">Don't</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="w-4 h-4 flex items-center justify-center text-red-500 mt-0.5 shrink-0 font-black">
-                    ✕
-                  </span>
-                  Change the logo colors or modify the red (#ff2a1a) accent.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-4 h-4 flex items-center justify-center text-red-500 mt-0.5 shrink-0 font-black">
-                    ✕
-                  </span>
-                  Rotate, skew, or apply effects to the logo.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-4 h-4 flex items-center justify-center text-red-500 mt-0.5 shrink-0 font-black">
-                    ✕
-                  </span>
-                  Use the Fastlytics logo to imply endorsement without permission.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-4 h-4 flex items-center justify-center text-red-500 mt-0.5 shrink-0 font-black">
-                    ✕
-                  </span>
-                  Use the logo as your own brand identity or in a confusing manner.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Bulk Download */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center py-12 border-t border-zinc-800"
-        >
-          <h2 className="text-3xl font-black uppercase italic mb-4">
-            Grab <span className="text-red-600">Everything</span>
-          </h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
-            All logo variants are available under{' '}
-            <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-sm font-mono">/brand/</code> on
-            the Fastlytics CDN. Use the download buttons above or hotlink directly.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {[...primaryLogos, ...iconLogos, ...wordmarkLogos, ...animatedLogos].map((asset) => (
-              <a key={asset.filename} href={`/brand/${asset.filename}`} download>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-zinc-700 text-gray-300 hover:bg-zinc-800 hover:text-white gap-1.5"
-                >
-                  <Download01Icon className="w-3.5 h-3.5" />
-                  {asset.filename}
-                </Button>
-              </a>
-            ))}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </main>
+
+      <LandingFooter />
     </div>
   );
 };
