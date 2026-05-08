@@ -7,6 +7,7 @@ import LandingNavbar from '@/components/layout/LandingNavbar';
 import LandingFooter from '@/components/layout/LandingFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileNotFound from '@/components/mobile/MobileNotFound';
+import { SEO } from '@/components/layout/SEO';
 
 const NotFound = () => {
   const location = useLocation();
@@ -18,12 +19,26 @@ const NotFound = () => {
   }, [location.pathname]);
 
   if (isMobile) {
-    return <MobileNotFound />;
+    return (
+      <>
+        <SEO
+          title="Page Not Found"
+          description="The page you requested could not be found."
+          noIndex
+        />
+        <MobileNotFound />
+      </>
+    );
   }
 
   // Desktop Layout
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white flex flex-col font-sans">
+      <SEO
+        title="Page Not Found"
+        description="The page you requested could not be found."
+        noIndex
+      />
       <LandingNavbar />
 
       <div className="flex-grow flex flex-col items-center justify-center relative overflow-hidden py-32">

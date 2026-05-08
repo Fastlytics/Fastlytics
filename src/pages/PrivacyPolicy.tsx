@@ -4,16 +4,29 @@ import LandingNavbar from '@/components/layout/LandingNavbar';
 import LandingFooter from '@/components/layout/LandingFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobilePrivacyPolicy } from '@/components/mobile';
+import { SEO } from '@/components/layout/SEO';
 
 const PrivacyPolicy = () => {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <MobilePrivacyPolicy />;
+    return (
+      <>
+        <SEO
+          title="Privacy"
+          description="Read how Fastlytics collects, uses, stores, and protects personal data across the platform."
+        />
+        <MobilePrivacyPolicy />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
+      <SEO
+        title="Privacy"
+        description="Read how Fastlytics collects, uses, stores, and protects personal data across the platform."
+      />
       <LandingNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">

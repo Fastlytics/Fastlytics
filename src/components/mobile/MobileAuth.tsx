@@ -5,6 +5,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import {
+  PasswordRequirements,
+  getPasswordValidationMessage,
+  isPasswordValid,
+} from '@/components/auth/PasswordRequirements';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAuth } from '@/contexts/AuthContext';
 import { oauthFlags } from '@/config/featureFlags';
@@ -183,8 +188,8 @@ const MobileAuth: React.FC = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (!isPasswordValid(password)) {
+      toast.error(getPasswordValidationMessage());
       return;
     }
 
@@ -457,6 +462,7 @@ const MobileAuth: React.FC = () => {
                           {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                         </button>
                       </div>
+                      <PasswordRequirements password={password} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-medium text-white/60">

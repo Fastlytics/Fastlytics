@@ -1,0 +1,7 @@
+<svg viewBox="0 0 510 110" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="14" width="120" height="40" fill="#ff2a1a" transform="skewX(-24)"/>
+  <rect x="40" y="54" width="105" height="40" fill="#111111" transform="skewX(-24)"/>
+  <text x="170" y="78" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="900" font-style="italic" font-size="50" letter-spacing="0">
+    <tspan fill="#111111">FAST</tspan><tspan fill="#ff2a1a">LYTICS</tspan>
+  </text>
+</svg>

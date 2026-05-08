@@ -9,6 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'; // Import Accordion components
+import { SEO } from '@/components/layout/SEO';
 
 const faqs = [
   {
@@ -47,6 +48,11 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
+      <SEO
+        title="FAQ"
+        description="Answers to common Fastlytics questions about telemetry data, updates, account security, accuracy, and project independence."
+        keywords={['faq', 'f1 telemetry', 'race data', 'fastlytics help']}
+      />
       <Navbar />
       <div className="container mx-auto px-4 md:px-8 py-12 max-w-4xl">
         <Button

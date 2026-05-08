@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
+import { SEO } from '@/components/layout/SEO';
 
 const TeamPaceTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
   if (active && payload && payload.length) {
@@ -307,6 +308,16 @@ const TeamPaceAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
+      <SEO
+        title="Team Pace"
+        description={`Compare team pace across the ${selectedYear} season with weekend evolution, session gaps, and consistency trends.`}
+        keywords={[
+          'team pace',
+          'race pace analysis',
+          'telemetry analysis',
+          'team performance data',
+        ]}
+      />
       <DashboardNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">

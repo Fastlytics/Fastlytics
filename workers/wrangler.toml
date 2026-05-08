@@ -8,10 +8,6 @@ workers_dev = true
 BACKEND_API_URL = "https://data.fastlytics.app"
 
 [[routes]]
-pattern = "https://api.fastlytics.app/*"
-zone_name = "fastlytics.app"
-
-[[routes]]
 pattern = "https://fastlytics.app/sitemap.xml"
 zone_name = "fastlytics.app"
 

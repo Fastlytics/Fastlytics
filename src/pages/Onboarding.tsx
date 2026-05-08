@@ -14,6 +14,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileOnboarding } from '@/components/mobile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import { SEO } from '@/components/layout/SEO';
 
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
@@ -112,11 +113,25 @@ const Onboarding = () => {
 
   // Mobile Onboarding
   if (isMobile) {
-    return <MobileOnboarding />;
+    return (
+      <>
+        <SEO
+          title="Welcome"
+          description="Set up your Fastlytics profile with favorite drivers and teams for a personalized race desk."
+          noIndex
+        />
+        <MobileOnboarding />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 overflow-hidden relative">
+      <SEO
+        title="Welcome"
+        description="Set up your Fastlytics profile with favorite drivers and teams for a personalized race desk."
+        noIndex
+      />
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-red-600/20 blur-[150px] rounded-full" />

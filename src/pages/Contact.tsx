@@ -5,16 +5,29 @@ import LandingFooter from '@/components/layout/LandingFooter';
 import { Mail01Icon, Location01Icon } from 'hugeicons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileContact } from '@/components/mobile';
+import { SEO } from '@/components/layout/SEO';
 
 const Contact = () => {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <MobileContact />;
+    return (
+      <>
+        <SEO
+          title="Contact"
+          description="Contact Fastlytics for product questions, support, or partnership conversations."
+        />
+        <MobileContact />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
+      <SEO
+        title="Contact"
+        description="Contact Fastlytics for product questions, support, or partnership conversations."
+      />
       <LandingNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">

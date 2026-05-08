@@ -82,8 +82,8 @@ const TeamProfile = () => {
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
-        title={`${career.name} — Team Profile | Fastlytics`}
-        description={`Career stats and season history for ${career.name}.`}
+        title={`${career.name}: profile`}
+        description={`Explore team results, wins, podiums, and season history for ${career.name} on Fastlytics.`}
       />
       <DashboardNavbar />
 

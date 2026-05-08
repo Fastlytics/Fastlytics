@@ -13,16 +13,31 @@ import {
 } from 'hugeicons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAbout } from '@/components/mobile';
+import { SEO } from '@/components/layout/SEO';
 
 const AboutUs = () => {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <MobileAbout />;
+    return (
+      <>
+        <SEO
+          title="About Fastlytics"
+          description="Learn how Fastlytics turns telemetry, strategy, and race data into a fast, intuitive analysis platform for fans and analysts."
+          keywords={['motorsport analytics', 'f1 data', 'telemetry analysis', 'race intelligence']}
+        />
+        <MobileAbout />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden">
+      <SEO
+        title="About Fastlytics"
+        description="Learn how Fastlytics turns telemetry, strategy, and race data into a fast, intuitive analysis platform for fans and analysts."
+        keywords={['motorsport analytics', 'f1 data', 'telemetry analysis', 'race intelligence']}
+      />
       {/* Navbar */}
       <LandingNavbar />
 
