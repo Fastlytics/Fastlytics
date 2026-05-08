@@ -8,10 +8,16 @@ import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileAuth } from '@/components/mobile';
+import {
+  PasswordRequirements,
+  getPasswordValidationMessage,
+  isPasswordValid,
+} from '@/components/auth/PasswordRequirements';
 import { useAuth } from '@/contexts/AuthContext';
 import { oauthFlags } from '@/config/featureFlags';
 import { getErrorMessage } from '@/types';
 import { cn } from '@/lib/utils';
+import { SEO } from '@/components/layout/SEO';
 
 /* ═══════════════════════════════════════════════════════════════
    AUTH PAGE — Redesigned to match Landing design language
@@ -289,6 +295,18 @@ const Auth = () => {
   const { trackEvent } = useAnalytics();
 
   const returnTo = searchParams.get('returnTo');
+  const authTitle =
+    isResetPasswordMode && showForgotPassword
+      ? 'Reset Password'
+      : activeTab === 'signup'
+        ? 'Create Account'
+        : 'Sign In';
+  const authDescription =
+    isResetPasswordMode && showForgotPassword
+      ? 'Reset your Fastlytics password and get back to your race desk.'
+      : activeTab === 'signup'
+        ? 'Create a Fastlytics account to save favorites and unlock a personalized race desk.'
+        : 'Sign in to Fastlytics to access your race desk, saved teams, and account settings.';
 
   // Redirect logged-in users
   useEffect(() => {
@@ -361,8 +379,8 @@ const Auth = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (!isPasswordValid(password)) {
+      toast.error(getPasswordValidationMessage());
       return;
     }
 
@@ -413,8 +431,8 @@ const Auth = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (!isPasswordValid(password)) {
+      toast.error(getPasswordValidationMessage());
       return;
     }
 
@@ -432,7 +450,12 @@ const Auth = () => {
 
   // Mobile Auth
   if (isMobile) {
-    return <MobileAuth />;
+    return (
+      <>
+        <SEO title={authTitle} description={authDescription} noIndex />
+        <MobileAuth />
+      </>
+    );
   }
 
   const socialProviders = [
@@ -449,6 +472,7 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen w-full bg-[#09090b] text-white antialiased">
+      <SEO title={authTitle} description={authDescription} noIndex />
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2">
         <RaceDeskPreview />
@@ -549,6 +573,7 @@ const Auth = () => {
                           {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                         </button>
                       </div>
+                      <PasswordRequirements password={password} />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-medium text-white/60">
@@ -707,6 +732,7 @@ const Auth = () => {
                             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                           </button>
                         </div>
+                        <PasswordRequirements password={password} />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[13px] font-medium text-white/60">

@@ -947,15 +947,16 @@ const Race = () => {
     return (
       <>
         <SEO
-          title={`${eventName} ${year} - F1 Race Analysis`}
-          description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+          title={`${eventName} ${year}: weekend breakdown`}
+          description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
           keywords={[
-            'f1 race analysis',
+            'race analysis',
+            'f1 telemetry',
+            'formula 1 telemetry data',
             'race results',
             'tire strategy',
-            'f1 telemetry',
             eventName,
-            `${year} f1 season`,
+            `${year} race weekend`,
           ]}
         />
         <MobileRace />
@@ -986,15 +987,16 @@ const Race = () => {
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
-        title={`${eventName} ${year} - F1 Race Analysis`}
-        description={`Detailed analysis of the ${year} ${eventName}. View race results, tire strategy, lap times, telemetry, and track dominance.`}
+        title={`${eventName} ${year}: weekend breakdown`}
+        description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
         keywords={[
-          'f1 race analysis',
+          'race analysis',
+          'f1 telemetry',
+          'formula 1 telemetry data',
           'race results',
           'tire strategy',
-          'f1 telemetry',
           eventName,
-          `${year} f1 season`,
+          `${year} race weekend`,
         ]}
       />
       <DashboardNavbar />

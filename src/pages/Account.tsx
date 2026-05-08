@@ -279,13 +279,25 @@ const Account = () => {
   };
 
   if (!user) return null;
-  if (isMobile) return <MobileAccount />;
+  if (isMobile) {
+    return (
+      <>
+        <SEO
+          title="Account"
+          description="Manage your Fastlytics account, profile, favorites, and preferences."
+          noIndex
+        />
+        <MobileAccount />
+      </>
+    );
+  }
 
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
-        title="My Account — Fastlytics"
-        description="Manage your Fastlytics account, profile, and preferences."
+        title="Account"
+        description="Manage your Fastlytics account, profile, favorites, and preferences."
+        noIndex
       />
       <DashboardNavbar />
 

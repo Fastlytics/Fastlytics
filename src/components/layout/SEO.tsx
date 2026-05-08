@@ -7,6 +7,7 @@ interface SEOProps {
   image?: string;
   url?: string;
   type?: string;
+  noIndex?: boolean;
 }
 
 const DOMAIN = 'https://fastlytics.app';
@@ -18,11 +19,12 @@ export const SEO = ({
   image = '/og-image.png',
   url,
   type = 'website',
+  noIndex = false,
 }: SEOProps) => {
-  const siteTitle = 'Fastlytics';
-  const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+  const fullTitle = title;
   const canonicalUrl = url ? url : DOMAIN;
   const absoluteImage = image.startsWith('http') ? image : `${DOMAIN}${image}`;
+  const robotsContent = noIndex ? 'noindex, nofollow' : 'index, follow';
 
   const allKeywords = [
     'f1 analytics',
@@ -42,6 +44,7 @@ export const SEO = ({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={allKeywords} />
+      <meta name="robots" content={robotsContent} />
       <meta name="author" content="Subhash Gottumulla" />
 
       {/* Open Graph / Facebook */}

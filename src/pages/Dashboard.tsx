@@ -325,9 +325,9 @@ const Dashboard = () => {
     return (
       <div style={inter} className="min-h-screen bg-[#09090b] text-white">
         <SEO
-          title="F1 Dashboard — Fastlytics"
-          description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule."
-          keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+          title="Race Desk"
+          description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
+          keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
         />
         <div className="flex min-h-screen items-center justify-center px-6 text-center">
           <div className="space-y-3">
@@ -347,9 +347,9 @@ const Dashboard = () => {
       <MobileLayout>
         <div style={inter} className="min-h-screen bg-[#09090b] text-white">
           <SEO
-            title="F1 Dashboard — Fastlytics"
-            description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule."
-            keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+            title="Race Desk"
+            description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
+            keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
           />
           <main className="space-y-5 px-4 pb-6 pt-4">
             <MobilePageHeader />
@@ -476,9 +476,9 @@ const Dashboard = () => {
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
-        title="F1 Dashboard — Fastlytics"
-        description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule."
-        keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+        title="Race Desk"
+        description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
+        keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
       />
       <DashboardNavbar />
 

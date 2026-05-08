@@ -4,16 +4,29 @@ import LandingNavbar from '@/components/layout/LandingNavbar';
 import LandingFooter from '@/components/layout/LandingFooter';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileTermsOfService } from '@/components/mobile';
+import { SEO } from '@/components/layout/SEO';
 
 const TermsOfService = () => {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <MobileTermsOfService />;
+    return (
+      <>
+        <SEO
+          title="Terms"
+          description="Read the terms governing access to Fastlytics, acceptable use, disclaimers, and service limitations."
+        />
+        <MobileTermsOfService />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
+      <SEO
+        title="Terms"
+        description="Read the terms governing access to Fastlytics, acceptable use, disclaimers, and service limitations."
+      />
       <LandingNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">

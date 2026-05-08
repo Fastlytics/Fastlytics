@@ -1,0 +1,19 @@
+<svg viewBox="0 0 510 110" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    @keyframes bar-top-pulse {
+      0%, 100% { transform: skewX(-24deg) translateX(0); }
+      50%      { transform: skewX(-24deg) translateX(10px); }
+    }
+    @keyframes bar-bottom-pulse {
+      0%, 100% { transform: skewX(-24deg) translateX(0); }
+      50%      { transform: skewX(-24deg) translateX(-10px); }
+    }
+    .bar-top    { animation: bar-top-pulse 1.8s ease-in-out infinite; }
+    .bar-bottom { animation: bar-bottom-pulse 1.8s ease-in-out infinite; }
+  </style>
+  <rect class="bar-top" x="0" y="14" width="120" height="40" fill="#ff2a1a"/>
+  <rect class="bar-bottom" x="40" y="54" width="105" height="40" fill="#ffffff"/>
+  <text x="170" y="78" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="900" font-style="italic" font-size="50" letter-spacing="0">
+    <tspan fill="#ffffff">FAST</tspan><tspan fill="#ff2a1a">LYTICS</tspan>
+  </text>
+</svg>

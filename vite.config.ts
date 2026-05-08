@@ -7,11 +7,12 @@ import path from 'path';
 export default defineConfig(({ mode }) => ({
   server: {
     port: 8080,
+    allowedHosts: ['dev.fastlytics.app', 'localhost'],
     proxy:
       mode === 'development'
         ? {
             '/api': {
-              target: 'http://localhost:8000',
+              target: 'https://fastlytics-api-proxy-v2.subhashgottumukkala17.workers.dev',
               changeOrigin: true,
             },
           }

@@ -25,6 +25,7 @@ import TermsOfService from './pages/TermsOfService';
 import FAQ from './pages/FAQ';
 import RefundPolicy from './pages/RefundPolicy';
 import Contact from './pages/Contact';
+import PressKit from './pages/PressKit';
 import LandingFooter from './components/layout/LandingFooter';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -128,6 +129,14 @@ const App = () => (
                 element={
                   <MainLayout>
                     <Contact />
+                  </MainLayout>
+                }
+              />
+              <Route
+                path="/press-kit"
+                element={
+                  <MainLayout>
+                    <PressKit />
                   </MainLayout>
                 }
               />

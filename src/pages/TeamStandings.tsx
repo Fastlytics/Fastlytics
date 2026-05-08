@@ -83,8 +83,8 @@ const TeamStandings = () => {
     return (
       <>
         <SEO
-          title={`F1 Constructor Standings ${selectedYear} — Fastlytics`}
-          description={`Formula 1 ${selectedYear} Constructor Championship standings, points, wins, and podiums.`}
+          title="Team Standings"
+          description={`See the ${selectedYear} team standings with points, wins, podiums, and constructors championship context.`}
         />
         <MobileTeamStandings />
       </>
@@ -95,8 +95,8 @@ const TeamStandings = () => {
     <StandingsLayout
       title="Constructor Standings"
       subtitle="World Constructors Championship"
-      seoTitle={`F1 Constructor Standings ${selectedYear} — Fastlytics`}
-      seoDescription={`Formula 1 ${selectedYear} Constructor Championship standings, points, wins, and podiums.`}
+      seoTitle="Team Standings"
+      seoDescription={`See the ${selectedYear} team standings with points, wins, podiums, and constructors championship context.`}
       selectedYear={selectedYear}
     >
       {isLoading ? (

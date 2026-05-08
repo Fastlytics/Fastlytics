@@ -18,6 +18,7 @@ import {
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SEO } from '@/components/layout/SEO';
 import type { CustomTooltipProps, CustomLegendProps } from '@/types';
 import {
   Select,
@@ -277,6 +278,11 @@ const ChampionshipProgression = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
+      <SEO
+        title="Championship Race"
+        description={`Track the ${selectedYear} championship race with cumulative points, contender filters, and round-by-round momentum swings.`}
+        keywords={['championship standings', 'title fight', 'f1 standings', 'points progression']}
+      />
       <DashboardNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">

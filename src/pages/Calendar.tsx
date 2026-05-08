@@ -29,9 +29,9 @@ const Calendar = () => {
     return (
       <>
         <SEO
-          title={`F1 Calendar ${selectedYear} - Race Schedule & Results`}
-          description={`Full Formula 1 ${selectedYear} race calendar. Check race dates, times, and results for every Grand Prix.`}
-          keywords={['f1 calendar', 'f1 schedule', 'race dates', `${selectedYear} f1 schedule`]}
+          title="Season Calendar"
+          description={`Track the ${selectedYear} season calendar with race dates, session times, weekend status, and results in one place.`}
+          keywords={['f1 calendar', 'f1 schedule', 'race dates', `${selectedYear} season calendar`]}
         />
         <MobileCalendar />
       </>
@@ -41,9 +41,9 @@ const Calendar = () => {
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO
-        title={`F1 Calendar ${selectedYear} - Race Schedule & Results`}
-        description={`Full Formula 1 ${selectedYear} race calendar. Check race dates, times, and results for every Grand Prix.`}
-        keywords={['f1 calendar', 'f1 schedule', 'race dates', `${selectedYear} f1 schedule`]}
+        title="Season Calendar"
+        description={`Track the ${selectedYear} season calendar with race dates, session times, weekend status, and results in one place.`}
+        keywords={['f1 calendar', 'f1 schedule', 'race dates', `${selectedYear} season calendar`]}
       />
       <DashboardNavbar />
 

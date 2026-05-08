@@ -10,20 +10,22 @@ export class APIError extends Error {
 }
 
 import { logger } from './logger';
+import { getAccessToken } from './supabase';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const API_KEY = import.meta.env.VITE_FASTLYTICS_API_KEY;
 const API_KEY_HEADER = 'X-API-Key';
 
-const getHeaders = (): HeadersInit => {
+const getHeaders = async (): Promise<HeadersInit> => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
   if (API_KEY) {
     headers[API_KEY_HEADER] = API_KEY;
-  } else {
-    // Optional: warn only once or in specific env?
-    // console.warn("VITE_FASTLYTICS_API_KEY is not set.");
+  }
+  const token = await getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 };
@@ -49,7 +51,7 @@ export const request = async <T>(
       ...options,
       signal: options?.signal,
       headers: {
-        ...getHeaders(),
+        ...(await getHeaders()),
         ...options?.headers,
       },
     });

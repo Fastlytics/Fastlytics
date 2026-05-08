@@ -39,13 +39,14 @@ const Landing: React.FC = () => {
       className="min-h-screen bg-[#09090b] text-white antialiased selection:bg-red-500/30"
     >
       <SEO
-        title="Fastlytics - Formula 1 Race Intelligence"
-        description="Telemetry, tyre strategy, pace analysis, track dominance and session replay in one race desk. The analytics platform F1 fans deserve."
+        title="Fastlytics: advanced race intelligence"
+        description="Fastlytics brings telemetry analysis, lap data, pace comparison, strategy breakdowns, and session replay into one clean race intelligence platform."
         keywords={[
-          'formula 1 analytics',
+          'f1 data',
+          'formula 1 telemetry data',
           'f1 telemetry',
-          'f1 race strategy',
-          'f1 timing',
+          'race telemetry',
+          'lap time analysis',
           'motorsport analytics',
         ]}
       />
