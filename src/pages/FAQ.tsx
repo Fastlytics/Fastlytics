@@ -1,15 +1,16 @@
 import React from 'react';
-import Navbar from '@/components/layout/Navbar'; // Assuming a standard Navbar
-import { ArrowLeft01Icon } from 'hugeicons-react';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import LandingNavbar from '@/components/layout/LandingNavbar';
+import { LandingFooter } from '@/components/landing/LandingSections';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion'; // Import Accordion components
+} from '@/components/ui/accordion';
 import { SEO } from '@/components/layout/SEO';
+
+const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
 const faqs = [
   {
@@ -44,47 +45,63 @@ const faqs = [
 ];
 
 const FAQ = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white">
+    <div
+      style={INTER_STYLE}
+      className="min-h-screen bg-[#09090b] text-white antialiased selection:bg-red-500/30"
+    >
       <SEO
         title="FAQ"
         description="Answers to common Fastlytics questions about telemetry data, updates, account security, accuracy, and project independence."
         keywords={['faq', 'f1 telemetry', 'race data', 'fastlytics help']}
       />
-      <Navbar />
-      <div className="container mx-auto px-4 md:px-8 py-12 max-w-4xl">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-20 left-4 md:left-8 text-gray-300 hover:bg-gray-800 hover:text-white z-10"
-          onClick={() => navigate(-1)} // Go back to previous page
-        >
-          <ArrowLeft01Icon className="h-5 w-5" />
-        </Button>
+      <LandingNavbar />
 
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-10 text-white tracking-tight">
-          Frequently Asked Questions
-        </h1>
+      <main className="pt-28 pb-20 px-5 lg:px-8">
+        <div className="mx-auto max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12"
+          >
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
+              Support
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+              Frequently asked questions
+            </h1>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
+              Everything you need to know about Fastlytics, our data, and how the platform works.
+            </p>
+          </motion.div>
 
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          {faqs.map((faq, index) => (
-            <AccordionItem
-              key={index}
-              value={`item-${index}`}
-              className="bg-gray-900/50 border border-gray-700/80 rounded-lg px-4 md:px-6 transition-colors hover:bg-gray-800/70"
-            >
-              <AccordionTrigger className="text-left text-base md:text-lg font-medium hover:no-underline text-gray-100 py-4">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-gray-300 text-sm md:text-base pb-4">
-                {faq.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.6 }}
+          >
+            <Accordion type="single" collapsible className="w-full space-y-3">
+              {faqs.map((faq, index) => (
+                <AccordionItem
+                  key={index}
+                  value={`item-${index}`}
+                  className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-5 transition-colors hover:border-white/[0.1]"
+                >
+                  <AccordionTrigger className="text-left text-[15px] font-medium hover:no-underline text-white/80 py-5">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-[14px] leading-relaxed text-white/40 pb-5">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </motion.div>
+        </div>
+      </main>
+
+      <LandingFooter />
     </div>
   );
 };

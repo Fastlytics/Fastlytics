@@ -21,9 +21,9 @@ const MobileContact: React.FC = () => {
               Fast<span className="text-red-600">lytics</span>
             </span>
           </Link>
-          <Link to={user ? '/dashboard' : '/auth'}>
+          <Link to={user ? '/dashboard' : '/pricing'}>
             <button className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors">
-              {user ? 'Dashboard' : 'Sign Up'}
+              {user ? 'Dashboard' : 'Get Started'}
             </button>
           </Link>
         </div>

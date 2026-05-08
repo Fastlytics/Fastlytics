@@ -6,7 +6,7 @@ import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 const navLinks = [
   { label: 'Features', href: '#features' },
   { label: 'Product', href: '#product' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Pricing', href: '/pricing' },
 ];
 
 const LandingNavbar = () => {

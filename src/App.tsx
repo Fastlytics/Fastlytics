@@ -25,31 +25,20 @@ import TermsOfService from './pages/TermsOfService';
 import FAQ from './pages/FAQ';
 import RefundPolicy from './pages/RefundPolicy';
 import Contact from './pages/Contact';
+import { CheckoutSuccess, CheckoutCancel } from './pages/CheckoutResult';
 import PressKit from './pages/PressKit';
-import LandingFooter from './components/layout/LandingFooter';
+import Pricing from './pages/Pricing';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/layout/ScrollToTop';
 import RouteTracker from '@/components/layout/RouteTracker';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { GatedRoute } from '@/components/common/GatedRoute';
-import { useIsMobile } from '@/hooks/use-mobile';
 import ConsentBanner from '@/components/auth/ConsentBanner';
 
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
 const queryClient = new QueryClient();
-
-// Layout component to add footer to pages
-const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  const isMobile = useIsMobile();
-  return (
-    <div className="min-h-screen flex flex-col">
-      {children}
-      {!isMobile && <LandingFooter />}
-    </div>
-  );
-};
 
 // Landing layout — the new Landing page includes its own footer.
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
@@ -85,9 +74,19 @@ const App = () => (
               <Route
                 path="/about"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <AboutUs />
-                  </MainLayout>
+                  </LandingLayout>
+                }
+              />
+
+              {/* Pricing Page */}
+              <Route
+                path="/pricing"
+                element={
+                  <LandingLayout>
+                    <Pricing />
+                  </LandingLayout>
                 }
               />
 
@@ -95,49 +94,67 @@ const App = () => (
               <Route
                 path="/privacy-policy"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <PrivacyPolicy />
-                  </MainLayout>
+                  </LandingLayout>
                 }
               />
               <Route
                 path="/terms-of-service"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <TermsOfService />
-                  </MainLayout>
+                  </LandingLayout>
                 }
               />
               <Route
                 path="/faq"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <FAQ />
-                  </MainLayout>
+                  </LandingLayout>
                 }
               />
               <Route
                 path="/refund-policy"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <RefundPolicy />
-                  </MainLayout>
+                  </LandingLayout>
                 }
               />
               <Route
                 path="/contact"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <Contact />
-                  </MainLayout>
+                  </LandingLayout>
                 }
               />
               <Route
                 path="/press-kit"
                 element={
-                  <MainLayout>
+                  <LandingLayout>
                     <PressKit />
-                  </MainLayout>
+                  </LandingLayout>
+                }
+              />
+
+              {/* Checkout result pages */}
+              <Route
+                path="/checkout/success"
+                element={
+                  <LandingLayout>
+                    <CheckoutSuccess />
+                  </LandingLayout>
+                }
+              />
+              <Route
+                path="/checkout/cancel"
+                element={
+                  <LandingLayout>
+                    <CheckoutCancel />
+                  </LandingLayout>
                 }
               />
 

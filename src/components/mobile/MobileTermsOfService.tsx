@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Gauge } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-
 import MobileFooter from './MobileFooter';
 
 const MobileTermsOfService: React.FC = () => {
@@ -11,7 +10,6 @@ const MobileTermsOfService: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white overflow-x-hidden">
-      {/* Header */}
       <header className="relative z-20 sticky top-0 bg-black border-b-2 border-white/10">
         <div className="flex items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 group">
@@ -20,9 +18,9 @@ const MobileTermsOfService: React.FC = () => {
               Fast<span className="text-red-600">lytics</span>
             </span>
           </Link>
-          <Link to={user ? '/dashboard' : '/auth'}>
+          <Link to={user ? '/dashboard' : '/pricing'}>
             <button className="bg-white text-black text-xs font-black uppercase tracking-wider px-4 py-2 hover:bg-red-600 hover:text-white transition-colors">
-              {user ? 'Dashboard' : 'Sign Up'}
+              {user ? 'Dashboard' : 'Get Started'}
             </button>
           </Link>
         </div>
@@ -38,25 +36,46 @@ const MobileTermsOfService: React.FC = () => {
           <div className="space-y-8 text-sm font-mono text-gray-400">
             <section>
               <h2 className="text-lg font-black text-white uppercase italic mb-3">1. Acceptance</h2>
-              <p>By accessing Fastlytics, you agree to be bound by these Terms of Service.</p>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">
-                2. Use License
-              </h2>
               <p>
-                Permission is granted to temporarily download one copy of the materials (information
-                or software) on Fastlytics' website for personal, non-commercial transitory viewing
-                only.
+                By using Fastlytics, you agree to these Terms. Applies to all tiers — Free, Pro, and
+                Ultra.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">3. Disclaimer</h2>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                2. Subscriptions
+              </h2>
+              <p className="mb-2">
+                Paid plans are billed monthly or annually in advance via Dodo Payments. Cancel
+                anytime — access continues until the end of your billing period.
+              </p>
+              <p>We do not store your full payment card details.</p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">3. Free Tier</h2>
               <p>
-                The materials on Fastlytics' website are provided on an 'as is' basis. Fastlytics
-                makes no warranties, expressed or implied.
+                Free tier includes current season data with a 5-minute session replay cap. Features
+                may change.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">
+                4. Acceptable Use
+              </h2>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>No scraping or systematic data extraction</li>
+                <li>No account sharing or reselling access</li>
+                <li>No unlawful use</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">5. Disclaimer</h2>
+              <p className="mb-2">
+                Service provided "as is." We do not guarantee data accuracy or availability.
               </p>
               <div className="mt-4 p-3 bg-zinc-900 border border-white/10 text-xs">
                 <strong className="text-white block mb-1">F1 Disclaimer</strong>
@@ -67,28 +86,16 @@ const MobileTermsOfService: React.FC = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">
-                4. Limitations
-              </h2>
+              <h2 className="text-lg font-black text-white uppercase italic mb-3">6. Liability</h2>
               <p>
-                In no event shall Fastlytics or its suppliers be liable for any damages arising out
-                of the use or inability to use the materials on Fastlytics' website.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-black text-white uppercase italic mb-3">5. Revisions</h2>
-              <p>
-                The materials appearing on Fastlytics' website could include technical,
-                typographical, or photographic errors. Fastlytics does not warrant that any of the
-                materials on its website are accurate, complete, or current.
+                Fastlytics is not liable for indirect or consequential damages from use of the
+                Service.
               </p>
             </section>
           </div>
         </motion.div>
       </main>
 
-      {/* Footer */}
       <MobileFooter />
     </div>
   );

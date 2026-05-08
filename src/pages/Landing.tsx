@@ -5,13 +5,13 @@ import LandingNavbar from '@/components/layout/LandingNavbar';
 import { useAuth } from '@/contexts/AuthContext';
 import HeroSection from '@/components/landing/HeroSection';
 import {
-  CTASection,
   FeaturesSection,
   LandingFooter,
   LogoBar,
   ProductSection,
   StatsSection,
 } from '@/components/landing/LandingSections';
+import { PricingSection } from '@/components/landing/PricingSection';
 
 const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
@@ -58,7 +58,7 @@ const Landing: React.FC = () => {
         <FeaturesSection />
         <ProductSection />
         <StatsSection />
-        <CTASection />
+        <PricingSection />
       </main>
 
       <LandingFooter />

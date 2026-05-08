@@ -1,87 +1,84 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
-import LandingFooter from '@/components/layout/LandingFooter';
+import { LandingFooter } from '@/components/landing/LandingSections';
 import { Mail01Icon, Location01Icon } from 'hugeicons-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileContact } from '@/components/mobile';
 import { SEO } from '@/components/layout/SEO';
 
+const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
+
 const Contact = () => {
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Contact"
-          description="Contact Fastlytics for product questions, support, or partnership conversations."
-        />
-        <MobileContact />
-      </>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white overflow-x-hidden flex flex-col">
+    <div
+      style={INTER_STYLE}
+      className="min-h-screen bg-[#09090b] text-white antialiased selection:bg-red-500/30"
+    >
       <SEO
         title="Contact"
         description="Contact Fastlytics for product questions, support, or partnership conversations."
       />
       <LandingNavbar />
 
-      <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter italic mb-6">
-            Get in <span className="text-red-600">Touch</span>
-          </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-medium">
-            Have questions? We're here to help.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <main className="pt-28 pb-20 px-5 lg:px-8">
+        <div className="mx-auto max-w-6xl">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-zinc-900/50 border border-zinc-800 p-10 hover:border-red-600/50 transition-colors group text-center"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-16"
           >
-            <div className="mb-6 inline-flex p-4 bg-zinc-800/50 rounded-full group-hover:bg-red-600/20 transition-colors">
-              <Mail01Icon className="w-10 h-10 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-black uppercase italic mb-4">Email Us</h2>
-            <a
-              href="mailto:contact@fastlytics.app"
-              className="text-xl text-gray-300 hover:text-white transition-colors block"
-            >
-              contact@fastlytics.app
-            </a>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-zinc-900/50 border border-zinc-800 p-10 hover:border-red-600/50 transition-colors group text-center"
-          >
-            <div className="mb-6 inline-flex p-4 bg-zinc-800/50 rounded-full group-hover:bg-red-600/20 transition-colors">
-              <Location01Icon className="w-10 h-10 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-black uppercase italic mb-4">Office</h2>
-            <p className="text-xl text-gray-300">
-              Venture Labs,
-              <br />
-              Thapar Institute, Punjab, India
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
+              Contact
+            </p>
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+              Get in touch
+            </h1>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
+              Questions about plans, features, or anything else? We're here to help.
             </p>
           </motion.div>
+
+          <div className="grid gap-5 sm:grid-cols-2 max-w-3xl">
+            <motion.a
+              href="mailto:contact@fastlytics.app"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.6 }}
+              className="group rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 transition-colors hover:border-white/[0.1]"
+            >
+              <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06] group-hover:bg-red-500/10 group-hover:border-red-500/20 transition-colors">
+                <Mail01Icon className="h-5 w-5 text-red-400" />
+              </div>
+              <h2 className="text-[16px] font-semibold text-white">Email us</h2>
+              <p className="mt-2 text-[14px] text-white/40 group-hover:text-white/60 transition-colors">
+                contact@fastlytics.app
+              </p>
+              <p className="mt-3 text-[12px] text-white/25">
+                We respond within 24 hours on race weekends.
+              </p>
+            </motion.a>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
+              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 transition-colors hover:border-white/[0.1]"
+            >
+              <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                <Location01Icon className="h-5 w-5 text-red-400" />
+              </div>
+              <h2 className="text-[16px] font-semibold text-white">Office</h2>
+              <p className="mt-2 text-[14px] text-white/40">
+                Venture Labs,
+                <br />
+                Thapar Institute, Punjab, India
+              </p>
+            </motion.div>
+          </div>
         </div>
       </main>
+
+      <LandingFooter />
     </div>
   );
 };

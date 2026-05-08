@@ -2,38 +2,25 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircleIcon, ArrowLeft01Icon } from 'hugeicons-react';
-import { Gauge } from 'lucide-react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
-import LandingFooter from '@/components/layout/LandingFooter';
-import { useIsMobile } from '@/hooks/use-mobile';
-import MobileNotFound from '@/components/mobile/MobileNotFound';
+import { LandingFooter } from '@/components/landing/LandingSections';
 import { SEO } from '@/components/layout/SEO';
+
+const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     console.error('404 Error: User attempted to access non-existent route:', location.pathname);
   }, [location.pathname]);
 
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Page Not Found"
-          description="The page you requested could not be found."
-          noIndex
-        />
-        <MobileNotFound />
-      </>
-    );
-  }
-
-  // Desktop Layout
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white flex flex-col font-sans">
+    <div
+      style={INTER_STYLE}
+      className="min-h-screen bg-[#09090b] text-white antialiased selection:bg-red-500/30 flex flex-col"
+    >
       <SEO
         title="Page Not Found"
         description="The page you requested could not be found."
@@ -41,49 +28,34 @@ const NotFound = () => {
       />
       <LandingNavbar />
 
-      <div className="flex-grow flex flex-col items-center justify-center relative overflow-hidden py-32">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-
-        {/* Decorative Elements */}
-        <div className="absolute top-1/4 -left-10 w-96 h-96 bg-red-600/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-1/4 -right-10 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px]"></div>
-
-        <div className="relative z-10 text-center max-w-4xl px-6">
-          <div className="mb-6 flex justify-center">
-            <div className="relative">
-              <Gauge className="h-32 w-32 text-red-600 opacity-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-150 blur-sm" />
-              <h1 className="text-[12rem] font-black italic tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-600">
-                404
-              </h1>
-            </div>
+      <div className="flex-grow flex flex-col items-center justify-center px-5 py-32">
+        <div className="text-center max-w-lg mx-auto">
+          <div className="mb-4">
+            <AlertCircleIcon className="h-12 w-12 text-red-400 mx-auto" />
           </div>
-
-          <h2 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-8 text-white">
-            Pit Lane <span className="text-red-600">Closed</span>
+          <h1 className="text-7xl font-bold tracking-[-0.03em] text-white">404</h1>
+          <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white/80">
+            Page not found
           </h2>
-
-          <p className="text-xl text-gray-400 font-mono mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-3 text-[15px] text-white/40 leading-relaxed">
             The telemetry data for this sector is missing. You might have taken a wrong turn at the
             chicane.
           </p>
 
-          <div className="flex flex-row gap-6 justify-center">
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button
               onClick={() => navigate(-1)}
-              className="bg-transparent hover:bg-white hover:text-black text-white border-2 border-white/20 hover:border-white text-lg font-bold uppercase tracking-widest px-8 py-6 h-auto transition-all duration-300 rounded-none"
+              variant="outline"
+              className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white h-11 px-6 rounded-xl text-[13px]"
             >
-              <span className="flex items-center gap-2">
-                <ArrowLeft01Icon className="h-5 w-5" />
-                Go Back
-              </span>
+              <ArrowLeft01Icon className="h-4 w-4 mr-1.5" />
+              Go back
             </Button>
-
             <Button
               onClick={() => navigate('/')}
-              className="bg-red-600 hover:bg-red-700 text-white text-lg font-bold uppercase tracking-widest px-8 py-6 h-auto transition-all duration-300 border-2 border-red-600 hover:border-red-500 rounded-none shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+              className="h-11 px-6 rounded-xl bg-white text-[13px] font-semibold text-black hover:bg-white/90"
             >
-              Return to Pits
+              Return home
             </Button>
           </div>
         </div>
