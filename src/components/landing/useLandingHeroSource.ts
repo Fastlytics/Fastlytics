@@ -5,6 +5,7 @@ import {
   fetchLandingReplayChunk,
   fetchLandingReplayMetadata,
 } from '@/lib/api';
+import { useChunkLoader } from '@/hooks/useChunkLoader';
 import { pickDifferentLandingReplay, pickLandingReplay, pickLandingReplayKey } from './hero-utils';
 
 const LANDING_REPLAY_SELECTION_KEY = 'landing-replay-selection-v1';
@@ -14,7 +15,7 @@ function readStoredSelectionKey() {
   return sessionStorage.getItem(LANDING_REPLAY_SELECTION_KEY);
 }
 
-export function useLandingHeroSource() {
+export function useLandingHeroSource(currentTime: number) {
   const { data: availableCaches = [] } = useQuery({
     queryKey: ['landingReplayAvailable'],
     queryFn: () => fetchAvailableLandingReplays(),
@@ -54,19 +55,32 @@ export function useLandingHeroSource() {
     retry: 1,
   });
 
-  const { data: chunk } = useQuery({
-    queryKey: [
-      'landingReplayChunk',
-      selectedCache?.year,
-      selectedCache?.event,
-      selectedCache?.session,
-    ],
-    queryFn: () =>
-      fetchLandingReplayChunk(selectedCache!.year, selectedCache!.event, selectedCache!.session),
-    enabled: Boolean(selectedCache),
-    staleTime: 1000 * 60 * 30,
-    retry: 1,
-  });
+  const {
+    replayData: mergedChunk,
+    loadedDuration,
+    isBuffering,
+  } = useChunkLoader(
+    metadata ?? null,
+    selectedCache?.year ?? 0,
+    selectedCache?.event ?? '',
+    selectedCache?.session ?? '',
+    currentTime,
+    {
+      fetchChunk: fetchLandingReplayChunk,
+      keepAllChunks: true,
+      maxCachedChunks: metadata?.chunk_manifest?.length ?? 20,
+      bufferAheadChunks: 0,
+      bufferBehindChunks: 0,
+      bufferHeadroomSeconds: 0.25,
+    }
+  );
+
+  const playbackStartTime =
+    metadata?.chunk_manifest?.[0]?.start ?? metadata?.source_window?.start ?? 0;
+  const playbackEndTime =
+    metadata?.chunk_manifest?.[metadata.chunk_manifest.length - 1]?.end ??
+    metadata?.source_window?.end ??
+    0;
 
   const selectDifferentCache = useMemo(() => {
     if (availableCaches.length <= 1) return null;
@@ -84,7 +98,11 @@ export function useLandingHeroSource() {
   return {
     selectedCache,
     metadata,
-    chunk,
+    chunk: mergedChunk,
+    loadedDuration,
+    isBuffering,
+    playbackStartTime,
+    playbackEndTime,
     canSelectDifferentCache: availableCaches.length > 1,
     selectDifferentCache,
   };

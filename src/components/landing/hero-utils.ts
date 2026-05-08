@@ -5,6 +5,60 @@ import { ChartType, HeroStrategyStint, HeroViewModel } from './hero-types';
 const DEFAULT_TRACK_PATH =
   'M70 110 C40 80 60 40 110 45 L170 48 C210 50 225 35 210 20 C190 2 220 -5 260 8 C310 24 340 55 330 80 C322 98 290 96 288 112 C286 130 340 126 355 108 C372 88 365 112 350 120 C330 130 260 135 220 118 C190 105 170 115 140 112 C100 108 85 125 70 110Z';
 
+export function mergeLandingReplayChunks(chunks: LandingReplayChunk[]): LandingReplayChunk | null {
+  if (chunks.length === 0) return null;
+  if (chunks.length === 1) return chunks[0];
+
+  const sorted = [...chunks].sort((a, b) => a.chunk_id - b.chunk_id);
+  const driverCodes = sorted[0].selected_drivers;
+
+  const mergedTime: number[] = [];
+  const mergedDrivers: LandingReplayChunk['drivers'] = {};
+
+  for (const code of driverCodes) {
+    mergedDrivers[code] = {
+      x: [],
+      y: [],
+      dist: [],
+      rel_dist: [],
+      speed: [],
+      gear: [],
+      drs: [],
+      rpm: [],
+      lap: [],
+      tyre: [],
+      throttle: [],
+      brake: [],
+      gap: [],
+      interval: [],
+    };
+  }
+
+  for (const chunk of sorted) {
+    mergedTime.push(...chunk.time);
+    for (const code of driverCodes) {
+      const src = chunk.drivers[code];
+      const dst = mergedDrivers[code];
+      if (!src || !dst) continue;
+      for (const key of Object.keys(dst) as (keyof typeof dst)[]) {
+        const srcArr = src[key];
+        if (Array.isArray(srcArr)) {
+          (dst[key] as unknown[]).push(...srcArr);
+        }
+      }
+    }
+  }
+
+  return {
+    chunk_id: 0,
+    start_time: sorted[0].start_time,
+    end_time: sorted[sorted.length - 1].end_time,
+    time: mergedTime,
+    selected_drivers: driverCodes,
+    drivers: mergedDrivers,
+  };
+}
+
 export const DEFAULT_HERO_VIEW: HeroViewModel = {
   titleBar: 'Race Desk - Australian Grand Prix',
   statusLabel: 'Live',
@@ -169,6 +223,31 @@ function colorForCompound(compound?: string) {
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+export function findNearestLandingFrameIndex(time: number, timeline: number[]) {
+  if (timeline.length === 0) return 0;
+  if (time <= timeline[0]) return 0;
+
+  const lastIndex = timeline.length - 1;
+  if (time >= timeline[lastIndex]) return lastIndex;
+
+  let low = 0;
+  let high = lastIndex;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const value = timeline[mid];
+
+    if (value === time) return mid;
+    if (value < time) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return time - timeline[high] <= timeline[low] - time ? high : low;
 }
 
 export function buildPolylinePath(points: { x: number; y: number }[]) {

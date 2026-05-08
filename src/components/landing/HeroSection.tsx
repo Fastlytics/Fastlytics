@@ -7,6 +7,7 @@ import { ChartType, HeroViewModel, HeroWindowBounds } from './hero-types';
 import {
   DEFAULT_HERO_VIEW,
   buildLandingHeroView,
+  findNearestLandingFrameIndex,
   getExpandedHeroBounds,
   pickLandingReplayKey,
   prepareLandingReplayContext,
@@ -66,6 +67,350 @@ const HERO_SECTORS = [
   { label: 'Sector 2', key: 's2' as const, tintKey: 's2Tint' as const },
   { label: 'Sector 3', key: 's3' as const, tintKey: 's3Tint' as const },
 ];
+
+function LoadingBar({ className = '' }: { className?: string }) {
+  return (
+    <div className={`overflow-hidden rounded-full bg-white/[0.05] ${className}`} aria-hidden="true">
+      <div className="h-full w-full animate-[shimmer_2.2s_linear_infinite] bg-[linear-gradient(110deg,transparent_15%,rgba(255,255,255,0.14)_45%,transparent_75%)] bg-[length:200%_100%]" />
+    </div>
+  );
+}
+
+function LoadingPositionsPanel({ variant }: { variant: 'compact' | 'expanded' }) {
+  const rows = variant === 'compact' ? 5 : 10;
+
+  return (
+    <div className={`bg-[#0c0c0e] p-5 ${variant === 'expanded' ? 'flex min-h-0 flex-col' : ''}`}>
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[13px] font-medium uppercase tracking-wider text-white/25">
+          {variant === 'compact' ? 'Race Positions' : 'Full Leaderboard'}
+        </span>
+        {variant === 'expanded' && <LoadingBar className="h-3 w-[4.5rem]" />}
+      </div>
+      <div
+        className={
+          variant === 'compact' ? 'space-y-0' : 'min-h-0 flex-1 overflow-y-auto space-y-0 pr-1'
+        }
+      >
+        {Array.from({ length: rows }, (_, index) => (
+          <div
+            key={index}
+            className={`flex items-center gap-3 border-b border-white/[0.04] py-4 last:border-b-0 ${index === 0 ? 'rounded-md bg-white/[0.03] px-2' : ''} ${variant === 'expanded' ? 'px-2' : ''}`}
+          >
+            <div className="flex w-5 justify-center text-[13px] tabular-nums text-white/18">
+              {index + 1}
+            </div>
+            <div
+              className={`h-4 w-[3px] rounded-full ${index < 3 ? 'bg-red-500/60' : 'bg-white/12'}`}
+            />
+            <LoadingBar className="h-4 flex-1 max-w-[4rem]" />
+            {variant === 'expanded' && <LoadingBar className="hidden h-3 w-[5rem] sm:block" />}
+            <LoadingBar className="h-3 w-12" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoadingChartPanel({ chartType }: { chartType: ChartType }) {
+  return (
+    <div className="flex flex-1 flex-col bg-[#0c0c0e] p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium uppercase tracking-wider text-white/25">
+            Loading Telemetry
+          </span>
+          <div className="flex items-center gap-0.5 rounded border border-white/[0.06] bg-white/[0.02] p-0.5">
+            {['speed', 'throttle', 'brake', 'rpm'].map((type) => (
+              <span
+                key={type}
+                className={`rounded px-2 py-1 text-[11px] font-semibold uppercase tracking-wider ${chartType === type ? 'bg-white/[0.10] text-white' : 'text-white/25'}`}
+              >
+                {type === 'speed'
+                  ? 'SPD'
+                  : type === 'throttle'
+                    ? 'THR'
+                    : type === 'brake'
+                      ? 'BRK'
+                      : 'RPM'}
+              </span>
+            ))}
+          </div>
+        </div>
+        <LoadingBar className="h-3 w-16" />
+      </div>
+      <div className="relative flex-1 overflow-hidden rounded-lg border border-white/[0.04] bg-[#09090b] race-grid-bg race-scanline">
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(110deg,transparent_20%,rgba(255,255,255,0.04)_45%,transparent_70%)] bg-[length:200%_100%] animate-[shimmer_2.2s_linear_infinite]" />
+        <svg
+          viewBox="0 0 600 220"
+          className="absolute inset-0 h-full w-full"
+          preserveAspectRatio="none"
+        >
+          {[55, 110, 165].map((y) => (
+            <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="rgba(255,255,255,0.04)" />
+          ))}
+          <path
+            d="M0 170 C70 166 140 150 210 144 C280 137 350 126 420 99 C485 74 540 60 600 42"
+            fill="none"
+            stroke="rgba(255,59,48,0.7)"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="6 8"
+            className="animate-pulse"
+          />
+          <path
+            d="M0 178 C95 182 165 165 235 158 C315 149 395 127 470 116 C530 108 572 95 600 84"
+            fill="none"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="4 10"
+          />
+        </svg>
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#09090b] to-transparent" />
+        <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/[0.06] bg-black/40 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-white/40">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+          Buffering live trace
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingTrackMapPanel({ variant }: { variant: 'compact' | 'expanded' }) {
+  return (
+    <div className="bg-[#0c0c0e] p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[13px] font-medium uppercase tracking-wider text-white/25">
+          Track Map
+        </span>
+        {variant === 'expanded' && <LoadingBar className="h-3 w-16" />}
+      </div>
+      <div
+        className={`relative overflow-hidden rounded-lg border border-white/[0.04] bg-[#09090b] race-grid-bg ${variant === 'compact' ? 'h-[320px]' : 'h-full min-h-[300px]'}`}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_58%)]" />
+        <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.08]" />
+        <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" />
+        <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.65)]" />
+        <div className="absolute inset-y-0 left-[-20%] w-[38%] animate-[shimmer_2.6s_linear_infinite] bg-[linear-gradient(90deg,transparent,rgba(255,59,48,0.14),transparent)] blur-md" />
+        <div className="absolute bottom-2 left-2 flex gap-1.5">
+          {['S1', 'S2', 'S3'].map((label, index) => (
+            <span
+              key={label}
+              className={`rounded px-2 py-1 text-[11px] font-semibold ${index === 0 ? 'bg-red-500/15 text-red-300 ring-1 ring-white/15' : index === 1 ? 'bg-amber-500/10 text-amber-200/80' : 'bg-emerald-500/10 text-emerald-200/80'} ${index === 0 ? 'animate-pulse' : 'opacity-70'}`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingTelemetryPanel({ variant }: { variant: 'compact' | 'expanded' }) {
+  return (
+    <div className="bg-[#0c0c0e] p-5">
+      <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/25">
+        Telemetry Stream
+      </div>
+      {variant === 'compact' ? (
+        <div className="flex items-start gap-3">
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
+              <div className="absolute inset-5 rounded-full border border-white/[0.05]" />
+              <div className="absolute h-[128px] w-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
+              <div className="text-center">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                  Sync
+                </div>
+                <div className="mt-1 text-[24px] font-bold tabular-nums text-white/85">--</div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-white/40">
+                Lap Timer
+              </span>
+              <LoadingBar className="h-5 w-24" />
+            </div>
+            <div className="mt-1 flex flex-col gap-1.5">
+              {HERO_SECTORS.map((sector) => (
+                <div key={sector.label} className="rounded bg-white/[0.025] px-1.5 py-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[12px] font-semibold uppercase tracking-wider text-white/50">
+                      {sector.label}
+                    </span>
+                    <LoadingBar className="h-4 w-[4.5rem]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[12px] text-white/25">
+              <span>Last Lap</span>
+              <LoadingBar className="h-3 w-20" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-[150px_1fr] xl:grid-cols-1 2xl:grid-cols-[150px_1fr]">
+          <div className="flex items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.02] p-3">
+            <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/[0.06]">
+              <div className="absolute inset-5 rounded-full border border-white/[0.05]" />
+              <div className="absolute h-[128px] w-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
+              <div className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
+                Syncing
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-2">
+            {['Lap Timer', 'Last Lap', 'Speed', 'Status'].map((label) => (
+              <div
+                key={label}
+                className="rounded-lg border border-white/[0.05] bg-white/[0.025] p-3"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  {label}
+                </div>
+                <LoadingBar className="mt-2 h-6 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoadingSectorBoardPanel() {
+  return (
+    <div className="bg-[#0c0c0e] p-5">
+      <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/30">
+        Sector Board
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+        {HERO_SECTORS.map((sector, index) => (
+          <div
+            key={sector.label}
+            className="rounded-lg border border-white/[0.05] bg-white/[0.025] p-3"
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+              {sector.label}
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <LoadingBar className="h-6 w-20" />
+              {index === 0 && (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoadingTelemetryAndStrategyPanel() {
+  return (
+    <div className="min-h-0 overflow-y-auto bg-[#0c0c0e] p-5">
+      <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/30">
+        Telemetry and Strategy
+      </div>
+      <div className="space-y-3">
+        {['Throttle', 'Brake', 'Speed', 'DRS'].map((label, index) => (
+          <div key={label} className="flex items-center gap-3">
+            <span className="w-16 text-[12px] text-white/35">{label}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className={`h-full rounded-full animate-[shimmer_2.2s_linear_infinite] bg-[length:200%_100%] ${index === 0 ? 'bg-[linear-gradient(90deg,rgba(34,197,94,0.2),rgba(34,197,94,0.75),rgba(34,197,94,0.2))]' : index === 1 ? 'bg-[linear-gradient(90deg,rgba(239,68,68,0.2),rgba(239,68,68,0.72),rgba(239,68,68,0.2))]' : index === 2 ? 'bg-[linear-gradient(90deg,rgba(59,130,246,0.18),rgba(59,130,246,0.68),rgba(59,130,246,0.18))]' : 'bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(16,185,129,0.6),rgba(16,185,129,0.16))]'}`}
+                style={{ width: `${index === 0 ? 72 : index === 1 ? 28 : index === 2 ? 64 : 18}%` }}
+              />
+            </div>
+            <LoadingBar className="h-3 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 flex gap-1.5">
+        {[
+          { width: '26%', color: 'bg-red-500/70' },
+          { width: '34%', color: 'bg-amber-400/70' },
+          { width: '22%', color: 'bg-white/75' },
+        ].map((stint, index) => (
+          <div key={index} className="overflow-hidden rounded-md" style={{ width: stint.width }}>
+            <div
+              className={`px-2 py-2.5 text-center text-[12px] font-bold text-transparent ${stint.color} animate-pulse`}
+            >
+              .
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoadingCompactLayout({ chartType }: { chartType: ChartType }) {
+  return (
+    <div className="grid gap-px bg-white/[0.04] p-px md:grid-cols-[1fr_1fr]">
+      <div className="flex flex-col gap-px">
+        <LoadingPositionsPanel variant="compact" />
+        <LoadingChartPanel chartType={chartType} />
+      </div>
+      <div className="flex flex-col gap-px">
+        <LoadingTrackMapPanel variant="compact" />
+        <LoadingTelemetryPanel variant="compact" />
+        <div className="bg-[#0c0c0e] p-5">
+          <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/25">
+            Tyre Strategy
+          </div>
+          <div className="flex gap-1.5">
+            {[
+              { width: '28%', color: 'bg-red-500/75' },
+              { width: '37%', color: 'bg-amber-400/75' },
+              { width: '24%', color: 'bg-white/80' },
+            ].map((stint, index) => (
+              <div
+                key={index}
+                className="overflow-hidden rounded-md"
+                style={{ width: stint.width }}
+              >
+                <div
+                  className={`px-3 py-2.5 text-center text-[13px] font-bold text-transparent ${stint.color} animate-pulse`}
+                >
+                  .
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingExpandedLayout({ chartType }: { chartType: ChartType }) {
+  return (
+    <div className="grid min-h-0 flex-1 gap-px bg-white/[0.04] p-px lg:grid-cols-[320px_1fr] xl:grid-cols-[340px_1fr_420px]">
+      <div className="flex min-h-0 flex-col bg-[#0c0c0e]">
+        <LoadingPositionsPanel variant="expanded" />
+      </div>
+      <div className="grid min-h-0 gap-px bg-white/[0.04] lg:grid-rows-[minmax(0,1.25fr)_minmax(260px,0.75fr)]">
+        <LoadingTrackMapPanel variant="expanded" />
+        <LoadingChartPanel chartType={chartType} />
+      </div>
+      <div className="grid min-h-0 gap-px bg-white/[0.04] lg:col-span-2 xl:col-span-1 xl:grid-rows-[auto_auto_1fr]">
+        <LoadingTelemetryPanel variant="expanded" />
+        <LoadingSectorBoardPanel />
+        <LoadingTelemetryAndStrategyPanel />
+      </div>
+    </div>
+  );
+}
 
 function HeroWindowControls({
   expanded = false,
@@ -489,7 +834,13 @@ function HeroDashboard({
         </button>
       </div>
 
-      {variant === 'compact' ? (
+      {isLoading ? (
+        variant === 'compact' ? (
+          <LoadingCompactLayout chartType={chartType} />
+        ) : (
+          <LoadingExpandedLayout chartType={chartType} />
+        )
+      ) : variant === 'compact' ? (
         <CompactLayout
           hero={hero}
           isLoading={isLoading}
@@ -651,12 +1002,20 @@ function ExpandedLayout({
 }
 
 export default function HeroSection() {
-  const { selectedCache, metadata, chunk, canSelectDifferentCache, selectDifferentCache } =
-    useLandingHeroSource();
+  const [playbackTime, setPlaybackTime] = useState(0);
+  const {
+    selectedCache,
+    metadata,
+    chunk,
+    loadedDuration,
+    playbackStartTime,
+    playbackEndTime,
+    canSelectDifferentCache,
+    selectDifferentCache,
+  } = useLandingHeroSource(playbackTime);
   const cacheKey = selectedCache ? pickLandingReplayKey(selectedCache) : '';
   const cacheKeyRef = useRef(cacheKey);
   const compactHeroWindowRef = useRef<HTMLDivElement>(null);
-  const [frameIndex, setFrameIndex] = useState(0);
   const [chartType, setChartType] = useState<ChartType>('speed');
   const [heroModalPhase, setHeroModalPhase] = useState<'closed' | 'open' | 'closing'>('closed');
   const closeTimeoutRef = useRef<number | null>(null);
@@ -690,24 +1049,38 @@ export default function HeroSection() {
   useEffect(() => {
     if (cacheKeyRef.current !== cacheKey) {
       cacheKeyRef.current = cacheKey;
-      setFrameIndex(0);
+      setPlaybackTime(0);
       setChartType('speed');
       setUserSelectedDriverCode(null);
     }
   }, [cacheKey]);
 
   useEffect(() => {
-    if (!chunk || chunk.time.length <= 1) return;
+    if (!chunk || chunk.time.length <= 1 || playbackEndTime <= playbackStartTime) return;
 
     const intervalId = window.setInterval(() => {
-      setFrameIndex((current) => {
-        const next = current + 1;
-        return next >= chunk.time.length ? 0 : next;
+      setPlaybackTime((current) => {
+        const baseTime = current < playbackStartTime ? playbackStartTime : current;
+        const next = baseTime + 1 / 25;
+        const totalEnd = playbackEndTime;
+        const hasFullTail = loadedDuration >= totalEnd;
+        const playableEnd = hasFullTail
+          ? totalEnd
+          : Math.max(playbackStartTime, Math.min(totalEnd, loadedDuration - 0.25));
+
+        if (next >= totalEnd) return playbackStartTime;
+        if (!hasFullTail && next >= playableEnd) return playableEnd;
+        return next;
       });
     }, 1000 / 25);
 
     return () => window.clearInterval(intervalId);
-  }, [chunk]);
+  }, [chunk, loadedDuration, playbackEndTime, playbackStartTime]);
+
+  const frameIndex = useMemo(() => {
+    if (!chunk?.time?.length) return 0;
+    return findNearestLandingFrameIndex(playbackTime, chunk.time);
+  }, [chunk, playbackTime]);
 
   const closeExpandedHero = useCallback(() => {
     setHeroModalPhase((current) => (current === 'closed' ? current : 'closing'));
@@ -748,7 +1121,6 @@ export default function HeroSection() {
     }
   }, [preparedReplay, selectedDriverCode, frameIndex, chartType]);
 
-  const displayedHero = hero || DEFAULT_HERO_VIEW;
   const isHeroLoading = !hero;
   const shouldAnimateCompactHero = true;
 
@@ -857,10 +1229,10 @@ export default function HeroSection() {
             }`}
           >
             {isHeroLoading && (
-              <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/10 via-transparent to-black/20" />
+              <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-red-500/[0.03] via-transparent to-black/10" />
             )}
             <HeroDashboard
-              hero={displayedHero}
+              hero={hero || DEFAULT_HERO_VIEW}
               variant="compact"
               isLoading={isHeroLoading}
               chartType={chartType}
@@ -893,7 +1265,7 @@ export default function HeroSection() {
               transition={{ type: 'spring', stiffness: 180, damping: 24, mass: 0.95 }}
             >
               <HeroDashboard
-                hero={displayedHero}
+                hero={hero || DEFAULT_HERO_VIEW}
                 variant={isHeroClosing ? 'compact' : 'expanded'}
                 isLoading={false}
                 chartType={chartType}

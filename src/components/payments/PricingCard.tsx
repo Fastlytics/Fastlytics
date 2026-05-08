@@ -60,11 +60,6 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
             </span>
           )}
         </div>
-        {interval === 'yearly' && price > 0 && (
-          <p className="mt-1 text-[12px] text-white/25">
-            ${(tier.monthlyPrice * 12).toFixed(2)} billed annually
-          </p>
-        )}
       </div>
 
       <div className="mb-8 flex-grow space-y-3">
