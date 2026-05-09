@@ -10,14 +10,20 @@ const TIERS: PricingTier[] = [
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: 'Current season access with core telemetry features.',
+    description: 'Full platform access limited to the current season.',
     features: [
-      'Current season race data',
       'Full telemetry — speed, brake, throttle, gear, RPM, DRS',
       'Driver & team standings',
       'Race calendar & schedule',
+      'Driver & team profiles',
+      'Lap position & gap evolution',
+      'Tyre strategy & stint analysis',
+      'Track evolution charts',
+      'Pace distribution box plots',
+      'Championship progression charts',
+      'Team pace analysis & rankings',
+      'Current season only',
       '5 minutes of session replay',
-      'Driver and sector comparisons',
     ],
     cta: 'Get started',
   },
@@ -26,39 +32,34 @@ const TIERS: PricingTier[] = [
     name: 'Pro',
     monthlyPrice: 5.99,
     yearlyPrice: 54.99,
-    description: 'Full historical access, unlimited replay, and deeper analysis.',
+    description: 'Unlock full historical data and unlimited session replay.',
     highlighted: true,
     features: [
       'Everything in Free',
       'All season archives — full historical data',
       'Unlimited session replay',
-      'Lap position & gap evolution',
-      'Tyre strategy & stint analysis',
-      'Track evolution charts',
-      'Pace distribution box plots',
     ],
     cta: 'Subscribe to Pro',
-    productIdMonthly: 'pdt_pro_monthly',
-    productIdYearly: 'pdt_pro_yearly',
+    productIdMonthly: 'pdt_0NePm9aNHnQh5KxB7bsJM',
+    productIdYearly: 'pdt_0NePm9bSX5fcBlgltYiIe',
   },
   {
     id: 'ultra',
     name: 'Ultra',
     monthlyPrice: 10.99,
     yearlyPrice: 94.99,
-    description: 'Complete platform access with upcoming AI-powered insights.',
+    description: 'AI-powered insights and predictions. Coming soon.',
+    comingSoon: true,
     features: [
       'Everything in Pro',
-      'Championship progression charts',
-      'Team pace analysis & rankings',
-      'AI race predictions (coming soon)',
-      'AI strategy recommendations (coming soon)',
-      'AI driver form analysis (coming soon)',
+      'AI race predictions',
+      'AI strategy recommendations',
+      'AI driver form analysis',
       'Priority support',
     ],
-    cta: 'Subscribe to Ultra',
-    productIdMonthly: 'pdt_ultra_monthly',
-    productIdYearly: 'pdt_ultra_yearly',
+    cta: 'Coming Soon',
+    productIdMonthly: 'pdt_0NePm9cHvDbArb2hZoCjl',
+    productIdYearly: 'pdt_0NePm9emnFj4lzDXEbwhH',
   },
 ];
 
@@ -100,7 +101,8 @@ export function PricingSection() {
             transition={{ delay: 0.15 }}
             className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40"
           >
-            Start free. Upgrade for historical data, unlimited replay, and AI-powered analysis.
+            Start free with full platform access. Upgrade to Pro for historical data and unlimited
+            session replay.
           </motion.p>
 
           <motion.div

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
@@ -7,6 +7,7 @@ import { PricingCard, PricingTier } from '@/components/payments/PricingCard';
 import { Tick01Icon, Cancel01Icon } from 'hugeicons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SEO } from '@/components/layout/SEO';
+import { useSearchParams } from 'react-router-dom';
 
 const TIERS: PricingTier[] = [
   {
@@ -14,14 +15,20 @@ const TIERS: PricingTier[] = [
     name: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: 'Current season access with core telemetry features.',
+    description: 'Full platform access limited to the current season.',
     features: [
-      'Current season race data',
       'Full telemetry — speed, brake, throttle, gear, RPM, DRS',
       'Driver & team standings',
       'Race calendar & schedule',
+      'Driver & team profiles',
+      'Lap position & gap evolution',
+      'Tyre strategy & stint analysis',
+      'Track evolution charts',
+      'Pace distribution box plots',
+      'Championship progression charts',
+      'Team pace analysis & rankings',
+      'Current season only',
       '5 minutes of session replay',
-      'Driver and sector comparisons',
     ],
     cta: 'Get started',
   },
@@ -30,39 +37,34 @@ const TIERS: PricingTier[] = [
     name: 'Pro',
     monthlyPrice: 5.99,
     yearlyPrice: 54.99,
-    description: 'Full historical access, unlimited replay, and deeper analysis.',
+    description: 'Unlock full historical data and unlimited session replay.',
     highlighted: true,
     features: [
       'Everything in Free',
       'All season archives — full historical data',
       'Unlimited session replay',
-      'Lap position & gap evolution',
-      'Tyre strategy & stint analysis',
-      'Track evolution charts',
-      'Pace distribution box plots',
     ],
     cta: 'Subscribe to Pro',
-    productIdMonthly: 'pdt_pro_monthly',
-    productIdYearly: 'pdt_pro_yearly',
+    productIdMonthly: 'pdt_0NePm9aNHnQh5KxB7bsJM',
+    productIdYearly: 'pdt_0NePm9bSX5fcBlgltYiIe',
   },
   {
     id: 'ultra',
     name: 'Ultra',
     monthlyPrice: 10.99,
     yearlyPrice: 94.99,
-    description: 'Complete platform access with upcoming AI-powered insights.',
+    description: 'AI-powered insights and predictions. Coming soon.',
+    comingSoon: true,
     features: [
       'Everything in Pro',
-      'Championship progression charts',
-      'Team pace analysis & rankings',
-      'AI race predictions (coming soon)',
-      'AI strategy recommendations (coming soon)',
-      'AI driver form analysis (coming soon)',
+      'AI race predictions',
+      'AI strategy recommendations',
+      'AI driver form analysis',
       'Priority support',
     ],
-    cta: 'Subscribe to Ultra',
-    productIdMonthly: 'pdt_ultra_monthly',
-    productIdYearly: 'pdt_ultra_yearly',
+    cta: 'Coming Soon',
+    productIdMonthly: 'pdt_0NePm9cHvDbArb2hZoCjl',
+    productIdYearly: 'pdt_0NePm9emnFj4lzDXEbwhH',
   },
 ];
 
@@ -85,16 +87,18 @@ const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'Session replay', free: '5 minutes', pro: 'Unlimited', ultra: 'Unlimited' },
   { feature: 'Driver & team standings', free: true, pro: true, ultra: true },
   { feature: 'Race calendar', free: true, pro: true, ultra: true },
+  { feature: 'Driver & team profiles', free: true, pro: true, ultra: true },
   { feature: 'Driver & sector comparisons', free: true, pro: true, ultra: true },
-  { feature: 'Lap position & gap evolution', free: false, pro: true, ultra: true },
-  { feature: 'Tyre strategy & stint analysis', free: false, pro: true, ultra: true },
-  { feature: 'Track evolution charts', free: false, pro: true, ultra: true },
-  { feature: 'Pace distribution box plots', free: false, pro: true, ultra: true },
-  { feature: 'Championship progression', free: false, pro: false, ultra: true },
-  { feature: 'Team pace analysis', free: false, pro: false, ultra: true },
+  { feature: 'Lap position & gap evolution', free: true, pro: true, ultra: true },
+  { feature: 'Tyre strategy & stint analysis', free: true, pro: true, ultra: true },
+  { feature: 'Track evolution charts', free: true, pro: true, ultra: true },
+  { feature: 'Pace distribution box plots', free: true, pro: true, ultra: true },
+  { feature: 'Championship progression', free: true, pro: true, ultra: true },
+  { feature: 'Team pace analysis', free: true, pro: true, ultra: true },
   { feature: 'AI race predictions', free: false, pro: false, ultra: 'Coming soon' },
   { feature: 'AI strategy recommendations', free: false, pro: false, ultra: 'Coming soon' },
-  { feature: 'Priority support', free: false, pro: false, ultra: true },
+  { feature: 'AI driver form analysis', free: false, pro: false, ultra: 'Coming soon' },
+  { feature: 'Priority support', free: false, pro: false, ultra: 'Coming soon' },
 ];
 
 const CheckCell = () => <Tick01Icon className="h-4 w-4 text-emerald-400" />;
@@ -112,6 +116,17 @@ const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 const Pricing = () => {
   const isMobile = useIsMobile();
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const [searchParams] = useSearchParams();
+  const checkoutState = searchParams.get('checkout');
+  const checkoutMessage = useMemo(() => {
+    if (checkoutState === 'cancelled') {
+      return 'Payment was cancelled. No charge was made.';
+    }
+    if (checkoutState === 'failed') {
+      return 'Payment failed. Please try again.';
+    }
+    return null;
+  }, [checkoutState]);
 
   return (
     <div
@@ -120,7 +135,7 @@ const Pricing = () => {
     >
       <SEO
         title="Pricing — Fastlytics"
-        description="Choose your Fastlytics plan. Free for current season, Pro for historical data and unlimited replay, Ultra for AI-powered insights."
+        description="Choose your Fastlytics plan. Free for full platform access, Pro for historical data and unlimited replay. Ultra with AI insights coming soon."
         keywords={[
           'f1 analytics pricing',
           'formula 1 data subscription',
@@ -133,6 +148,15 @@ const Pricing = () => {
       <main className="pt-24 pb-20">
         <section className="px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
+            {checkoutMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mx-auto mb-8 max-w-2xl rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 text-center text-[14px] text-amber-300"
+              >
+                {checkoutMessage}
+              </motion.div>
+            )}
             <div className="mx-auto max-w-2xl text-center">
               <motion.h1
                 initial={{ opacity: 0, y: 16 }}
@@ -148,8 +172,8 @@ const Pricing = () => {
                 transition={{ delay: 0.1, duration: 0.6 }}
                 className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40"
               >
-                Start free with current season data. Upgrade for historical archives, unlimited
-                replay, and upcoming AI-powered analysis.
+                Start free with full platform access. Upgrade to Pro for historical archives and
+                unlimited session replay.
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -280,8 +304,8 @@ const Pricing = () => {
                     Is there a free trial?
                   </h4>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">
-                    The Free tier gives you full access to the current season with 5 minutes of
-                    session replay. No credit card required.
+                    The Free tier gives you full platform access to the current season with 5
+                    minutes of session replay. No credit card required.
                   </p>
                 </div>
               </div>

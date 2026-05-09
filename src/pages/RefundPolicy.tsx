@@ -46,8 +46,8 @@ const RefundPolicy = () => {
               <h2 className="text-[18px] font-semibold text-white mb-4">1. Overview</h2>
               <div className="text-[14px] leading-relaxed text-white/40">
                 <p>
-                  Fastlytics offers both a Free tier and paid subscription plans (Pro and Ultra).
-                  This policy governs refunds for all purchases made through our platform.
+                  Fastlytics offers both a Free tier and a Pro subscription plan. This policy
+                  governs refunds for all purchases made through our platform.
                 </p>
               </div>
             </section>

@@ -23,9 +23,7 @@
 *.local
 
 # Cloudflare Workers
-workers/.wrangler/
-workers/dist/
-workers/node_modules
+workers-old (deprecated)
 
 # TypeScript
 *.tsbuildinfo
@@ -119,5 +117,5 @@ stylelint.config.mjs
 skills-lock.json
 knip.json
 .deepsec
-workers-v2
+workers-v2 (new and updated)
 wireguard

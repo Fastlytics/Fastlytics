@@ -60,7 +60,7 @@ const PRODUCT_BULLETS = [
     label: 'Pit window alerts',
     desc: 'Undercut and overcut probability as the race develops',
   },
-  { label: 'Free to start', desc: 'Core race desk features available to every fan' },
+  { label: 'Free to start', desc: 'Full platform access on the current season' },
 ];
 
 const SIGNAL_ROWS = [
@@ -436,8 +436,8 @@ export function CTASection() {
           transition={{ delay: 0.1 }}
           className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-white/40"
         >
-          Start free. The core race dashboard - timing, telemetry, strategy - is available to every
-          fan. Sign in for saved favorites, advanced views and deeper analysis.
+          Start free with full platform access. Upgrade to Pro for historical season data and
+          unlimited session replay.
         </motion.p>
 
         <motion.div

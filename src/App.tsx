@@ -25,7 +25,6 @@ import TermsOfService from './pages/TermsOfService';
 import FAQ from './pages/FAQ';
 import RefundPolicy from './pages/RefundPolicy';
 import Contact from './pages/Contact';
-import { CheckoutSuccess, CheckoutCancel } from './pages/CheckoutResult';
 import PressKit from './pages/PressKit';
 import Pricing from './pages/Pricing';
 import { SeasonProvider } from './contexts/SeasonContext';
@@ -140,24 +139,6 @@ const App = () => (
                 }
               />
 
-              {/* Checkout result pages */}
-              <Route
-                path="/checkout/success"
-                element={
-                  <LandingLayout>
-                    <CheckoutSuccess />
-                  </LandingLayout>
-                }
-              />
-              <Route
-                path="/checkout/cancel"
-                element={
-                  <LandingLayout>
-                    <CheckoutCancel />
-                  </LandingLayout>
-                }
-              />
-
               {/* Auth route - public */}
               <Route path="/auth" element={<Auth />} />
 
@@ -247,7 +228,12 @@ const App = () => (
                 path="/replay/:year/:event/:session"
                 element={
                   <DashboardLayout>
-                    <SessionReplayPage />
+                    <GatedRoute
+                      featureName="Session Replay"
+                      description="Relive every lap with full driver positions, telemetry sync, and race control events."
+                    >
+                      <SessionReplayPage />
+                    </GatedRoute>
                   </DashboardLayout>
                 }
               />
@@ -257,7 +243,12 @@ const App = () => (
                 path="/drivers/:slug"
                 element={
                   <DashboardLayout>
-                    <DriverProfile />
+                    <GatedRoute
+                      featureName="Driver Profile"
+                      description="Explore career stats, season history, and detailed performance data for every driver."
+                    >
+                      <DriverProfile />
+                    </GatedRoute>
                   </DashboardLayout>
                 }
               />
@@ -265,7 +256,12 @@ const App = () => (
                 path="/teams/:slug"
                 element={
                   <DashboardLayout>
-                    <TeamProfile />
+                    <GatedRoute
+                      featureName="Team Profile"
+                      description="Dive into team history, constructor stats, and season-by-season performance."
+                    >
+                      <TeamProfile />
+                    </GatedRoute>
                   </DashboardLayout>
                 }
               />

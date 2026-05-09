@@ -37,7 +37,7 @@ const MobileRefundPolicy: React.FC = () => {
             <section>
               <h2 className="text-lg font-black text-white uppercase italic mb-3">1. Overview</h2>
               <p>
-                Fastlytics offers Free, Pro, and Ultra tiers. This policy covers refunds for paid
+                Fastlytics offers Free and Pro tiers. This policy covers refunds for paid
                 subscriptions.
               </p>
             </section>

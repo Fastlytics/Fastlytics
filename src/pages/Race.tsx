@@ -26,6 +26,7 @@ import {
   PlayCircle02Icon,
 } from 'hugeicons-react';
 import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
+import HistoricalAccessPrompt from '@/components/common/HistoricalAccessPrompt';
 import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { RacingChart } from '@/components/charts/RacingChart';
 import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
@@ -75,6 +76,7 @@ import { MobileRace } from '@/components/mobile';
 import TireIcon from '@/components/mobile/tireicon';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { getCountryCode } from '@/utils/countryUtils';
+import { APIError } from '@/lib/api-client';
 
 // --- Helper Functions ---
 
@@ -598,9 +600,11 @@ const Race = () => {
   }, [year, eventName, trackEvent]);
 
   // Queries
-  const { data: availableSessions = [], isLoading: isLoadingSessions } = useQuery<
-    AvailableSession[]
-  >({
+  const {
+    data: availableSessions = [],
+    isLoading: isLoadingSessions,
+    error: availableSessionsError,
+  } = useQuery<AvailableSession[]>({
     queryKey: ['availableSessions', year, eventName],
     queryFn: () => fetchAvailableSessions(year!, eventName),
     enabled: !!year && !!eventName,
@@ -700,6 +704,8 @@ const Race = () => {
   const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
   const isLoadingEffectiveResults =
     selectedSession === 'Summary' ? isLoadingSummary : isLoadingResults;
+  const isHistoricalAccessLocked =
+    availableSessionsError instanceof APIError && availableSessionsError.status === 402;
 
   const raceWinner = useMemo(
     () =>
@@ -974,6 +980,30 @@ const Race = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
           <div className="text-[13px] text-white/35 animate-pulse">Loading session data...</div>
         </div>
+      </div>
+    );
+  }
+
+  if (isHistoricalAccessLocked) {
+    return (
+      <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+        <SEO
+          title={`${eventName} ${year}: weekend breakdown`}
+          description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
+          keywords={[
+            'race analysis',
+            'f1 telemetry',
+            'formula 1 telemetry data',
+            'race results',
+            'tire strategy',
+            eventName,
+            `${year} race weekend`,
+          ]}
+        />
+        <DashboardNavbar />
+        <main className="mx-auto max-w-6xl px-5 pb-20 pt-24 lg:px-8">
+          <HistoricalAccessPrompt year={year} eventName={eventName} />
+        </main>
       </div>
     );
   }

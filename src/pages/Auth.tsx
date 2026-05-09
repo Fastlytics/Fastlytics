@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +18,7 @@ import { oauthFlags } from '@/config/featureFlags';
 import { getErrorMessage } from '@/types';
 import { cn } from '@/lib/utils';
 import { SEO } from '@/components/layout/SEO';
+import { request } from '@/lib/api-client';
 
 /* ═══════════════════════════════════════════════════════════════
    AUTH PAGE — Redesigned to match Landing design language
@@ -293,8 +294,11 @@ const Auth = () => {
   const isMobile = useIsMobile();
   const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
+  const checkoutRedirectStarted = useRef(false);
 
   const returnTo = searchParams.get('returnTo');
+  const checkoutTier = searchParams.get('checkoutTier');
+  const checkoutInterval = searchParams.get('checkoutInterval') || 'monthly';
   const authTitle =
     isResetPasswordMode && showForgotPassword
       ? 'Reset Password'
@@ -311,13 +315,57 @@ const Auth = () => {
   // Redirect logged-in users
   useEffect(() => {
     if (!loading && user) {
+      if (checkoutTier && !checkoutRedirectStarted.current) {
+        checkoutRedirectStarted.current = true;
+        setIsLoading(true);
+
+        const productMap: Record<string, Record<string, string>> = {
+          pro: {
+            monthly: 'pdt_0NePm9aNHnQh5KxB7bsJM',
+            yearly: 'pdt_0NePm9bSX5fcBlgltYiIe',
+          },
+          ultra: {
+            monthly: 'pdt_0NePm9cHvDbArb2hZoCjl',
+            yearly: 'pdt_0NePm9emnFj4lzDXEbwhH',
+          },
+        };
+
+        const productId = productMap[checkoutTier]?.[checkoutInterval];
+
+        if (!productId || checkoutTier === 'ultra') {
+          navigate('/pricing', { replace: true });
+          return;
+        }
+
+        request<{ checkout_url: string }>('/api/payments/checkout', {
+          method: 'POST',
+          body: JSON.stringify({
+            product_id: productId,
+            customer_email: user.email || '',
+            customer_name: profile?.full_name || user.email?.split('@')[0] || 'User',
+            user_id: user.id,
+            return_url: `${window.location.origin}/dashboard?checkout=success`,
+            cancel_url: `${window.location.origin}/pricing?checkout=cancelled`,
+          }),
+        })
+          .then((res) => {
+            window.location.assign(res.checkout_url);
+          })
+          .catch((error: unknown) => {
+            toast.error(getErrorMessage(error));
+            navigate('/pricing?checkout=failed', { replace: true });
+          });
+
+        return;
+      }
+
       if (profile && !profile.onboarding_completed) {
         navigate('/onboarding', { replace: true });
       } else {
         navigate(returnTo || '/dashboard', { replace: true });
       }
     }
-  }, [user, profile, loading, navigate, returnTo]);
+  }, [checkoutInterval, checkoutTier, loading, navigate, profile, returnTo, user]);
 
   // Check for password reset token in URL hash
   useEffect(() => {
@@ -346,7 +394,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}${returnTo || '/dashboard'}`,
+          redirectTo: `${window.location.origin}/auth${window.location.search}`,
         },
       });
       if (error) throw error;
@@ -365,7 +413,6 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast.success('Welcome back!');
-      navigate(returnTo || '/dashboard');
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
       setIsLoading(false);
