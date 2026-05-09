@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => ({
         : undefined,
   },
   preview: {
-    allowedHosts: ['fastlytics.app'], // Allow access from these hosts
+    port: 8080,
+    allowedHosts: ['fastlytics.app', 'dev.fastlytics.app'],
   },
   plugins: [react(), tailwindcss()].filter(Boolean),
   resolve: {

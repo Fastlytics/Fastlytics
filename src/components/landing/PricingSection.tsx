@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { BillingToggle } from '@/components/payments/BillingToggle';
 import { PricingCard, PricingTier } from '@/components/payments/PricingCard';
 import { Link } from 'react-router-dom';
+import { useProducts } from '@/hooks/useProducts';
 
-const TIERS: PricingTier[] = [
+const DEFAULT_TIERS: PricingTier[] = [
   {
     id: 'free',
     name: 'Free',
@@ -12,16 +13,9 @@ const TIERS: PricingTier[] = [
     yearlyPrice: 0,
     description: 'Full platform access limited to the current season.',
     features: [
-      'Full telemetry — speed, brake, throttle, gear, RPM, DRS',
-      'Driver & team standings',
-      'Race calendar & schedule',
-      'Driver & team profiles',
-      'Lap position & gap evolution',
-      'Tyre strategy & stint analysis',
-      'Track evolution charts',
-      'Pace distribution box plots',
-      'Championship progression charts',
-      'Team pace analysis & rankings',
+      'Full telemetry, standings, and calendars',
+      'Tyre strategy & track evolution',
+      'Pace distribution & race progression',
       'Current season only',
       '5 minutes of session replay',
     ],
@@ -35,36 +29,34 @@ const TIERS: PricingTier[] = [
     description: 'Unlock full historical data and unlimited session replay.',
     highlighted: true,
     features: [
-      'Everything in Free',
-      'All season archives — full historical data',
+      'Everything in Free, plus:',
+      'All season archives (historical data)',
       'Unlimited session replay',
     ],
     cta: 'Subscribe to Pro',
     productIdMonthly: 'pdt_0NePm9aNHnQh5KxB7bsJM',
     productIdYearly: 'pdt_0NePm9bSX5fcBlgltYiIe',
   },
-  {
-    id: 'ultra',
-    name: 'Ultra',
-    monthlyPrice: 10.99,
-    yearlyPrice: 94.99,
-    description: 'AI-powered insights and predictions. Coming soon.',
-    comingSoon: true,
-    features: [
-      'Everything in Pro',
-      'AI race predictions',
-      'AI strategy recommendations',
-      'AI driver form analysis',
-      'Priority support',
-    ],
-    cta: 'Coming Soon',
-    productIdMonthly: 'pdt_0NePm9cHvDbArb2hZoCjl',
-    productIdYearly: 'pdt_0NePm9emnFj4lzDXEbwhH',
-  },
 ];
 
 export function PricingSection() {
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const { data: products } = useProducts();
+
+  const tiers = useMemo(() => {
+    return DEFAULT_TIERS.map((tier) => {
+      if (tier.id === 'pro' && products?.pro) {
+        return {
+          ...tier,
+          monthlyPrice: products.pro.monthly?.price ?? tier.monthlyPrice,
+          yearlyPrice: products.pro.yearly?.price ?? tier.yearlyPrice,
+          productIdMonthly: products.pro.monthly?.product_id ?? tier.productIdMonthly,
+          productIdYearly: products.pro.yearly?.product_id ?? tier.productIdYearly,
+        };
+      }
+      return tier;
+    });
+  }, [products]);
 
   return (
     <section
@@ -101,8 +93,8 @@ export function PricingSection() {
             transition={{ delay: 0.15 }}
             className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40"
           >
-            Start free with full platform access. Upgrade to Pro for historical data and unlimited
-            session replay.
+            Start free with full platform access. Upgrade to Pro for historical archives and
+            unlimited session replay, while supporting a solo dev who's a uni student! 🚀
           </motion.p>
 
           <motion.div
@@ -116,8 +108,8 @@ export function PricingSection() {
           </motion.div>
         </div>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {TIERS.map((tier, i) => (
+        <div className="mt-12 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto">
+          {tiers.map((tier, i) => (
             <PricingCard key={tier.id} tier={tier} interval={interval} index={i} />
           ))}
         </div>

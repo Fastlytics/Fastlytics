@@ -52,46 +52,68 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
         </div>
       )}
 
-      <div className="mb-5">
+      <div className="mb-5 flex-grow-0">
         <h3
           className={`text-[17px] font-bold tracking-[-0.01em] ${isComingSoon ? 'text-white/30' : 'text-white'}`}
         >
           {tier.name}
         </h3>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-white/35">{tier.description}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-white/35 min-h-[40px]">
+          {tier.description}
+        </p>
       </div>
 
       <div className="mb-6">
         <div className="flex items-baseline gap-0.5">
-          <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
-            $
-          </span>
-          <span
-            className={`text-[40px] font-bold tracking-[-0.03em] leading-none ${isComingSoon ? 'text-white/15' : 'text-white'}`}
-          >
-            {price}
-          </span>
-          {price > 0 && (
-            <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
-              /{interval === 'monthly' ? 'mo' : 'yr'}
+          {price > 0 ? (
+            <>
+              <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
+                $
+              </span>
+              <span
+                className={`text-[40px] font-bold tracking-[-0.03em] leading-none ${isComingSoon ? 'text-white/15' : 'text-white'}`}
+              >
+                {price}
+              </span>
+              <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
+                /{interval === 'monthly' ? 'mo' : 'yr'}
+              </span>
+            </>
+          ) : (
+            <span className="text-[40px] font-bold tracking-[-0.03em] leading-none text-white">
+              Free
             </span>
           )}
         </div>
       </div>
 
       <div className="mb-8 flex-grow space-y-3">
-        {tier.features.map((feature) => (
-          <div key={feature} className="flex items-start gap-2.5">
-            <Tick01Icon
-              className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${isComingSoon ? 'text-white/10' : 'text-emerald-400'}`}
-            />
-            <span
-              className={`text-[13px] leading-relaxed ${isComingSoon ? 'text-white/25' : 'text-white/55'}`}
+        {tier.features.map((feature, featureIndex) => {
+          const isEverythingPlus = feature.toLowerCase().includes('everything in');
+          return (
+            <div
+              key={feature}
+              className={`flex items-start ${isEverythingPlus ? 'gap-0 mb-3' : 'gap-2.5'}`}
             >
-              {feature}
-            </span>
-          </div>
-        ))}
+              {!isEverythingPlus && (
+                <Tick01Icon
+                  className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${isComingSoon ? 'text-white/10' : 'text-emerald-400'}`}
+                />
+              )}
+              <span
+                className={`text-[13px] leading-relaxed ${
+                  isEverythingPlus
+                    ? 'font-semibold text-white/70'
+                    : isComingSoon
+                      ? 'text-white/25'
+                      : 'text-white/55'
+                }`}
+              >
+                {feature}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {isComingSoon ? (

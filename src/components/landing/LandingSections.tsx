@@ -488,9 +488,6 @@ export function LandingFooter() {
           <div>
             <Link to="/" className="flex items-center gap-2.5">
               <FastlyticsLogo size={28} />
-              <span className="text-[15px] font-bold italic tracking-[-0.02em] text-white">
-                FASTLYTICS
-              </span>
             </Link>
             <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-white/35">
               Formula 1 analytics - telemetry, race strategy, session replay and championship
