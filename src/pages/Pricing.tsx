@@ -8,8 +8,9 @@ import { Tick01Icon, Cancel01Icon } from 'hugeicons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SEO } from '@/components/layout/SEO';
 import { useSearchParams } from 'react-router-dom';
+import { useProducts } from '@/hooks/useProducts';
 
-const TIERS: PricingTier[] = [
+const DEFAULT_TIERS: PricingTier[] = [
   {
     id: 'free',
     name: 'Free',
@@ -17,16 +18,9 @@ const TIERS: PricingTier[] = [
     yearlyPrice: 0,
     description: 'Full platform access limited to the current season.',
     features: [
-      'Full telemetry — speed, brake, throttle, gear, RPM, DRS',
-      'Driver & team standings',
-      'Race calendar & schedule',
-      'Driver & team profiles',
-      'Lap position & gap evolution',
-      'Tyre strategy & stint analysis',
-      'Track evolution charts',
-      'Pace distribution box plots',
-      'Championship progression charts',
-      'Team pace analysis & rankings',
+      'Full telemetry, standings, and calendars',
+      'Tyre strategy & track evolution',
+      'Pace distribution & race progression',
       'Current season only',
       '5 minutes of session replay',
     ],
@@ -40,31 +34,14 @@ const TIERS: PricingTier[] = [
     description: 'Unlock full historical data and unlimited session replay.',
     highlighted: true,
     features: [
-      'Everything in Free',
-      'All season archives — full historical data',
+      'Everything in Free, plus:',
+      'All season archives (historical data)',
       'Unlimited session replay',
+      'Support a solo dev who is a uni student',
     ],
     cta: 'Subscribe to Pro',
     productIdMonthly: 'pdt_0NePm9aNHnQh5KxB7bsJM',
     productIdYearly: 'pdt_0NePm9bSX5fcBlgltYiIe',
-  },
-  {
-    id: 'ultra',
-    name: 'Ultra',
-    monthlyPrice: 10.99,
-    yearlyPrice: 94.99,
-    description: 'AI-powered insights and predictions. Coming soon.',
-    comingSoon: true,
-    features: [
-      'Everything in Pro',
-      'AI race predictions',
-      'AI strategy recommendations',
-      'AI driver form analysis',
-      'Priority support',
-    ],
-    cta: 'Coming Soon',
-    productIdMonthly: 'pdt_0NePm9cHvDbArb2hZoCjl',
-    productIdYearly: 'pdt_0NePm9emnFj4lzDXEbwhH',
   },
 ];
 
@@ -72,33 +49,27 @@ interface FeatureRow {
   feature: string;
   free: boolean | string;
   pro: boolean | string;
-  ultra: boolean | string;
 }
 
 const COMPARISON_ROWS: FeatureRow[] = [
-  { feature: 'Current season data', free: true, pro: true, ultra: true },
-  { feature: 'Historical seasons', free: false, pro: true, ultra: true },
+  { feature: 'Current season data', free: true, pro: true },
+  { feature: 'Historical seasons', free: false, pro: true },
   {
     feature: 'Telemetry (speed, brake, throttle, gear, RPM, DRS)',
     free: true,
     pro: true,
-    ultra: true,
   },
-  { feature: 'Session replay', free: '5 minutes', pro: 'Unlimited', ultra: 'Unlimited' },
-  { feature: 'Driver & team standings', free: true, pro: true, ultra: true },
-  { feature: 'Race calendar', free: true, pro: true, ultra: true },
-  { feature: 'Driver & team profiles', free: true, pro: true, ultra: true },
-  { feature: 'Driver & sector comparisons', free: true, pro: true, ultra: true },
-  { feature: 'Lap position & gap evolution', free: true, pro: true, ultra: true },
-  { feature: 'Tyre strategy & stint analysis', free: true, pro: true, ultra: true },
-  { feature: 'Track evolution charts', free: true, pro: true, ultra: true },
-  { feature: 'Pace distribution box plots', free: true, pro: true, ultra: true },
-  { feature: 'Championship progression', free: true, pro: true, ultra: true },
-  { feature: 'Team pace analysis', free: true, pro: true, ultra: true },
-  { feature: 'AI race predictions', free: false, pro: false, ultra: 'Coming soon' },
-  { feature: 'AI strategy recommendations', free: false, pro: false, ultra: 'Coming soon' },
-  { feature: 'AI driver form analysis', free: false, pro: false, ultra: 'Coming soon' },
-  { feature: 'Priority support', free: false, pro: false, ultra: 'Coming soon' },
+  { feature: 'Session replay', free: '5 minutes', pro: 'Unlimited' },
+  { feature: 'Driver & team standings', free: true, pro: true },
+  { feature: 'Race calendar', free: true, pro: true },
+  { feature: 'Driver & team profiles', free: true, pro: true },
+  { feature: 'Driver & sector comparisons', free: true, pro: true },
+  { feature: 'Lap position & gap evolution', free: true, pro: true },
+  { feature: 'Tyre strategy & stint analysis', free: true, pro: true },
+  { feature: 'Track evolution charts', free: true, pro: true },
+  { feature: 'Pace distribution box plots', free: true, pro: true },
+  { feature: 'Championship progression', free: true, pro: true },
+  { feature: 'Team pace analysis', free: true, pro: true },
 ];
 
 const CheckCell = () => <Tick01Icon className="h-4 w-4 text-emerald-400" />;
@@ -117,6 +88,23 @@ const Pricing = () => {
   const isMobile = useIsMobile();
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [searchParams] = useSearchParams();
+  const { data: products } = useProducts();
+
+  const tiers = useMemo(() => {
+    return DEFAULT_TIERS.map((tier) => {
+      if (tier.id === 'pro' && products?.pro) {
+        return {
+          ...tier,
+          monthlyPrice: products.pro.monthly?.price ?? tier.monthlyPrice,
+          yearlyPrice: products.pro.yearly?.price ?? tier.yearlyPrice,
+          productIdMonthly: products.pro.monthly?.product_id ?? tier.productIdMonthly,
+          productIdYearly: products.pro.yearly?.product_id ?? tier.productIdYearly,
+        };
+      }
+      return tier;
+    });
+  }, [products]);
+
   const checkoutState = searchParams.get('checkout');
   const checkoutMessage = useMemo(() => {
     if (checkoutState === 'cancelled') {
@@ -145,7 +133,7 @@ const Pricing = () => {
 
       <LandingNavbar />
 
-      <main className="pt-24 pb-20">
+      <main className="pt-52 pb-20">
         <section className="px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
             {checkoutMessage && (
@@ -173,7 +161,7 @@ const Pricing = () => {
                 className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40"
               >
                 Start free with full platform access. Upgrade to Pro for historical archives and
-                unlimited session replay.
+                unlimited session replay
               </motion.p>
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -185,8 +173,8 @@ const Pricing = () => {
               </motion.div>
             </div>
 
-            <div className="mt-12 grid gap-5 lg:grid-cols-3">
-              {TIERS.map((tier, i) => (
+            <div className="mt-12 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto">
+              {tiers.map((tier, i) => (
                 <PricingCard key={tier.id} tier={tier} interval={interval} index={i} />
               ))}
             </div>
@@ -219,14 +207,11 @@ const Pricing = () => {
                         <th className="px-6 py-4 text-left text-[13px] font-semibold text-white/60">
                           Feature
                         </th>
-                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-white/40">
+                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-white/40 w-1/4">
                           Free
                         </th>
-                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-red-400">
+                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-red-400 w-1/4">
                           Pro
-                        </th>
-                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-white/40">
-                          Ultra
                         </th>
                       </tr>
                     </thead>
@@ -247,11 +232,6 @@ const Pricing = () => {
                           <td className="px-6 py-3.5 text-center bg-red-500/[0.02]">
                             <div className="flex justify-center">
                               <FeatureCell value={row.pro} />
-                            </div>
-                          </td>
-                          <td className="px-6 py-3.5 text-center">
-                            <div className="flex justify-center">
-                              <FeatureCell value={row.ultra} />
                             </div>
                           </td>
                         </tr>

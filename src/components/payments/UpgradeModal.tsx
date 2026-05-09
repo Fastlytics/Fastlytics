@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { request } from '@/lib/api-client';
 import { BillingToggle } from '@/components/payments/BillingToggle';
+import { useProducts } from '@/hooks/useProducts';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -12,7 +13,7 @@ interface UpgradeModalProps {
   cancelPath: string;
 }
 
-const PRO_PRODUCTS = {
+const DEFAULT_PRO_PRODUCTS = {
   monthly: {
     productId: 'pdt_0NePm9aNHnQh5KxB7bsJM',
     price: 5.99,
@@ -34,13 +35,6 @@ const PRO_FEATURES = [
   'Team pace analysis',
 ];
 
-const ULTRA_FEATURES = [
-  'Everything in Pro',
-  'AI race predictions',
-  'AI strategy recommendations',
-  'AI driver form analysis',
-];
-
 function buildReturnUrl(path: string, status: 'cancelled' | 'failed') {
   const url = new URL(path, window.location.origin);
   url.searchParams.set('checkout', status);
@@ -52,8 +46,25 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { data: products } = useProducts();
 
-  const selectedProduct = useMemo(() => PRO_PRODUCTS[interval], [interval]);
+  const proProducts = useMemo(() => {
+    if (!products?.pro) return DEFAULT_PRO_PRODUCTS;
+    return {
+      monthly: {
+        productId: products.pro.monthly?.product_id ?? DEFAULT_PRO_PRODUCTS.monthly.productId,
+        price: products.pro.monthly?.price ?? DEFAULT_PRO_PRODUCTS.monthly.price,
+        suffix: '/mo',
+      },
+      yearly: {
+        productId: products.pro.yearly?.product_id ?? DEFAULT_PRO_PRODUCTS.yearly.productId,
+        price: products.pro.yearly?.price ?? DEFAULT_PRO_PRODUCTS.yearly.price,
+        suffix: '/yr',
+      },
+    };
+  }, [products]);
+
+  const selectedProduct = useMemo(() => proProducts[interval], [interval, proProducts]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,7 +117,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-x-0 top-[8vh] z-[81] mx-auto w-[min(960px,calc(100vw-2rem))]"
+            className="fixed inset-x-0 top-[8vh] z-[81] mx-auto w-[min(540px,calc(100vw-2rem))]"
           >
             <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#09090b] shadow-[0_32px_120px_rgba(0,0,0,0.6)]">
               <div className="border-b border-white/[0.06] px-6 py-5 lg:px-8">
@@ -137,7 +148,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                 </div>
               </div>
 
-              <div className="grid gap-5 p-6 lg:grid-cols-2 lg:p-8">
+              <div className="p-6 lg:p-8">
                 <div className="rounded-2xl border border-red-500/20 bg-[#0c0c0e] p-6 shadow-[0_0_0_1px_rgba(239,68,68,0.04)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -179,38 +190,6 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                   >
                     <ArrowUpRight className="h-4 w-4" />
                     {isLoading ? 'Opening Checkout...' : 'Upgrade to Pro'}
-                  </button>
-                </div>
-
-                <div className="rounded-2xl border border-white/[0.06] bg-[#0c0c0e] p-6 opacity-75">
-                  <div>
-                    <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/35">
-                      Ultra
-                    </p>
-                    <h3 className="mt-2 text-[28px] font-bold tracking-[-0.03em] text-white/85">
-                      $10.99
-                      <span className="ml-1 text-[14px] font-medium text-white/25">/mo</span>
-                    </h3>
-                    <p className="mt-2 text-[13px] leading-relaxed text-white/35">
-                      AI-powered features are planned but not live yet.
-                    </p>
-                  </div>
-
-                  <div className="mt-6 space-y-3">
-                    {ULTRA_FEATURES.map((feature) => (
-                      <div key={feature} className="flex items-start gap-3">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-white/25" />
-                        <span className="text-[14px] leading-relaxed text-white/40">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled
-                    className="mt-6 flex h-12 w-full items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.02] px-5 text-[14px] font-semibold text-white/25"
-                  >
-                    Coming Soon
                   </button>
                 </div>
               </div>

@@ -9,81 +9,40 @@ import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 
 const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
-interface LogoAsset {
-  name: string;
-  filename: string;
-  description: string;
-  bg: 'dark' | 'light';
-  width: number;
-  height: number;
-}
-
-const primaryLogos: LogoAsset[] = [
+const pngAssets = [
   {
-    name: 'Full Logo — Light Mode',
-    filename: 'logo-light.svg',
-    description: 'Primary logo with icon and wordmark. For use on dark backgrounds.',
-    bg: 'dark',
-    width: 510,
-    height: 110,
-  },
-  {
-    name: 'Full Logo — Dark Mode',
-    filename: 'logo-dark.svg',
-    description: 'Primary logo with icon and wordmark. For use on light backgrounds.',
-    bg: 'light',
-    width: 510,
-    height: 110,
-  },
-];
-
-const iconLogos: LogoAsset[] = [
-  {
-    name: 'Icon Only — Light Mode',
-    filename: 'icon-light.svg',
-    description: 'Brand icon without text. For use on dark backgrounds or as favicon/app icon.',
-    bg: 'dark',
-    width: 145,
-    height: 105,
-  },
-  {
-    name: 'Icon Only — Dark Mode',
-    filename: 'icon-dark.svg',
-    description: 'Brand icon without text. For use on light backgrounds.',
-    bg: 'light',
-    width: 145,
-    height: 105,
-  },
-];
-
-const wordmarkLogos: LogoAsset[] = [
-  {
-    name: 'Wordmark — Light Mode',
-    filename: 'wordmark-light.svg',
-    description: 'FASTLYTICS wordmark without icon. For use on dark backgrounds.',
-    bg: 'dark',
-    width: 300,
-    height: 60,
-  },
-  {
-    name: 'Wordmark — Dark Mode',
-    filename: 'wordmark-dark.svg',
-    description: 'FASTLYTICS wordmark without icon. For use on light backgrounds.',
-    bg: 'light',
-    width: 300,
-    height: 60,
-  },
-];
-
-const animatedLogos: LogoAsset[] = [
-  {
-    name: 'Animated Logo — Light Mode',
-    filename: 'logo-animated.svg',
+    name: 'Full Logo — Dark Mode (PNG)',
+    filename: 'logo-dark-high-res.png',
     description:
-      'Animated logo with pulsing racing bars. Renders with CSS animation — best viewed in a browser.',
-    bg: 'dark',
+      'High-resolution raster full logo with transparent background for dark backgrounds.',
+    bg: 'dark' as const,
     width: 510,
     height: 110,
+  },
+  {
+    name: 'Full Logo — Light Mode (PNG)',
+    filename: 'logo-light-high-res.png',
+    description:
+      'High-resolution raster full logo with transparent background for light backgrounds.',
+    bg: 'light' as const,
+    width: 510,
+    height: 110,
+  },
+  {
+    name: 'Icon Only — Dark Mode (PNG)',
+    filename: 'icon-dark-high-res.png',
+    description: 'High-resolution raster icon with transparent background for dark backgrounds.',
+    bg: 'dark' as const,
+    width: 145,
+    height: 105,
+  },
+  {
+    name: 'Icon Only — Light Mode (PNG)',
+    filename: 'icon-light-high-res.png',
+    description: 'High-resolution raster icon with transparent background for light backgrounds.',
+    bg: 'light' as const,
+    width: 145,
+    height: 105,
   },
 ];
 
@@ -171,7 +130,7 @@ const PressKit = () => {
     >
       <SEO
         title="Press Kit"
-        description="Download the Fastlytics logo in multiple formats — full logo, icon only, wordmark, light/dark mode, and animated variants. Free to use for media and partners."
+        description="Download the Fastlytics logo in multiple formats — full logo and icon only, light/dark mode variants. Free to use for media and partners."
         keywords={['fastlytics logo', 'press kit', 'brand assets', 'f1 analytics brand']}
       />
       <LandingNavbar />
@@ -196,7 +155,7 @@ const PressKit = () => {
             </p>
           </motion.div>
 
-          {/* Primary Logos */}
+          {/* Primary PNG Logos */}
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -204,95 +163,52 @@ const PressKit = () => {
             transition={{ duration: 0.6 }}
             className="mb-16"
           >
-            <h2 className="text-[18px] font-semibold text-white mb-2">Primary Logo</h2>
+            <h2 className="text-[18px] font-semibold text-white mb-2">High-Resolution PNGs</h2>
             <p className="text-[14px] text-white/35 mb-6">
-              The full Fastlytics logo with icon and wordmark. Use this as the default logo in most
-              contexts.
+              Transparent, high-resolution PNGs generated programmatically. Ideal for print or media
+              features.
             </p>
             <div className="grid gap-5 sm:grid-cols-2">
-              {primaryLogos.map((asset) => (
-                <LogoCard
-                  key={asset.filename}
-                  asset={asset}
-                  isCopied={copiedFile === asset.filename}
-                  onCopy={handleCopy}
-                />
-              ))}
-            </div>
-          </motion.section>
+              {pngAssets.map((asset) => {
+                const bgClass = asset.bg === 'dark' ? 'bg-[#0a0a0a]' : 'bg-[#f5f5f5]';
+                const borderClass = asset.bg === 'dark' ? 'border-white/[0.06]' : 'border-zinc-300';
 
-          {/* Icon Logos */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-16"
-          >
-            <h2 className="text-[18px] font-semibold text-white mb-2">Icon Only</h2>
-            <p className="text-[14px] text-white/35 mb-6">
-              The isolated brand mark without the wordmark. Ideal for favicons, app icons, and
-              compact spaces.
-            </p>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {iconLogos.map((asset) => (
-                <LogoCard
-                  key={asset.filename}
-                  asset={asset}
-                  isCopied={copiedFile === asset.filename}
-                  onCopy={handleCopy}
-                />
-              ))}
-            </div>
-          </motion.section>
+                return (
+                  <div
+                    key={asset.filename}
+                    className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 transition-colors hover:border-white/[0.1] flex flex-col"
+                  >
+                    <div
+                      className={`${bgClass} border ${borderClass} p-5 flex items-center justify-center h-36 mb-4 rounded-lg`}
+                    >
+                      <img
+                        src={`/brand/${asset.filename}`}
+                        alt={asset.name}
+                        className="max-h-full max-w-full object-contain"
+                        style={{
+                          maxWidth: asset.width > 500 ? '90%' : asset.width > 200 ? '60%' : '45%',
+                        }}
+                      />
+                    </div>
 
-          {/* Wordmark Logos */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-16"
-          >
-            <h2 className="text-[18px] font-semibold text-white mb-2">Wordmark</h2>
-            <p className="text-[14px] text-white/35 mb-6">
-              The typographic FASTLYTICS logo without the icon. For text-only placements and inline
-              usage.
-            </p>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {wordmarkLogos.map((asset) => (
-                <LogoCard
-                  key={asset.filename}
-                  asset={asset}
-                  isCopied={copiedFile === asset.filename}
-                  onCopy={handleCopy}
-                />
-              ))}
-            </div>
-          </motion.section>
+                    <h3 className="text-[15px] font-semibold text-white mb-1.5">{asset.name}</h3>
+                    <p className="text-[13px] text-white/35 mb-4 flex-grow">{asset.description}</p>
 
-          {/* Animated Logos */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-16"
-          >
-            <h2 className="text-[18px] font-semibold text-white mb-2">Animated</h2>
-            <p className="text-[14px] text-white/35 mb-6">
-              The Fastlytics logo with animated racing bars. Renders with CSS animation in the
-              browser — useful for video intros, loading screens, and digital presentations.
-            </p>
-            <div className="grid gap-5 sm:grid-cols-2">
-              {animatedLogos.map((asset) => (
-                <LogoCard
-                  key={asset.filename}
-                  asset={asset}
-                  isCopied={copiedFile === asset.filename}
-                  onCopy={handleCopy}
-                />
-              ))}
+                    <div className="flex gap-2 mt-auto">
+                      <a href={`/brand/${asset.filename}`} download>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
+                        >
+                          <Download01Icon className="w-3.5 h-3.5" />
+                          PNG
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.section>
 
@@ -395,7 +311,7 @@ const PressKit = () => {
               on the Fastlytics CDN. Use the download buttons above or hotlink directly.
             </p>
             <div className="flex flex-wrap justify-center gap-2.5">
-              {[...primaryLogos, ...iconLogos, ...wordmarkLogos, ...animatedLogos].map((asset) => (
+              {[...pngAssets].map((asset) => (
                 <a key={asset.filename} href={`/brand/${asset.filename}`} download>
                   <Button
                     variant="outline"

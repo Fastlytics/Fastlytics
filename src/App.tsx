@@ -27,6 +27,7 @@ import RefundPolicy from './pages/RefundPolicy';
 import Contact from './pages/Contact';
 import PressKit from './pages/PressKit';
 import Pricing from './pages/Pricing';
+import IsolatedLogo from './pages/IsolatedLogo';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/layout/ScrollToTop';
@@ -138,6 +139,9 @@ const App = () => (
                   </LandingLayout>
                 }
               />
+
+              {/* Isolated Logo Route purely for screenshot automation via Playwright */}
+              <Route path="/logo-isolated" element={<IsolatedLogo />} />
 
               {/* Auth route - public */}
               <Route path="/auth" element={<Auth />} />
