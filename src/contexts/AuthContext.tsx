@@ -26,22 +26,37 @@ export interface Profile {
   onboarding_completed: boolean;
 }
 
+export interface Subscription {
+  plan: 'free' | 'pro' | 'ultra';
+  status: 'active' | 'cancelled' | 'expired' | 'on_hold';
+  billing_interval?: 'monthly' | 'yearly';
+  current_period_end?: string;
+}
+
+const TIER_LEVEL: Record<string, number> = { free: 0, pro: 1, ultra: 2 };
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  subscription: Subscription | null;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSubscription: () => Promise<Subscription | null>;
+  isSubscribed: (tier?: 'pro' | 'ultra') => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   profile: null,
+  subscription: null,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
+  refreshSubscription: async () => null,
+  isSubscribed: () => false,
 });
 
 interface AuthProviderProps {
@@ -52,9 +67,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isFetchingProfile = useRef(false);
+
+  const fetchSubscription = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('plan, status, billing_interval, current_period_end')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (error) {
+        logger.error('Error fetching subscription:', error);
+        setSubscription(null);
+        return null;
+      } else if (data) {
+        setSubscription(data as Subscription);
+        return data as Subscription;
+      } else {
+        const freeSubscription = { plan: 'free', status: 'active' } as Subscription;
+        setSubscription(freeSubscription);
+        return freeSubscription;
+      }
+    } catch (error) {
+      logger.error('Unexpected error fetching subscription:', error);
+      setSubscription(null);
+      return null;
+    }
+  }, []);
 
   const fetchProfile = useCallback(
     async (
@@ -129,9 +173,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Use setTimeout to avoid potential deadlock with Supabase's internal state
         setTimeout(() => {
           fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+          fetchSubscription(session.user.id);
         }, 0);
       } else {
         setProfile(null);
+        setSubscription(null);
       }
 
       if (event === 'SIGNED_IN' && session?.user) {
@@ -164,6 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (session?.user) {
             fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
+            fetchSubscription(session.user.id);
           }
         }
       })
@@ -181,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setSubscription(null);
     setLoading(false);
   };
 
@@ -190,13 +238,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshSubscription = async () => {
+    if (!user) {
+      setSubscription(null);
+      return null;
+    }
+
+    return fetchSubscription(user.id);
+  };
+
+  const isSubscribed = useCallback(
+    (tier: 'pro' | 'ultra' = 'pro') => {
+      if (!subscription || subscription.status !== 'active') return false;
+      return TIER_LEVEL[subscription.plan] >= TIER_LEVEL[tier];
+    },
+    [subscription]
+  );
+
   const value = {
     session,
     user,
     profile,
+    subscription,
     loading,
     signOut,
     refreshProfile,
+    refreshSubscription,
+    isSubscribed,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -27,6 +27,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { APIError } from '@/lib/api-client';
 import MobilePageHeader from './MobilePageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -39,6 +40,7 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 import { getTeamColorClass } from '@/lib/teamColors';
 import MobileEventHeroCard from './MobileEventHeroCard';
 import { getCountryCode } from '@/utils/countryUtils';
+import HistoricalAccessPrompt from '@/components/common/HistoricalAccessPrompt';
 
 // --- Helper Functions ---
 
@@ -1038,9 +1040,11 @@ const MobileRace: React.FC = () => {
   };
 
   // Queries
-  const { data: fetchedAvailableSessions, isLoading: isLoadingSessions } = useQuery<
-    AvailableSession[]
-  >({
+  const {
+    data: fetchedAvailableSessions,
+    isLoading: isLoadingSessions,
+    error: availableSessionsError,
+  } = useQuery<AvailableSession[]>({
     queryKey: ['availableSessions', year, eventName],
     queryFn: () => fetchAvailableSessions(year!, eventName),
     enabled: !!year && !!eventName,
@@ -1143,6 +1147,8 @@ const MobileRace: React.FC = () => {
 
   const raceResults = selectedSession === 'Summary' ? summaryResults : standardResults;
   const isLoadingResults = selectedSession === 'Summary' ? isLoadingSummary : isLoadingStandard;
+  const isHistoricalAccessLocked =
+    availableSessionsError instanceof APIError && availableSessionsError.status === 402;
 
   // Derived State
   const currentSessionName =
@@ -1287,6 +1293,17 @@ const MobileRace: React.FC = () => {
           <div className="text-red-600 font-black uppercase tracking-widest text-sm animate-pulse">
             Loading Race Data...
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isHistoricalAccessLocked) {
+    return (
+      <div className="min-h-screen bg-[#09090b] pb-10 text-white">
+        <MobilePageHeader title="Pro Archive" showBack />
+        <div className="p-4 pt-3">
+          <HistoricalAccessPrompt year={year} eventName={eventName} compact />
         </div>
       </div>
     );

@@ -10,6 +10,7 @@ export interface PricingTier {
   description: string;
   features: string[];
   highlighted?: boolean;
+  comingSoon?: boolean;
   cta: string;
   productIdMonthly?: string;
   productIdYearly?: string;
@@ -24,6 +25,7 @@ interface PricingCardProps {
 export function PricingCard({ tier, interval, index }: PricingCardProps) {
   const price = interval === 'monthly' ? tier.monthlyPrice : tier.yearlyPrice;
   const isHighlighted = tier.highlighted;
+  const isComingSoon = tier.comingSoon;
 
   return (
     <motion.div
@@ -32,30 +34,45 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
       viewport={{ once: true }}
       transition={{ delay: index * 0.08, duration: 0.5 }}
       className={`relative flex flex-col rounded-xl border p-6 transition-colors ${
-        isHighlighted
-          ? 'border-red-500/30 bg-gradient-to-b from-red-500/[0.03] to-transparent shadow-[0_0_40px_rgba(239,68,68,0.06)]'
-          : 'border-white/[0.06] bg-[#0c0c0e] hover:border-white/[0.1]'
+        isComingSoon
+          ? 'border-white/[0.04] bg-[#0c0c0e]/50 opacity-60'
+          : isHighlighted
+            ? 'border-red-500/30 bg-gradient-to-b from-red-500/[0.03] to-transparent shadow-[0_0_40px_rgba(239,68,68,0.06)]'
+            : 'border-white/[0.06] bg-[#0c0c0e] hover:border-white/[0.1]'
       }`}
     >
-      {isHighlighted && (
+      {isComingSoon && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white/[0.06] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white/30">
+          Coming Soon
+        </div>
+      )}
+      {isHighlighted && !isComingSoon && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-red-500 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white">
           Most Popular
         </div>
       )}
 
       <div className="mb-5">
-        <h3 className="text-[17px] font-bold tracking-[-0.01em] text-white">{tier.name}</h3>
+        <h3
+          className={`text-[17px] font-bold tracking-[-0.01em] ${isComingSoon ? 'text-white/30' : 'text-white'}`}
+        >
+          {tier.name}
+        </h3>
         <p className="mt-1.5 text-[13px] leading-relaxed text-white/35">{tier.description}</p>
       </div>
 
       <div className="mb-6">
         <div className="flex items-baseline gap-0.5">
-          <span className="text-[13px] text-white/30">$</span>
-          <span className="text-[40px] font-bold tracking-[-0.03em] text-white leading-none">
+          <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
+            $
+          </span>
+          <span
+            className={`text-[40px] font-bold tracking-[-0.03em] leading-none ${isComingSoon ? 'text-white/15' : 'text-white'}`}
+          >
             {price}
           </span>
           {price > 0 && (
-            <span className="text-[13px] text-white/30">
+            <span className={`text-[13px] ${isComingSoon ? 'text-white/15' : 'text-white/30'}`}>
               /{interval === 'monthly' ? 'mo' : 'yr'}
             </span>
           )}
@@ -65,13 +82,26 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
       <div className="mb-8 flex-grow space-y-3">
         {tier.features.map((feature) => (
           <div key={feature} className="flex items-start gap-2.5">
-            <Tick01Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-            <span className="text-[13px] leading-relaxed text-white/55">{feature}</span>
+            <Tick01Icon
+              className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${isComingSoon ? 'text-white/10' : 'text-emerald-400'}`}
+            />
+            <span
+              className={`text-[13px] leading-relaxed ${isComingSoon ? 'text-white/25' : 'text-white/55'}`}
+            >
+              {feature}
+            </span>
           </div>
         ))}
       </div>
 
-      {price === 0 ? (
+      {isComingSoon ? (
+        <button
+          disabled
+          className="flex h-11 w-full items-center justify-center rounded-lg border border-white/[0.04] bg-white/[0.01] text-[13px] font-semibold text-white/20 cursor-not-allowed"
+        >
+          {tier.cta}
+        </button>
+      ) : price === 0 ? (
         <Link
           to="/dashboard"
           className={`flex h-11 w-full items-center justify-center rounded-lg border text-[13px] font-semibold transition-all ${
@@ -84,7 +114,7 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
         </Link>
       ) : (
         <Link
-          to={`/checkout?tier=${tier.id}&interval=${interval}`}
+          to={`/auth?checkoutTier=${tier.id}&checkoutInterval=${interval}`}
           className={`flex h-11 w-full items-center justify-center rounded-lg text-[13px] font-semibold transition-all ${
             isHighlighted
               ? 'bg-red-600 text-white hover:bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.25)]'

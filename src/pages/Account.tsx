@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import {
@@ -33,6 +33,8 @@ import { MobileAccount } from '@/components/mobile';
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { SEO } from '@/components/layout/SEO';
+import { request } from '@/lib/api-client';
+import UpgradeModal from '@/components/payments/UpgradeModal';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
@@ -62,12 +64,18 @@ const NavItem = ({
 );
 
 const Account = () => {
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { user, profile, refreshProfile, signOut, subscription, isSubscribed } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { trackEvent } = useAnalytics();
-  const [activeSection, setActiveSection] = useState('profile');
+  const initialSection = searchParams.get('section');
+  const [activeSection, setActiveSection] = useState(
+    initialSection === 'subscription' ? 'subscription' : 'profile'
+  );
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '');
   const [username, setUsername] = useState('');
@@ -162,6 +170,20 @@ const Account = () => {
       toast.error((error as Error).message || 'Failed to update favorites');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOpenCustomerPortal = async () => {
+    setIsOpeningPortal(true);
+    try {
+      const data = await request<{ link: string }>('/api/payments/customer-portal', {
+        method: 'POST',
+      });
+      window.location.assign(data.link);
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to open subscription portal');
+    } finally {
+      setIsOpeningPortal(false);
     }
   };
 
@@ -356,6 +378,12 @@ const Account = () => {
                 icon={Analytics01Icon}
                 active={activeSection === 'history'}
                 onClick={() => setActiveSection('history')}
+              />
+              <NavItem
+                label="Subscription"
+                icon={LinkSquare01Icon}
+                active={activeSection === 'subscription'}
+                onClick={() => setActiveSection('subscription')}
               />
             </div>
           </aside>
@@ -662,6 +690,97 @@ const Account = () => {
               </motion.div>
             )}
 
+            {activeSection === 'subscription' && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+                    Subscription
+                  </h2>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
+                  {isSubscribed('pro') && subscription ? (
+                    <>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                            Plan
+                          </p>
+                          <p className="mt-2 text-[18px] font-bold text-white capitalize">
+                            {subscription.plan}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                            Billing
+                          </p>
+                          <p className="mt-2 text-[18px] font-bold text-white capitalize">
+                            {subscription.billing_interval || 'Monthly'}
+                          </p>
+                        </div>
+                        <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
+                            Renews / Expires
+                          </p>
+                          <p className="mt-2 text-[18px] font-bold text-white">
+                            {subscription.current_period_end
+                              ? new Date(subscription.current_period_end).toLocaleDateString()
+                              : 'Active'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 rounded-xl border border-white/[0.05] bg-white/[0.02] p-5">
+                        <h3 className="text-[16px] font-bold text-white">
+                          Manage your subscription
+                        </h3>
+                        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-white/45">
+                          Open the Dodo Payments customer portal to update billing details or cancel
+                          your subscription.
+                        </p>
+                        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                          <Button
+                            onClick={handleOpenCustomerPortal}
+                            disabled={isOpeningPortal}
+                            className="h-11 rounded-xl bg-white px-5 text-[13px] font-semibold text-black transition-all hover:bg-white/90"
+                          >
+                            {isOpeningPortal ? 'Opening...' : 'Manage Subscription'}
+                          </Button>
+                          <Button
+                            onClick={handleOpenCustomerPortal}
+                            disabled={isOpeningPortal}
+                            className="h-11 rounded-xl border border-red-500/20 bg-red-500/[0.07] px-5 text-[13px] font-semibold text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/[0.12] hover:text-red-300"
+                          >
+                            {isOpeningPortal ? 'Opening...' : 'Cancel Subscription'}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-5">
+                      <h3 className="text-[16px] font-bold text-white">Free plan</h3>
+                      <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-white/45">
+                        You are currently on the free plan. Upgrade to Pro to unlock historical
+                        seasons and unlimited session replay.
+                      </p>
+                      <div className="mt-5">
+                        <button
+                          type="button"
+                          onClick={() => setUpgradeOpen(true)}
+                          className="inline-flex h-11 items-center justify-center rounded-xl border border-sky-400/20 bg-sky-400/12 px-5 text-[13px] font-semibold text-sky-200 transition-all hover:border-sky-300/35 hover:bg-sky-400/18 hover:text-sky-100"
+                        >
+                          Upgrade to Pro
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* Security */}
             {activeSection === 'security' && (
               <motion.div
@@ -834,6 +953,11 @@ const Account = () => {
           </div>
         </div>
       </main>
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        cancelPath="/account?section=subscription"
+      />
     </div>
   );
 };
