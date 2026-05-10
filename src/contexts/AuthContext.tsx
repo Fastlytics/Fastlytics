@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { linkSessionToUser } from '@/lib/session';
 import { Session, User } from '@supabase/supabase-js';
 import posthog from 'posthog-js';
+import * as Sentry from '@sentry/react';
 import { logger } from '@/lib/logger';
 import { hasAnalyticsConsent } from '@/lib/consent';
 
@@ -233,6 +234,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (event === 'SIGNED_IN' && session?.user) {
         // Stitch anonymous session trail to the authenticated user
         linkSessionToUser(session.user.id);
+        Sentry.setUser({ id: session.user.id, email: session.user.email });
         if (hasAnalyticsConsent()) {
           posthog.identify(session.user.id, {
             email: session.user.email,
@@ -240,6 +242,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           posthog.capture('login_completed');
         }
       } else if (event === 'SIGNED_OUT') {
+        Sentry.setUser(null);
         if (hasAnalyticsConsent()) {
           posthog.capture('logout');
         }

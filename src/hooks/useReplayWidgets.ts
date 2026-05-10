@@ -20,15 +20,14 @@ export const REPLAY_WIDGET_MIN_WIDTH = 180;
 export const REPLAY_WIDGET_MIN_HEIGHT = 120;
 
 const DEFAULT_SIZES: Record<WidgetId, { width: number; height: number }> = {
-  weather: { width: 220, height: 220 },
-  racecontrol: { width: 320, height: 260 },
-  sectors: { width: 260, height: 260 },
-  telemetry: { width: 240, height: 340 },
-  laphistory: { width: 260, height: 300 },
+  weather: { width: 210, height: 200 },
+  racecontrol: { width: 300, height: 240 },
+  sectors: { width: 250, height: 240 },
+  telemetry: { width: 230, height: 320 },
+  laphistory: { width: 250, height: 280 },
 };
 
-const WIDGET_ORDER: WidgetId[] = ['weather', 'racecontrol', 'sectors', 'laphistory', 'telemetry'];
-const STORAGE_KEY = 'replay-widgets-layout-v3';
+const STORAGE_KEY = 'replay-widgets-layout-v4';
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -50,42 +49,85 @@ function clampLayout(
   };
 }
 
+/**
+ * Computes a structured default layout:
+ * - Left column: Telemetry (top-left), Weather (below telemetry)
+ * - Bottom-left area: Race Control (below weather, wider)
+ * - Right side (above leaderboard): Sectors (top), Lap History (below)
+ *
+ * This prevents overlap and gives a predictable "pit wall" feel.
+ */
 function computeDefaultLayouts(
   containerWidth: number,
   containerHeight: number,
   bounds: WidgetBounds
 ): Record<WidgetId, WidgetLayout> {
-  const gap = 12;
-  const widths = WIDGET_ORDER.map((widgetId) => DEFAULT_SIZES[widgetId].width);
-  const heights = WIDGET_ORDER.map((widgetId) => DEFAULT_SIZES[widgetId].height);
-  const maxHeight = Math.max(...heights);
-  const totalWidth =
-    widths.reduce((total, width) => total + width, 0) + gap * (WIDGET_ORDER.length - 1);
-  const defaultX = Math.max(bounds.minX, (containerWidth - totalWidth) / 2);
-  const defaultY = Math.max(bounds.minY, containerHeight - maxHeight - 150);
+  const gap = 10;
+  const topOffset = 80; // Clear the title bar area
+  const bottomOffset = 80; // Clear the playback controls
+  const leftMargin = bounds.minX + 160; // Clear the toolbar buttons
+  const availableHeight = containerHeight - topOffset - bottomOffset;
 
-  const layouts = {} as Record<WidgetId, WidgetLayout>;
-  let nextX = defaultX;
+  // Left column: Telemetry stacked above Weather
+  const telemetryX = leftMargin;
+  const telemetryY = topOffset;
+  const telemetryH = Math.min(DEFAULT_SIZES.telemetry.height, availableHeight * 0.55);
 
-  for (const widgetId of WIDGET_ORDER) {
-    layouts[widgetId] = clampLayout(
-      {
-        x: Math.round(nextX),
-        y: Math.round(defaultY),
-        width: DEFAULT_SIZES[widgetId].width,
-        height: DEFAULT_SIZES[widgetId].height,
-      },
-      {
-        x: bounds.minX,
-        y: bounds.minY,
-        width: DEFAULT_SIZES[widgetId].width,
-        height: DEFAULT_SIZES[widgetId].height,
-      },
+  const weatherX = leftMargin;
+  const weatherY = telemetryY + telemetryH + gap;
+  const weatherH = Math.min(DEFAULT_SIZES.weather.height, availableHeight - telemetryH - gap);
+
+  // Second column: Race Control (wider, next to left column)
+  const col2X = leftMargin + DEFAULT_SIZES.telemetry.width + gap;
+  const raceControlY = topOffset;
+  const raceControlH = Math.min(DEFAULT_SIZES.racecontrol.height, availableHeight * 0.45);
+
+  // Bottom of second column: Sectors
+  const sectorsX = col2X;
+  const sectorsY = raceControlY + raceControlH + gap;
+  const sectorsH = Math.min(DEFAULT_SIZES.sectors.height, availableHeight - raceControlH - gap);
+
+  // Right side (before leaderboard): Lap History
+  const lapHistoryW = DEFAULT_SIZES.laphistory.width;
+  const lapHistoryX = Math.max(
+    col2X + DEFAULT_SIZES.racecontrol.width + gap,
+    bounds.maxX - lapHistoryW - gap
+  );
+  const lapHistoryY = topOffset;
+  const lapHistoryH = Math.min(DEFAULT_SIZES.laphistory.height, availableHeight * 0.5);
+
+  const layouts: Record<WidgetId, WidgetLayout> = {
+    telemetry: clampLayout(
+      { x: telemetryX, y: telemetryY, width: DEFAULT_SIZES.telemetry.width, height: telemetryH },
+      { x: bounds.minX, y: bounds.minY, ...DEFAULT_SIZES.telemetry },
       bounds
-    );
-
-    nextX += DEFAULT_SIZES[widgetId].width + gap;
-  }
+    ),
+    weather: clampLayout(
+      { x: weatherX, y: weatherY, width: DEFAULT_SIZES.weather.width, height: weatherH },
+      { x: bounds.minX, y: bounds.minY, ...DEFAULT_SIZES.weather },
+      bounds
+    ),
+    racecontrol: clampLayout(
+      {
+        x: col2X,
+        y: raceControlY,
+        width: DEFAULT_SIZES.racecontrol.width,
+        height: raceControlH,
+      },
+      { x: bounds.minX, y: bounds.minY, ...DEFAULT_SIZES.racecontrol },
+      bounds
+    ),
+    sectors: clampLayout(
+      { x: sectorsX, y: sectorsY, width: DEFAULT_SIZES.sectors.width, height: sectorsH },
+      { x: bounds.minX, y: bounds.minY, ...DEFAULT_SIZES.sectors },
+      bounds
+    ),
+    laphistory: clampLayout(
+      { x: lapHistoryX, y: lapHistoryY, width: lapHistoryW, height: lapHistoryH },
+      { x: bounds.minX, y: bounds.minY, ...DEFAULT_SIZES.laphistory },
+      bounds
+    ),
+  };
 
   return layouts;
 }
@@ -97,8 +139,9 @@ function normalizeLayouts(
   bounds: WidgetBounds
 ): Record<WidgetId, WidgetLayout> {
   const defaults = computeDefaultLayouts(containerWidth, containerHeight, bounds);
+  const ids: WidgetId[] = ['weather', 'racecontrol', 'sectors', 'telemetry', 'laphistory'];
 
-  return WIDGET_ORDER.reduce(
+  return ids.reduce(
     (acc, widgetId) => {
       acc[widgetId] = clampLayout(layouts[widgetId], defaults[widgetId], bounds);
       return acc;

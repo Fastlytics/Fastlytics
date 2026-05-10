@@ -77,7 +77,11 @@ function stepArray<T>(values: T[] | undefined, index: number, fallback: T): T {
   return values[index] ?? fallback;
 }
 
-/** Pre-compute nearest circuit-point index for every driver at every frame. */
+/**
+ * Pre-compute nearest circuit-point index for every driver at every frame.
+ * Uses locality heuristic: starts search from previous best index since cars
+ * move continuously along the track, reducing O(frames × points) to ~O(frames × localWindow).
+ */
 function buildTrackIndices(
   drivers: SessionReplayData['drivers'],
   circuitPoints: number[][]
@@ -85,17 +89,25 @@ function buildTrackIndices(
   if (!circuitPoints || circuitPoints.length === 0) return {};
   const result: Record<string, number[]> = {};
   const plen = circuitPoints.length;
+  // Search window around previous best — cars move ~1-3 circuit points per frame
+  const SEARCH_WINDOW = 30;
 
   for (const [code, d] of Object.entries(drivers)) {
     if (!d.x || !d.y) continue;
     const len = d.x.length;
     const arr = new Array<number>(len);
+    let prevBest = 0;
+
     for (let i = 0; i < len; i++) {
       const px = d.x[i];
       const py = d.y[i];
-      let bestIdx = 0;
+      let bestIdx = prevBest;
       let bestDist = Infinity;
-      for (let j = 0; j < plen; j += 3) {
+
+      // First: search local window around previous best (handles normal movement)
+      const localStart = Math.max(0, prevBest - SEARCH_WINDOW);
+      const localEnd = Math.min(plen - 1, prevBest + SEARCH_WINDOW);
+      for (let j = localStart; j <= localEnd; j++) {
         const dx = circuitPoints[j][0] - px;
         const dy = circuitPoints[j][1] - py;
         const d2 = dx * dx + dy * dy;
@@ -104,7 +116,35 @@ function buildTrackIndices(
           bestIdx = j;
         }
       }
+
+      // If local search found something close enough (< 100 units²), use it
+      // Otherwise fall back to sparse global search (every 10th point)
+      if (bestDist > 100) {
+        for (let j = 0; j < plen; j += 10) {
+          const dx = circuitPoints[j][0] - px;
+          const dy = circuitPoints[j][1] - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestDist) {
+            bestDist = d2;
+            bestIdx = j;
+          }
+        }
+        // Refine around the sparse best
+        const refineStart = Math.max(0, bestIdx - 10);
+        const refineEnd = Math.min(plen - 1, bestIdx + 10);
+        for (let j = refineStart; j <= refineEnd; j++) {
+          const dx = circuitPoints[j][0] - px;
+          const dy = circuitPoints[j][1] - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestDist) {
+            bestDist = d2;
+            bestIdx = j;
+          }
+        }
+      }
+
       arr[i] = bestIdx;
+      prevBest = bestIdx;
     }
     result[code] = arr;
   }

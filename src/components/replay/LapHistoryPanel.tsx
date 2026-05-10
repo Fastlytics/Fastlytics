@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Trophy, History, X, Gauge, Footprints, Activity } from 'lucide-react';
+import { Trophy, X, Gauge, Footprints, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import WidgetShell from './WidgetShell';
 import { WidgetBounds, WidgetLayout } from '@/hooks/useReplayWidgets';
@@ -101,8 +101,7 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
 
   return (
     <WidgetShell
-      title={`Lap History - ${selectedDriver}`}
-      icon={<History size={12} className="text-white/60" />}
+      title={`Lap History — ${selectedDriver}`}
       layout={layout}
       bounds={bounds}
       onUpdateLayout={onUpdateLayout}
@@ -127,7 +126,7 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
           <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">
-                L{selectedLap} - {detailConfig[detailView].label}
+                L{selectedLap} — {detailConfig[detailView].label}
               </span>
               <button
                 onClick={() => setDetailView(null)}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Gauge, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import WidgetShell from './WidgetShell';
 import { WidgetBounds, WidgetLayout } from '@/hooks/useReplayWidgets';
 import Speedometer from './Speedometer';
@@ -28,16 +28,14 @@ interface TelemetryOverlayProps {
   onClose?: () => void;
 }
 
-const EMPTY_HISTORY: number[] = [];
-
 const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
   driverCode,
   telemetry,
   driverColor = '#ef4444',
-  speedHistory = EMPTY_HISTORY,
-  throttleHistory = EMPTY_HISTORY,
-  brakeHistory = EMPTY_HISTORY,
-  rpmHistory = EMPTY_HISTORY,
+  speedHistory = [],
+  throttleHistory = [],
+  brakeHistory = [],
+  rpmHistory = [],
   liveLapTime = null,
   layout,
   onUpdateLayout,
@@ -61,15 +59,12 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         <span className="flex items-center gap-1.5">
           Telemetry
           <span
-            className="size-2 rounded-full inline-block"
+            className="h-1.5 w-1.5 rounded-full inline-block"
             style={{ backgroundColor: driverColor }}
           />
-          <span className="text-white/75 normal-case tracking-normal font-medium">
-            {driverCode}
-          </span>
+          <span className="normal-case tracking-normal font-medium">{driverCode}</span>
         </span>
       }
-      icon={<Gauge size={12} className="text-white/85" />}
       layout={layout}
       bounds={bounds}
       onUpdateLayout={onUpdateLayout}

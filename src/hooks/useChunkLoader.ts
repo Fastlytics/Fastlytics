@@ -1,5 +1,5 @@
-// knip-ignore
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
 import { fetchSessionReplayChunk, ReplayDriverData, ReplayDriversMap } from '@/lib/api';
 
 interface ChunkManifest {
@@ -100,17 +100,18 @@ async function fetchChunkWithRetry(
   event: string,
   session: string,
   chunkId: number,
-  signal?: AbortSignal,
-  attempt = 0
-): Promise<ChunkData> {
-  try {
-    return await fetchChunk(year, event, session, chunkId, signal);
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    if (attempt >= MAX_RETRIES) throw err;
-    await sleep(RETRY_DELAYS[attempt] || 4000, signal);
-    return fetchChunkWithRetry(fetchChunk, year, event, session, chunkId, signal, attempt + 1);
+  signal?: AbortSignal
+) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fetchChunk(year, event, session, chunkId, signal);
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      if (attempt === MAX_RETRIES) throw err;
+      await sleep(RETRY_DELAYS[attempt] || 4000, signal);
+    }
   }
+  throw new Error('Unreachable');
 }
 
 function getChunkIndexForTime(manifest: ChunkManifest[], time: number) {
@@ -201,13 +202,11 @@ function pruneCachedChunks(
     seen.add(targetChunkId);
   }
 
-  const chunkIndexMap = new Map(manifest.map((chunk, i) => [chunk.id, i]));
-  const desiredChunkSet = new Set(desiredChunkIds);
   while (keepChunkIds.length > maxCachedChunks) {
     let removableIndex = -1;
     for (let index = keepChunkIds.length - 1; index >= 0; index--) {
-      const keepIndex = chunkIndexMap.get(keepChunkIds[index]);
-      if (keepIndex !== undefined && !desiredChunkSet.has(keepIndex)) {
+      const keepIndex = manifest.findIndex((chunk) => chunk.id === keepChunkIds[index]);
+      if (keepIndex !== -1 && !desiredChunkIds.includes(keepIndex)) {
         removableIndex = index;
         break;
       }
@@ -230,9 +229,9 @@ function mergeBufferedChunks<TMeta extends ChunkLoaderMetadata>(
   chunkIds: number[],
   chunksMap: Map<number, LoadedChunk>
 ): ChunkReplayData<TMeta> | null {
-  const sortedIds = manifest.flatMap((chunk) =>
-    chunkIds.includes(chunk.id) && chunksMap.has(chunk.id) ? [chunk.id] : []
-  );
+  const sortedIds = manifest
+    .map((chunk) => chunk.id)
+    .filter((id) => chunkIds.includes(id) && chunksMap.has(id));
   if (sortedIds.length === 0) return null;
 
   const timeParts: number[][] = [];
@@ -334,6 +333,8 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const desiredChunkIdsRef = useRef<number[]>([]);
   const backgroundChunkIdsRef = useRef<number[]>([]);
   const loadChunkRef = useRef<(chunkId: number) => Promise<void>>();
+  const lastMergedKeyRef = useRef('');
+  const lastMergedDataRef = useRef<ChunkReplayData<TMeta> | null>(null);
   const fetchChunk = options?.fetchChunk ?? fetchSessionReplayChunk;
   const keepAllChunks = options?.keepAllChunks ?? false;
   const maxCachedChunks = options?.maxCachedChunks ?? DEFAULT_MAX_CACHED_CHUNKS;
@@ -344,11 +345,22 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const updateStateFromBuffer = useCallback(() => {
     const meta = metadataRef.current;
     const manifest = meta?.chunk_manifest || [];
-    const mergedChunkIds = Array.from(chunksMapRef.current.keys()).toSorted((a, b) => a - b);
+    const mergedChunkIds = [...chunksMapRef.current.keys()].sort((a, b) => a - b);
     const currentChunkIndex = targetChunkIndexRef.current;
-    const replayData = meta
-      ? mergeBufferedChunks(meta, manifest, mergedChunkIds, chunksMapRef.current)
-      : null;
+
+    // Only re-merge if the set of loaded chunks actually changed
+    const mergeKey = mergedChunkIds.join(',');
+    let replayData: ChunkReplayData<TMeta> | null;
+    if (mergeKey === lastMergedKeyRef.current && lastMergedDataRef.current) {
+      replayData = lastMergedDataRef.current;
+    } else {
+      replayData = meta
+        ? mergeBufferedChunks(meta, manifest, mergedChunkIds, chunksMapRef.current)
+        : null;
+      lastMergedKeyRef.current = mergeKey;
+      lastMergedDataRef.current = replayData;
+    }
+
     const loadedDuration = getContiguousLoadedDuration(
       manifest,
       chunksMapRef.current,
@@ -453,6 +465,12 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
         if (gen !== generationRef.current) return;
         if (!signal?.aborted && !isAbortError(err)) {
           console.error(`Failed to load chunk ${chunkId}:`, err);
+          Sentry.addBreadcrumb({
+            category: 'replay.chunk',
+            message: `Chunk ${chunkId} failed to load`,
+            level: 'warning',
+            data: { chunkId, chunkIndex, error: String(err) },
+          });
           failedSetRef.current.add(chunkIndex);
           updateStateFromBuffer();
         }
@@ -639,6 +657,15 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
     [bufferHeadroomSeconds]
   );
 
+  const isFullyLoaded = useMemo(() => {
+    if (!metadata?.chunk_manifest || metadata.chunk_manifest.length === 0) return false;
+    if (state.loadedChunks.size < metadata.chunk_manifest.length) return false;
+    for (const chunk of metadata.chunk_manifest) {
+      if (!state.loadedChunks.has(chunk.id)) return false;
+    }
+    return true;
+  }, [metadata, state.loadedChunks]);
+
   return {
     replayData: state.replayData,
     loadedChunks: state.loadedChunks,
@@ -647,6 +674,6 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
     loadedDuration: state.loadedDuration,
     seekTo,
     checkBuffering,
-    isFullyLoaded: false,
+    isFullyLoaded,
   };
 }
