@@ -95,7 +95,7 @@ export const DriverPodium: React.FC<DriverPodiumProps> = ({ drivers, leaderLabel
             key={driver.code}
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: cfg.delay, duration: 0.5 }}
+            transition={{ delay: cfg.delay, duration: 0.25 }}
             className={cn('flex flex-col items-center', cfg.order, cfg.translateY)}
           >
             {/* Image — no visible container, just a clip mask */}

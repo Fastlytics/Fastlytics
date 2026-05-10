@@ -87,7 +87,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
     <m.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay ?? cfg.delay, duration: 0.5 }}
+      transition={{ delay: delay ?? cfg.delay, duration: 0.25 }}
       className={cfg.order}
     >
       <div

@@ -20,7 +20,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
       featureName="Position Tracking"
       description="Real-time position changes and overtaking opportunities throughout the race"
     >
-      <section id="positions" className="animate-in fade-in duration-500">
+      <section id="positions" className="animate-in fade-in duration-200">
         <PositionsTabContent
           year={year}
           event={eventName}

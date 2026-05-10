@@ -163,7 +163,7 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
         <TabsContent
           value="overview"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           <div className="h-[600px]">
             <PositionChart
@@ -178,7 +178,7 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
         <TabsContent
           value="analysis"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-6"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200 space-y-6"
         >
           <KeyMomentsHighlight lapData={lapPositionsData} />
           <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />

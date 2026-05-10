@@ -35,7 +35,7 @@ export const StandingsLayout: React.FC<StandingsLayoutProps> = ({
         <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.2 }}
         >
           <div className="mb-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
@@ -137,7 +137,7 @@ export const StandingsTableRow: React.FC<StandingsTableRowProps> = ({
   <m.div
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.4 }}
+    transition={{ delay, duration: 0.2 }}
     className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"
   >
     <span className="w-6 shrink-0 text-[15px] tabular-nums font-medium text-white/40">{rank}</span>

@@ -51,7 +51,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   return (
     <div
       className={cn(
-        'absolute bottom-0 left-0 right-0 z-40 transition-all duration-500',
+        'absolute bottom-0 left-0 right-0 z-40 transition-all duration-200',
         playbackState.hasStarted
           ? playbackState.isFullscreen
             ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto'
@@ -118,7 +118,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 onClick={onPlayPause}
                 className="flex items-center justify-center size-9 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
               >
-                {playbackState.playbackState.isPlaying ? (
+                {playbackState.isPlaying ? (
                   <Pause size={16} />
                 ) : (
                   <Play size={16} className="ml-0.5" />
@@ -166,12 +166,12 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 onClick={onToggleHeatmap}
                 className={cn(
                   'flex items-center justify-center size-8 rounded-lg border transition-all text-[11px]',
-                  playbackState.playbackState.playbackState.showSpeedHeatmap
+                  playbackState.showSpeedHeatmap
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                     : 'border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white'
                 )}
                 title={
-                  playbackState.playbackState.playbackState.showSpeedHeatmap
+                  playbackState.showSpeedHeatmap
                     ? 'Hide speed heatmap'
                     : 'Show speed heatmap (select a driver first)'
                 }

@@ -6,7 +6,7 @@ interface ReplayStartOverlayProps {
 
 const ReplayStartOverlay = ({ onStart }: ReplayStartOverlayProps) => {
   return (
-    <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-500">
+    <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-200">
       <button
         onClick={onStart}
         className="group relative flex items-center justify-center size-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"

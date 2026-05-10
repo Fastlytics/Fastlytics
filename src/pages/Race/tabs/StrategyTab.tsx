@@ -20,7 +20,7 @@ export const StrategyTab: React.FC<StrategyTabProps> = ({
       featureName="Tire Strategy"
       description="Advanced tire strategy analysis including pit stop patterns and compound selection strategies"
     >
-      <section id="strategy" className="animate-in fade-in duration-500 space-y-8">
+      <section id="strategy" className="animate-in fade-in duration-200 space-y-8">
         <TireStrategy
           year={year}
           event={eventName}

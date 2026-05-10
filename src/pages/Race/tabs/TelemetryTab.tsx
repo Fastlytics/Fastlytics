@@ -34,7 +34,7 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({
       featureName="Advanced Telemetry"
       description="Complete telemetry analysis with speed traces, throttle/brake patterns, RPM curves, gear selection, and DRS deployment strategies"
     >
-      <section id="telemetry" className="animate-in fade-in duration-500">
+      <section id="telemetry" className="animate-in fade-in duration-200">
         <div className="flex flex-col gap-y-12">
           <SpeedTraceChart
             year={year}

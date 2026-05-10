@@ -398,7 +398,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         chartRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('animate-in fade-in slide-in-from-bottom-2 duration-500', className)}
+      className={cn('animate-in fade-in slide-in-from-bottom-2 duration-200', className)}
     >
       <div className="mb-6 flex items-end justify-between">
         <div>

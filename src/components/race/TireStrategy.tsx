@@ -178,7 +178,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
 
         <TabsContent
           value="overview"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           <StrategyOverview
             isLoadingStrategy={isLoadingStrategy}
@@ -196,7 +196,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
         </TabsContent>
         <TabsContent
           value="analysis"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           <StintAnalysisTable
             year={year}

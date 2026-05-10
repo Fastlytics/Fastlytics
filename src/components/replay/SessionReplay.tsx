@@ -297,7 +297,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     for (const lap of metadata?.completed_laps || []) {
       if (lap.lap > 0) lapSet.add(lap.lap);
     }
-    return lapSet.toSorted((a, b) => a - b);
+    return [...lapSet].sort((a, b) => a - b);
   }, [metadata?.completed_laps, totalLaps]);
 
   const getSeekTimeForLap = useCallback(
@@ -330,27 +330,30 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
+  const currentTimeRef = useRef(currentTime);
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
 
   const animate = useCallback(
     function tick(time: number) {
       if (previousTimeRef.current !== null) {
         const deltaTime = (time - previousTimeRef.current) / 1000;
         if (isPlayingRef.current) {
-          setCurrentTime((prevTime) => {
-            const newTime = prevTime + deltaTime * playbackSpeed;
-            const playableTime = isFullyLoaded
-              ? activeTotalDuration
-              : Math.max(0, loadedDuration - 0.25);
-            if (newTime >= playableTime && playableTime < activeTotalDuration) {
-              setIsPlaying(false);
-              return playableTime;
-            }
-            if (newTime >= activeTotalDuration) {
-              setIsPlaying(false);
-              return activeTotalDuration;
-            }
-            return newTime;
-          });
+          const prevTime = currentTimeRef.current;
+          const newTime = prevTime + deltaTime * playbackSpeed;
+          const playableTime = isFullyLoaded
+            ? activeTotalDuration
+            : Math.max(0, loadedDuration - 0.25);
+          if (newTime >= playableTime && playableTime < activeTotalDuration) {
+            setIsPlaying(false);
+            setCurrentTime(playableTime);
+          } else if (newTime >= activeTotalDuration) {
+            setIsPlaying(false);
+            setCurrentTime(activeTotalDuration);
+          } else {
+            setCurrentTime(newTime);
+          }
         }
       }
       previousTimeRef.current = time;

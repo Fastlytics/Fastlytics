@@ -54,7 +54,7 @@ export const LapTimesTab: React.FC<LapTimesTabProps> = ({
     >
       <section
         id="laptimes"
-        className="animate-in fade-in duration-500 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6"
+        className="animate-in fade-in duration-200 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6"
       >
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -99,7 +99,7 @@ export const LapTimesTab: React.FC<LapTimesTabProps> = ({
 
           <TabsContent
             value="history"
-            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
             <RacingChart
               year={year}
@@ -114,7 +114,7 @@ export const LapTimesTab: React.FC<LapTimesTabProps> = ({
 
           <TabsContent
             value="pace"
-            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
             <PaceAnalysisChart
               year={year}
@@ -130,7 +130,7 @@ export const LapTimesTab: React.FC<LapTimesTabProps> = ({
 
           <TabsContent
             value="gap"
-            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
           >
             <GapToLeaderChart
               year={year}

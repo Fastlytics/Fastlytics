@@ -614,7 +614,7 @@ const RecentEventsSection = ({
             key={`${event.EventName}-${event.EventDate}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06, duration: 0.4 }}
+            transition={{ duration: 0.1 }}
             onClick={() => {
               trackEvent('widget_clicked', {
                 widget: isTestingMode ? 'recent_testing' : 'recent_races',

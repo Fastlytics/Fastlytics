@@ -153,7 +153,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   if (isError || !driverLapDetails) return null;
 
   return (
-    <div className="space-y-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
       {/* Weather Strip */}
       {weatherData && (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-t-xl border border-b-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-3">
@@ -217,7 +217,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
           return (
             <div
               key={drv}
-              className={`${drvIdx > 0 ? 'mt-4' : ''} animate-in fade-in slide-in-from-left-2 duration-500`}
+              className={`${drvIdx > 0 ? 'mt-4' : ''} animate-in fade-in slide-in-from-left-2 duration-200`}
               style={{ animationDelay: `${drvIdx * 150}ms` }}
             >
               <div className="mb-2 flex items-center gap-2.5">

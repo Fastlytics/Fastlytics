@@ -124,7 +124,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="group relative h-[400px] w-full rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 animate-in fade-in slide-in-from-bottom-2 duration-500"
+      className="group relative h-[400px] w-full rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 animate-in fade-in slide-in-from-bottom-2 duration-200"
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
