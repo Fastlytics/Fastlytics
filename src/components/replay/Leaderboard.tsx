@@ -150,20 +150,10 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
           return (
             <div
               key={driver.code}
-              role="button"
-              tabIndex={isOut ? -1 : 0}
               onClick={() => {
                 if (isOut) return;
                 onSelectDriver(driver.code === selectedDriver ? null : driver.code);
                 onFollow();
-              }}
-              onKeyDown={(e) => {
-                if (isOut) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectDriver(driver.code === selectedDriver ? null : driver.code);
-                  onFollow();
-                }
               }}
               className={cn(
                 'flex items-center gap-2.5 py-2 px-3 border-b border-white/[0.04] transition-colors cursor-pointer',
@@ -177,11 +167,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
               </span>
 
               {/* Driver Image */}
-              <div className="size-7 flex items-center justify-center bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.06] shrink-0">
+              <div className="w-7 h-7 flex items-center justify-center bg-white/[0.04] rounded-full overflow-hidden border border-white/[0.06] shrink-0">
                 <img
                   src={getDriverImage(driver.code, year)}
                   alt={driver.code}
-                  className="size-full object-cover object-top transform scale-110"
+                  className="w-full h-full object-cover object-top transform scale-110"
                   onError={(e) => {
                     const img = e.target as HTMLImageElement;
                     img.src = '/placeholder.svg';
@@ -192,7 +182,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
               {/* Team Color Dot */}
               <span
-                className="size-1.5 rounded-full shrink-0"
+                className="h-1.5 w-1.5 rounded-full shrink-0"
                 style={{ backgroundColor: driver.color || '#666' }}
               />
 
@@ -206,7 +196,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
                 <img
                   src={`/tyres/${tyreName}.png`}
                   alt="Tyre"
-                  className="size-3.5 object-contain opacity-80"
+                  className="h-3.5 w-3.5 object-contain opacity-80"
                 />
                 {age !== undefined && age > 0 && (
                   <span className="text-[9px] text-white font-normal tabular-nums">{age}</span>

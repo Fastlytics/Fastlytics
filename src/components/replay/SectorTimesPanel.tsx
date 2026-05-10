@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Timer, Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import WidgetShell from './WidgetShell';
 import { WidgetBounds, WidgetLayout } from '@/hooks/useReplayWidgets';
@@ -147,7 +147,6 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
   return (
     <WidgetShell
       title={`Sectors — ${selectedDriver}`}
-      icon={<Timer size={12} className="text-white/85" />}
       layout={layout}
       bounds={bounds}
       onUpdateLayout={onUpdateLayout}

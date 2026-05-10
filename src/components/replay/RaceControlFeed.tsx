@@ -79,7 +79,6 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
   return (
     <WidgetShell
       title="Race Control"
-      icon={<Flag size={12} className="text-white/60" />}
       layout={layout}
       bounds={bounds}
       onUpdateLayout={onUpdateLayout}
@@ -93,7 +92,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
 
           return (
             <button
-              key={`${msg.time}-${msg.message}`}
+              key={`${msg.time}-${msg.message}-${index}`}
               onClick={() => onSeek(msg.time)}
               className={cn(
                 'w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-all',
@@ -105,7 +104,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
             >
               <div
                 className={cn(
-                  'shrink-0 size-6 rounded-md flex items-center justify-center mt-0.5',
+                  'shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5',
                   'bg-black/20'
                 )}
               >

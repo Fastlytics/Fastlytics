@@ -1,4 +1,3 @@
-// knip-ignore
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DriverFrameState } from '@/components/replay/replay-utils';
 
@@ -83,6 +82,7 @@ export function useCamera(
     if (!container) return;
 
     const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
       const scaleSensitivity = 0.001;
       const delta = -e.deltaY * scaleSensitivity;
 
@@ -105,49 +105,98 @@ export function useCamera(
       });
     };
 
-    container.style.touchAction = 'none';
-    container.addEventListener('wheel', onWheel, { passive: true });
-    return () => {
-      container.style.touchAction = '';
-      container.removeEventListener('wheel', onWheel);
-    };
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
   }, [containerRef, isLoading, isFollowing]);
 
+  // Store activeDrivers in a ref to avoid triggering the follow effect on every frame
+  const activeDriversRef = useRef(activeDrivers);
   useEffect(() => {
-    if (!isFollowing || !containerRef.current || Object.keys(activeDrivers).length === 0) return;
+    activeDriversRef.current = activeDrivers;
+  });
 
-    const container = containerRef.current;
-    const { width, height } = container.getBoundingClientRect();
+  // Follow camera: only follows when a driver is explicitly selected.
+  // Uses requestAnimationFrame loop with smoothing to prevent shaking.
+  const followRafRef = useRef<number | null>(null);
+  const smoothXRef = useRef<number | null>(null);
+  const smoothYRef = useRef<number | null>(null);
 
-    let targetCode = selectedDriverRef.current;
-    if (!targetCode && leaderboardOrderRef.current.length > 0) {
-      targetCode = leaderboardOrderRef.current[0];
+  useEffect(() => {
+    if (!isFollowing) {
+      if (followRafRef.current) {
+        cancelAnimationFrame(followRafRef.current);
+        followRafRef.current = null;
+      }
+      smoothXRef.current = null;
+      smoothYRef.current = null;
+      return;
     }
 
-    if (!targetCode) return;
+    function updateFollow() {
+      const container = containerRef.current;
+      const drivers = activeDriversRef.current;
+      if (!container || Object.keys(drivers).length === 0) {
+        followRafRef.current = requestAnimationFrame(updateFollow);
+        return;
+      }
 
-    const driver = activeDrivers[targetCode];
-    if (!driver) return;
+      // Only follow if a driver is explicitly selected — don't auto-follow leader
+      const targetCode = selectedDriverRef.current;
+      if (!targetCode) {
+        followRafRef.current = requestAnimationFrame(updateFollow);
+        return;
+      }
 
-    const VIEWBOX_WIDTH = 1000;
-    const VIEWBOX_HEIGHT = 500;
-    const scaleX = width / VIEWBOX_WIDTH;
-    const scaleY = height / VIEWBOX_HEIGHT;
-    const fitScale = Math.min(scaleX, scaleY);
-    const offsetX = (width - VIEWBOX_WIDTH * fitScale) / 2;
-    const offsetY = (height - VIEWBOX_HEIGHT * fitScale) / 2;
+      const driver = drivers[targetCode];
+      if (!driver) {
+        followRafRef.current = requestAnimationFrame(updateFollow);
+        return;
+      }
 
-    setViewState((prev) => {
-      const visualDriverX = offsetX + driver.x * fitScale;
-      const visualDriverY = offsetY + driver.y * fitScale;
-      const leaderboardOffset = window.innerWidth >= 768 ? 256 : 0;
-      const centerX = (width - leaderboardOffset) / 2;
-      const centerY = height / 2;
-      const newX = centerX - visualDriverX * prev.scale;
-      const newY = centerY - visualDriverY * prev.scale;
-      return { ...prev, x: newX, y: newY };
-    });
-  }, [isFollowing, activeDrivers, selectedDriver, leaderboardOrder, containerRef]);
+      const { width, height } = container.getBoundingClientRect();
+      const VIEWBOX_WIDTH = 1000;
+      const VIEWBOX_HEIGHT = 500;
+      const scaleX = width / VIEWBOX_WIDTH;
+      const scaleY = height / VIEWBOX_HEIGHT;
+      const fitScale = Math.min(scaleX, scaleY);
+      const offsetX = (width - VIEWBOX_WIDTH * fitScale) / 2;
+      const offsetY = (height - VIEWBOX_HEIGHT * fitScale) / 2;
+
+      setViewState((prev) => {
+        const visualDriverX = offsetX + driver.x * fitScale;
+        const visualDriverY = offsetY + driver.y * fitScale;
+        const leaderboardOffset = window.innerWidth >= 768 ? 256 : 0;
+        const centerX = (width - leaderboardOffset) / 2;
+        const centerY = height / 2;
+        const targetX = centerX - visualDriverX * prev.scale;
+        const targetY = centerY - visualDriverY * prev.scale;
+
+        // Smooth interpolation to prevent shaking (lerp factor 0.08 = gentle follow)
+        const LERP = 0.08;
+        const prevSmX = smoothXRef.current ?? targetX;
+        const prevSmY = smoothYRef.current ?? targetY;
+        const newX = prevSmX + (targetX - prevSmX) * LERP;
+        const newY = prevSmY + (targetY - prevSmY) * LERP;
+
+        smoothXRef.current = newX;
+        smoothYRef.current = newY;
+
+        // Only commit state update if the smoothed position moved enough (> 0.5px)
+        if (Math.abs(newX - prev.x) < 0.5 && Math.abs(newY - prev.y) < 0.5) return prev;
+        return { ...prev, x: newX, y: newY };
+      });
+
+      followRafRef.current = requestAnimationFrame(updateFollow);
+    }
+
+    followRafRef.current = requestAnimationFrame(updateFollow);
+    return () => {
+      if (followRafRef.current) {
+        cancelAnimationFrame(followRafRef.current);
+        followRafRef.current = null;
+      }
+    };
+  }, [isFollowing, containerRef]);
 
   const follow = useCallback(() => {
     setIsFollowing(true);

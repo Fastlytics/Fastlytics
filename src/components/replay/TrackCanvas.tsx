@@ -49,14 +49,14 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
   return (
     <div
-      className="size-full origin-top-left will-change-transform"
+      className="w-full h-full origin-top-left will-change-transform"
       style={{
         transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
       }}
     >
       <svg
         viewBox="0 0 1000 500"
-        className="size-full pointer-events-none"
+        className="w-full h-full pointer-events-none"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Track */}
@@ -67,7 +67,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
           strokeWidth="12"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="transition-colors duration-200 ease-in-out"
+          className="transition-colors duration-500 ease-in-out"
         />
         <path
           d={circuitLayout}
@@ -82,9 +82,9 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
         {/* Heatmap */}
         {showHeatmap &&
-          heatmapSegments.map((seg) => (
+          heatmapSegments.map((seg, idx) => (
             <path
-              key={`hm-${seg.path.substring(0, 12)}`}
+              key={`hm-${idx}`}
               d={seg.path}
               fill="none"
               stroke={seg.color}
@@ -142,9 +142,9 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
         {/* Trails */}
         {Object.entries(driverTrails).map(([code, trail]) =>
-          trail.map((pt) => (
+          trail.map((pt, idx) => (
             <circle
-              key={`tr-${code}-${pt.x}-${pt.y}`}
+              key={`t-${code}-${idx}`}
               cx={pt.x}
               cy={pt.y}
               r={2}
