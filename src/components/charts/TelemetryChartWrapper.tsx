@@ -204,7 +204,7 @@ const TelemetryChartWrapper = <T,>({
         exportRef.current = el;
       }}
       className={cn(
-        'bg-[#0c0c0e] border border-white/[0.06] rounded-xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500',
+        'bg-[#0c0c0e] border border-white/[0.06] rounded-xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-200',
         className
       )}
       style={inter}

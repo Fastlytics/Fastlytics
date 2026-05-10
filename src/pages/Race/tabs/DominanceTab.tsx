@@ -57,7 +57,7 @@ export const DominanceTab: React.FC<DominanceTabProps> = ({
       featureName="Head to Head Analysis"
       description="Driver comparison and dominance analysis with detailed telemetry overlays including speed, throttle, brake, and DRS patterns"
     >
-      <section id="dominance" className="animate-in fade-in duration-500">
+      <section id="dominance" className="animate-in fade-in duration-200">
         <div className="space-y-6">
           <CircuitComparisonChart
             year={year}

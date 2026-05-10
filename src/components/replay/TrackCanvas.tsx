@@ -67,7 +67,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
           strokeWidth="12"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="transition-colors duration-500 ease-in-out"
+          className="transition-colors duration-200 ease-in-out"
         />
         <path
           d={circuitLayout}

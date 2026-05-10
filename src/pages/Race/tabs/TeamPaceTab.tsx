@@ -14,7 +14,7 @@ export const TeamPaceTab: React.FC<TeamPaceTabProps> = ({ year, eventName, analy
       featureName="Team Pace Analysis"
       description="Team-level pace breakdown by tyre compound and sector, with individual driver analysis"
     >
-      <section id="teampace" className="animate-in fade-in duration-500">
+      <section id="teampace" className="animate-in fade-in duration-200">
         <TeamPaceBreakdown year={year} event={eventName} session={analysisSession} />
       </section>
     </GatedRoute>

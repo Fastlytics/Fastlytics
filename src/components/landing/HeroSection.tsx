@@ -79,6 +79,10 @@ export default function HeroSection() {
   } = useLandingHeroSource(playbackTime);
   const cacheKey = selectedCache ? pickLandingReplayKey(selectedCache) : '';
   const cacheKeyRef = useRef(cacheKey);
+  const playbackTimeRef = useRef(playbackTime);
+  useEffect(() => {
+    playbackTimeRef.current = playbackTime;
+  });
   const compactHeroWindowRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<number | null>(null);
   const isHeroExpanded = heroModalPhase !== 'closed';
@@ -114,7 +118,7 @@ export default function HeroSection() {
     if (!chunk || chunk.time.length <= 1 || playbackEndTime <= playbackStartTime) return;
 
     const intervalId = window.setInterval(() => {
-      const baseTime = playbackTime < playbackStartTime ? playbackStartTime : playbackTime;
+      const baseTime = Math.max(playbackTimeRef.current, playbackStartTime);
       const next = baseTime + 1 / 25;
       const totalEnd = playbackEndTime;
       const hasFullTail = loadedDuration >= totalEnd;
