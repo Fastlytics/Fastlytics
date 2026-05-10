@@ -1,5 +1,7 @@
 // knip-ignore
 import React, { useMemo } from 'react';
+
+const STRATEGY_SKELETONS = Array.from({ length: 8 }, (_, i) => `ss-${i}`);
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -130,8 +132,8 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     if (isLoadingStrategy) {
       return (
         <div className="space-y-3 pt-4 animate-pulse">
-          {[...Array(8)].map((_, i) => (
-            <div key={`skeleton-${i}`} className="flex items-center gap-4">
+          {STRATEGY_SKELETONS.map((id) => (
+            <div key={id} className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-1">
                 <div className="size-11 rounded-full bg-white/[0.03]" />
                 <div className="h-3 w-16 rounded bg-white/[0.03]" />

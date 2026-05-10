@@ -104,7 +104,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
               {/* Gear Segments */}
               {data.segments.map((segment, index) => (
                 <path
-                  key={`segment-${segment.gear}-${index}`}
+                  key={`seg-${segment.gear}-${segment.path.substring(0, 8)}`}
                   d={segment.path}
                   fill="none"
                   stroke={getGearColor(segment.gear)}

@@ -113,38 +113,6 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
     })
     .sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
 
-  const renderPlacesChanged = (change: number | null, gridPos: number | undefined) => {
-    if (gridPos === 0) return <span className="text-white text-xs italic">PIT</span>;
-    if (change === null || change === 0) {
-      return (
-        <span
-          className="text-white flex items-center justify-center"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <MinusSignIcon className="size-3 mr-1 opacity-50" /> 0
-        </span>
-      );
-    } else if (change > 0) {
-      return (
-        <span
-          className="text-emerald-400 flex items-center justify-center font-bold"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowUp01Icon className="size-3 mr-1" /> +{change}
-        </span>
-      );
-    } else {
-      return (
-        <span
-          className="text-red-400 flex items-center justify-center font-bold"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowDown01Icon className="size-3 mr-1" /> {change}
-        </span>
-      );
-    }
-  };
-
   return (
     <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
       <div className="border-b border-white/[0.04] px-5 py-4">
@@ -226,7 +194,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
                   </span>
                 </TableCell>
                 <TableCell className="text-center text-[12px]">
-                  {renderPlacesChanged(res.placesChanged, res.gridPosition)}
+                  <PlacesChanged change={res.placesChanged} gridPos={res.gridPosition} />
                 </TableCell>
                 <TableCell className="text-right text-[13px] text-white">
                   {formatRaceTime(res.time, res.position === 1)}
@@ -244,6 +212,44 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
       </div>
     </div>
   );
+};
+
+const PlacesChanged = ({
+  change,
+  gridPos,
+}: {
+  change: number | null;
+  gridPos: number | undefined;
+}) => {
+  if (gridPos === 0) return <span className="text-white text-xs italic">PIT</span>;
+  if (change === null || change === 0) {
+    return (
+      <span
+        className="text-white flex items-center justify-center"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <MinusSignIcon className="size-3 mr-1 opacity-50" /> 0
+      </span>
+    );
+  } else if (change > 0) {
+    return (
+      <span
+        className="text-emerald-400 flex items-center justify-center font-bold"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <ArrowUp01Icon className="size-3 mr-1" /> +{change}
+      </span>
+    );
+  } else {
+    return (
+      <span
+        className="text-red-400 flex items-center justify-center font-bold"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <ArrowDown01Icon className="size-3 mr-1" /> {change}
+      </span>
+    );
+  }
 };
 
 export { PositionsSummaryTable };

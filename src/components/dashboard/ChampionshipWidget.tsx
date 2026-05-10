@@ -1,6 +1,8 @@
 // knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
+
+const WIDGET_SKELETONS = ['ws-0', 'ws-1'];
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -57,9 +59,9 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   if (isLoading) {
     return (
       <div style={inter} className="grid gap-6 md:grid-cols-2">
-        {[0, 1].map((i) => (
+        {WIDGET_SKELETONS.map((id) => (
           <div
-            key={`skeleton-${i}`}
+            key={id}
             className="h-80 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
           />
         ))}

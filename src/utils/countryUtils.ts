@@ -63,9 +63,10 @@ export const getCountryCode = (location: string | undefined): string => {
     Suzuka: 'jp',
     'Mexico City': 'mx',
   };
-  for (const [country, code] of Object.entries(countryMap)) {
-    if (cleanLocation.includes(country)) return code.toLowerCase();
-  }
+  const countryEntry = Object.entries(countryMap).find(([country]) =>
+    cleanLocation.includes(country)
+  );
+  if (countryEntry) return countryEntry[1].toLowerCase();
   return 'xx';
 };
 

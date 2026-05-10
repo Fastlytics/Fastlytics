@@ -31,10 +31,10 @@ const SeasonContext = createContext<SeasonContextType | undefined>(undefined);
 
 export const SeasonProvider = ({ children }: { children: ReactNode }) => {
   const [selectedYear, setSelectedYearState] = useState<number>(defaultAvailableYears[0]);
-  const [hasUserSelectedYear, setHasUserSelectedYear] = useState(false);
+  const hasUserSelectedYearRef = useRef(false);
 
   const setSelectedYear = useCallback((year: number) => {
-    setHasUserSelectedYear(true);
+    hasUserSelectedYearRef.current = true;
     setSelectedYearState(year);
   }, []);
 
@@ -72,14 +72,14 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
 
     if (!availableYears.includes(selectedYear)) {
       timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-    } else if (!hasUserSelectedYear && selectedYear !== availableYears[0]) {
+    } else if (!hasUserSelectedYearRef.current && selectedYear !== availableYears[0]) {
       timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [availableYears, selectedYear, hasUserSelectedYear]);
+  }, [availableYears, selectedYear]);
 
   const value = useMemo(
     () => ({

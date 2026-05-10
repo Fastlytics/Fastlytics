@@ -110,15 +110,17 @@ const LogoCard = ({
 };
 
 const PressKit = () => {
-  const [copiedFile, setCopiedFile] = React.useState<string | null>(null);
+  const copiedFileRef = React.useRef<string | null>(null);
 
   const handleCopy = async (filename: string) => {
     try {
       const res = await fetch(`/brand/${filename}`);
       const svgText = await res.text();
       await navigator.clipboard.writeText(svgText);
-      setCopiedFile(filename);
-      setTimeout(() => setCopiedFile(null), 2000);
+      copiedFileRef.current = filename;
+      setTimeout(() => {
+        copiedFileRef.current = null;
+      }, 2000);
     } catch {
       window.open(`/brand/${filename}`, '_blank');
     }

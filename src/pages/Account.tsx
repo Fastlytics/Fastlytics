@@ -708,13 +708,8 @@ const Account = () => {
                           <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
                             Renews / Expires
                           </p>
-                          <p
-                            suppressHydrationWarning
-                            className="mt-2 text-[18px] font-bold text-white"
-                          >
-                            {subscription.current_period_end
-                              ? new Date(subscription.current_period_end).toLocaleDateString()
-                              : 'Active'}
+                          <p className="mt-2 text-[18px] font-bold text-white">
+                            <DateDisplay date={subscription.current_period_end} />
                           </p>
                         </div>
                       </div>
@@ -954,6 +949,11 @@ const Account = () => {
       />
     </div>
   );
+};
+
+const DateDisplay = ({ date }: { date: string | undefined }) => {
+  const [formatted] = React.useState(() => (date ? new Date(date).toLocaleDateString() : 'Active'));
+  return <>{formatted}</>;
 };
 
 export default Account;

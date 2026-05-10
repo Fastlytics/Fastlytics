@@ -1,5 +1,7 @@
 // knip-ignore
 import React from 'react';
+
+const SKELETON_IDS = ['sk-0', 'sk-1'];
 import { m } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
@@ -40,9 +42,9 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   if (isLoading) {
     return (
       <div style={inter} className="grid gap-6 lg:grid-cols-2 mb-8">
-        {[0, 1].map((i) => (
+        {SKELETON_IDS.map((id) => (
           <div
-            key={`skeleton-${i}`}
+            key={id}
             className="h-56 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
           />
         ))}

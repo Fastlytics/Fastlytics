@@ -93,7 +93,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
 
           return (
             <button
-              key={`${msg.time}-${msg.message}-${index}`}
+              key={`${msg.time}-${msg.message}`}
               onClick={() => onSeek(msg.time)}
               className={cn(
                 'w-full text-left flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-all',
