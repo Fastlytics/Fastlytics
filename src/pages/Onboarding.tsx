@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,6 @@ import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getTeamLogo } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileOnboarding } from '@/components/mobile';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons';
 import { SEO } from '@/components/layout/SEO';
@@ -22,7 +20,6 @@ import { getDriverImage } from '@/utils/imageMapping';
 const Onboarding = () => {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { trackEvent, trackSelection } = useAnalytics();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,22 +108,8 @@ const Onboarding = () => {
     }),
   };
 
-  // Mobile Onboarding
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Welcome"
-          description="Set up your Fastlytics profile with favorite drivers and teams for a personalized race desk."
-          noIndex
-        />
-        <MobileOnboarding />
-      </>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-4 overflow-hidden relative">
       <SEO
         title="Welcome"
         description="Set up your Fastlytics profile with favorite drivers and teams for a personalized race desk."
@@ -134,8 +117,8 @@ const Onboarding = () => {
       />
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-red-600/20 blur-[150px] rounded-full" />
-        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] bg-blue-600/10 blur-[150px] rounded-full" />
+        <div className="absolute -top-[20%] -left-[10%] size-[50%] bg-red-600/20 blur-[150px] rounded-full" />
+        <div className="absolute top-[40%] -right-[10%] size-[40%] bg-blue-600/10 blur-[150px] rounded-full" />
       </div>
 
       <div className="w-full max-w-6xl z-10">
@@ -148,7 +131,7 @@ const Onboarding = () => {
             <span className={step >= 4 ? 'text-white' : ''}>Socials</span>
           </div>
           <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
-            <motion.div
+            <m.div
               className="h-full bg-red-600"
               initial={{ width: '0%' }}
               animate={{ width: `${(step / 4) * 100}%` }}
@@ -159,7 +142,7 @@ const Onboarding = () => {
 
         <AnimatePresence mode="wait">
           {step === 1 && (
-            <motion.div
+            <m.div
               key="step1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -167,7 +150,7 @@ const Onboarding = () => {
               className="text-center space-y-8"
             >
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
+                <h1 className="text-5xl md:text-7xl font-semibold uppercase italic tracking-tighter">
                   Welcome to <span className="text-red-600">Fastlytics</span>
                 </h1>
                 <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
@@ -179,13 +162,13 @@ const Onboarding = () => {
                 onClick={handleNext}
                 className="h-14 px-8 text-lg bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider rounded-none"
               >
-                Get Started <ArrowRight01Icon className="ml-2 w-5 h-5" />
+                Get Started <ArrowRight01Icon className="ml-2 size-5" />
               </Button>
-            </motion.div>
+            </m.div>
           )}
 
           {step === 2 && (
-            <motion.div
+            <m.div
               key="step2"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -193,7 +176,7 @@ const Onboarding = () => {
               className="space-y-8"
             >
               <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter">
+                <h2 className="text-3xl font-semibold uppercase italic tracking-tighter">
                   Select Favorite Driver
                 </h2>
                 <p className="text-zinc-400">Who are you rooting for this season?</p>
@@ -216,7 +199,7 @@ const Onboarding = () => {
                                             }
                                         `}
                   >
-                    <Avatar className="h-24 w-24 mb-4 border-2 border-zinc-800">
+                    <Avatar className="size-24 mb-4 border-2 border-zinc-800">
                       <AvatarImage
                         src={getDriverImageForYear(driver.code)}
                         className="object-cover object-top bg-zinc-800"
@@ -233,7 +216,7 @@ const Onboarding = () => {
 
                     {selectedDriver === driver.code && (
                       <div className="absolute top-2 right-2 text-red-600">
-                        <CheckmarkCircle01Icon className="w-5 h-5" />
+                        <CheckmarkCircle01Icon className="size-5" />
                       </div>
                     )}
                   </button>
@@ -246,21 +229,21 @@ const Onboarding = () => {
                   onClick={handleBack}
                   className="text-zinc-400 hover:text-white"
                 >
-                  <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
+                  <ArrowLeft01Icon className="mr-2 size-4" /> Back
                 </Button>
                 <Button
                   onClick={handleNext}
                   disabled={!selectedDriver}
                   className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider rounded-none disabled:opacity-50"
                 >
-                  Next Step <ArrowRight01Icon className="ml-2 w-4 h-4" />
+                  Next Step <ArrowRight01Icon className="ml-2 size-4" />
                 </Button>
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {step === 3 && (
-            <motion.div
+            <m.div
               key="step3"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -268,7 +251,7 @@ const Onboarding = () => {
               className="space-y-8"
             >
               <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter">
+                <h2 className="text-3xl font-semibold uppercase italic tracking-tighter">
                   Select Favorite Team
                 </h2>
                 <p className="text-zinc-400">Which constructor has your allegiance?</p>
@@ -291,11 +274,11 @@ const Onboarding = () => {
                                             }
                                         `}
                   >
-                    <div className="w-16 h-16 flex-shrink-0 bg-white/5 rounded-lg p-2 flex items-center justify-center">
+                    <div className="size-16 flex-shrink-0 bg-white/5 rounded-lg p-2 flex items-center justify-center">
                       <img
                         src={getTeamLogo(team.team) || ''}
                         alt={team.team}
-                        className="w-full h-full object-contain"
+                        className="size-full object-contain"
                       />
                     </div>
                     <div>
@@ -311,7 +294,7 @@ const Onboarding = () => {
 
                     {selectedTeam === team.team && (
                       <div className="absolute top-4 right-4 text-red-600">
-                        <CheckmarkCircle01Icon className="w-6 h-6" />
+                        <CheckmarkCircle01Icon className="size-6" />
                       </div>
                     )}
                   </button>
@@ -324,21 +307,21 @@ const Onboarding = () => {
                   onClick={handleBack}
                   className="text-zinc-400 hover:text-white"
                 >
-                  <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
+                  <ArrowLeft01Icon className="mr-2 size-4" /> Back
                 </Button>
                 <Button
                   onClick={handleNext}
                   disabled={!selectedTeam}
                   className="bg-white text-black hover:bg-zinc-200 font-bold uppercase tracking-wider rounded-none disabled:opacity-50"
                 >
-                  Next Step <ArrowRight01Icon className="ml-2 w-4 h-4" />
+                  Next Step <ArrowRight01Icon className="ml-2 size-4" />
                 </Button>
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {step === 4 && (
-            <motion.div
+            <m.div
               key="step5"
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -346,7 +329,7 @@ const Onboarding = () => {
               className="space-y-8"
             >
               <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter">
+                <h2 className="text-3xl font-semibold uppercase italic tracking-tighter">
                   Stay Updated
                 </h2>
                 <p className="text-zinc-400">Follow us on social media for the latest updates.</p>
@@ -359,14 +342,14 @@ const Onboarding = () => {
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 p-6 border-2 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900 hover:border-white transition-all w-full max-w-md group"
                 >
-                  <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-                    <FontAwesomeIcon icon={faXTwitter} className="w-6 h-6" />
+                  <div className="size-12 bg-zinc-950 rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                    <FontAwesomeIcon icon={faXTwitter} className="size-6" />
                   </div>
                   <div className="flex-1">
                     <div className="text-xl font-black uppercase italic">X (Twitter)</div>
                     <div className="text-zinc-500 text-sm">@fastlytics</div>
                   </div>
-                  <ArrowRight01Icon className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                  <ArrowRight01Icon className="size-6 text-zinc-500 group-hover:text-white" />
                 </a>
 
                 <a
@@ -375,14 +358,14 @@ const Onboarding = () => {
                   rel="noopener noreferrer"
                   className="flex items-center gap-4 p-6 border-2 border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900 hover:border-white transition-all w-full max-w-md group"
                 >
-                  <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-                    <FontAwesomeIcon icon={faInstagram} className="w-6 h-6" />
+                  <div className="size-12 bg-zinc-950 rounded-lg flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                    <FontAwesomeIcon icon={faInstagram} className="size-6" />
                   </div>
                   <div className="flex-1">
                     <div className="text-xl font-black uppercase italic">Instagram</div>
                     <div className="text-zinc-500 text-sm">@fastlytics</div>
                   </div>
-                  <ArrowRight01Icon className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                  <ArrowRight01Icon className="size-6 text-zinc-500 group-hover:text-white" />
                 </a>
               </div>
 
@@ -392,7 +375,7 @@ const Onboarding = () => {
                   onClick={handleBack}
                   className="text-zinc-400 hover:text-white"
                 >
-                  <ArrowLeft01Icon className="mr-2 w-4 h-4" /> Back
+                  <ArrowLeft01Icon className="mr-2 size-4" /> Back
                 </Button>
                 <Button
                   onClick={handleComplete}
@@ -402,7 +385,7 @@ const Onboarding = () => {
                   {isLoading ? 'Saving...' : 'Finish Setup'}
                 </Button>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>
@@ -410,5 +393,4 @@ const Onboarding = () => {
   );
 };
 
-export { Onboarding };
 export default Onboarding;

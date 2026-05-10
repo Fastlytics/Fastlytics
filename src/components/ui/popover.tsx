@@ -7,12 +7,19 @@ const Popover = PopoverPrimitive.Root;
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
-const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
-    container?: HTMLElement | null;
-  }
->(({ className, align = 'center', sideOffset = 4, container, ...props }, ref) => (
+type PopoverContentProps = React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
+  container?: HTMLElement | null;
+  ref?: React.ComponentPropsWithRef<typeof PopoverPrimitive.Content>['ref'];
+};
+
+const PopoverContent = ({
+  className,
+  align = 'center',
+  sideOffset = 4,
+  container,
+  ref,
+  ...props
+}: PopoverContentProps) => (
   <PopoverPrimitive.Portal container={container}>
     <PopoverPrimitive.Content
       ref={ref}
@@ -25,7 +32,7 @@ const PopoverContent = React.forwardRef<
       {...props}
     />
   </PopoverPrimitive.Portal>
-));
+);
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 export { Popover, PopoverTrigger, PopoverContent };

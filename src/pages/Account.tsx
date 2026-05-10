@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,6 @@ import { getTeamLogo } from '@/lib/teamUtils';
 import { StarIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileAccount } from '@/components/mobile';
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { SEO } from '@/components/layout/SEO';
@@ -58,7 +56,7 @@ const NavItem = ({
         : 'text-white/45 hover:text-white hover:bg-white/[0.03] border border-transparent'
     )}
   >
-    <Icon className={cn('h-4 w-4', active ? 'text-red-400' : 'text-white/30')} />
+    <Icon className={cn('size-4', active ? 'text-red-400' : 'text-white/30')} />
     {label}
   </button>
 );
@@ -67,7 +65,6 @@ const Account = () => {
   const { user, profile, refreshProfile, signOut, subscription, isSubscribed } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isMobile = useIsMobile();
   const { trackEvent } = useAnalytics();
   const initialSection = searchParams.get('section');
   const [activeSection, setActiveSection] = useState(
@@ -301,18 +298,6 @@ const Account = () => {
   };
 
   if (!user) return null;
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Account"
-          description="Manage your Fastlytics account, profile, favorites, and preferences."
-          noIndex
-        />
-        <MobileAccount />
-      </>
-    );
-  }
 
   return (
     <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
@@ -326,14 +311,14 @@ const Account = () => {
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+                <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
                   My Account
                 </h1>
                 <p className="mt-1 text-[15px] text-white/50">
@@ -344,10 +329,10 @@ const Account = () => {
                 onClick={handleSignOut}
                 className="h-10 rounded-xl border border-red-500/20 bg-red-500/[0.07] px-5 text-[13px] font-semibold text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/[0.12] hover:text-red-300"
               >
-                <Logout01Icon className="mr-2 h-4 w-4" /> Sign Out
+                <Logout01Icon className="mr-2 size-4" /> Sign Out
               </Button>
             </div>
-          </motion.div>
+          </m.div>
           <div className="mt-8 h-px w-full bg-white/[0.05]" />
         </div>
 
@@ -392,7 +377,7 @@ const Account = () => {
           <div className="min-h-[500px] flex-1">
             {/* Profile */}
             {activeSection === 'profile' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -404,14 +389,14 @@ const Account = () => {
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
                   <div className="mb-8 flex items-center gap-5">
-                    <Avatar className="h-20 w-20 border border-white/[0.08]">
+                    <Avatar className="size-20 border border-white/[0.08]">
                       <AvatarImage src={user.user_metadata?.avatar_url} />
                       <AvatarFallback className="bg-[#1a1a1e] text-[18px] font-bold text-white/70">
                         {user.email?.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="text-[18px] font-bold text-white">
+                      <h3 className="text-[18px] font-semibold text-white">
                         {user.user_metadata?.full_name || 'User'}
                       </h3>
                       <p className="text-[14px] text-white/40">{user.email}</p>
@@ -437,18 +422,18 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('fullName')}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                              className="size-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-4 h-4" />
+                              <Tick02Icon className="size-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-4 h-4" />
+                              <Cancel01Icon className="size-4" />
                             </Button>
                           </>
                         ) : (
@@ -460,9 +445,9 @@ const Account = () => {
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('fullName')}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-4 h-4" />
+                              <PencilEdit02Icon className="size-4" />
                             </Button>
                           </>
                         )}
@@ -488,18 +473,18 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('username')}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                              className="size-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-4 h-4" />
+                              <Tick02Icon className="size-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-4 h-4" />
+                              <Cancel01Icon className="size-4" />
                             </Button>
                           </>
                         ) : (
@@ -511,9 +496,9 @@ const Account = () => {
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('username')}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-4 h-4" />
+                              <PencilEdit02Icon className="size-4" />
                             </Button>
                           </>
                         )}
@@ -539,18 +524,18 @@ const Account = () => {
                               variant="ghost"
                               onClick={() => handleSaveField('email')}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                              className="size-10 shrink-0 rounded-xl text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                             >
-                              <Tick02Icon className="w-4 h-4" />
+                              <Tick02Icon className="size-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
                               onClick={cancelEdit}
                               disabled={isLoading}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <Cancel01Icon className="w-4 h-4" />
+                              <Cancel01Icon className="size-4" />
                             </Button>
                           </>
                         ) : (
@@ -562,9 +547,9 @@ const Account = () => {
                               size="icon"
                               variant="ghost"
                               onClick={() => setEditingField('email')}
-                              className="h-10 w-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
+                              className="size-10 shrink-0 rounded-xl text-white/30 hover:bg-white/[0.06] hover:text-white/60"
                             >
-                              <PencilEdit02Icon className="w-4 h-4" />
+                              <PencilEdit02Icon className="size-4" />
                             </Button>
                           </>
                         )}
@@ -572,12 +557,12 @@ const Account = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Favorites */}
             {activeSection === 'favorites' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -609,7 +594,7 @@ const Account = () => {
                                 : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
                             )}
                           >
-                            <Avatar className="h-9 w-9 shrink-0 border border-white/[0.08]">
+                            <Avatar className="size-9 shrink-0 border border-white/[0.08]">
                               <AvatarImage
                                 src={getDriverImageForYear(driver.code)}
                                 className="object-cover object-top"
@@ -634,7 +619,7 @@ const Account = () => {
                               </div>
                             </div>
                             {favoriteDriver === driver.code && (
-                              <CheckmarkCircle01Icon className="h-4 w-4 shrink-0 text-red-400" />
+                              <CheckmarkCircle01Icon className="size-4 shrink-0 text-red-400" />
                             )}
                           </button>
                         ))}
@@ -662,14 +647,14 @@ const Account = () => {
                               <img
                                 src={getTeamLogo(team.team) || ''}
                                 alt={team.team}
-                                className="h-full w-full object-contain"
+                                className="size-full object-contain"
                               />
                             </div>
                             <span className="flex-1 truncate text-[14px] font-semibold">
                               {team.team}
                             </span>
                             {favoriteTeam === team.team && (
-                              <CheckmarkCircle01Icon className="h-4 w-4 shrink-0 text-red-400" />
+                              <CheckmarkCircle01Icon className="size-4 shrink-0 text-red-400" />
                             )}
                           </button>
                         ))}
@@ -687,11 +672,11 @@ const Account = () => {
                     </Button>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {activeSection === 'subscription' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -725,7 +710,10 @@ const Account = () => {
                           <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
                             Renews / Expires
                           </p>
-                          <p className="mt-2 text-[18px] font-bold text-white">
+                          <p
+                            suppressHydrationWarning
+                            className="mt-2 text-[18px] font-bold text-white"
+                          >
                             {subscription.current_period_end
                               ? new Date(subscription.current_period_end).toLocaleDateString()
                               : 'Active'}
@@ -734,7 +722,7 @@ const Account = () => {
                       </div>
 
                       <div className="mt-6 rounded-xl border border-white/[0.05] bg-white/[0.02] p-5">
-                        <h3 className="text-[16px] font-bold text-white">
+                        <h3 className="text-[16px] font-semibold text-white">
                           Manage your subscription
                         </h3>
                         <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-white/45">
@@ -761,7 +749,7 @@ const Account = () => {
                     </>
                   ) : (
                     <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-5">
-                      <h3 className="text-[16px] font-bold text-white">Free plan</h3>
+                      <h3 className="text-[16px] font-semibold text-white">Free plan</h3>
                       <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-white/45">
                         You are currently on the free plan. Upgrade to Pro to unlock historical
                         seasons and unlimited session replay.
@@ -778,12 +766,12 @@ const Account = () => {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Security */}
             {activeSection === 'security' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -794,7 +782,7 @@ const Account = () => {
                   </h2>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 lg:p-8">
-                  <h3 className="mb-6 text-[18px] font-bold text-white">Change Password</h3>
+                  <h3 className="mb-6 text-[18px] font-semibold text-white">Change Password</h3>
                   <form onSubmit={handleUpdatePassword} className="max-w-lg space-y-5">
                     <div className="space-y-2">
                       <Label
@@ -854,7 +842,9 @@ const Account = () => {
                   </form>
 
                   <div className="mt-10 border-t border-white/[0.04] pt-8">
-                    <h3 className="mb-5 text-[18px] font-bold text-white">Connected Accounts</h3>
+                    <h3 className="mb-5 text-[18px] font-semibold text-white">
+                      Connected Accounts
+                    </h3>
                     <div className="max-w-lg space-y-3">
                       {[
                         { provider: 'google', icon: faGoogle, label: 'Google' },
@@ -868,7 +858,7 @@ const Account = () => {
                             className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4"
                           >
                             <div className="flex items-center gap-4">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
+                              <div className="flex size-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
                                 <FontAwesomeIcon
                                   icon={social.icon}
                                   className="text-[16px] text-white/50"
@@ -885,7 +875,7 @@ const Account = () => {
                             </div>
                             {isConnected ? (
                               <div className="flex items-center text-[12px] font-semibold text-emerald-400">
-                                <Tick02Icon className="mr-1.5 h-4 w-4" /> Connected
+                                <Tick02Icon className="mr-1.5 size-4" /> Connected
                               </div>
                             ) : (
                               <Button
@@ -898,7 +888,7 @@ const Account = () => {
                                 className="h-9 rounded-xl border-white/[0.08] bg-white/[0.03] px-4 text-[12px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white"
                                 disabled={isLoading}
                               >
-                                <LinkSquare01Icon className="mr-1.5 h-3.5 w-3.5" /> Connect
+                                <LinkSquare01Icon className="mr-1.5 size-3.5" /> Connect
                               </Button>
                             )}
                           </div>
@@ -907,12 +897,12 @@ const Account = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* History */}
             {activeSection === 'history' && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
@@ -928,9 +918,15 @@ const Account = () => {
                   </p>
                   {isLoadingActivity ? (
                     <div className="space-y-3">
-                      {[...Array(5)].map((_, i) => (
+                      {[
+                        'activity-skeleton-1',
+                        'activity-skeleton-2',
+                        'activity-skeleton-3',
+                        'activity-skeleton-4',
+                        'activity-skeleton-5',
+                      ].map((skeletonKey) => (
                         <div
-                          key={i}
+                          key={skeletonKey}
                           className="h-16 animate-pulse rounded-xl border border-white/[0.04] bg-white/[0.02]"
                         />
                       ))}
@@ -943,12 +939,12 @@ const Account = () => {
                     </div>
                   ) : (
                     <div className="py-12 text-center">
-                      <Analytics01Icon className="mx-auto mb-3 h-10 w-10 text-white/15" />
+                      <Analytics01Icon className="mx-auto mb-3 size-10 text-white/15" />
                       <p className="text-[14px] text-white/35">No recent activity found.</p>
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </div>
         </div>
@@ -962,5 +958,4 @@ const Account = () => {
   );
 };
 
-export { Account };
 export default Account;

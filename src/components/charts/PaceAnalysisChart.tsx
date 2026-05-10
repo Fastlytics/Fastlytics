@@ -93,12 +93,15 @@ interface PaceAnalysisChartProps {
   driverColors?: Record<string, string>;
 }
 
+const EMPTY_DRIVERS: string[] = [];
+const EMPTY_DRIVER_COLORS: Record<string, string> = {};
+
 const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   year,
   event,
   session,
-  initialDrivers = [],
-  driverColors = {},
+  initialDrivers = EMPTY_DRIVERS,
+  driverColors = EMPTY_DRIVER_COLORS,
 }) => {
   const chartVisRef = useChartVisibility({
     chartName: 'pace_analysis_chart',
@@ -185,7 +188,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="w-full h-full relative"
+      className="size-full relative"
       style={inter}
     >
       <div className="flex flex-col gap-4 mb-6">
@@ -214,7 +217,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                       ? 'All Drivers'
                       : `${selectedDrivers.length} / ${sessionDrivers?.length || 0} Selected`}
                   </span>
-                  <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+                  <ArrowUpDownIcon className="size-3.5 opacity-50" />
                 </button>
               </PopoverTrigger>
               <PopoverContent
@@ -276,7 +279,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                         >
                           <div
                             className={cn(
-                              'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                              'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
                               isSelected
                                 ? 'bg-red-500 border-red-500'
                                 : 'border-white/[0.15] bg-transparent'
@@ -284,7 +287,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                           >
                             {isSelected && (
                               <svg
-                                className="w-2.5 h-2.5 text-white"
+                                className="size-2.5 text-white"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -300,7 +303,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                             className="h-8 w-0.5 rounded-full shrink-0"
                             style={{ backgroundColor: color, opacity: isSelected ? 1 : 0.3 }}
                           />
-                          <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                          <Avatar className="size-8 shrink-0 border border-white/[0.08]">
                             <AvatarImage src={headshot} className="object-cover object-top" />
                             <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white/60">
                               {driver.code[0]}
@@ -341,7 +344,7 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
         </div>
       ) : isLoading ? (
         <div className="h-[400px] flex items-center justify-center text-white/50 animate-pulse">
-          Loading Pace Analysis...
+          Loading Pace Analysis…
         </div>
       ) : error ? (
         <div className="h-[400px] flex items-center justify-center text-red-400">
@@ -390,9 +393,9 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
                 barSize={40}
                 radius={[4, 4, 4, 4]}
               >
-                {chartData.map((entry, index) => (
+                {chartData.map((entry) => (
                   <Cell
-                    key={`cell-${index}`}
+                    key={entry.driverCode}
                     fill={finalDriverColors[entry.driverCode] || '#fff'}
                     opacity={0.5}
                   />

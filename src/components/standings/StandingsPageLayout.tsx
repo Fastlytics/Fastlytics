@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { SEO } from '@/components/layout/SEO';
 import { cn } from '@/lib/utils';
@@ -31,25 +31,25 @@ export const StandingsLayout: React.FC<StandingsLayoutProps> = ({
 
     <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
       <div className="mb-10">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="mb-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-red-400" />
               </span>
               Season {selectedYear}
             </span>
           </div>
-          <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+          <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
             {title}
           </h1>
           <p className="mt-1 text-[15px] text-white/50">{subtitle}</p>
-        </motion.div>
+        </m.div>
         <div className="mt-8 h-px w-full bg-white/[0.05]" />
       </div>
 
@@ -83,10 +83,10 @@ export const StandingsLoadingSkeleton: React.FC = () => (
 /** Shared error state for standings pages */
 export const StandingsErrorState: React.FC<{ message: string }> = ({ message }) => (
   <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] py-16 text-center">
-    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+    <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
       <span className="text-lg text-red-400">!</span>
     </div>
-    <h3 className="text-[18px] font-bold uppercase italic text-white">Data Unavailable</h3>
+    <h3 className="text-[18px] font-semibold uppercase italic text-white">Data Unavailable</h3>
     <p className="mt-1 text-[14px] text-white/40">{message}</p>
   </div>
 );
@@ -130,7 +130,7 @@ export const StandingsTableRow: React.FC<StandingsTableRowProps> = ({
   nameExtras,
   teamBadge,
 }) => (
-  <motion.div
+  <m.div
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.4 }}
@@ -180,5 +180,5 @@ export const StandingsTableRow: React.FC<StandingsTableRowProps> = ({
       </div>
       <div className="text-[10px] text-white/40">PTS</div>
     </div>
-  </motion.div>
+  </m.div>
 );

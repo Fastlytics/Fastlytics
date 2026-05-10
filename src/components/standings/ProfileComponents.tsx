@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 export interface StatBoxProps {
@@ -9,7 +9,7 @@ export interface StatBoxProps {
 }
 
 export const StatBox: React.FC<StatBoxProps> = ({ label, value, delay = 0 }) => (
-  <motion.div
+  <m.div
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4, delay }}
@@ -19,7 +19,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, delay = 0 }) => 
     <div className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/30">
       {label}
     </div>
-  </motion.div>
+  </m.div>
 );
 
 interface ProfileSeasonRowBadge {
@@ -36,15 +36,17 @@ interface ProfileSeasonRowProps {
   columns: React.ReactNode[];
 }
 
+const EMPTY_BADGES: ProfileSeasonRowBadge[] = [];
+
 export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
   season,
   index,
   isCurrent,
   isChampion,
-  badges = [],
+  badges = EMPTY_BADGES,
   columns,
 }) => (
-  <motion.tr
+  <m.tr
     initial={{ opacity: 0, x: -8 }}
     animate={{ opacity: 1, x: 0 }}
     transition={{ duration: 0.3, delay: index * 0.025 }}
@@ -62,9 +64,9 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
             Current
           </span>
         )}
-        {badges.map((badge, i) => (
+        {badges.map((badge) => (
           <span
-            key={i}
+            key={`${badge.color}-${badge.label}`}
             className={cn(
               'rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
               badge.color === 'amber'
@@ -77,8 +79,15 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
         ))}
       </div>
     </td>
-    {columns.map((col, i) => (
-      <td key={i} className="py-3 px-4 text-center">
+    {columns.map((col) => (
+      <td
+        key={
+          React.isValidElement(col) && col.key != null
+            ? String(col.key)
+            : `${season.season}-${String(col)}`
+        }
+        className="py-3 px-4 text-center"
+      >
         {col}
       </td>
     ))}
@@ -86,7 +95,7 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
       {season.position ? (
         <span
           className={cn(
-            'inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
+            'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
             season.position === 1 && 'bg-amber-500/20 text-amber-400',
             season.position === 2 && 'bg-zinc-500/20 text-zinc-300',
             season.position === 3 && 'bg-orange-500/20 text-orange-400',
@@ -99,7 +108,7 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
         <span className="text-[12px] text-white/20">—</span>
       )}
     </td>
-  </motion.tr>
+  </m.tr>
 );
 
 /** Shared season history table */
@@ -112,16 +121,16 @@ export const SeasonHistoryTable: React.FC<SeasonHistoryTableProps> = ({
   title = 'Season by Season',
   children,
 }) => (
-  <motion.div
+  <m.div
     initial={{ opacity: 0, y: 16 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: 0.3 }}
   >
-    <h2 className="mb-4 text-xl font-bold uppercase italic tracking-[-0.025em] text-white">
+    <h2 className="mb-4 text-xl font-semibold uppercase italic tracking-[-0.025em] text-white">
       {title}
     </h2>
     <div className="overflow-hidden rounded-xl border border-white/[0.06]">
       <table className="w-full text-sm">{children}</table>
     </div>
-  </motion.div>
+  </m.div>
 );

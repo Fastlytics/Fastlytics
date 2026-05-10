@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { CrownIcon } from 'hugeicons-react';
 import { cn } from '@/lib/utils';
 
@@ -84,7 +84,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
   const isP1 = position === 1;
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay ?? cfg.delay, duration: 0.5 }}
@@ -104,7 +104,7 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
         {isP1 && (
           <>
             <div className="absolute -right-3 -top-3 text-amber-500/10">
-              <CrownIcon className="h-28 w-28" />
+              <CrownIcon className="size-28" />
             </div>
           </>
         )}
@@ -185,6 +185,6 @@ export const PodiumCard: React.FC<PodiumCardProps> = ({
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 };

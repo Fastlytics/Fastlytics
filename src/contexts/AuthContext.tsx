@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
-  useContext,
+  use,
   useEffect,
   useState,
   ReactNode,
@@ -271,5 +271,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export const useAuth = (): AuthContextType => {
-  return useContext(AuthContext);
+  return use(AuthContext);
 };

@@ -120,7 +120,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
           className="text-white flex items-center justify-center"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <MinusSignIcon className="w-3 h-3 mr-1 opacity-50" /> 0
+          <MinusSignIcon className="size-3 mr-1 opacity-50" /> 0
         </span>
       );
     } else if (change > 0) {
@@ -129,7 +129,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
           className="text-emerald-400 flex items-center justify-center font-bold"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowUp01Icon className="w-3 h-3 mr-1" /> +{change}
+          <ArrowUp01Icon className="size-3 mr-1" /> +{change}
         </span>
       );
     } else {
@@ -138,7 +138,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
           className="text-red-400 flex items-center justify-center font-bold"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowDown01Icon className="w-3 h-3 mr-1" /> {change}
+          <ArrowDown01Icon className="size-3 mr-1" /> {change}
         </span>
       );
     }
@@ -189,7 +189,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2.5">
-                    <Avatar className="h-7 w-7 shrink-0 border border-white/[0.08]">
+                    <Avatar className="size-7 shrink-0 border border-white/[0.08]">
                       <AvatarImage
                         src={getDriverImage(res.driverCode, year)}
                         className="object-cover object-top"
@@ -217,7 +217,7 @@ const PositionsSummaryTable: React.FC<PositionsSummaryTableProps> = ({ sessionRe
                   <span className="flex items-center gap-2">
                     <span
                       className={cn(
-                        'h-1.5 w-1.5 rounded-full',
+                        'size-1.5 rounded-full',
                         `bg-f1-${getTeamColorClass(res.team)}`
                       )}
                     />

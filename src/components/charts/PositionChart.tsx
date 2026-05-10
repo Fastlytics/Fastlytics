@@ -61,13 +61,14 @@ interface PositionChartProps {
 }
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
+const EMPTY_INCIDENTS: SessionIncident[] = [];
 
 const PositionChart: React.FC<PositionChartProps> = ({
   className,
   delay = 0,
   year,
   lapData,
-  incidents = [],
+  incidents = EMPTY_INCIDENTS,
   sessionResults,
   favoriteDriver,
 }) => {
@@ -209,7 +210,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null;
               const typedPayload = payload as TooltipPayloadItem[];
-              const sortedPayload = [...typedPayload].sort((a, b) => {
+              const sortedPayload = typedPayload.toSorted((a, b) => {
                 if (a.value === null) return 1;
                 if (b.value === null) return -1;
                 return a.value - b.value;
@@ -238,7 +239,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                           <span className="text-[11px] font-bold w-5 text-right" style={{ color }}>
                             P{position}
                           </span>
-                          <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                          <Avatar className="size-6 shrink-0 border border-white/[0.08]">
                             <AvatarImage src={headshot} className="object-cover object-top" />
                             <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
                               {driverCode[0]}
@@ -317,9 +318,9 @@ const PositionChart: React.FC<PositionChartProps> = ({
             }}
           />
 
-          {incidents.map((incident, index) => (
+          {incidents.map((incident) => (
             <ReferenceArea
-              key={`incident-${index}`}
+              key={`${incident.type}-${incident.startLap}-${incident.endLap}`}
               x1={incident.startLap}
               x2={incident.endLap}
               y1={0}
@@ -419,6 +420,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                 variant="outline"
                 role="combobox"
                 aria-expanded={isPopoverOpen}
+                aria-controls="position-chart-driver-list"
                 className="w-auto min-w-[180px] justify-between text-[11px] font-semibold h-9 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white uppercase tracking-wider"
                 disabled={driverCodes.length === 0}
               >
@@ -427,10 +429,11 @@ const PositionChart: React.FC<PositionChartProps> = ({
                   : selectedDrivers.length === 0
                     ? 'Select Drivers...'
                     : `${selectedDrivers.length} Selected`}
-                <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                <ArrowUpDownIcon className="ml-2 size-3.5 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent
+              id="position-chart-driver-list"
               className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
               style={inter}
             >
@@ -478,7 +481,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                         {/* Check indicator */}
                         <div
                           className={cn(
-                            'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                            'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
                             isSelected
                               ? 'bg-red-500 border-red-500'
                               : 'border-white/[0.15] bg-transparent'
@@ -486,7 +489,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                         >
                           {isSelected && (
                             <svg
-                              className="w-2.5 h-2.5 text-white"
+                              className="size-2.5 text-white"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -509,7 +512,7 @@ const PositionChart: React.FC<PositionChartProps> = ({
                         />
 
                         {/* Headshot */}
-                        <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                        <Avatar className="size-8 shrink-0 border border-white/[0.08]">
                           <AvatarImage src={headshot} className="object-cover object-top" />
                           <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
                             {driverCode[0]}

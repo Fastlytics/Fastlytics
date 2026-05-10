@@ -17,20 +17,31 @@ export const isTestingEvent = (event: ScheduleEvent): boolean =>
   );
 
 export const getEventStartDate = (event: ScheduleEvent): Date => {
-  const dates = [
+  let earliestDate: Date | null = null;
+
+  for (const value of [
     event.Session1Date,
     event.Session2Date,
     event.Session3Date,
     event.Session4Date,
     event.Session5Date,
     event.EventDate,
-  ]
-    .filter(Boolean)
-    .map((value) => new Date(value as string))
-    .filter((value) => !Number.isNaN(value.getTime()));
+  ]) {
+    if (!value) {
+      continue;
+    }
 
-  if (dates.length === 0) return new Date(event.EventDate);
-  return dates.sort((a, b) => a.getTime() - b.getTime())[0];
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) {
+      continue;
+    }
+
+    if (!earliestDate || parsedDate.getTime() < earliestDate.getTime()) {
+      earliestDate = parsedDate;
+    }
+  }
+
+  return earliestDate ?? new Date(event.EventDate);
 };
 
 export const getTestingVenue = (

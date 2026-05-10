@@ -213,7 +213,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
     if (isError || !chartData) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
-          <AlertCircleIcon className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="size-10 mb-2" />
           <p className="font-semibold uppercase text-[13px]">Error loading lap times</p>
           <p className="text-xs text-white mt-1">
             {typeof (error as Error)?.message === 'string'
@@ -286,7 +286,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               content={({ active, payload, label }) => {
                 if (!active || !payload || !payload.length) return null;
                 const lapNumber = label as number;
-                const sortedPayload = [...payload].sort(
+                const sortedPayload = payload.toSorted(
                   (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
                 );
 
@@ -316,7 +316,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                             className="border-b border-white/[0.04] pb-2 last:border-0 last:pb-0"
                           >
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                              <Avatar className="size-6 shrink-0 border border-white/[0.08]">
                                 <AvatarImage src={headshot} className="object-cover object-top" />
                                 <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
                                   {driverCode[0]}
@@ -505,7 +505,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
         {/* Fastest Laps Table */}
         <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.06]">
-            <Time01Icon className="w-4 h-4 text-red-400" />
+            <Time01Icon className="size-4 text-red-400" />
             <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
               Fastest Laps (Selection)
             </h4>
@@ -627,7 +627,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
               return (
                 <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
                   <div className="flex items-center gap-2 mb-4">
-                    <Flag01Icon className="w-4 h-4 text-red-400" />
+                    <Flag01Icon className="size-4 text-red-400" />
                     <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
                       Deleted Laps ({deletedLaps.length})
                     </h4>
@@ -695,7 +695,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   style={inter}
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <ChartLineData01Icon className="w-4 h-4 text-white" />
+                    <ChartLineData01Icon className="size-4 text-white" />
                     <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white">
                       Speed Trap (km/h)
                     </h4>
@@ -751,7 +751,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                     className="flex gap-3 items-center mb-1 last:mb-0"
                                   >
                                     <div
-                                      className="w-3 h-3 rounded-sm"
+                                      className="size-3 rounded-sm"
                                       style={{
                                         backgroundColor: entry.color,
                                         opacity: entry.name === 'Max Speed' ? 0.9 : 0.3,
@@ -824,7 +824,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   <div key={drv} className="p-4">
                     <div className="flex items-center gap-3 mb-3">
                       <Avatar
-                        className="h-8 w-8 border border-white/[0.08]"
+                        className="size-8 border border-white/[0.08]"
                         style={{ borderColor: color }}
                       >
                         <AvatarImage src={headshot} className="object-cover object-top" />
@@ -953,7 +953,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                         ? 'All Drivers'
                         : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
                     </span>
-                    <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+                    <ArrowUpDownIcon className="size-3.5 opacity-50" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -1023,7 +1023,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                             {/* Check indicator */}
                             <div
                               className={cn(
-                                'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                                'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
                                 isSelected
                                   ? 'bg-red-500 border-red-500'
                                   : 'border-white/[0.15] bg-transparent'
@@ -1031,7 +1031,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                             >
                               {isSelected && (
                                 <svg
-                                  className="w-2.5 h-2.5 text-white"
+                                  className="size-2.5 text-white"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
@@ -1054,7 +1054,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                             />
 
                             {/* Headshot */}
-                            <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                            <Avatar className="size-8 shrink-0 border border-white/[0.08]">
                               <AvatarImage src={headshot} className="object-cover object-top" />
                               <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
                                 {driver.code[0]}
@@ -1116,9 +1116,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
+                className="size-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
               >
-                <InformationCircleIcon className="h-4 w-4" />
+                <InformationCircleIcon className="size-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent

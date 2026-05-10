@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
 import { Button } from '@/components/ui/button';
@@ -81,7 +81,7 @@ const LogoCard = ({
             size="sm"
             className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
           >
-            <Download01Icon className="w-3.5 h-3.5" />
+            <Download01Icon className="size-3.5" />
             SVG
           </Button>
         </a>
@@ -93,12 +93,12 @@ const LogoCard = ({
         >
           {isCopied ? (
             <>
-              <Tick01Icon className="w-3.5 h-3.5 text-emerald-400" />
+              <Tick01Icon className="size-3.5 text-emerald-400" />
               Copied
             </>
           ) : (
             <>
-              <Copy01Icon className="w-3.5 h-3.5" />
+              <Copy01Icon className="size-3.5" />
               Copy SVG
             </>
           )}
@@ -137,7 +137,7 @@ const PressKit = () => {
 
       <main className="pt-28 pb-20 px-5 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -146,17 +146,17 @@ const PressKit = () => {
             <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
               Brand
             </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
               Press Kit
             </h1>
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
               Official Fastlytics brand assets. Download logos for use in media coverage, partner
               integrations, and promotional materials.
             </p>
-          </motion.div>
+          </m.div>
 
           {/* Primary PNG Logos */}
-          <motion.section
+          <m.section
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -201,7 +201,7 @@ const PressKit = () => {
                           size="sm"
                           className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
                         >
-                          <Download01Icon className="w-3.5 h-3.5" />
+                          <Download01Icon className="size-3.5" />
                           PNG
                         </Button>
                       </a>
@@ -210,10 +210,10 @@ const PressKit = () => {
                 );
               })}
             </div>
-          </motion.section>
+          </m.section>
 
           {/* Usage Guidelines */}
-          <motion.section
+          <m.section
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -226,24 +226,24 @@ const PressKit = () => {
                 <h3 className="text-[14px] font-semibold text-emerald-400 mb-4">Do</h3>
                 <ul className="space-y-3 text-[13px] text-white/40">
                   <li className="flex items-start gap-2.5">
-                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>
                       Use the light-mode logo on dark backgrounds and the dark-mode logo on light
                       backgrounds.
                     </span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>
                       Maintain clear space around the logo equal to the height of the icon.
                     </span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>Scale the logo proportionally — never stretch or squash it.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <Tick01Icon className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />
                     <span>
                       Link the logo back to{' '}
                       <a
@@ -261,25 +261,25 @@ const PressKit = () => {
                 <h3 className="text-[14px] font-semibold text-red-400 mb-4">Don't</h3>
                 <ul className="space-y-3 text-[13px] text-white/40">
                   <li className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                    <span className="size-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
                       ✕
                     </span>
                     <span>Change the logo colors or modify the red (#ff2a1a) accent.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                    <span className="size-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
                       ✕
                     </span>
                     <span>Rotate, skew, or apply effects to the logo.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                    <span className="size-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
                       ✕
                     </span>
                     <span>Use the Fastlytics logo to imply endorsement without permission.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
-                    <span className="w-4 h-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
+                    <span className="size-4 flex items-center justify-center text-red-400 mt-0.5 shrink-0 text-[13px] font-bold">
                       ✕
                     </span>
                     <span>Use the logo as your own brand identity or in a confusing manner.</span>
@@ -287,10 +287,10 @@ const PressKit = () => {
                 </ul>
               </div>
             </div>
-          </motion.section>
+          </m.section>
 
           {/* Download All */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -318,13 +318,13 @@ const PressKit = () => {
                     size="sm"
                     className="border-white/[0.08] bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white gap-1.5 text-[12px]"
                   >
-                    <Download01Icon className="w-3.5 h-3.5" />
+                    <Download01Icon className="size-3.5" />
                     {asset.filename}
                   </Button>
                 </a>
               ))}
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </main>
 
@@ -333,5 +333,4 @@ const PressKit = () => {
   );
 };
 
-export { PressKit };
 export default PressKit;

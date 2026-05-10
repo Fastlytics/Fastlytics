@@ -24,7 +24,7 @@ const F1Card = ({ title, value, team, subValue, className, style, imageUrl }: F1
     <div className={cn('absolute left-0 top-0 h-0.5 w-full', `bg-f1-${team}`)} />
     <div className="relative z-10 flex items-center gap-5 p-6">
       {imageUrl && (
-        <Avatar className="h-20 w-20 shrink-0 rounded-xl border border-white/[0.08]">
+        <Avatar className="size-20 shrink-0 rounded-xl border border-white/[0.08]">
           <AvatarImage src={imageUrl} className="object-cover object-top" />
           <AvatarFallback className="bg-[#1a1a1e] text-[14px] font-bold">
             {String(value).substring(0, 2)}

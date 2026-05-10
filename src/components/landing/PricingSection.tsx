@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { BillingToggle } from '@/components/payments/BillingToggle';
 import { PricingCard, PricingTier } from '@/components/payments/PricingCard';
 import { Link } from 'react-router-dom';
@@ -69,15 +69,15 @@ export function PricingSection() {
 
       <div className="relative z-10 mx-auto max-w-6xl px-5 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             className="text-[13px] font-semibold uppercase tracking-widest text-red-400"
           >
             Pricing
-          </motion.p>
-          <motion.h2
+          </m.p>
+          <m.h2
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -85,8 +85,8 @@ export function PricingSection() {
             className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
           >
             Choose your race plan
-          </motion.h2>
-          <motion.p
+          </m.h2>
+          <m.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -95,9 +95,9 @@ export function PricingSection() {
           >
             Start free with full platform access. Upgrade to Pro for historical archives and
             unlimited session replay, while supporting a solo dev who's a uni student! 🚀
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -105,7 +105,7 @@ export function PricingSection() {
             className="mt-8"
           >
             <BillingToggle interval={interval} onChange={setInterval} />
-          </motion.div>
+          </m.div>
         </div>
 
         <div className="mt-12 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto">
@@ -114,7 +114,7 @@ export function PricingSection() {
           ))}
         </div>
 
-        <motion.p
+        <m.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -128,7 +128,7 @@ export function PricingSection() {
           >
             View full feature comparison
           </Link>
-        </motion.p>
+        </m.p>
       </div>
     </section>
   );

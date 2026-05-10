@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 
 interface EventHeroCardProps {
   eyebrow: string;
@@ -59,7 +59,7 @@ const Countdown = ({ targetDate }: { targetDate: Date }) => {
   );
 };
 
-export const EventHeroCard: React.FC<EventHeroCardProps> = ({
+const EventHeroCard: React.FC<EventHeroCardProps> = ({
   eyebrow,
   title,
   displayDate,
@@ -74,7 +74,7 @@ export const EventHeroCard: React.FC<EventHeroCardProps> = ({
   countdownFallbackLabel,
 }) => {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.15 }}
@@ -87,9 +87,9 @@ export const EventHeroCard: React.FC<EventHeroCardProps> = ({
         <div className="flex flex-col lg:flex-row">
           <div className="flex-1 p-6 lg:p-8">
             <div className="mb-4 flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
               </span>
               <span className="text-[13px] font-semibold uppercase tracking-wider text-red-400">
                 {eyebrow}
@@ -102,7 +102,7 @@ export const EventHeroCard: React.FC<EventHeroCardProps> = ({
                   <img
                     src={`https://flagcdn.com/h40/${countryCode}.png`}
                     alt={countryAlt || location}
-                    className="h-full w-full object-cover"
+                    className="size-full object-cover"
                   />
                 )}
               </div>
@@ -118,7 +118,7 @@ export const EventHeroCard: React.FC<EventHeroCardProps> = ({
               )}
             </div>
 
-            <h2 className="mb-4 text-3xl font-bold uppercase italic tracking-[-0.025em] text-red-400 sm:text-4xl">
+            <h2 className="mb-4 text-3xl font-semibold uppercase italic tracking-[-0.025em] text-red-400 sm:text-4xl">
               {title}
             </h2>
 
@@ -167,7 +167,7 @@ export const EventHeroCard: React.FC<EventHeroCardProps> = ({
           )}
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 };
 

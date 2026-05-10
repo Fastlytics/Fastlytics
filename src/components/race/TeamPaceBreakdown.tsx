@@ -95,7 +95,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   // ──────────────────────────────────────────
   const sectorData = useMemo(() => {
     if (!paceData?.sectorPace) return [] as SectorPace[];
-    return [...paceData.sectorPace].sort((a, b) => {
+    return paceData.sectorPace.toSorted((a, b) => {
       const totalA = (a.sector1Median ?? 999) + (a.sector2Median ?? 999) + (a.sector3Median ?? 999);
       const totalB = (b.sector1Median ?? 999) + (b.sector2Median ?? 999) + (b.sector3Median ?? 999);
       return totalA - totalB;
@@ -122,7 +122,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   // Overall team ranking
   const teamRanking = useMemo(() => {
     if (!paceData?.teamPace) return [] as TeamPaceSession[];
-    return [...paceData.teamPace].sort((a, b) => a.medianTime - b.medianTime);
+    return paceData.teamPace.toSorted((a, b) => a.medianTime - b.medianTime);
   }, [paceData]);
 
   if (isLoading) {
@@ -244,7 +244,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                 }
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-full"
+                  className="size-2.5 rounded-full"
                   style={{ backgroundColor: COMPOUND_COLORS[comp] || '#666' }}
                 />
                 {comp}
@@ -412,7 +412,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div
-                              className="h-2.5 w-2.5 rounded-full"
+                              className="size-2.5 rounded-full"
                               style={{ backgroundColor: teamColor }}
                             />
                             <span className="text-[13px] font-semibold text-white">
@@ -544,7 +544,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.02]"
                 >
                   <span className="w-6 text-[13px] font-medium text-white">{teamIdx + 1}</span>
-                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: teamColor }} />
+                  <div className="size-3 rounded-full" style={{ backgroundColor: teamColor }} />
                   <span className="flex-1 text-[13px] font-semibold text-white">
                     {teamEntry.teamName}
                   </span>
@@ -584,17 +584,17 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                         >
                           <div className="mb-2 flex items-center gap-3">
                             <div
-                              className="h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 bg-[#1a1a1e]"
+                              className="size-8 shrink-0 overflow-hidden rounded-full border-2 bg-[#1a1a1e]"
                               style={{ borderColor: drvColor }}
                             >
                               {headshot ? (
                                 <img
                                   src={headshot}
                                   alt={drv.driverCode}
-                                  className="h-full w-full object-cover object-top"
+                                  className="size-full object-cover object-top"
                                 />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white">
+                                <div className="flex size-full items-center justify-center text-[10px] font-bold text-white">
                                   {drv.driverCode[0]}
                                 </div>
                               )}
@@ -624,7 +624,7 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                                   className="flex items-center gap-1.5 rounded-md border border-white/[0.06] px-2.5 py-1"
                                 >
                                   <span
-                                    className="h-2 w-2 rounded-full"
+                                    className="size-2 rounded-full"
                                     style={{
                                       backgroundColor: COMPOUND_COLORS[cp.compound] || '#666',
                                     }}
@@ -680,5 +680,3 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
     </div>
   );
 };
-
-export default TeamPaceBreakdown;

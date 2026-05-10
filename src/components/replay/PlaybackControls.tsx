@@ -99,12 +99,12 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               step={0.1}
               value={currentTime}
               onChange={(e) => onSeek(parseFloat(e.target.value))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+              className="absolute inset-0 size-full opacity-0 cursor-pointer z-20"
             />
 
             {/* Current Time Thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full shadow-lg pointer-events-none z-10 border-2 border-white/20"
+              className="absolute top-1/2 -translate-y-1/2 size-3 bg-red-500 rounded-full shadow-lg pointer-events-none z-10 border-2 border-white/20"
               style={{ left: `calc(${progress * 100}% - 6px)` }}
             />
           </div>
@@ -115,7 +115,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             <div className="flex items-center gap-3">
               <button
                 onClick={onPlayPause}
-                className="flex items-center justify-center w-9 h-9 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
+                className="flex items-center justify-center size-9 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
               >
                 {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
               </button>
@@ -160,7 +160,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               <button
                 onClick={onToggleHeatmap}
                 className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-lg border transition-all text-[11px]',
+                  'flex items-center justify-center size-8 rounded-lg border transition-all text-[11px]',
                   showSpeedHeatmap
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                     : 'border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white'
@@ -185,7 +185,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               {/* Fullscreen */}
               <button
                 onClick={onToggleFullscreen}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all"
+                className="flex items-center justify-center size-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all"
               >
                 {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
               </button>

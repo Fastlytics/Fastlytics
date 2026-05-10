@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 
 interface BillingToggleProps {
   interval: 'monthly' | 'yearly';
@@ -20,10 +20,10 @@ export function BillingToggle({ interval, onChange }: BillingToggleProps) {
         onClick={() => onChange(interval === 'monthly' ? 'yearly' : 'monthly')}
         className="relative inline-flex h-7 w-12 items-center rounded-full border border-white/[0.08] bg-white/[0.03] transition-colors hover:border-white/[0.12]"
       >
-        <motion.span
+        <m.span
           layout
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="inline-block h-5 w-5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+          className="inline-block size-5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.15)]"
           style={{ marginLeft: interval === 'yearly' ? 22 : 2 }}
         />
       </button>

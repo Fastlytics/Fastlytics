@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LockKeyIcon } from 'hugeicons-react';
@@ -48,29 +48,29 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
       )}
 
       <div className="relative z-10 text-center max-w-md mx-auto px-6 md:px-8">
-        <motion.div
+        <m.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-          className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#ff2a1a]/10 mb-5 md:mb-6"
+          className="inline-flex items-center justify-center size-14 md:w-16 md:h-16 rounded-2xl bg-[#ff2a1a]/10 mb-5 md:mb-6"
         >
-          <LockKeyIcon className="w-7 h-7 md:w-8 md:h-8 text-[#ff2a1a]" />
-        </motion.div>
+          <LockKeyIcon className="size-7 md:w-8 md:h-8 text-[#ff2a1a]" />
+        </m.div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
         >
-          <h3 className="text-xl md:text-2xl uppercase font-bold text-white mb-2 md:mb-3">
+          <h3 className="text-xl md:text-2xl uppercase font-semibold text-white mb-2 md:mb-3">
             {featureName}
           </h3>
           <p className="text-xs md:text-sm text-white/40 mb-7 md:mb-8 max-w-[280px] md:max-w-full mx-auto uppercase tracking-wider">
             {description}
           </p>
-        </motion.div>
+        </m.div>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
@@ -82,19 +82,17 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
           >
             <a href={authHref}>Sign In to Unlock</a>
           </Button>
-        </motion.div>
+        </m.div>
 
-        <motion.p
+        <m.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
           className="mt-6 text-[10px] md:text-xs text-white/30 uppercase tracking-widest"
         >
           Free Account &middot; No Credit Card Required
-        </motion.p>
+        </m.p>
       </div>
     </div>
   );
 };
-
-export default FeatureGate;

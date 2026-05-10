@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
 import { TrendingUp } from 'lucide-react';
 import {
@@ -36,7 +36,6 @@ import { useSeason } from '@/contexts/SeasonContext';
 import { fetchChampionshipProgression, ChampionshipProgressionData } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { getCountryCode } from '@/utils/countryUtils';
 import { getDriverImage } from '@/utils/imageMapping';
 import { useEffect } from 'react';
@@ -53,7 +52,7 @@ const ChampionshipTooltip = ({
 }: ChampionshipTooltipProps) => {
   if (active && payload && payload.length) {
     // Sort payload by value (points) descending
-    const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0));
+    const sortedPayload = payload.toSorted((a, b) => (b.value || 0) - (a.value || 0));
 
     // Access direct data point from payload
     const dataPoint = payload[0]?.payload;
@@ -61,8 +60,8 @@ const ChampionshipTooltip = ({
     const eventName = dataPoint?.name || label;
 
     return (
-      <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
-        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-800">
+      <div className="bg-black/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
+        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-zinc-800">
           <img
             src={`https://flagcdn.com/h24/${getCountryCode(country)}.png`}
             alt="Country Flag"
@@ -81,31 +80,31 @@ const ChampionshipTooltip = ({
             return (
               <div key={entry.name} className="flex items-center justify-between group">
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-500 font-mono text-xs w-4">#{index + 1}</span>
+                  <span className="text-zinc-500 font-mono text-xs w-4">#{index + 1}</span>
                   <div className="relative">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 border border-gray-800">
+                    <div className="size-8 rounded-full overflow-hidden bg-zinc-900 border border-zinc-800">
                       {headshot ? (
                         <img
                           src={headshot}
                           alt={entry.name}
-                          className="w-full h-full object-cover object-top"
+                          className="size-full object-cover object-top"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
+                        <div className="size-full flex items-center justify-center bg-zinc-800 text-xs font-bold text-zinc-500">
                           {entry.name[0]}
                         </div>
                       )}
                     </div>
                     <div
-                      className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black"
+                      className="absolute -bottom-1 -right-1 size-3 rounded-full border-2 border-black"
                       style={{ backgroundColor: entry.color }}
                     />
                   </div>
-                  <span className="font-bold text-sm text-gray-200">{entry.name}</span>
+                  <span className="font-bold text-sm text-zinc-200">{entry.name}</span>
                 </div>
                 <span className="font-black font-mono text-white text-sm tabular-nums">
                   {entry.value}{' '}
-                  <span className="text-[10px] text-gray-500 font-normal ml-0.5">PTS</span>
+                  <span className="text-[10px] text-zinc-500 font-normal ml-0.5">PTS</span>
                 </span>
               </div>
             );
@@ -132,23 +131,23 @@ const ChampionshipLegend = ({ payload, selectedYear }: ChampionshipLegendProps) 
         return (
           <div
             key={`legend-${index}`}
-            className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-gray-800 backdrop-blur-sm"
+            className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-zinc-800 backdrop-blur-sm"
           >
-            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
+            <div className="relative size-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
               {headshot ? (
                 <img
                   src={headshot}
                   alt={entry.value}
-                  className="w-full h-full object-cover object-top"
+                  className="size-full object-cover object-top"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                <div className="size-full flex items-center justify-center text-xs font-bold text-zinc-500">
                   {entry.value[0]}
                 </div>
               )}
             </div>
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-xs font-bold text-gray-200">{entry.value}</span>
+            <div className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-xs font-bold text-zinc-200">{entry.value}</span>
           </div>
         );
       })}
@@ -159,7 +158,6 @@ const ChampionshipLegend = ({ payload, selectedYear }: ChampionshipLegendProps) 
 const ChampionshipProgression = () => {
   const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
-  const isMobile = useIsMobile();
   const { trackEvent, trackPageView } = useAnalytics();
 
   useEffect(() => {
@@ -277,7 +275,7 @@ const ChampionshipProgression = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
       <SEO
         title="Championship Race"
         description={`Track the ${selectedYear} championship race with cumulative points, contender filters, and round-by-round momentum swings.`}
@@ -287,23 +285,23 @@ const ChampionshipProgression = () => {
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b-2 border-gray-800 pb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b-2 border-zinc-800 pb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-500 hover:text-white hover:bg-gray-800"
+                className="text-zinc-500 hover:text-white hover:bg-zinc-800"
                 onClick={() => navigate('/dashboard')}
               >
-                <ArrowLeft01Icon className="h-6 w-6" />
+                <ArrowLeft01Icon className="size-6" />
               </Button>
-              <h1 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter flex items-center gap-3">
+              <h1 className="text-3xl md:text-5xl font-semibold uppercase italic tracking-tighter flex items-center gap-3">
                 Championship <span className="text-red-600">Progression</span>
-                <TrendingUp className="h-8 w-8 text-gray-600 md:h-10 md:w-10" />
+                <TrendingUp className="size-8 text-zinc-600 md:h-10 md:w-10" />
               </h1>
             </div>
-            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest ml-14">
+            <p className="text-zinc-500 font-mono text-sm uppercase tracking-widest ml-14">
               Season Cumulative Points Analysis
             </p>
           </div>
@@ -320,12 +318,12 @@ const ChampionshipProgression = () => {
                 });
               }}
             >
-              <SelectTrigger className="w-[140px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
+              <SelectTrigger className="w-[140px] bg-zinc-950 border-2 border-zinc-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white rounded-none">
+              <SelectContent className="bg-zinc-950 border-2 border-zinc-800 text-white rounded-none">
                 <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase p-2">Season</SelectLabel>
+                  <SelectLabel className="text-xs text-zinc-500 uppercase p-2">Season</SelectLabel>
                   {availableYears.map((year) => (
                     <SelectItem
                       key={year}
@@ -345,25 +343,25 @@ const ChampionshipProgression = () => {
                 'border-2 font-bold uppercase tracking-wider gap-2',
                 isFilterOpen
                   ? 'bg-red-600 border-red-600 text-white'
-                  : 'bg-black border-gray-800 text-gray-300 hover:text-white hover:border-white'
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:text-white hover:border-white'
               )}
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
-              <FilterHorizontalIcon className="w-4 h-4" />
+              <FilterHorizontalIcon className="size-4" />
               Drivers
             </Button>
           </div>
         </div>
 
         {/* Driver Filter Panel (Collapsible) */}
-        <motion.div
+        <m.div
           initial={false}
           animate={{ height: isFilterOpen ? 'auto' : 0, opacity: isFilterOpen ? 1 : 0 }}
           className="overflow-hidden mb-6"
         >
-          <div className="bg-zinc-900/50 border border-gray-800 p-4 rounded-lg">
+          <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider">
+              <h3 className="text-sm font-semibold uppercase text-zinc-400 tracking-wider">
                 Select Drivers to Compare
               </h3>
               <div className="flex gap-2">
@@ -395,7 +393,7 @@ const ChampionshipProgression = () => {
                         id={`driver - ${code} `}
                         checked={selectedDrivers.includes(code)}
                         onCheckedChange={() => handleDriverToggle(code)}
-                        className="border-gray-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                        className="border-zinc-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
                       />
                       <label
                         htmlFor={`driver - ${code} `}
@@ -409,7 +407,7 @@ const ChampionshipProgression = () => {
                           className={
                             selectedDrivers.includes(code)
                               ? 'text-white font-bold'
-                              : 'text-gray-400'
+                              : 'text-zinc-400'
                           }
                         >
                           {driver.name}
@@ -419,24 +417,24 @@ const ChampionshipProgression = () => {
                   ))}
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Content Area */}
-        <div className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[600px] relative">
+        <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 md:p-8 h-[600px] relative">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm rounded-xl">
               <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-400 animate-pulse font-mono text-sm">
-                  Loading Progression Data...
+                <div className="size-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-zinc-400 animate-pulse font-mono text-sm">
+                  Loading Progression Data…
                 </p>
               </div>
             </div>
           ) : isError ? (
             <div className="absolute inset-0 flex items-center justify-center flex-col text-center p-8">
-              <AlertCircleIcon className="w-16 h-16 text-red-600 mb-4 opacity-50" />
-              <h3 className="text-xl font-bold uppercase text-white mb-2">Unavailable</h3>
-              <p className="text-gray-500 max-w-md">
+              <AlertCircleIcon className="size-16 text-red-600 mb-4 opacity-50" />
+              <h3 className="text-xl font-semibold uppercase text-white mb-2">Unavailable</h3>
+              <p className="text-zinc-500 max-w-md">
                 {(error as Error)?.message ||
                   "Could not load championship progression data. This may be because the season data hasn't been processed yet."}
               </p>
@@ -456,7 +454,7 @@ const ChampionshipProgression = () => {
                           <img
                             src={`https://flagcdn.com/h24/${getCountryCode(countryName)}.png`}
                             alt={countryName}
-                            className="w-full h-full object-cover rounded-[2px] opacity-80 hover:opacity-100 transition-opacity"
+                            className="size-full object-cover rounded-[2px] opacity-80 hover:opacity-100 transition-opacity"
                           />
                         </foreignObject>
                       </g>
@@ -519,5 +517,4 @@ const ChampionshipProgression = () => {
   );
 };
 
-export { ChampionshipProgression };
 export default ChampionshipProgression;

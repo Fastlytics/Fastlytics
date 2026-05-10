@@ -342,7 +342,7 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const updateStateFromBuffer = useCallback(() => {
     const meta = metadataRef.current;
     const manifest = meta?.chunk_manifest || [];
-    const mergedChunkIds = [...chunksMapRef.current.keys()].sort((a, b) => a - b);
+    const mergedChunkIds = Array.from(chunksMapRef.current.keys()).toSorted((a, b) => a - b);
     const currentChunkIndex = targetChunkIndexRef.current;
     const replayData = meta
       ? mergeBufferedChunks(meta, manifest, mergedChunkIds, chunksMapRef.current)

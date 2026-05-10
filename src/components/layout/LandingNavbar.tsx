@@ -70,7 +70,7 @@ const LandingNavbar = () => {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white md:hidden"
+          className="flex size-9 items-center justify-center rounded-lg border border-white/10 text-white md:hidden"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           onClick={() => setMobileOpen(!mobileOpen)}
         >
@@ -133,5 +133,4 @@ const LandingNavbar = () => {
   );
 };
 
-export { LandingNavbar };
 export default LandingNavbar;

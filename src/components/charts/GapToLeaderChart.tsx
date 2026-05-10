@@ -159,7 +159,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
     if (isError) {
       return (
         <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
-          <AlertCircleIcon className="w-10 h-10 mb-2" />
+          <AlertCircleIcon className="size-10 mb-2" />
           <p className="font-semibold uppercase text-[13px]">Error loading lap gaps</p>
           <p className="text-xs text-white mt-1">
             {(error as Error)?.message || 'Could not fetch data.'}
@@ -229,7 +229,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
           <Tooltip
             content={({ active, payload, label }) => {
               if (!active || !payload || !payload.length) return null;
-              const sortedPayload = [...payload].sort(
+              const sortedPayload = payload.toSorted(
                 (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
               );
 
@@ -252,7 +252,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
 
                       return (
                         <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
-                          <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                          <Avatar className="size-6 shrink-0 border border-white/[0.08]">
                             <AvatarImage src={headshot} className="object-cover object-top" />
                             <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
                               {driverCode[0]}
@@ -390,7 +390,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                         ? 'All Drivers'
                         : `${selectedDrivers.length} / ${availableDrivers.length} Selected`}
                     </span>
-                    <ArrowUpDownIcon className="h-3.5 w-3.5 opacity-50" />
+                    <ArrowUpDownIcon className="size-3.5 opacity-50" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -459,7 +459,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                           >
                             <div
                               className={cn(
-                                'w-4 h-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                                'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
                                 isSelected
                                   ? 'bg-red-500 border-red-500'
                                   : 'border-white/[0.15] bg-transparent'
@@ -467,7 +467,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                             >
                               {isSelected && (
                                 <svg
-                                  className="w-2.5 h-2.5 text-white"
+                                  className="size-2.5 text-white"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
@@ -486,7 +486,7 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
                               )}
                               style={{ backgroundColor: color }}
                             />
-                            <Avatar className="h-8 w-8 shrink-0 border border-white/[0.08]">
+                            <Avatar className="size-8 shrink-0 border border-white/[0.08]">
                               <AvatarImage src={headshot} className="object-cover object-top" />
                               <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
                                 {driver.code[0]}

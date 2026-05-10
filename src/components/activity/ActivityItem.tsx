@@ -88,10 +88,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
               <img
                 src={`https://flagcdn.com/h40/${countryCode}.png`}
                 alt={raceName}
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
               />
             ) : (
-              <Flag01Icon className="w-5 h-5 text-zinc-500" />
+              <Flag01Icon className="size-5 text-zinc-500" />
             )}
           </div>
           <div>
@@ -121,10 +121,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
               <img
                 src={`https://flagcdn.com/h40/${raceDetailsCode}.png`}
                 alt={raceDetailsName}
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
               />
             ) : (
-              <Flag01Icon className="w-5 h-5 text-zinc-500" />
+              <Flag01Icon className="size-5 text-zinc-500" />
             )}
           </div>
           <div>
@@ -155,18 +155,18 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
       content = (
         <div className="flex items-center gap-4">
           <div className="flex items-center -space-x-3">
-            <div className="w-10 h-10 rounded-full border-2 border-black bg-zinc-800 overflow-hidden z-10">
+            <div className="size-10 rounded-full border-2 border-black bg-zinc-800 overflow-hidden z-10">
               {img1 ? (
-                <img src={img1} alt={d1} className="w-full h-full object-cover" />
+                <img src={img1} alt={d1} className="size-full object-cover" />
               ) : (
-                <UserIcon className="w-full h-full p-2 text-zinc-500" />
+                <UserIcon className="size-full p-2 text-zinc-500" />
               )}
             </div>
-            <div className="w-10 h-10 rounded-full border-2 border-black bg-zinc-800 overflow-hidden z-0">
+            <div className="size-10 rounded-full border-2 border-black bg-zinc-800 overflow-hidden z-0">
               {img2 ? (
-                <img src={img2} alt={d2} className="w-full h-full object-cover" />
+                <img src={img2} alt={d2} className="size-full object-cover" />
               ) : (
-                <UserIcon className="w-full h-full p-2 text-zinc-500" />
+                <UserIcon className="size-full p-2 text-zinc-500" />
               )}
             </div>
           </div>
@@ -200,11 +200,11 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 overflow-hidden">
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 overflow-hidden">
             {driverImg ? (
-              <img src={driverImg} alt={driverName} className="w-full h-full object-cover" />
+              <img src={driverImg} alt={driverName} className="size-full object-cover" />
             ) : (
-              <UserIcon className="w-full h-full p-2 text-zinc-500" />
+              <UserIcon className="size-full p-2 text-zinc-500" />
             )}
           </div>
           <div>
@@ -224,8 +224,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <UserGroupIcon className="w-5 h-5 text-zinc-400" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <UserGroupIcon className="size-5 text-zinc-400" />
           </div>
           <div>
             <div className="font-bold text-white text-sm">Viewed {teamName}</div>
@@ -256,10 +256,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
               <img
                 src={`https://flagcdn.com/h40/${countryCodeTab}.png`}
                 alt={raceNameTab}
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
               />
             ) : (
-              <Analytics01Icon className="w-5 h-5 text-zinc-500" />
+              <Analytics01Icon className="size-5 text-zinc-500" />
             )}
           </div>
           <div>
@@ -294,10 +294,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
               <img
                 src={`https://flagcdn.com/h40/${countryCodeSession}.png`}
                 alt={raceNameSession}
-                className="w-full h-full object-cover"
+                className="size-full object-cover"
               />
             ) : (
-              <Flag01Icon className="w-5 h-5 text-zinc-500" />
+              <Flag01Icon className="size-5 text-zinc-500" />
             )}
           </div>
           <div>
@@ -322,8 +322,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <FlashIcon className="w-5 h-5 text-yellow-500" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <FlashIcon className="size-5 text-yellow-500" />
           </div>
           <div>
             <div className="font-bold text-white text-sm">
@@ -339,8 +339,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
     case 'favorites_updated':
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <StarIcon className="w-5 h-5 text-yellow-500" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <StarIcon className="size-5 text-yellow-500" />
           </div>
           <div>
             <div className="font-bold text-white text-sm">Updated Favorites</div>
@@ -355,8 +355,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
       const field = data.field;
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <UserIcon className="w-5 h-5 text-blue-500" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <UserIcon className="size-5 text-blue-500" />
           </div>
           <div>
             <div className="font-bold text-white text-sm">Updated Profile</div>
@@ -370,8 +370,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
     case 'password_updated':
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <SecurityCheckIcon className="w-5 h-5 text-green-500" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <SecurityCheckIcon className="size-5 text-green-500" />
           </div>
           <div>
             <div className="font-bold text-white text-sm">Updated Password</div>
@@ -385,8 +385,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
       // Fallback for unknown events
       content = (
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
-            <Analytics01Icon className="w-5 h-5 text-zinc-400" />
+          <div className="size-10 rounded-full border border-zinc-700 bg-zinc-800 flex items-center justify-center">
+            <Analytics01Icon className="size-5 text-zinc-400" />
           </div>
           <div>
             <div className="font-bold text-white text-sm capitalize">
@@ -403,7 +403,15 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className="bg-black/40 border border-zinc-800 p-4 rounded-lg flex items-center justify-between hover:border-zinc-600 hover:bg-zinc-900/50 transition-all cursor-pointer group"
     >
       {content}
@@ -414,5 +422,4 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
   );
 };
 
-export { ActivityItem };
 export default ActivityItem;

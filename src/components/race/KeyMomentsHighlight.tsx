@@ -68,7 +68,7 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
   return (
     <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
       <div className="mb-4 flex items-center gap-2 border-b border-white/[0.06] pb-3">
-        <FlashIcon className="h-4 w-4 text-red-400" />
+        <FlashIcon className="size-4 text-red-400" />
         <div>
           <h3 className="text-[14px] font-semibold text-white">Key Moments</h3>
           <p className="text-[11px] text-white">Largest single-lap position changes.</p>
@@ -79,10 +79,10 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
         {biggestGain.change > 1 ? (
           <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
             <div className="absolute right-3 top-3 text-emerald-500/[0.08]">
-              <ArrowUp01Icon className="h-14 w-14" />
+              <ArrowUp01Icon className="size-14" />
             </div>
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-              <ArrowUp01Icon className="h-3.5 w-3.5" /> Biggest Gain
+              <ArrowUp01Icon className="size-3.5" /> Biggest Gain
             </p>
             <div className="mb-1 text-[20px] font-bold text-white">
               {biggestGain.driver} <span className="text-emerald-400">+{biggestGain.change}</span>
@@ -103,10 +103,10 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
         {biggestLoss.change < -1 ? (
           <div className="relative overflow-hidden rounded-xl border border-red-500/20 bg-red-500/[0.04] p-5">
             <div className="absolute right-3 top-3 text-red-500/[0.08]">
-              <ArrowDown01Icon className="h-14 w-14" />
+              <ArrowDown01Icon className="size-14" />
             </div>
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-400">
-              <ArrowDown01Icon className="h-3.5 w-3.5" /> Biggest Loss
+              <ArrowDown01Icon className="size-3.5" /> Biggest Loss
             </p>
             <div className="mb-1 text-[20px] font-bold text-white">
               {biggestLoss.driver} <span className="text-red-400">{biggestLoss.change}</span>

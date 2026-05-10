@@ -105,7 +105,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
         ? rawData
         : ((rawData as unknown as TireStrategyResponse).stints ?? []);
       if (!data) return [];
-      return [...data].sort((a, b) => {
+      return data.toSorted((a, b) => {
         const posA = driverPositionMap.get(a.driver);
         const posB = driverPositionMap.get(b.driver);
         if (posA !== undefined && posB !== undefined) return posA - posB;
@@ -132,7 +132,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-1">
-                <div className="h-11 w-11 rounded-full bg-white/[0.03]" />
+                <div className="size-11 rounded-full bg-white/[0.03]" />
                 <div className="h-3 w-16 rounded bg-white/[0.03]" />
               </div>
               <div className="h-9 flex-1 rounded-lg bg-white/[0.03]" />
@@ -144,7 +144,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     if (isErrorStrategy) {
       return (
         <div className="mt-4 flex min-h-[200px] w-full flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05] p-6 text-red-400">
-          <AlertCircleIcon className="mb-2 h-7 w-7" />
+          <AlertCircleIcon className="mb-2 size-7" />
           <p className="text-[13px] font-semibold uppercase tracking-wider">
             Error loading strategy
           </p>
@@ -171,7 +171,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
               ([compound, colorClass]) =>
                 compound !== 'UNKNOWN' && (
                   <div key={compound} className="flex items-center gap-2">
-                    <span className={cn('h-3 w-3 rounded-full', colorClass)} />
+                    <span className={cn('size-3 rounded-full', colorClass)} />
                     <span className="text-[12px] font-semibold uppercase tracking-wider text-white">
                       {compound}
                     </span>
@@ -212,6 +212,8 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
               return (
                 <div
                   key={driverData.driver}
+                  role="button"
+                  tabIndex={0}
                   className={cn(
                     'relative z-10 flex cursor-pointer items-center gap-4 rounded-lg px-3 py-2.5 transition-all',
                     focusedDriver && focusedDriver !== driverData.driver
@@ -222,9 +224,15 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                       : 'hover:bg-white/[0.02] border border-transparent'
                   )}
                   onClick={() => toggleDriverFocus(driverData.driver)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggleDriverFocus(driverData.driver);
+                    }
+                  }}
                 >
                   <div className="w-20 flex flex-col items-center gap-1 shrink-0">
-                    <Avatar className="h-14 w-14 shrink-0 border border-white/[0.08]">
+                    <Avatar className="size-14 shrink-0 border border-white/[0.08]">
                       <AvatarImage src={headshot} className="object-cover object-top" />
                       <AvatarFallback className="bg-[#1a1a1e] text-[11px] font-bold text-white">
                         {driverData.driver}
@@ -275,7 +283,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                           >
                             <div className="space-y-1.5">
                               <div className="mb-2 flex items-center gap-2 border-b border-white/[0.06] pb-2">
-                                <span className={cn('h-2.5 w-2.5 rounded-full', bgColorClass)} />
+                                <span className={cn('size-2.5 rounded-full', bgColorClass)} />
                                 <span className="text-[12px] font-bold uppercase tracking-wider text-white">
                                   {stint.compound}
                                 </span>

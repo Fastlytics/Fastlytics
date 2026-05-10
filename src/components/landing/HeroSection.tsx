@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
 import Speedometer from '@/components/replay/Speedometer';
 import LandingChart from './LandingChart';
@@ -21,7 +21,7 @@ const HERO_WINDOW_CONTROLS = [
     label: 'Close',
     bgClass: 'bg-[#ff5f57]',
     icon: (
-      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 10 10" className="size-2.5" fill="none" aria-hidden="true">
         <path
           d="M2.2 2.2 7.8 7.8M7.8 2.2 2.2 7.8"
           stroke="rgba(57,34,30,0.95)"
@@ -35,7 +35,7 @@ const HERO_WINDOW_CONTROLS = [
     label: 'Minimize',
     bgClass: 'bg-[#ffbd2e]',
     icon: (
-      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 10 10" className="size-2.5" fill="none" aria-hidden="true">
         <path
           d="M2.2 5h5.6"
           stroke="rgba(74,52,16,0.95)"
@@ -49,7 +49,7 @@ const HERO_WINDOW_CONTROLS = [
     label: 'Expand',
     bgClass: 'bg-[#28c840]',
     icon: (
-      <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 10 10" className="size-2.5" fill="none" aria-hidden="true">
         <path
           d="M2.4 7.6 7.6 2.4M4.9 2.4h2.7v2.7"
           stroke="rgba(20,68,28,0.95)"
@@ -71,7 +71,7 @@ const HERO_SECTORS = [
 function LoadingBar({ className = '' }: { className?: string }) {
   return (
     <div className={`overflow-hidden rounded-full bg-white/[0.05] ${className}`} aria-hidden="true">
-      <div className="h-full w-full animate-[shimmer_2.2s_linear_infinite] bg-[linear-gradient(110deg,transparent_15%,rgba(255,255,255,0.14)_45%,transparent_75%)] bg-[length:200%_100%]" />
+      <div className="size-full animate-[shimmer_2.2s_linear_infinite] bg-[linear-gradient(110deg,transparent_15%,rgba(255,255,255,0.14)_45%,transparent_75%)] bg-[length:200%_100%]" />
     </div>
   );
 }
@@ -144,7 +144,7 @@ function LoadingChartPanel({ chartType }: { chartType: ChartType }) {
         <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(110deg,transparent_20%,rgba(255,255,255,0.04)_45%,transparent_70%)] bg-[length:200%_100%] animate-[shimmer_2.2s_linear_infinite]" />
         <svg
           viewBox="0 0 600 220"
-          className="absolute inset-0 h-full w-full"
+          className="absolute inset-0 size-full"
           preserveAspectRatio="none"
         >
           {[55, 110, 165].map((y) => (
@@ -172,7 +172,7 @@ function LoadingChartPanel({ chartType }: { chartType: ChartType }) {
         </svg>
         <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#09090b] to-transparent" />
         <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-white/[0.06] bg-black/40 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-white/40">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+          <span className="size-1.5 animate-pulse rounded-full bg-red-400" />
           Buffering live trace
         </div>
       </div>
@@ -193,9 +193,9 @@ function LoadingTrackMapPanel({ variant }: { variant: 'compact' | 'expanded' }) 
         className={`relative overflow-hidden rounded-lg border border-white/[0.04] bg-[#09090b] race-grid-bg ${variant === 'compact' ? 'h-[320px]' : 'h-full min-h-[300px]'}`}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_58%)]" />
-        <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.08]" />
-        <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" />
-        <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.65)]" />
+        <div className="absolute left-1/2 top-1/2 size-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.08]" />
+        <div className="absolute left-1/2 top-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.04]" />
+        <div className="absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-400 shadow-[0_0_18px_rgba(248,113,113,0.65)]" />
         <div className="absolute inset-y-0 left-[-20%] w-[38%] animate-[shimmer_2.6s_linear_infinite] bg-[linear-gradient(90deg,transparent,rgba(255,59,48,0.14),transparent)] blur-md" />
         <div className="absolute bottom-2 left-2 flex gap-1.5">
           {['S1', 'S2', 'S3'].map((label, index) => (
@@ -221,9 +221,9 @@ function LoadingTelemetryPanel({ variant }: { variant: 'compact' | 'expanded' })
       {variant === 'compact' ? (
         <div className="flex items-start gap-3">
           <div className="flex flex-1 flex-col items-center justify-center">
-            <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
+            <div className="relative flex size-[140px] items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
               <div className="absolute inset-5 rounded-full border border-white/[0.05]" />
-              <div className="absolute h-[128px] w-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
+              <div className="absolute size-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
               <div className="text-center">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
                   Sync
@@ -260,9 +260,9 @@ function LoadingTelemetryPanel({ variant }: { variant: 'compact' | 'expanded' })
       ) : (
         <div className="grid gap-3 sm:grid-cols-[150px_1fr] xl:grid-cols-1 2xl:grid-cols-[150px_1fr]">
           <div className="flex items-center justify-center rounded-xl border border-white/[0.05] bg-white/[0.02] p-3">
-            <div className="relative flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/[0.06]">
+            <div className="relative flex size-[140px] items-center justify-center rounded-full border border-white/[0.06]">
               <div className="absolute inset-5 rounded-full border border-white/[0.05]" />
-              <div className="absolute h-[128px] w-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
+              <div className="absolute size-[128px] animate-spin rounded-full border-2 border-transparent border-t-red-400/80 border-r-red-500/20" />
               <div className="text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
                 Syncing
               </div>
@@ -304,9 +304,7 @@ function LoadingSectorBoardPanel() {
             </div>
             <div className="mt-2 flex items-center gap-2">
               <LoadingBar className="h-6 w-20" />
-              {index === 0 && (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-              )}
+              {index === 0 && <span className="size-1.5 animate-pulse rounded-full bg-red-400" />}
             </div>
           </div>
         ))}
@@ -439,7 +437,7 @@ function HeroWindowControls({
             type="button"
             aria-label={expanded && control.label === 'Expand' ? 'Restore' : control.label}
             onClick={action}
-            className={`flex h-3 w-3 items-center justify-center rounded-full ${control.bgClass} shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.18)] transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/30`}
+            className={`flex size-3 items-center justify-center rounded-full ${control.bgClass} shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.18)] transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white/30`}
           >
             <span className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
               {control.icon}
@@ -541,7 +539,7 @@ function TrackMapPanel({
       <div
         className={`relative overflow-hidden rounded-lg border border-white/[0.04] bg-[#09090b] ${variant === 'compact' ? 'h-[320px]' : 'h-full min-h-[300px]'}`}
       >
-        <svg viewBox="0 0 1000 500" className="absolute inset-0 h-full w-full">
+        <svg viewBox="0 0 1000 500" className="absolute inset-0 size-full">
           <path
             d={hero.trackPath || DEFAULT_HERO_VIEW.trackPath || ''}
             fill="none"
@@ -1144,8 +1142,8 @@ export default function HeroSection() {
   return (
     <section className="relative overflow-hidden pb-20 pt-32 lg:pb-32 lg:pt-40">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/4 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-red-500/[0.07] blur-[120px]" />
-        <div className="absolute right-1/4 top-20 h-[400px] w-[400px] rounded-full bg-orange-500/[0.05] blur-[100px]" />
+        <div className="absolute left-1/4 top-0 size-[600px] -translate-x-1/2 rounded-full bg-red-500/[0.07] blur-[120px]" />
+        <div className="absolute right-1/4 top-20 size-[400px] rounded-full bg-orange-500/[0.05] blur-[100px]" />
       </div>
 
       <div
@@ -1160,16 +1158,16 @@ export default function HeroSection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.h1
+          <m.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl font-bold leading-[1.08] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
           >
             Race intelligence <span className="text-red-500">for every</span> Formula 1 session
-          </motion.h1>
+          </m.h1>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -1177,9 +1175,9 @@ export default function HeroSection() {
           >
             Telemetry, strategy, pace and championship context wired into one live race desk. See
             what the pit wall sees.
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
@@ -1212,10 +1210,10 @@ export default function HeroSection() {
             >
               See features
             </a>
-          </motion.div>
+          </m.div>
         </div>
 
-        <motion.div
+        <m.div
           initial={shouldAnimateCompactHero ? { opacity: 0, y: 40 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={shouldAnimateCompactHero ? { duration: 0.8, delay: 0.45 } : { duration: 0 }}
@@ -1245,11 +1243,11 @@ export default function HeroSection() {
             />
           </div>
           <div className="absolute -bottom-20 left-1/2 h-40 w-3/4 -translate-x-1/2 rounded-full bg-gradient-to-t from-red-500/5 to-transparent blur-3xl" />
-        </motion.div>
+        </m.div>
 
         {hero && heroWindowAnimation && heroModalPhase !== 'closed' && (
           <>
-            <motion.div
+            <m.div
               key="hero-expanded-backdrop"
               className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-xl"
               initial={{ opacity: 0 }}
@@ -1257,7 +1255,7 @@ export default function HeroSection() {
               transition={{ duration: isHeroClosing ? 0.22 : 0.42 }}
               onMouseDown={closeExpandedHero}
             />
-            <motion.div
+            <m.div
               key="hero-expanded-window"
               className="fixed z-[80] flex flex-col overflow-hidden border border-white/[0.10] bg-[#0c0c0e] shadow-[0_40px_180px_rgba(0,0,0,0.75)]"
               initial={heroWindowAnimation.origin}
@@ -1276,7 +1274,7 @@ export default function HeroSection() {
                 setUserSelectedDriverCode={handleSelectDriver}
                 onChromeAction={closeExpandedHero}
               />
-            </motion.div>
+            </m.div>
           </>
         )}
       </div>

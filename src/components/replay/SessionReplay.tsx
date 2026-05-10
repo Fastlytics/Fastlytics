@@ -389,7 +389,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     for (const lap of metadata?.completed_laps || []) {
       if (lap.lap > 0) lapSet.add(lap.lap);
     }
-    return [...lapSet].sort((a, b) => a - b);
+    return lapSet.toSorted((a, b) => a - b);
   }, [metadata?.completed_laps, totalLaps]);
 
   const getSeekTimeForLap = useCallback(
@@ -769,7 +769,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       className={cn(
         'relative flex flex-col bg-[#09090b] text-white overflow-hidden',
         isFullscreen
-          ? 'h-screen w-screen'
+          ? 'size-screen'
           : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl border border-white/[0.06] shadow-2xl'
       )}
     >
@@ -811,7 +811,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
         {isFullscreen && (
           <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-40 pointer-events-none select-none text-center">
-            <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-white drop-shadow-lg">
+            <h1 className="text-xl md:text-2xl font-semibold italic tracking-tighter uppercase text-white drop-shadow-lg">
               {event} &ldquo;{session}&rdquo;
             </h1>
           </div>
@@ -891,7 +891,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
               setIsPlaying(true);
               trackEvent('replay_started', { year, event, session });
             }}
-            className="group relative flex items-center justify-center w-24 h-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
+            className="group relative flex items-center justify-center size-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
           >
             <Play size={48} className="text-white fill-white ml-2" />
             <div className="absolute inset-0 rounded-full ring-4 ring-white/20 group-hover:ring-white/40 animate-pulse" />

@@ -73,7 +73,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
                     onMouseEnter={() => setHoveredGear(gear)}
                     onMouseLeave={() => setHoveredGear(null)}
                   >
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c }}></div>
+                    <div className="size-2 rounded-full" style={{ backgroundColor: c }}></div>
                     <span
                       className="text-[10px] text-white"
                       style={{ fontFamily: "'Inter', sans-serif" }}
@@ -87,7 +87,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
 
             <svg
               viewBox="0 0 1000 500"
-              className="w-full h-full p-4"
+              className="size-full p-4"
               preserveAspectRatio="xMidYMid meet"
             >
               {/* Base Track */}

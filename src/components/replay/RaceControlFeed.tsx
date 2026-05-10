@@ -105,7 +105,7 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
             >
               <div
                 className={cn(
-                  'shrink-0 w-6 h-6 rounded-md flex items-center justify-center mt-0.5',
+                  'shrink-0 size-6 rounded-md flex items-center justify-center mt-0.5',
                   'bg-black/20'
                 )}
               >

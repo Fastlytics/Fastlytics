@@ -26,6 +26,75 @@ interface RPMChartProps {
   lap?: string | number;
 }
 
+const RPMTooltip = ({
+  active,
+  payload,
+  label,
+  selectedDriver,
+  year,
+}: CustomTooltipProps<RPMDataPoint> & { selectedDriver?: string; year?: number }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const headshot = getDriverImage(selectedDriver, year);
+    const color = driverColor(selectedDriver, year);
+
+    return (
+      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
+            <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
+              {headshot ? (
+                <img
+                  src={headshot}
+                  alt={selectedDriver}
+                  className="size-full object-cover object-top"
+                />
+              ) : (
+                <div
+                  className="size-full flex items-center justify-center text-[10px] text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {selectedDriver?.[0]}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span
+                className="text-xs font-semibold text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {selectedDriver}
+              </span>
+              <span
+                className="text-[10px] text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                DIST: {Math.round(Number(label))}m
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <span
+              className="text-[9px] text-white uppercase tracking-wider"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              RPM
+            </span>
+            <span
+              className="text-xl font-black text-white"
+              style={{ color: color, fontFamily: "'Inter', sans-serif" }}
+            >
+              {Math.round(data.RPM)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const RPMChart: React.FC<RPMChartProps> = ({
   className,
   delay = 0,
@@ -36,75 +105,6 @@ const RPMChart: React.FC<RPMChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
-  // Custom Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-    selectedDriver,
-  }: CustomTooltipProps<RPMDataPoint> & { selectedDriver?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const headshot = getDriverImage(selectedDriver, year);
-      const color = driverColor(selectedDriver, year);
-
-      return (
-        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={selectedDriver}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-[10px] text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {selectedDriver[0]}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span
-                  className="text-xs font-semibold text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  {selectedDriver}
-                </span>
-                <span
-                  className="text-[10px] text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  DIST: {Math.round(Number(label))}m
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span
-                className="text-[9px] text-white uppercase tracking-wider"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                RPM
-              </span>
-              <span
-                className="text-xl font-black text-white"
-                style={{ color: color, fontFamily: "'Inter', sans-serif" }}
-              >
-                {Math.round(data.RPM)}
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <TelemetryChartWrapper<RPMDataPoint[]>
       className={className}
@@ -156,7 +156,7 @@ const RPMChart: React.FC<RPMChartProps> = ({
               width={35}
             />
             <Tooltip
-              content={<CustomTooltip selectedDriver={selectedDriver} />}
+              content={<RPMTooltip selectedDriver={selectedDriver} year={year} />}
               cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeDasharray: '4 4' }}
             />
             <Line

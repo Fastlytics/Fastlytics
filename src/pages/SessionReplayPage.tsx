@@ -19,9 +19,9 @@ const SessionReplayPage: React.FC = () => {
           description="Replay view for race telemetry and session data."
           noIndex
         />
-        <div className="h-screen flex items-center justify-center bg-black text-white">
+        <div className="h-screen flex items-center justify-center bg-zinc-950 text-white">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Invalid Session Parameters</h1>
+            <h1 className="text-2xl font-semibold mb-4">Invalid Session Parameters</h1>
             <Button onClick={() => navigate(-1)} variant="outline">
               Go Back
             </Button>
@@ -42,7 +42,7 @@ const SessionReplayPage: React.FC = () => {
         featureName="Session Replay"
         description="Experience immersive race telemetry with real-time car positions and data overlays"
       >
-        <div className="relative h-screen bg-black">
+        <div className="relative h-screen bg-zinc-950">
           {/* Back Button Overlay */}
           <div className="absolute top-4 left-4 z-50">
             <Button
@@ -51,7 +51,7 @@ const SessionReplayPage: React.FC = () => {
               className="text-white hover:bg-white/10 rounded-full"
               onClick={() => navigate(-1)}
             >
-              <ArrowLeftIcon className="w-6 h-6" />
+              <ArrowLeftIcon className="size-6" />
             </Button>
           </div>
 
@@ -67,5 +67,4 @@ const SessionReplayPage: React.FC = () => {
   );
 };
 
-export { SessionReplayPage };
 export default SessionReplayPage;

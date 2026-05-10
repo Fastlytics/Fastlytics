@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
 import { SEO } from '@/components/layout/SEO';
@@ -20,7 +20,7 @@ const PrivacyPolicy = () => {
 
       <main className="pt-28 pb-20 px-5 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -28,15 +28,15 @@ const PrivacyPolicy = () => {
             <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
               Legal
             </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
               Privacy Policy
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-white/40">
               How we collect, use, and protect your personal information.
             </p>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.6 }}
@@ -298,7 +298,7 @@ const PrivacyPolicy = () => {
                 </p>
               </div>
             </section>
-          </motion.div>
+          </m.div>
         </div>
       </main>
 
@@ -307,5 +307,4 @@ const PrivacyPolicy = () => {
   );
 };
 
-export { PrivacyPolicy };
 export default PrivacyPolicy;

@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
 import { BillingToggle } from '@/components/payments/BillingToggle';
 import { PricingCard, PricingTier } from '@/components/payments/PricingCard';
 import { Tick01Icon, Cancel01Icon } from 'hugeicons-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { SEO } from '@/components/layout/SEO';
 import { useSearchParams } from 'react-router-dom';
 import { useProducts } from '@/hooks/useProducts';
@@ -72,8 +71,8 @@ const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'Team pace analysis', free: true, pro: true },
 ];
 
-const CheckCell = () => <Tick01Icon className="h-4 w-4 text-emerald-400" />;
-const CrossCell = () => <Cancel01Icon className="h-4 w-4 text-white/10" />;
+const CheckCell = () => <Tick01Icon className="size-4 text-emerald-400" />;
+const CrossCell = () => <Cancel01Icon className="size-4 text-white/10" />;
 
 function FeatureCell({ value }: { value: boolean | string }) {
   if (typeof value === 'boolean') {
@@ -85,7 +84,6 @@ function FeatureCell({ value }: { value: boolean | string }) {
 const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
 const Pricing = () => {
-  const isMobile = useIsMobile();
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [searchParams] = useSearchParams();
   const { data: products } = useProducts();
@@ -137,24 +135,24 @@ const Pricing = () => {
         <section className="px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
             {checkoutMessage && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mx-auto mb-8 max-w-2xl rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 text-center text-[14px] text-amber-300"
               >
                 {checkoutMessage}
-              </motion.div>
+              </m.div>
             )}
             <div className="mx-auto max-w-2xl text-center">
-              <motion.h1
+              <m.h1
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
               >
                 Choose your race plan
-              </motion.h1>
-              <motion.p
+              </m.h1>
+              <m.p
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
@@ -162,15 +160,15 @@ const Pricing = () => {
               >
                 Start free with full platform access. Upgrade to Pro for historical archives and
                 unlimited session replay
-              </motion.p>
-              <motion.div
+              </m.p>
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
                 className="mt-8"
               >
                 <BillingToggle interval={interval} onChange={setInterval} />
-              </motion.div>
+              </m.div>
             </div>
 
             <div className="mt-12 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto">
@@ -181,78 +179,76 @@ const Pricing = () => {
           </div>
         </section>
 
-        {!isMobile && (
-          <section className="mt-20 px-5 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-              <motion.h2
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="text-2xl font-bold tracking-[-0.01em] text-white text-center"
-              >
-                Full feature comparison
-              </motion.h2>
+        <section className="mt-20 px-5 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <m.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-2xl font-bold tracking-[-0.01em] text-white text-center"
+            >
+              Full feature comparison
+            </m.h2>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="mt-8 overflow-hidden rounded-xl border border-white/[0.06]"
-              >
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-white/[0.06] bg-white/[0.01]">
-                        <th className="px-6 py-4 text-left text-[13px] font-semibold text-white/60">
-                          Feature
-                        </th>
-                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-white/40 w-1/4">
-                          Free
-                        </th>
-                        <th className="px-6 py-4 text-center text-[13px] font-semibold text-red-400 w-1/4">
-                          Pro
-                        </th>
+            <m.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="mt-8 overflow-hidden rounded-xl border border-white/[0.06]"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/[0.06] bg-white/[0.01]">
+                      <th className="px-6 py-4 text-left text-[13px] font-semibold text-white/60">
+                        Feature
+                      </th>
+                      <th className="w-1/4 px-6 py-4 text-center text-[13px] font-semibold text-white/40">
+                        Free
+                      </th>
+                      <th className="w-1/4 px-6 py-4 text-center text-[13px] font-semibold text-red-400">
+                        Pro
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {COMPARISON_ROWS.map((row, i) => (
+                      <tr
+                        key={row.feature}
+                        className={`border-b border-white/[0.03] transition-colors hover:bg-white/[0.01] ${
+                          i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.005]'
+                        }`}
+                      >
+                        <td className="px-6 py-3.5 text-[13px] text-white/70">{row.feature}</td>
+                        <td className="px-6 py-3.5 text-center">
+                          <div className="flex justify-center">
+                            <FeatureCell value={row.free} />
+                          </div>
+                        </td>
+                        <td className="bg-red-500/[0.02] px-6 py-3.5 text-center">
+                          <div className="flex justify-center">
+                            <FeatureCell value={row.pro} />
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {COMPARISON_ROWS.map((row, i) => (
-                        <tr
-                          key={row.feature}
-                          className={`border-b border-white/[0.03] transition-colors hover:bg-white/[0.01] ${
-                            i % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.005]'
-                          }`}
-                        >
-                          <td className="px-6 py-3.5 text-[13px] text-white/70">{row.feature}</td>
-                          <td className="px-6 py-3.5 text-center">
-                            <div className="flex justify-center">
-                              <FeatureCell value={row.free} />
-                            </div>
-                          </td>
-                          <td className="px-6 py-3.5 text-center bg-red-500/[0.02]">
-                            <div className="flex justify-center">
-                              <FeatureCell value={row.pro} />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            </div>
-          </section>
-        )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </m.div>
+          </div>
+        </section>
 
         <section className="mt-20 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center"
             >
-              <h3 className="text-lg font-bold tracking-[-0.01em] text-white">
+              <h3 className="text-lg font-semibold tracking-[-0.01em] text-white">
                 Frequently asked questions
               </h3>
               <div className="mt-6 grid gap-6 text-left sm:grid-cols-2">
@@ -289,7 +285,7 @@ const Pricing = () => {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </section>
       </main>
@@ -299,5 +295,4 @@ const Pricing = () => {
   );
 };
 
-export { Pricing };
 export default Pricing;

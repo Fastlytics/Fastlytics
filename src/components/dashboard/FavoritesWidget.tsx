@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Profile } from '@/contexts/AuthContext';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -57,7 +57,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
         className="mb-8 overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-7"
       >
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M9 3v6M9 12v1" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
               <circle cx="9" cy="9" r="7.5" stroke="#ef4444" strokeWidth="1.2" opacity="0.5" />
@@ -103,13 +103,13 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
 
         <div className="divide-y divide-white/[0.04] p-3">
           {favoriteDriver && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
               className="flex items-center gap-3 rounded-lg p-4"
             >
-              <Avatar className="h-15 w-15 shrink-0 border border-white/[0.08]">
+              <Avatar className="size-15 shrink-0 border border-white/[0.08]">
                 <AvatarImage
                   src={getDriverImageForYear(favoriteDriver.code)}
                   className="object-cover object-top"
@@ -133,11 +133,11 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   {favoriteDriver.points} pts
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {favoriteTeam && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.08 }}
@@ -146,12 +146,12 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                 to="/standings/teams"
                 className="flex items-center gap-3 rounded-lg p-4 transition-colors hover:bg-white/[0.02]"
               >
-                <div className="flex h-15 w-15 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-1.5">
+                <div className="flex size-15 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] p-1.5">
                   {getTeamLogo(favoriteTeam.team) ? (
                     <img
                       src={getTeamLogo(favoriteTeam.team)!}
                       alt={favoriteTeam.team}
-                      className="h-full w-full object-contain"
+                      className="size-full object-contain"
                     />
                   ) : (
                     <span className="text-[12px] font-bold text-white/55">
@@ -174,7 +174,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </m.div>
           )}
         </div>
       </div>
@@ -201,7 +201,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
               const isConfirmed = item.status === 'confirmed';
 
               return (
-                <motion.div
+                <m.div
                   key={item.driver.code}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -242,7 +242,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
 
                   {/* Avatar */}
                   <Avatar
-                    className={`h-15 w-15 shrink-0 ${isYou ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}
+                    className={`size-15 shrink-0 ${isYou ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}
                   >
                     <AvatarImage
                       src={getDriverImageForYear(item.driver.code)}
@@ -282,7 +282,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </m.div>
               );
             })}
           </div>
@@ -292,5 +292,4 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   );
 };
 
-export { FavoritesWidget };
 export default FavoritesWidget;

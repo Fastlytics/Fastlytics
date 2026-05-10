@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import {
   Activity01Icon,
   Calendar03Icon,
@@ -50,17 +50,17 @@ import { SEO } from '@/components/layout/SEO';
 
 const TeamPaceTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
   if (active && payload && payload.length) {
-    const sortedPayload = [...payload].sort((a, b) => (a.value || 0) - (b.value || 0));
+    const sortedPayload = payload.toSorted((a, b) => (a.value || 0) - (b.value || 0));
     return (
-      <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[200px]">
-        <p className="text-gray-400 font-mono text-xs mb-3 uppercase tracking-wider border-b border-gray-800 pb-2">
+      <div className="bg-black/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[200px]">
+        <p className="text-zinc-400 font-mono text-xs mb-3 uppercase tracking-wider border-b border-zinc-800 pb-2">
           {label}
         </p>
-        {sortedPayload.map((entry, index: number) => (
-          <div key={index} className="flex items-center justify-between gap-4 mb-2">
+        {sortedPayload.map((entry) => (
+          <div key={String(entry.name)} className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-gray-200 font-bold text-sm">{entry.name}</span>
+              <div className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-zinc-200 font-bold text-sm">{entry.name}</span>
             </div>
             <span className="text-white font-mono text-sm font-bold">{entry.value}</span>
           </div>
@@ -74,17 +74,17 @@ const TeamPaceTooltip = ({ active, payload, label }: CustomTooltipProps<number>)
 const TeamPaceLegend = ({ payload }: CustomLegendProps) => {
   if (!payload) return null;
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3 pt-6 border-t border-gray-800/50 mt-4">
-      {payload.map((entry, index: number) => (
+    <div className="flex flex-wrap items-center justify-center gap-3 pt-6 border-t border-zinc-800/50 mt-4">
+      {payload.map((entry) => (
         <div
-          key={`legend-${index}`}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-gray-800 hover:border-gray-700 transition-colors"
+          key={String(entry.value)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors"
         >
           <div
-            className="w-2 h-2 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.2)]"
+            className="size-2 rounded-full shadow-[0_0_4px_rgba(255,255,255,0.2)]"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
             {entry.value}
           </span>
         </div>
@@ -307,7 +307,7 @@ const TeamPaceAnalysis = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
       <SEO
         title="Team Pace"
         description={`Compare team pace across the ${selectedYear} season with weekend evolution, session gaps, and consistency trends.`}
@@ -322,23 +322,23 @@ const TeamPaceAnalysis = () => {
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header (Matching ChampionshipProgression Style) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b-2 border-gray-800 pb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b-2 border-zinc-800 pb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-500 hover:text-white hover:bg-gray-800"
+                className="text-zinc-500 hover:text-white hover:bg-zinc-800"
                 onClick={() => navigate('/dashboard')}
               >
-                <ArrowLeft01Icon className="h-6 w-6" />
+                <ArrowLeft01Icon className="size-6" />
               </Button>
-              <h1 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter flex items-center gap-3">
+              <h1 className="text-3xl md:text-5xl font-semibold uppercase italic tracking-tighter flex items-center gap-3">
                 Team Pace <span className="text-red-600">Analysis</span>
-                <Activity01Icon className="h-8 w-8 text-gray-600 md:h-10 md:w-10" />
+                <Activity01Icon className="size-8 text-zinc-600 md:h-10 md:w-10" />
               </h1>
             </div>
-            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest ml-14">
+            <p className="text-zinc-500 font-mono text-sm uppercase tracking-widest ml-14">
               Weekend Performance Evolution & Race Pace
             </p>
           </div>
@@ -353,12 +353,12 @@ const TeamPaceAnalysis = () => {
                 trackEvent('season_changed', { page: 'team_pace', year: Number(value) });
               }}
             >
-              <SelectTrigger className="w-[120px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
+              <SelectTrigger className="w-[120px] bg-zinc-950 border-2 border-zinc-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white rounded-none">
+              <SelectContent className="bg-zinc-950 border-2 border-zinc-800 text-white rounded-none">
                 <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase p-2">Season</SelectLabel>
+                  <SelectLabel className="text-xs text-zinc-500 uppercase p-2">Season</SelectLabel>
                   {availableYears.map((year) => (
                     <SelectItem
                       key={year}
@@ -385,14 +385,14 @@ const TeamPaceAnalysis = () => {
               }}
               disabled={summaryList.length === 0}
             >
-              <SelectTrigger className="w-[240px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
+              <SelectTrigger className="w-[240px] bg-zinc-950 border-2 border-zinc-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
                 <SelectValue
                   placeholder={summaryList.length === 0 ? 'No Events' : 'Select Event'}
                 />
               </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white rounded-none max-h-[300px]">
+              <SelectContent className="bg-zinc-950 border-2 border-zinc-800 text-white rounded-none max-h-[300px]">
                 <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase p-2">
+                  <SelectLabel className="text-xs text-zinc-500 uppercase p-2">
                     Race Weekend
                   </SelectLabel>
                   {summaryList.map((event) => {
@@ -417,14 +417,14 @@ const TeamPaceAnalysis = () => {
         </div>
 
         {loading ? (
-          <div className="w-full h-[400px] flex flex-col items-center justify-center bg-zinc-950/50 border border-gray-800 rounded-xl relative overflow-hidden">
+          <div className="w-full h-[400px] flex flex-col items-center justify-center bg-zinc-950/50 border border-zinc-800 rounded-xl relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-800/10 to-transparent animate-shimmer"
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-800/10 to-transparent animate-shimmer"
               style={{ backgroundSize: '200% 100%' }}
             ></div>
-            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin z-10 mb-4"></div>
-            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest animate-pulse z-10">
-              Loading Pace Analysis...
+            <div className="size-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin z-10 mb-4"></div>
+            <p className="text-zinc-500 font-mono text-sm uppercase tracking-widest animate-pulse z-10">
+              Loading Pace Analysis…
             </p>
           </div>
         ) : eventData ? (
@@ -432,11 +432,11 @@ const TeamPaceAnalysis = () => {
             {/* 1. Weekend Evolution Chart */}
             <div
               ref={evolutionRef}
-              className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[550px]"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 md:p-8 h-[550px]"
             >
-              <h3 className="text-xl font-black uppercase italic text-white mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-semibold uppercase italic text-white mb-6 flex items-center gap-2">
                 Pace <span className="text-red-600">Evolution</span>
-                <span className="text-gray-600 text-sm font-mono not-italic ml-auto font-normal normal-case border border-gray-800 px-2 py-1 rounded">
+                <span className="text-zinc-600 text-sm font-mono not-italic ml-auto font-normal normal-case border border-zinc-800 px-2 py-1 rounded">
                   Rank per session
                 </span>
                 <ChartExportMenu
@@ -518,10 +518,10 @@ const TeamPaceAnalysis = () => {
               {/* 2. Pace Gap Analysis */}
               <div
                 ref={paceGapRef}
-                className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 md:p-8 h-[450px]"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                  <h3 className="text-xl font-black uppercase italic text-white flex items-center gap-2">
+                  <h3 className="text-xl font-semibold uppercase italic text-white flex items-center gap-2">
                     Pace <span className="text-red-600">Gap</span>
                     <ChartExportMenu
                       onExport={(format) =>
@@ -551,10 +551,10 @@ const TeamPaceAnalysis = () => {
                     }}
                     disabled={!eventData}
                   >
-                    <SelectTrigger className="w-[100px] bg-zinc-900 border-gray-700 text-white h-8 text-xs font-bold uppercase tracking-wider">
+                    <SelectTrigger className="w-[100px] bg-zinc-900 border-zinc-700 text-white h-8 text-xs font-bold uppercase tracking-wider">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-gray-700 text-white">
+                    <SelectContent className="bg-zinc-900 border-zinc-700 text-white">
                       {eventData &&
                         Object.keys(eventData.sessions)
                           .sort((a, b) => {
@@ -605,10 +605,10 @@ const TeamPaceAnalysis = () => {
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
                               return (
-                                <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md">
+                                <div className="bg-black/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md">
                                   <p className="text-white font-bold mb-1">{data.teamName}</p>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-gray-400 text-xs uppercase tracking-wider">
+                                    <span className="text-zinc-400 text-xs uppercase tracking-wider">
                                       Median:
                                     </span>
                                     <span className="text-white font-mono font-bold text-sm">
@@ -616,7 +616,7 @@ const TeamPaceAnalysis = () => {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-gray-400 text-xs uppercase tracking-wider">
+                                    <span className="text-zinc-400 text-xs uppercase tracking-wider">
                                       Gap:
                                     </span>
                                     <span className="text-red-500 font-mono font-bold text-sm">
@@ -635,14 +635,14 @@ const TeamPaceAnalysis = () => {
                           barSize={24}
                           animationDuration={1000}
                         >
-                          {getPaceGapData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={getTeamColorHex(entry.teamName)} />
+                          {getPaceGapData().map((entry) => (
+                            <Cell key={entry.teamName} fill={getTeamColorHex(entry.teamName)} />
                           ))}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex h-full items-center justify-center text-gray-600 font-mono text-sm uppercase tracking-widest">
+                    <div className="flex h-full items-center justify-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
                       No data available for {selectedSession}
                     </div>
                   )}
@@ -652,10 +652,10 @@ const TeamPaceAnalysis = () => {
               {/* 3. Scatter Plot */}
               <div
                 ref={scatterRef}
-                className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[450px]"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 md:p-8 h-[450px]"
               >
-                <h3 className="text-xl font-black uppercase italic text-white mb-6 flex items-center gap-2">
-                  Peak <span className="text-gray-600">vs</span> Consistent
+                <h3 className="text-xl font-semibold uppercase italic text-white mb-6 flex items-center gap-2">
+                  Peak <span className="text-zinc-600">vs</span> Consistent
                   <ChartExportMenu
                     onExport={(format) =>
                       exportScatter(format, {
@@ -711,21 +711,21 @@ const TeamPaceAnalysis = () => {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload;
                             return (
-                              <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md">
+                              <div className="bg-black/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md">
                                 <p
-                                  className="text-white font-bold mb-2 border-b border-gray-800 pb-1"
+                                  className="text-white font-bold mb-2 border-b border-zinc-800 pb-1"
                                   style={{ color: data.teamColor }}
                                 >
                                   {data.teamName}
                                 </p>
                                 <div className="space-y-1">
-                                  <p className="text-gray-400 text-xs flex justify-between gap-4">
+                                  <p className="text-zinc-400 text-xs flex justify-between gap-4">
                                     <span>Median:</span>{' '}
                                     <span className="text-white font-mono">
                                       {data.x.toFixed(3)}s
                                     </span>
                                   </p>
-                                  <p className="text-gray-400 text-xs flex justify-between gap-4">
+                                  <p className="text-zinc-400 text-xs flex justify-between gap-4">
                                     <span>Fastest:</span>{' '}
                                     <span className="text-white font-mono">
                                       {data.y.toFixed(3)}s
@@ -739,9 +739,9 @@ const TeamPaceAnalysis = () => {
                         }}
                       />
                       <Scatter name="Teams" data={getScatterData()} fill="#8884d8">
-                        {getScatterData().map((entry, index) => (
+                        {getScatterData().map((entry) => (
                           <Cell
-                            key={`cell-${index}`}
+                            key={entry.teamName}
                             fill={entry.teamColor}
                             stroke="white"
                             strokeWidth={1}
@@ -755,9 +755,9 @@ const TeamPaceAnalysis = () => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-gray-800 rounded-xl bg-zinc-950">
-            <Activity01Icon className="w-16 h-16 text-gray-700 mb-4" />
-            <p className="text-gray-400 font-mono text-xs uppercase tracking-widest">
+          <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-950">
+            <Activity01Icon className="size-16 text-zinc-700 mb-4" />
+            <p className="text-zinc-400 font-mono text-xs uppercase tracking-widest">
               Select an event to view analysis
             </p>
           </div>
@@ -767,5 +767,4 @@ const TeamPaceAnalysis = () => {
   );
 };
 
-export { TeamPaceAnalysis };
 export default TeamPaceAnalysis;

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { Tick01Icon } from 'hugeicons-react';
 
 export interface PricingTier {
@@ -28,7 +28,7 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
   const isComingSoon = tier.comingSoon;
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -54,7 +54,7 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
 
       <div className="mb-5 flex-grow-0">
         <h3
-          className={`text-[17px] font-bold tracking-[-0.01em] ${isComingSoon ? 'text-white/30' : 'text-white'}`}
+          className={`text-[17px] font-semibold tracking-[-0.01em] ${isComingSoon ? 'text-white/30' : 'text-white'}`}
         >
           {tier.name}
         </h3>
@@ -97,7 +97,7 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
             >
               {!isEverythingPlus && (
                 <Tick01Icon
-                  className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${isComingSoon ? 'text-white/10' : 'text-emerald-400'}`}
+                  className={`mt-0.5 size-3.5 shrink-0 ${isComingSoon ? 'text-white/10' : 'text-emerald-400'}`}
                 />
               )}
               <span
@@ -146,6 +146,6 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
           {tier.cta}
         </Link>
       )}
-    </motion.div>
+    </m.div>
   );
 }

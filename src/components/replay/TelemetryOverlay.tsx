@@ -28,14 +28,16 @@ interface TelemetryOverlayProps {
   onClose?: () => void;
 }
 
+const EMPTY_HISTORY: number[] = [];
+
 const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
   driverCode,
   telemetry,
   driverColor = '#ef4444',
-  speedHistory = [],
-  throttleHistory = [],
-  brakeHistory = [],
-  rpmHistory = [],
+  speedHistory = EMPTY_HISTORY,
+  throttleHistory = EMPTY_HISTORY,
+  brakeHistory = EMPTY_HISTORY,
+  rpmHistory = EMPTY_HISTORY,
   liveLapTime = null,
   layout,
   onUpdateLayout,
@@ -59,7 +61,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         <span className="flex items-center gap-1.5">
           Telemetry
           <span
-            className="h-2 w-2 rounded-full inline-block"
+            className="size-2 rounded-full inline-block"
             style={{ backgroundColor: driverColor }}
           />
           <span className="text-white/75 normal-case tracking-normal font-medium">

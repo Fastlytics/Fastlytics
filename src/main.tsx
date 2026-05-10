@@ -11,6 +11,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { PostHogProvider } from 'posthog-js/react';
 import posthog from 'posthog-js';
 import { ErrorBoundary } from 'react-error-boundary';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { ErrorFallback } from './components/layout/ErrorFallback';
 import { getConsentPreferences, hasAnalyticsConsent, hasConsentChoice } from './lib/consent';
 import App from './App.tsx';
@@ -130,7 +131,9 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <PostHogProvider client={posthog}>
         <HelmetProvider>
-          <App />
+          <LazyMotion features={domAnimation} strict>
+            <App />
+          </LazyMotion>
         </HelmetProvider>
       </PostHogProvider>
     </ErrorBoundary>

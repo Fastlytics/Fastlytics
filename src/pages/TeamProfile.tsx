@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { fetchTeamCareer, TeamCareer } from '@/lib/api';
 import { getCarImage } from '@/utils/imageMapping';
@@ -66,10 +66,12 @@ const TeamProfile = () => {
         <DashboardNavbar />
         <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 pb-20 pt-24 lg:px-8">
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-10 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
               <span className="text-lg text-red-400">!</span>
             </div>
-            <h3 className="text-[18px] font-bold uppercase italic text-white">Team Not Found</h3>
+            <h3 className="text-[18px] font-semibold uppercase italic text-white">
+              Team Not Found
+            </h3>
             <p className="mt-1 text-[14px] text-white/40">
               {(error as Error)?.message || `We couldn't find data for "${slug}".`}
             </p>
@@ -90,7 +92,7 @@ const TeamProfile = () => {
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -100,17 +102,17 @@ const TeamProfile = () => {
                 Team Profile
               </span>
             </div>
-            <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+            <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
               {career.name}
             </h1>
             <p className="mt-1 text-[15px] text-white/50">Career Statistics & Season History</p>
-          </motion.div>
+          </m.div>
           <div className="mt-8 h-px w-full bg-white/[0.05]" />
         </div>
 
         {/* Hero */}
         <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-end">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -124,10 +126,10 @@ const TeamProfile = () => {
                     <img
                       src={carImage}
                       alt={career.name}
-                      className="h-full w-full object-contain object-center drop-shadow-2xl"
+                      className="size-full object-contain object-center drop-shadow-2xl"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center">
+                    <div className="flex size-full items-center justify-center">
                       <span className="text-5xl font-black italic text-white/10">
                         {career.name[0]}
                       </span>
@@ -136,9 +138,9 @@ const TeamProfile = () => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -169,7 +171,7 @@ const TeamProfile = () => {
                 delay={0.3}
               />
             </div>
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Season Table */}
@@ -195,22 +197,22 @@ const TeamProfile = () => {
                 isCurrent={season.season === selectedYear}
                 isChampion={season.position === 1}
                 columns={[
-                  <span className="text-[14px] font-medium tabular-nums text-white">
+                  <span key="races" className="text-[14px] font-medium tabular-nums text-white">
                     {season.races}
                   </span>,
-                  <span className="text-[14px] font-medium tabular-nums text-white">
+                  <span key="wins" className="text-[14px] font-medium tabular-nums text-white">
                     {season.wins}
                   </span>,
-                  <span className="text-[14px] font-medium tabular-nums text-white">
+                  <span key="podiums" className="text-[14px] font-medium tabular-nums text-white">
                     {season.podiums}
                   </span>,
-                  <span className="text-[14px] font-medium tabular-nums text-white">
+                  <span key="poles" className="text-[14px] font-medium tabular-nums text-white">
                     {season.poles}
                   </span>,
-                  <span className="text-[14px] font-bold tabular-nums text-white">
+                  <span key="points" className="text-[14px] font-bold tabular-nums text-white">
                     {season.points}
                   </span>,
-                  <div className="flex flex-wrap gap-1 justify-center">
+                  <div key="drivers" className="flex flex-wrap gap-1 justify-center">
                     {season.drivers.map((code) => (
                       <span
                         key={code}
@@ -230,5 +232,4 @@ const TeamProfile = () => {
   );
 };
 
-export { TeamProfile };
 export default TeamProfile;

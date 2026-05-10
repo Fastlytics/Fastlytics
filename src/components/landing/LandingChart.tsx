@@ -131,7 +131,7 @@ export default function LandingChart({
         <svg
           ref={svgRef}
           viewBox="0 0 600 220"
-          className="absolute inset-0 h-full w-full"
+          className="absolute inset-0 size-full"
           preserveAspectRatio="none"
           onMouseMove={handleMouseMove}
           onMouseLeave={clearHover}

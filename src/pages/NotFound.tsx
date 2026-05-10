@@ -14,7 +14,7 @@ const NotFound = () => {
 
   useEffect(() => {
     console.error('404 Error: User attempted to access non-existent route:', location.pathname);
-  }, [location.pathname]);
+  }, [location]);
 
   return (
     <div
@@ -31,10 +31,10 @@ const NotFound = () => {
       <div className="flex-grow flex flex-col items-center justify-center px-5 py-32">
         <div className="text-center max-w-lg mx-auto">
           <div className="mb-4">
-            <AlertCircleIcon className="h-12 w-12 text-red-400 mx-auto" />
+            <AlertCircleIcon className="size-12 text-red-400 mx-auto" />
           </div>
-          <h1 className="text-7xl font-bold tracking-[-0.03em] text-white">404</h1>
-          <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white/80">
+          <h1 className="text-7xl font-semibold tracking-[-0.03em] text-white">404</h1>
+          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-white/80">
             Page not found
           </h2>
           <p className="mt-3 text-[15px] text-white/40 leading-relaxed">
@@ -48,7 +48,7 @@ const NotFound = () => {
               variant="outline"
               className="border-white/[0.08] bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white h-11 px-6 rounded-xl text-[13px]"
             >
-              <ArrowLeft01Icon className="h-4 w-4 mr-1.5" />
+              <ArrowLeft01Icon className="size-4 mr-1.5" />
               Go back
             </Button>
             <Button
@@ -66,5 +66,4 @@ const NotFound = () => {
   );
 };
 
-export { NotFound };
 export default NotFound;

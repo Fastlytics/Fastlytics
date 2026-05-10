@@ -58,7 +58,7 @@ export function useCalendarData() {
     let nextRaceEvent: NextRaceInfo | null = null;
     let nextSessionData: NextSessionInfo | null = null;
 
-    const sortedSchedule = [...scheduleData].sort(
+    const sortedSchedule = scheduleData.toSorted(
       (a, b) => getEventStartDate(a).getTime() - getEventStartDate(b).getTime()
     );
 

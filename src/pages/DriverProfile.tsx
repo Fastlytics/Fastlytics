@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { fetchDriverCareer, DriverCareer } from '@/lib/api';
 import { getDriverImage, getDriverImagesByCode } from '@/utils/imageMapping';
@@ -84,10 +84,12 @@ const DriverProfile = () => {
         <DashboardNavbar />
         <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 pb-20 pt-24 lg:px-8">
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-10 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
               <span className="text-lg text-red-400">!</span>
             </div>
-            <h3 className="text-[18px] font-bold uppercase italic text-white">Driver Not Found</h3>
+            <h3 className="text-[18px] font-semibold uppercase italic text-white">
+              Driver Not Found
+            </h3>
             <p className="mt-1 text-[14px] text-white/40">
               {(error as Error)?.message || `We couldn't find data for "${slug}".`}
             </p>
@@ -108,7 +110,7 @@ const DriverProfile = () => {
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -118,17 +120,17 @@ const DriverProfile = () => {
                 Driver Profile
               </span>
             </div>
-            <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+            <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
               {career.name}
             </h1>
             <p className="mt-1 text-[15px] text-white/50">Career Statistics & Season History</p>
-          </motion.div>
+          </m.div>
           <div className="mt-8 h-px w-full bg-white/[0.05]" />
         </div>
 
         {/* Hero */}
         <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-end">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -142,13 +144,13 @@ const DriverProfile = () => {
                     <img
                       src={currentImageUrl}
                       alt={career.name}
-                      className="h-full w-full object-cover object-top"
+                      className="size-full object-cover object-top"
                       style={{
                         maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)',
                       }}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center">
+                    <div className="flex size-full items-center justify-center">
                       <span className="text-4xl font-black italic text-white/10">
                         {career.code}
                       </span>
@@ -178,9 +180,9 @@ const DriverProfile = () => {
                 </div>
               )}
             </div>
-          </motion.div>
+          </m.div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -221,7 +223,7 @@ const DriverProfile = () => {
               <StatBox label="Points" value={summary?.points ?? 0} delay={0.3} />
               <StatBox label="DNFs" value={summary?.dnfs ?? 0} delay={0.35} />
             </div>
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Season Table */}
@@ -253,23 +255,25 @@ const DriverProfile = () => {
                   isChampion={season.position === 1}
                   badges={badges}
                   columns={[
-                    <span className="text-[14px] text-white/60">{season.team}</span>,
-                    <span className="text-[14px] font-medium tabular-nums text-white">
+                    <span key="team" className="text-[14px] text-white/60">
+                      {season.team}
+                    </span>,
+                    <span key="races" className="text-[14px] font-medium tabular-nums text-white">
                       {season.races}
                     </span>,
-                    <span className="text-[14px] font-medium tabular-nums text-white">
+                    <span key="wins" className="text-[14px] font-medium tabular-nums text-white">
                       {season.wins}
                     </span>,
-                    <span className="text-[14px] font-medium tabular-nums text-white">
+                    <span key="podiums" className="text-[14px] font-medium tabular-nums text-white">
                       {season.podiums}
                     </span>,
-                    <span className="text-[14px] font-medium tabular-nums text-white">
+                    <span key="poles" className="text-[14px] font-medium tabular-nums text-white">
                       {season.poles}
                     </span>,
-                    <span className="text-[14px] font-medium tabular-nums text-white">
+                    <span key="fl" className="text-[14px] font-medium tabular-nums text-white">
                       {season.fastestLaps}
                     </span>,
-                    <span className="text-[14px] font-bold tabular-nums text-white">
+                    <span key="points" className="text-[14px] font-bold tabular-nums text-white">
                       {season.points}
                     </span>,
                   ]}
@@ -283,5 +287,4 @@ const DriverProfile = () => {
   );
 };
 
-export { DriverProfile };
 export default DriverProfile;

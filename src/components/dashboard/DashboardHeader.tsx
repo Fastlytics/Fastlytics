@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { useNavigate } from 'react-router-dom';
 
@@ -55,21 +55,21 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <div style={inter} className="mb-10">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         {/* Left: title */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <div className="mb-2 flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-red-400" />
               </span>
               Season {selectedYear}
             </span>
           </div>
-          <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+          <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
             Race Desk
           </h1>
           {favoriteDriverName && (
@@ -77,11 +77,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               Following <span className="text-white/70">{favoriteDriverName}</span>
             </p>
           )}
-        </motion.div>
+        </m.div>
 
         {/* Right: next session card */}
         {nextSession && (
-          <motion.button
+          <m.button
             type="button"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,7 +95,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <img
                   src={`https://flagcdn.com/h40/${getCountryCode(nextSession.country || nextSession.location)}.png`}
                   alt={nextSession.country}
-                  className="h-full w-full object-cover"
+                  className="size-full object-cover"
                 />
               </div>
 
@@ -155,7 +155,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 />
               </svg>
             </div>
-          </motion.button>
+          </m.button>
         )}
       </div>
 
@@ -165,5 +165,4 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   );
 };
 
-export { DashboardHeader };
 export default DashboardHeader;

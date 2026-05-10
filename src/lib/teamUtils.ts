@@ -111,16 +111,15 @@ export const areTeammates = (driver1: string, driver2: string, year: number): bo
 
   // Use current year mapping if the specific year isn't defined
   const yearMapping = teamDriverMap[yearStr] || teamDriverMap['2024'];
+  const driverToTeam = new Map<string, string>();
 
-  // Check if both drivers are in the same team
-  for (const team in yearMapping) {
-    const drivers = yearMapping[team];
-    if (drivers.includes(driver1) && drivers.includes(driver2)) {
-      return true;
+  for (const [team, drivers] of Object.entries(yearMapping)) {
+    for (const driver of drivers) {
+      driverToTeam.set(driver, team);
     }
   }
 
-  return false;
+  return driverToTeam.get(driver1) === driverToTeam.get(driver2);
 };
 
 /**
@@ -162,20 +161,25 @@ export const groupDriversByTeam = (
 ): { [team: string]: string[] } => {
   const yearStr = year.toString();
   const yearMapping = teamDriverMap[yearStr] || teamDriverMap['2024'];
-
   const teamGroups: { [team: string]: string[] } = {};
+  const driverToTeam = new Map<string, string>();
 
-  // First pass: add drivers to their teams
-  drivers.forEach((driver) => {
-    for (const team in yearMapping) {
-      if (yearMapping[team].includes(driver)) {
-        if (!teamGroups[team]) {
-          teamGroups[team] = [];
-        }
-        teamGroups[team].push(driver);
-        break;
-      }
+  for (const [team, teamDrivers] of Object.entries(yearMapping)) {
+    for (const driver of teamDrivers) {
+      driverToTeam.set(driver, team);
     }
+  }
+
+  drivers.forEach((driver) => {
+    const team = driverToTeam.get(driver);
+    if (!team) {
+      return;
+    }
+
+    if (!teamGroups[team]) {
+      teamGroups[team] = [];
+    }
+    teamGroups[team].push(driver);
   });
 
   return teamGroups;

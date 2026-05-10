@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { FlashIcon } from 'hugeicons-react';
 import { ScheduleEvent, RaceResult } from '@/lib/api';
@@ -33,7 +33,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
   const isFinished = !isUpcoming && !!result && !isTesting;
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -74,7 +74,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
               <img
                 src={`https://flagcdn.com/h40/${countryCode}.png`}
                 alt={event.Country || event.Location}
-                className={`h-full w-full object-cover ${isUpcoming && !isNextRace ? 'opacity-40' : 'opacity-80'} transition-opacity group-hover:opacity-100`}
+                className={`size-full object-cover ${isUpcoming && !isNextRace ? 'opacity-40' : 'opacity-80'} transition-opacity group-hover:opacity-100`}
               />
             )}
           </div>
@@ -88,7 +88,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
                     : 'bg-white/[0.04] text-white/25'
               }`}
             >
-              <FlashIcon className="w-3 h-3" />
+              <FlashIcon className="size-3" />
               Sprint
             </span>
           )}
@@ -127,7 +127,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
       <div className="p-5">
         {/* Event Name */}
         <h3
-          className={`mb-1 text-[18px] font-bold uppercase transition-colors ${
+          className={`mb-1 text-[18px] font-semibold uppercase transition-colors ${
             isNextRace
               ? 'text-red-400'
               : isFinished
@@ -162,9 +162,9 @@ const RaceCard: React.FC<RaceCardProps> = ({
             </div>
           ) : isNextRace ? (
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
               </span>
               <span className="text-[13px] font-semibold text-red-400 uppercase tracking-wider">
                 Up Next
@@ -191,7 +191,7 @@ const RaceCard: React.FC<RaceCardProps> = ({
                     <span className="text-[14px] font-semibold text-white">{p.driver}</span>
                   </div>
                   <div
-                    className="h-2 w-2 shrink-0 rounded-full"
+                    className="size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }}
                     title={p.team}
                   />
@@ -210,9 +210,8 @@ const RaceCard: React.FC<RaceCardProps> = ({
           )}
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 };
 
-export { RaceCard };
 export default RaceCard;

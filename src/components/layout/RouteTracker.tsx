@@ -55,7 +55,7 @@ const RouteTracker = () => {
 
     prevPath.current = currentPath;
     pageEntryTime.current = Date.now();
-  }, [location.pathname, location.search, location.hash]);
+  }, [location]);
 
   return null;
 };

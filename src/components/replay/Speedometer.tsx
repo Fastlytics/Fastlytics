@@ -39,7 +39,7 @@ const Speedometer: React.FC<SpeedometerProps> = ({
 
     ticks.push(
       <line
-        key={i}
+        key={`${tickAngle}-${isMajor ? 'major' : 'minor'}`}
         x1={x1}
         y1={y1}
         x2={x2}

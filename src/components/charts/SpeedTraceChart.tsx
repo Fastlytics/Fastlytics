@@ -27,6 +27,120 @@ interface SpeedTraceChartProps {
   lap?: string | number;
 }
 
+const SpeedTooltip = ({
+  active,
+  payload,
+  label,
+  selectedDriver,
+  year,
+}: CustomTooltipProps<SpeedDataPoint> & { selectedDriver?: string; year?: number }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const headshot = getDriverImage(selectedDriver, year);
+    const color = driverColor(selectedDriver, year);
+
+    return (
+      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
+            <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
+              {headshot ? (
+                <img
+                  src={headshot}
+                  alt={selectedDriver}
+                  className="size-full object-cover object-top"
+                />
+              ) : (
+                <div
+                  className="size-full flex items-center justify-center text-[10px] text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {selectedDriver?.[0]}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span
+                className="text-xs font-semibold text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {selectedDriver}
+              </span>
+              <span
+                className="text-[10px] text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                DIST: {Math.round(label)}m
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <span
+              className="text-[9px] text-white uppercase tracking-wider"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Speed
+            </span>
+            <span
+              className="text-xl font-black text-white"
+              style={{ color: color, fontFamily: "'Inter', sans-serif" }}
+            >
+              {Math.round(data.Speed)} <span className="text-xs text-white">km/h</span>
+            </span>
+          </div>
+
+          {/* Extra telemetry channels */}
+          <div
+            className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-white border-t border-white/[0.06] pt-2 mt-1"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            {data.Throttle != null && (
+              <>
+                <span>Throttle</span>
+                <span className="text-right text-white">{Math.round(data.Throttle)}%</span>
+              </>
+            )}
+            {data.Brake != null && (
+              <>
+                <span>Brake</span>
+                <span
+                  className={cn(
+                    'text-right font-black',
+                    data.Brake > 0 ? 'text-red-400' : 'text-white'
+                  )}
+                >
+                  {data.Brake > 0 ? 'ON' : 'OFF'}
+                </span>
+              </>
+            )}
+            {data.nGear != null && (
+              <>
+                <span>Gear</span>
+                <span className="text-right text-white">{data.nGear}</span>
+              </>
+            )}
+            {data.DRS != null && (
+              <>
+                <span>DRS</span>
+                <span
+                  className={cn(
+                    'text-right font-black',
+                    data.DRS >= 10 ? 'text-green-400' : 'text-white'
+                  )}
+                >
+                  {data.DRS >= 10 ? 'OPEN' : 'CLOSED'}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   className,
   delay = 0,
@@ -37,120 +151,6 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
-  // Custom Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-    selectedDriver,
-  }: CustomTooltipProps<SpeedDataPoint> & { selectedDriver?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const headshot = getDriverImage(selectedDriver, year);
-      const color = driverColor(selectedDriver, year);
-
-      return (
-        <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={selectedDriver}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center text-[10px] text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {selectedDriver[0]}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span
-                  className="text-xs font-semibold text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  {selectedDriver}
-                </span>
-                <span
-                  className="text-[10px] text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  DIST: {Math.round(label)}m
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span
-                className="text-[9px] text-white uppercase tracking-wider"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                Speed
-              </span>
-              <span
-                className="text-xl font-black text-white"
-                style={{ color: color, fontFamily: "'Inter', sans-serif" }}
-              >
-                {Math.round(data.Speed)} <span className="text-xs text-white">km/h</span>
-              </span>
-            </div>
-
-            {/* Extra telemetry channels */}
-            <div
-              className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-white border-t border-white/[0.06] pt-2 mt-1"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {data.Throttle != null && (
-                <>
-                  <span>Throttle</span>
-                  <span className="text-right text-white">{Math.round(data.Throttle)}%</span>
-                </>
-              )}
-              {data.Brake != null && (
-                <>
-                  <span>Brake</span>
-                  <span
-                    className={cn(
-                      'text-right font-black',
-                      data.Brake > 0 ? 'text-red-400' : 'text-white'
-                    )}
-                  >
-                    {data.Brake > 0 ? 'ON' : 'OFF'}
-                  </span>
-                </>
-              )}
-              {data.nGear != null && (
-                <>
-                  <span>Gear</span>
-                  <span className="text-right text-white">{data.nGear}</span>
-                </>
-              )}
-              {data.DRS != null && (
-                <>
-                  <span>DRS</span>
-                  <span
-                    className={cn(
-                      'text-right font-black',
-                      data.DRS >= 10 ? 'text-green-400' : 'text-white'
-                    )}
-                  >
-                    {data.DRS >= 10 ? 'OPEN' : 'CLOSED'}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <TelemetryChartWrapper<SpeedTraceResponse>
       className={className}
@@ -206,7 +206,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               width={40}
             />
             <Tooltip
-              content={<CustomTooltip selectedDriver={selectedDriver} />}
+              content={<SpeedTooltip selectedDriver={selectedDriver} year={year} />}
               cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeDasharray: '4 4' }}
             />
             <Line
@@ -323,8 +323,8 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                   <div className="flex items-center gap-1.5">
                     <span
                       className={cn(
-                        'w-2.5 h-2.5 rounded-full',
-                        compoundColors[meta.compound.toUpperCase()] || 'bg-gray-500'
+                        'size-2.5 rounded-full',
+                        compoundColors[meta.compound.toUpperCase()] || 'bg-zinc-500'
                       )}
                     ></span>
                     <span className="text-white uppercase font-black">{meta.compound}</span>
@@ -337,7 +337,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                           'text-[9px] font-black px-1 py-0.5 ml-1',
                           meta.freshTyre
                             ? 'bg-green-900/60 text-green-400'
-                            : 'bg-gray-800 text-white'
+                            : 'bg-zinc-800 text-white'
                         )}
                       >
                         {meta.freshTyre ? 'NEW' : 'USED'}
