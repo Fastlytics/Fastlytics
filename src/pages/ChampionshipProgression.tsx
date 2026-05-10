@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Button } from '@/components/ui/button';

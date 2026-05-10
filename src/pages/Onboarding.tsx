@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useEffect } from 'react';
+import React, { useState, useReducer, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { m, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +23,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { trackEvent, trackSelection } = useAnalytics();
   const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useReducer((_: boolean, a: boolean) => a, false);
   const [drivers, setDrivers] = useState<DriverStanding[]>([]);
   const [teams, setTeams] = useState<TeamStanding[]>([]);
 

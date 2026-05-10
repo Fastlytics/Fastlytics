@@ -23,8 +23,6 @@ async function generateLogo() {
     viewport: { width: 1280, height: 720 },
   });
 
-  const page = await context.newPage();
-
   // Assuming Vite dev server defaults to standard 8080 (from your AGENTS.md notes)
   const port = process.env.PORT || 8080;
 
@@ -35,42 +33,45 @@ async function generateLogo() {
     { filename: 'icon-light-high-res.png', search: '?theme=light&showText=false' },
   ];
 
-  for (const { filename, search } of variations) {
-    const targetUrl = `http://localhost:${port}/logo-isolated${search}`;
-    const outputPath = path.join(outputDir, filename);
+  await Promise.all(
+    variations.map(async ({ filename, search }) => {
+      const targetUrl = `http://localhost:${port}/logo-isolated${search}`;
+      const outputPath = path.join(outputDir, filename);
+      const page = await context.newPage();
 
-    console.log(`Navigating to ${targetUrl} ...`);
-    try {
-      await page.goto(targetUrl, { waitUntil: 'networkidle' });
-    } catch (error) {
-      console.error(
-        `Failed to navigate to ${targetUrl}. Is your dev server running on port ${port}?`
-      );
-      await browser.close();
-      process.exit(1);
-    }
+      console.log(`Navigating to ${targetUrl} ...`);
+      try {
+        await page.goto(targetUrl, { waitUntil: 'networkidle' });
+      } catch (error) {
+        console.error(
+          `Failed to navigate to ${targetUrl}. Is your dev server running on port ${port}?`
+        );
+        await browser.close();
+        process.exit(1);
+      }
 
-    console.log(`Waiting for logo to render for ${filename}...`);
-    const locator = page.locator('#isolated-logo-container');
-    await locator.waitFor({ state: 'visible' });
+      console.log(`Waiting for logo to render for ${filename}...`);
+      const locator = page.locator('#isolated-logo-container');
+      await locator.waitFor({ state: 'visible' });
 
-    // Add a tiny artificial delay to ensure any layout shifts or font loading has completed
-    await page.waitForTimeout(500);
+      await Promise.all([
+        page.waitForTimeout(500),
+        page.evaluate(() => {
+          document.body.style.setProperty('background', 'transparent', 'important');
+          document.documentElement.style.setProperty('background', 'transparent', 'important');
+          const root = document.getElementById('root');
+          if (root) root.style.setProperty('background', 'transparent', 'important');
+        }),
+      ]);
 
-    // Hardcode strip any remaining backgrounds defined globally by tailwind/app directly before capture
-    await page.evaluate(() => {
-      document.body.style.setProperty('background', 'transparent', 'important');
-      document.documentElement.style.setProperty('background', 'transparent', 'important');
-      const root = document.getElementById('root');
-      if (root) root.style.setProperty('background', 'transparent', 'important');
-    });
-
-    console.log(`Taking transparent screenshot and saving to: ${outputPath}`);
-    await locator.screenshot({
-      path: outputPath,
-      omitBackground: true, // Transparent png
-    });
-  }
+      console.log(`Taking transparent screenshot and saving to: ${outputPath}`);
+      await locator.screenshot({
+        path: outputPath,
+        omitBackground: true,
+      });
+      await page.close();
+    })
+  );
 
   console.log('Successfully generated all high-resolution PNG variations!');
   await browser.close();

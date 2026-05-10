@@ -3,7 +3,7 @@ import React, {
   createContext,
   use,
   useEffect,
-  useState,
+  useReducer,
   ReactNode,
   useRef,
   useCallback,
@@ -63,14 +63,68 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+interface AuthState {
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
+  subscription: Subscription | null;
+  loading: boolean;
+}
+
+type AuthAction =
+  | { type: 'SET_AUTH_SESSION'; session: Session | null; loading?: boolean }
+  | { type: 'SET_PROFILE'; profile: Profile | null }
+  | { type: 'SET_SUBSCRIPTION'; subscription: Subscription | null }
+  | { type: 'SET_LOADING'; loading: boolean };
+
+const initialAuthState: AuthState = {
+  session: null,
+  user: null,
+  profile: null,
+  subscription: null,
+  loading: true,
+};
+
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+  switch (action.type) {
+    case 'SET_AUTH_SESSION': {
+      const nextUser = action.session?.user ?? null;
+      const nextLoading = action.loading ?? state.loading;
+
+      if (!nextUser) {
+        return {
+          ...state,
+          session: action.session,
+          user: null,
+          profile: null,
+          subscription: null,
+          loading: nextLoading,
+        };
+      }
+
+      return {
+        ...state,
+        session: action.session,
+        user: nextUser,
+        loading: nextLoading,
+      };
+    }
+    case 'SET_PROFILE':
+      return { ...state, profile: action.profile };
+    case 'SET_SUBSCRIPTION':
+      return { ...state, subscription: action.subscription };
+    case 'SET_LOADING':
+      return { ...state, loading: action.loading };
+    default:
+      return state;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(authReducer, initialAuthState);
 
   const isFetchingProfile = useRef(false);
+  const hasResolvedInitialSession = useRef(false);
 
   const fetchSubscription = useCallback(async (userId: string) => {
     try {
@@ -83,19 +137,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) {
         logger.error('Error fetching subscription:', error);
-        setSubscription(null);
+        dispatch({ type: 'SET_SUBSCRIPTION', subscription: null });
         return null;
       } else if (data) {
-        setSubscription(data as Subscription);
+        dispatch({ type: 'SET_SUBSCRIPTION', subscription: data as Subscription });
         return data as Subscription;
       } else {
         const freeSubscription = { plan: 'free', status: 'active' } as Subscription;
-        setSubscription(freeSubscription);
+        dispatch({ type: 'SET_SUBSCRIPTION', subscription: freeSubscription });
         return freeSubscription;
       }
     } catch (error) {
       logger.error('Unexpected error fetching subscription:', error);
-      setSubscription(null);
+      dispatch({ type: 'SET_SUBSCRIPTION', subscription: null });
       return null;
     }
   }, []);
@@ -139,17 +193,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (createError) {
               logger.error('Error creating profile:', createError);
             } else {
-              setProfile(newProfile);
+              dispatch({ type: 'SET_PROFILE', profile: newProfile });
             }
           } else {
             logger.error('Error fetching profile:', error);
           }
         } else {
-          setProfile(data);
+          dispatch({ type: 'SET_PROFILE', profile: data });
         }
       } catch (error) {
         logger.error('Unexpected error fetching profile:', error);
-        setProfile(null);
+        dispatch({ type: 'SET_PROFILE', profile: null });
       } finally {
         isFetchingProfile.current = false;
       }
@@ -164,10 +218,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       logger.debug('Auth state changed:', event);
+      hasResolvedInitialSession.current = true;
 
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      dispatch({ type: 'SET_AUTH_SESSION', session, loading: false });
 
       if (session?.user) {
         // Use setTimeout to avoid potential deadlock with Supabase's internal state
@@ -175,9 +228,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
           fetchSubscription(session.user.id);
         }, 0);
-      } else {
-        setProfile(null);
-        setSubscription(null);
       }
 
       if (event === 'SIGNED_IN' && session?.user) {
@@ -203,10 +253,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       .getSession()
       .then(({ data: { session } }) => {
         // Only update if we haven't received an auth state change yet
-        if (loading) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
+        if (!hasResolvedInitialSession.current) {
+          hasResolvedInitialSession.current = true;
+          dispatch({ type: 'SET_AUTH_SESSION', session, loading: false });
 
           if (session?.user) {
             fetchProfile(session.user.id, session.user.email, session.user.user_metadata);
@@ -216,7 +265,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       })
       .catch((error) => {
         logger.error('Error getting session:', error);
-        setLoading(false);
+        dispatch({ type: 'SET_LOADING', loading: false });
       });
 
     return () => subscription.unsubscribe();
@@ -225,42 +274,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-    setSubscription(null);
-    setLoading(false);
+    dispatch({ type: 'SET_AUTH_SESSION', session: null, loading: false });
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id, user.email, user.user_metadata);
+    if (state.user) {
+      await fetchProfile(state.user.id, state.user.email, state.user.user_metadata);
     }
   };
 
   const refreshSubscription = async () => {
-    if (!user) {
-      setSubscription(null);
+    if (!state.user) {
+      dispatch({ type: 'SET_SUBSCRIPTION', subscription: null });
       return null;
     }
 
-    return fetchSubscription(user.id);
+    return fetchSubscription(state.user.id);
   };
 
   const isSubscribed = useCallback(
     (tier: 'pro' | 'ultra' = 'pro') => {
-      if (!subscription || subscription.status !== 'active') return false;
-      return TIER_LEVEL[subscription.plan] >= TIER_LEVEL[tier];
+      if (!state.subscription || state.subscription.status !== 'active') return false;
+      return TIER_LEVEL[state.subscription.plan] >= TIER_LEVEL[tier];
     },
-    [subscription]
+    [state.subscription]
   );
 
   const value = {
-    session,
-    user,
-    profile,
-    subscription,
-    loading,
+    session: state.session,
+    user: state.user,
+    profile: state.profile,
+    subscription: state.subscription,
+    loading: state.loading,
     signOut,
     refreshProfile,
     refreshSubscription,

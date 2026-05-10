@@ -26,7 +26,7 @@ import {
   ScatterChart,
   Scatter,
   ZAxis,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import {
   fetchTeamPaceSummary,
   fetchTeamPaceEvent,

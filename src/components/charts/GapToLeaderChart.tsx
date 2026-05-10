@@ -11,7 +11,7 @@ import {
   Legend,
   Brush,
   ReferenceLine,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapGaps, LapTimeDataPoint, LapGapsResponse } from '@/lib/api';
@@ -122,239 +122,6 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
   }, [lapGapsResponse, staticData]);
 
   const isLoadingAll = isLoadingGaps;
-
-  const renderContent = () => {
-    if (!shouldLoadChart && !staticData) {
-      return (
-        <div className="w-full h-[300px] flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] gap-4">
-          <p className="text-white text-[13px] font-medium uppercase tracking-wider">
-            Select drivers to compare
-          </p>
-          <Button
-            onClick={() => {
-              trackInteraction('chart_data_loaded', {
-                chart: 'gap_to_leader',
-                year,
-                event,
-                session,
-              });
-              setShouldLoadChart(true);
-            }}
-            className="rounded-lg bg-white hover:bg-white/90 text-black font-semibold text-[12px] uppercase tracking-wider"
-            disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
-          >
-            Load Data
-          </Button>
-        </div>
-      );
-    }
-
-    if (isLoadingAll) {
-      return (
-        <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
-          <LoadingSpinnerF1 />
-        </div>
-      );
-    }
-
-    if (isError) {
-      return (
-        <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
-          <AlertCircleIcon className="size-10 mb-2" />
-          <p className="font-semibold uppercase text-[13px]">Error loading lap gaps</p>
-          <p className="text-xs text-white mt-1">
-            {(error as Error)?.message || 'Could not fetch data.'}
-          </p>
-          {!staticData && (
-            <Button
-              onClick={() => setShouldLoadChart(false)}
-              variant="outline"
-              size="sm"
-              className="mt-4 rounded-lg border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold text-[11px] uppercase tracking-wider"
-            >
-              Back
-            </Button>
-          )}
-        </div>
-      );
-    }
-
-    if (gapData.length === 0) {
-      return (
-        <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
-          <p>No common lap data found.</p>
-          {!staticData && (
-            <Button
-              onClick={() => setShouldLoadChart(false)}
-              variant="outline"
-              size="sm"
-              className="mt-4 rounded-lg border-white/[0.08] text-white hover:bg-white/[0.06] font-semibold text-[11px] uppercase tracking-wider"
-            >
-              Back
-            </Button>
-          )}
-        </div>
-      );
-    }
-
-    const teamGroups = groupDriversByTeam(driversToDisplay, year);
-
-    return (
-      <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
-        <LineChart data={gapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-          <XAxis
-            dataKey="LapNumber"
-            stroke="rgba(255,255,255,0.15)"
-            tick={{
-              fill: 'rgba(255,255,255,0.5)',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, sans-serif',
-            }}
-            padding={{ left: 10, right: 10 }}
-          />
-          <YAxis
-            stroke="rgba(255,255,255,0.15)"
-            tick={{
-              fill: 'rgba(255,255,255,0.5)',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, sans-serif',
-            }}
-            domain={['auto', 'auto']}
-            tickFormatter={formatGap}
-            allowDecimals={true}
-            width={65}
-          />
-          <Tooltip
-            content={({ active, payload, label }) => {
-              if (!active || !payload || !payload.length) return null;
-              const sortedPayload = payload.toSorted(
-                (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
-              );
-
-              return (
-                <div
-                  className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
-                  style={inter}
-                >
-                  <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
-                    Lap {label}
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    {sortedPayload.map((entry) => {
-                      const driverCode = String(entry.name);
-                      const gap = entry.value;
-                      if (gap === null) return null;
-                      const headshot = getDriverImage(driverCode, year);
-                      const color = entry.color;
-                      const fullName = driverNameMap.get(driverCode) || driverCode;
-
-                      return (
-                        <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
-                          <Avatar className="size-6 shrink-0 border border-white/[0.08]">
-                            <AvatarImage src={headshot} className="object-cover object-top" />
-                            <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
-                              {driverCode[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-[12px] font-bold" style={{ color }}>
-                            {formatGap(gap as number)}
-                          </span>
-                          <span className="text-[12px] font-semibold text-white/80 truncate">
-                            {fullName}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }}
-            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
-          />
-          <Legend
-            wrapperStyle={{
-              paddingTop: '20px',
-              paddingBottom: '10px',
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '11px',
-            }}
-            onClick={(e) => {
-              if (e && e.value) {
-                trackInteraction('legend_driver_focused', {
-                  chart: 'gap_to_leader',
-                  year,
-                  event,
-                  session,
-                });
-                if (focusedDriver === e.value) setFocusedDriver(null);
-                else setFocusedDriver(e.value);
-              }
-            }}
-            onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
-            onMouseLeave={() => setFocusedDriver(null)}
-            formatter={(value, entry) => {
-              const isFocused = focusedDriver === value;
-              const isDimmed = focusedDriver && focusedDriver !== value;
-              return (
-                <span
-                  style={{
-                    color: entry.color,
-                    opacity: isDimmed ? 0.3 : 1,
-                    fontWeight: isFocused ? 700 : 400,
-                  }}
-                >
-                  {value}
-                </span>
-              );
-            }}
-          />
-          <ReferenceLine
-            y={0}
-            stroke="rgba(255,255,255,0.3)"
-            strokeWidth={1}
-            strokeDasharray="4 4"
-          />
-          {driversToDisplay.map((driverCode, index) => {
-            const color = driverColor(driverCode, year);
-            let teammates: string[] = [];
-            Object.values(teamGroups).forEach((drivers) => {
-              if (drivers.includes(driverCode)) teammates = drivers;
-            });
-            const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
-            const isFocused = focusedDriver === driverCode;
-            const isDimmed = focusedDriver && !isFocused;
-
-            return (
-              <Line
-                key={driverCode}
-                type="monotone"
-                dataKey={driverCode}
-                stroke={color}
-                strokeWidth={isFocused ? 4 : lineStyle.strokeWidth}
-                strokeOpacity={isDimmed ? 0.1 : 1}
-                strokeDasharray={lineStyle.strokeDasharray}
-                dot={false}
-                activeDot={{ r: 4, strokeWidth: 0, fill: color }}
-                name={driverCode}
-                connectNulls={true}
-              />
-            );
-          })}
-          <Brush
-            dataKey="LapNumber"
-            height={24}
-            stroke="rgba(255,255,255,0.1)"
-            fill="rgba(255,255,255,0.03)"
-            tickFormatter={() => ''}
-            travellerWidth={8}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  };
 
   return (
     <div
@@ -527,10 +294,239 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
         </div>
       </div>
 
-      {renderContent()}
+      <GapToLeaderContent />
     </div>
   );
 };
 
 export { GapToLeaderChart };
+
+const GapToLeaderContent: React.FC<Record<string, unknown>> = () => {
+  if (!shouldLoadChart && !staticData) {
+    return (
+      <div className="w-full h-[300px] flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] gap-4">
+        <p className="text-white text-[13px] font-medium uppercase tracking-wider">
+          Select drivers to compare
+        </p>
+        <Button
+          onClick={() => {
+            trackInteraction('chart_data_loaded', {
+              chart: 'gap_to_leader',
+              year,
+              event,
+              session,
+            });
+            setShouldLoadChart(true);
+          }}
+          className="rounded-lg bg-white hover:bg-white/90 text-black font-semibold text-[12px] uppercase tracking-wider"
+          disabled={selectedDrivers.length < MIN_DRIVERS || isLoadingDrivers}
+        >
+          Load Data
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoadingAll) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+        <LoadingSpinnerF1 />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full h-[300px] rounded-xl border border-red-500/20 bg-red-500/[0.04] flex flex-col items-center justify-center text-red-400">
+        <AlertCircleIcon className="size-10 mb-2" />
+        <p className="font-semibold uppercase text-[13px]">Error loading lap gaps</p>
+        <p className="text-xs text-white mt-1">
+          {(error as Error)?.message || 'Could not fetch data.'}
+        </p>
+        {!staticData && (
+          <Button
+            onClick={() => setShouldLoadChart(false)}
+            variant="outline"
+            size="sm"
+            className="mt-4 rounded-lg border-red-500/30 text-red-400 hover:bg-red-500/10 font-semibold text-[11px] uppercase tracking-wider"
+          >
+            Back
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (gapData.length === 0) {
+    return (
+      <div className="w-full h-[300px] rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col items-center justify-center text-white text-[13px] font-medium uppercase tracking-wider">
+        <p>No common lap data found.</p>
+        {!staticData && (
+          <Button
+            onClick={() => setShouldLoadChart(false)}
+            variant="outline"
+            size="sm"
+            className="mt-4 rounded-lg border-white/[0.08] text-white hover:bg-white/[0.06] font-semibold text-[11px] uppercase tracking-wider"
+          >
+            Back
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  const teamGroups = groupDriversByTeam(driversToDisplay, year);
+
+  return (
+    <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
+      <LineChart data={gapData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+        <XAxis
+          dataKey="LapNumber"
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          padding={{ left: 10, right: 10 }}
+        />
+        <YAxis
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          domain={['auto', 'auto']}
+          tickFormatter={formatGap}
+          allowDecimals={true}
+          width={65}
+        />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload || !payload.length) return null;
+            const sortedPayload = payload.toSorted(
+              (a, b) => ((a.value as number) || Infinity) - ((b.value as number) || Infinity)
+            );
+
+            return (
+              <div
+                className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
+                style={inter}
+              >
+                <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
+                  Lap {label}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {sortedPayload.map((entry) => {
+                    const driverCode = String(entry.name);
+                    const gap = entry.value;
+                    if (gap === null) return null;
+                    const headshot = getDriverImage(driverCode, year);
+                    const color = entry.color;
+                    const fullName = driverNameMap.get(driverCode) || driverCode;
+
+                    return (
+                      <div key={driverCode} className="flex items-center gap-2 min-w-[120px]">
+                        <Avatar className="size-6 shrink-0 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                            {driverCode[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[12px] font-bold" style={{ color }}>
+                          {formatGap(gap as number)}
+                        </span>
+                        <span className="text-[12px] font-semibold text-white/80 truncate">
+                          {fullName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }}
+          cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
+        />
+        <Legend
+          wrapperStyle={{
+            paddingTop: '20px',
+            paddingBottom: '10px',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '11px',
+          }}
+          onClick={(e) => {
+            if (e && e.value) {
+              trackInteraction('legend_driver_focused', {
+                chart: 'gap_to_leader',
+                year,
+                event,
+                session,
+              });
+              if (focusedDriver === e.value) setFocusedDriver(null);
+              else setFocusedDriver(e.value);
+            }
+          }}
+          onMouseEnter={(e) => e && e.value && setFocusedDriver(e.value)}
+          onMouseLeave={() => setFocusedDriver(null)}
+          formatter={(value, entry) => {
+            const isFocused = focusedDriver === value;
+            const isDimmed = focusedDriver && focusedDriver !== value;
+            return (
+              <span
+                style={{
+                  color: entry.color,
+                  opacity: isDimmed ? 0.3 : 1,
+                  fontWeight: isFocused ? 700 : 400,
+                }}
+              >
+                {value}
+              </span>
+            );
+          }}
+        />
+        <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeWidth={1} strokeDasharray="4 4" />
+        {driversToDisplay.map((driverCode, index) => {
+          const color = driverColor(driverCode, year);
+          let teammates: string[] = [];
+          Object.values(teamGroups).forEach((drivers) => {
+            if (drivers.includes(driverCode)) teammates = drivers;
+          });
+          const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
+          const isFocused = focusedDriver === driverCode;
+          const isDimmed = focusedDriver && !isFocused;
+
+          return (
+            <Line
+              key={driverCode}
+              type="monotone"
+              dataKey={driverCode}
+              stroke={color}
+              strokeWidth={isFocused ? 4 : lineStyle.strokeWidth}
+              strokeOpacity={isDimmed ? 0.1 : 1}
+              strokeDasharray={lineStyle.strokeDasharray}
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 0, fill: color }}
+              name={driverCode}
+              connectNulls={true}
+            />
+          );
+        })}
+        <Brush
+          dataKey="LapNumber"
+          height={24}
+          stroke="rgba(255,255,255,0.1)"
+          fill="rgba(255,255,255,0.03)"
+          tickFormatter={() => ''}
+          travellerWidth={8}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
+
 export default GapToLeaderChart;

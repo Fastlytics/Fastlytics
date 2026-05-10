@@ -3,14 +3,18 @@ import { Play, Pause, Gauge, Maximize, Minimize, ChevronLeft, ChevronRight } fro
 import { cn } from '@/lib/utils';
 import type { TrackStatusSegment } from './replay-utils';
 
-interface PlaybackControlsProps {
+interface PlaybackState {
   isPlaying: boolean;
-  currentTime: number;
-  playbackSpeed: number;
-  activeTotalDuration: number;
   isFullscreen: boolean;
   hasStarted: boolean;
   showSpeedHeatmap: boolean;
+}
+
+interface PlaybackControlsProps {
+  playbackState: PlaybackState;
+  currentTime: number;
+  playbackSpeed: number;
+  activeTotalDuration: number;
   seekbarStatusSegments: TrackStatusSegment[];
   /** Available laps for lap-based seeking */
   availableLaps: number[];
@@ -27,13 +31,10 @@ interface PlaybackControlsProps {
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
-  isPlaying,
+  playbackState,
   currentTime,
   playbackSpeed,
   activeTotalDuration,
-  isFullscreen,
-  hasStarted,
-  showSpeedHeatmap,
   seekbarStatusSegments,
   availableLaps,
   currentLap,
@@ -51,8 +52,8 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     <div
       className={cn(
         'absolute bottom-0 left-0 right-0 z-40 transition-all duration-500',
-        hasStarted
-          ? isFullscreen
+        playbackState.hasStarted
+          ? playbackState.isFullscreen
             ? 'opacity-0 hover:opacity-100 pointer-events-none hover:pointer-events-auto'
             : 'opacity-100 pointer-events-auto'
           : 'translate-y-full opacity-0'
@@ -117,7 +118,11 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 onClick={onPlayPause}
                 className="flex items-center justify-center size-9 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:border-white/[0.1] transition-all"
               >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+                {playbackState.playbackState.isPlaying ? (
+                  <Pause size={16} />
+                ) : (
+                  <Play size={16} className="ml-0.5" />
+                )}
               </button>
 
               <span className="text-[14px] font-bold tabular-nums text-white min-w-[5ch]">
@@ -161,12 +166,12 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 onClick={onToggleHeatmap}
                 className={cn(
                   'flex items-center justify-center size-8 rounded-lg border transition-all text-[11px]',
-                  showSpeedHeatmap
+                  playbackState.playbackState.playbackState.showSpeedHeatmap
                     ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                     : 'border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white'
                 )}
                 title={
-                  showSpeedHeatmap
+                  playbackState.playbackState.playbackState.showSpeedHeatmap
                     ? 'Hide speed heatmap'
                     : 'Show speed heatmap (select a driver first)'
                 }
@@ -187,7 +192,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 onClick={onToggleFullscreen}
                 className="flex items-center justify-center size-8 rounded-lg border border-white/[0.06] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all"
               >
-                {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
+                {playbackState.isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
               </button>
             </div>
           </div>

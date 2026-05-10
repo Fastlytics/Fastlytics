@@ -44,7 +44,7 @@ function buildReturnUrl(path: string, status: 'cancelled' | 'failed') {
 function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
   const { user, profile } = useAuth();
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useReducer((_: boolean, a: boolean) => a, false);
   const [error, setError] = useState('');
   const { data: products } = useProducts();
 

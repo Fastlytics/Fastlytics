@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { fetchTelemetrySpeed, SpeedDataPoint, SpeedTraceResponse, LapMeta } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';

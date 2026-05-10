@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useReducer } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -62,8 +62,14 @@ const TelemetryChartWrapper = <T,>({
   const { trackSelection } = useAnalytics();
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
-  const [internalDriver, setInternalDriver] = useState<string>(initialDriver);
-  const [internalLap, setInternalLap] = useState<string | number>(lap);
+  const [internalDriver, setInternalDriver] = useReducer(
+    (_: string, v: string) => v,
+    initialDriver
+  );
+  const [internalLap, setInternalLap] = useReducer(
+    (_: string | number, v: string | number) => v,
+    lap
+  );
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
@@ -339,4 +345,5 @@ const TelemetryChartWrapper = <T,>({
 };
 
 export { TelemetryChartWrapper };
+
 export default TelemetryChartWrapper;

@@ -1,6 +1,14 @@
 // knip-ignore
 import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from '@/lib/recharts-lazy';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchTeamPaceSession,

@@ -75,7 +75,13 @@ export function useCalendarData() {
       ].filter((s) => s.name && s.date);
 
       sessions.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
-      const upcomingSession = sessions.find((s) => new Date(s.date!) > now);
+      let upcomingSession = undefined;
+      for (const s of sessions) {
+        if (new Date(s.date!) > now) {
+          upcomingSession = s;
+          break;
+        }
+      }
 
       if (upcomingSession) {
         const nextCountryCode = getCountryCode(event.Country || event.Location);
@@ -86,7 +92,7 @@ export function useCalendarData() {
             day: 'numeric',
           }),
           countryCode: nextCountryCode !== 'xx' ? nextCountryCode : undefined,
-          isSprint: event.EventFormat?.toLowerCase().includes('sprint') || false,
+          isSprint: /sprint/i.test(event.EventFormat || ''),
         };
         nextSessionData = {
           name: upcomingSession.name!,
@@ -128,7 +134,7 @@ export function useCalendarData() {
           result,
           isUpcoming,
           isTesting: testing,
-          isSprint: event.EventFormat?.toLowerCase().includes('sprint') || false,
+          isSprint: /sprint/i.test(event.EventFormat || ''),
           displayDate: eventDate.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',

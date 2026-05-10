@@ -194,28 +194,23 @@ const DashboardNavbar = () => {
         const toastId = toast.loading('Confirming your subscription...');
 
         try {
-          let latestSubscription = null;
-
-          for (
-            let attempt = 0;
-            attempt < CHECKOUT_CONFIRMATION_ATTEMPTS && !cancelled;
-            attempt += 1
-          ) {
-            latestSubscription = await refreshSubscription();
-            if (hasPaidPlan(latestSubscription)) {
-              break;
-            }
-
+          const pollUntilConfirmed = async (attempt: number) => {
+            if (attempt >= CHECKOUT_CONFIRMATION_ATTEMPTS || cancelled) return null;
+            const sub = await refreshSubscription();
+            if (hasPaidPlan(sub)) return sub;
             if (attempt < CHECKOUT_CONFIRMATION_ATTEMPTS - 1) {
               await sleep(CHECKOUT_CONFIRMATION_DELAY_MS);
             }
-          }
+            return pollUntilConfirmed(attempt + 1);
+          };
+
+          const latestSubscription = await pollUntilConfirmed(0);
 
           if (cancelled) {
             return;
           }
 
-          if (hasPaidPlan(latestSubscription)) {
+          if (latestSubscription && hasPaidPlan(latestSubscription)) {
             toast.success('Upgrade successful. Your paid plan is now active.', { id: toastId });
           } else {
             toast(

@@ -106,21 +106,29 @@ const Calendar = () => {
             </div>
           ) : combinedRaceData.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {combinedRaceData.map((race) => (
-                <RaceCard
-                  key={`${selectedYear}-${race.RoundNumber}-${race.EventName}`}
-                  event={race}
-                  result={race.result}
-                  isUpcoming={race.isUpcoming}
-                  isTesting={race.isTesting}
-                  isSprint={race.isSprint}
-                  countryCode={race.countryCode}
-                  displayLocation={race.displayLocation}
-                  displayDate={race.displayDate}
-                  selectedYear={selectedYear}
-                  isNextRace={nextRace?.EventName === race.EventName}
-                />
-              ))}
+              {combinedRaceData.map((race) => {
+                const isNextRace = nextRace?.EventName === race.EventName;
+                const status: 'finished' | 'upcoming' | 'next' | 'testing' = race.isTesting
+                  ? 'testing'
+                  : isNextRace
+                    ? 'next'
+                    : race.isUpcoming
+                      ? 'upcoming'
+                      : 'finished';
+                return (
+                  <RaceCard
+                    key={`${selectedYear}-${race.RoundNumber}-${race.EventName}`}
+                    event={race}
+                    result={race.result}
+                    status={status}
+                    isSprint={race.isSprint}
+                    countryCode={race.countryCode}
+                    displayLocation={race.displayLocation}
+                    displayDate={race.displayDate}
+                    selectedYear={selectedYear}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] py-16 text-center">

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSessionReplayMetadata, SessionReplayData } from '@/lib/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -483,9 +483,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return result;
   }, [data?.drivers]);
 
-  const [speedHeatmapSegments, setSpeedHeatmapSegments] = useState<
-    { path: string; color: string }[]
-  >([]);
+  const [speedHeatmapSegments, setSpeedHeatmapSegments] = useReducer(
+    (_: { path: string; color: string }[], v: { path: string; color: string }[]) => v,
+    [] as { path: string; color: string }[]
+  );
   const heatmapComputeIdRef = useRef(0);
 
   useEffect(() => {
@@ -496,6 +497,16 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       !data?.drivers[selectedDriver]
     ) {
       setSpeedHeatmapSegments([]);
+    }
+  }, [showSpeedHeatmap, selectedDriver, data]);
+
+  useEffect(() => {
+    if (
+      !showSpeedHeatmap ||
+      !selectedDriver ||
+      !data?.circuit_points ||
+      !data?.drivers[selectedDriver]
+    ) {
       return;
     }
 
@@ -900,13 +911,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       )}
 
       <PlaybackControls
-        isPlaying={isPlaying}
+        playbackState={{ isPlaying, isFullscreen, hasStarted, showSpeedHeatmap }}
         currentTime={currentTime}
         playbackSpeed={playbackSpeed}
         activeTotalDuration={activeTotalDuration}
-        isFullscreen={isFullscreen}
-        hasStarted={hasStarted}
-        showSpeedHeatmap={showSpeedHeatmap}
         seekbarStatusSegments={seekbarStatusSegments}
         formatTime={formatTime}
         onPlayPause={() => setIsPlaying(!isPlaying)}

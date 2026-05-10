@@ -13,7 +13,7 @@ import {
   ReferenceLine,
   Label as RechartsLabel,
   Brush,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { cn } from '@/lib/utils';
 import { LapPositionDataPoint, SessionIncident, DetailedRaceResult } from '@/lib/api';
 import { Slider } from '@/components/ui/slider';
@@ -145,251 +145,6 @@ const PositionChart: React.FC<PositionChartProps> = ({
   const handleSelectNone = () => {
     trackInteraction('deselect_all_drivers', { chart: 'position', year });
     setSelectedDrivers([]);
-  };
-
-  const renderContent = () => {
-    if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
-      return (
-        <div className="w-full h-[480px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">
-          No position data found or provided.
-        </div>
-      );
-    }
-
-    const teamGroups = groupDriversByTeam(selectedDrivers, year);
-
-    return (
-      <ResponsiveContainer width="100%" height={480} className="export-chart-container">
-        <LineChart data={positionData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-          <XAxis
-            dataKey="LapNumber"
-            stroke="rgba(255,255,255,0.15)"
-            tick={{
-              fill: 'rgba(255,255,255,0.5)',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, sans-serif',
-            }}
-            padding={{ left: 10, right: 10 }}
-            label={{
-              value: 'LAP NUMBER',
-              position: 'insideBottom',
-              offset: -5,
-              fill: 'rgba(255,255,255,0.4)',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, sans-serif',
-            }}
-            allowDecimals={false}
-          />
-          <YAxis
-            stroke="rgba(255,255,255,0.15)"
-            tick={{
-              fill: 'rgba(255,255,255,0.5)',
-              fontSize: 11,
-              fontWeight: 600,
-              fontFamily: 'Inter, sans-serif',
-            }}
-            reversed={true}
-            domain={[1, 'dataMax + 1']}
-            interval={0}
-            tickFormatter={(value) => `P${value}`}
-            allowDecimals={false}
-            width={40}
-          />
-          <Brush
-            dataKey="LapNumber"
-            height={24}
-            stroke="rgba(255,255,255,0.1)"
-            fill="rgba(255,255,255,0.03)"
-            tickFormatter={() => ''}
-            travellerWidth={8}
-          />
-          <ReferenceLine x={currentLap} stroke="#ef4444" strokeDasharray="3 3" />
-          <Tooltip
-            content={({ active, payload, label }) => {
-              if (!active || !payload || !payload.length) return null;
-              const typedPayload = payload as TooltipPayloadItem[];
-              const sortedPayload = typedPayload.toSorted((a, b) => {
-                if (a.value === null) return 1;
-                if (b.value === null) return -1;
-                return a.value - b.value;
-              });
-
-              return (
-                <div
-                  className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
-                  style={inter}
-                >
-                  <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
-                    Lap {label}
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-                    {sortedPayload.map((entry) => {
-                      const driverCode = entry.name;
-                      const position = entry.value;
-                      if (position === null) return null;
-
-                      const headshot = getDriverImage(driverCode, year);
-                      const color = entry.color;
-                      const fullName = driverNameMap.get(driverCode) || driverCode;
-
-                      return (
-                        <div key={driverCode} className="flex items-center gap-2 min-w-[100px]">
-                          <span className="text-[11px] font-bold w-5 text-right" style={{ color }}>
-                            P{position}
-                          </span>
-                          <Avatar className="size-6 shrink-0 border border-white/[0.08]">
-                            <AvatarImage src={headshot} className="object-cover object-top" />
-                            <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
-                              {driverCode[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-[11px] font-semibold text-white/80 truncate">
-                            {fullName}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            }}
-            cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
-          />
-          <Legend
-            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Inter, sans-serif', fontSize: '11px' }}
-            payload={selectedDrivers.map((driverCode) => {
-              const color = driverColor(driverCode, year);
-              let teammates: string[] = [];
-              Object.values(teamGroups).forEach((drivers) => {
-                if (drivers.includes(driverCode)) teammates = drivers;
-              });
-              const selectedTeammates = teammates.filter((t) => selectedDrivers.includes(t));
-              let lineStyle = '';
-              if (selectedTeammates.length > 1) {
-                const driverIndex = teammates.indexOf(driverCode);
-                switch (driverIndex % 3) {
-                  case 1:
-                    lineStyle = 'dashed';
-                    break;
-                  case 2:
-                    lineStyle = 'dotted';
-                    break;
-                }
-              }
-              const isInMultiDriverTeam = selectedTeammates.length > 1;
-              return {
-                value:
-                  isInMultiDriverTeam && lineStyle !== ''
-                    ? `${driverCode} (${lineStyle})`
-                    : driverCode,
-                type: 'line',
-                id: driverCode,
-                dataKey: driverCode,
-                color: color,
-              };
-            })}
-            onClick={(e: CustomLegendPayload) => {
-              const driverCode = getLegendDriverCode(e);
-              if (driverCode) toggleDriverFocus(driverCode);
-            }}
-            onMouseEnter={(e: CustomLegendPayload) => {
-              const driverCode = getLegendDriverCode(e);
-              if (driverCode) setFocusedDriver(driverCode);
-            }}
-            onMouseLeave={() => setFocusedDriver(null)}
-            formatter={(value, entry) => {
-              const driverCode = getLegendDriverCode(entry as CustomLegendPayload) || String(value);
-              const isFocused = focusedDriver === driverCode;
-              const isDimmed = focusedDriver && focusedDriver !== driverCode;
-
-              return (
-                <span
-                  style={{
-                    color: entry.color,
-                    opacity: isDimmed ? 0.3 : 1,
-                    fontWeight: isFocused ? 700 : 400,
-                  }}
-                >
-                  {value}
-                </span>
-              );
-            }}
-          />
-
-          {incidents.map((incident) => (
-            <ReferenceArea
-              key={`${incident.type}-${incident.startLap}-${incident.endLap}`}
-              x1={incident.startLap}
-              x2={incident.endLap}
-              y1={0}
-              y2={22}
-              ifOverflow="hidden"
-              className={incident.type === 'RedFlag' ? 'fill-red-900/20' : 'fill-yellow-900/20'}
-              stroke={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
-              strokeOpacity={0.3}
-              strokeWidth={1}
-            >
-              <RechartsLabel
-                value={incident.type === 'RedFlag' ? 'Red Flag' : 'SC/VSC'}
-                position="insideTopLeft"
-                offset={5}
-                fill={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
-                fontSize={10}
-                fontWeight={600}
-                fontFamily="Inter, sans-serif"
-              />
-            </ReferenceArea>
-          ))}
-
-          {selectedDrivers.map((driverCode) => {
-            const color = driverColor(driverCode, year);
-            if (!driverCodes.includes(driverCode)) return null;
-            let teammates: string[] = [];
-            Object.values(teamGroups).forEach((drivers) => {
-              if (drivers.includes(driverCode)) teammates = drivers;
-            });
-            const lineStyle = getLineStylesForDriver(
-              driverCode,
-              teammates.filter((t) => selectedDrivers.includes(t)),
-              teammates.indexOf(driverCode)
-            );
-            return (
-              <Line
-                key={driverCode}
-                type="monotone"
-                dataKey={driverCode}
-                stroke={color}
-                strokeWidth={focusedDriver === driverCode ? 4 : lineStyle.strokeWidth}
-                strokeDasharray={lineStyle.strokeDasharray}
-                dot={false}
-                activeDot={{ r: 5, strokeWidth: 0, fill: color }}
-                name={driverCode}
-                connectNulls={false}
-                strokeOpacity={
-                  focusedDriver
-                    ? focusedDriver === driverCode
-                      ? 1
-                      : 0.1
-                    : favoriteDriver &&
-                        driverCode !== favoriteDriver &&
-                        !selectedDrivers.includes(favoriteDriver)
-                      ? 0.3
-                      : 1
-                }
-                style={
-                  favoriteDriver && driverCode === favoriteDriver
-                    ? { filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))' }
-                    : undefined
-                }
-              />
-            );
-          })}
-        </LineChart>
-      </ResponsiveContainer>
-    );
   };
 
   return (
@@ -544,10 +299,256 @@ const PositionChart: React.FC<PositionChartProps> = ({
         </div>
       </div>
 
-      {renderContent()}
+      <PositionContent />
     </div>
   );
 };
 
 export { PositionChart };
+
+const PositionContent: React.FC<Record<string, unknown>> = () => {
+  if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
+    return (
+      <div className="w-full h-[480px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">
+        No position data found or provided.
+      </div>
+    );
+  }
+
+  const teamGroups = groupDriversByTeam(selectedDrivers, year);
+
+  return (
+    <ResponsiveContainer width="100%" height={480} className="export-chart-container">
+      <LineChart data={positionData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+        <XAxis
+          dataKey="LapNumber"
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          padding={{ left: 10, right: 10 }}
+          label={{
+            value: 'LAP NUMBER',
+            position: 'insideBottom',
+            offset: -5,
+            fill: 'rgba(255,255,255,0.4)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          allowDecimals={false}
+        />
+        <YAxis
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          reversed={true}
+          domain={[1, 'dataMax + 1']}
+          interval={0}
+          tickFormatter={(value) => `P${value}`}
+          allowDecimals={false}
+          width={40}
+        />
+        <Brush
+          dataKey="LapNumber"
+          height={24}
+          stroke="rgba(255,255,255,0.1)"
+          fill="rgba(255,255,255,0.03)"
+          tickFormatter={() => ''}
+          travellerWidth={8}
+        />
+        <ReferenceLine x={currentLap} stroke="#ef4444" strokeDasharray="3 3" />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload || !payload.length) return null;
+            const typedPayload = payload as TooltipPayloadItem[];
+            const sortedPayload = typedPayload.toSorted((a, b) => {
+              if (a.value === null) return 1;
+              if (b.value === null) return -1;
+              return a.value - b.value;
+            });
+
+            return (
+              <div
+                className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[500px] z-50"
+                style={inter}
+              >
+                <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
+                  Lap {label}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                  {sortedPayload.map((entry) => {
+                    const driverCode = entry.name;
+                    const position = entry.value;
+                    if (position === null) return null;
+
+                    const headshot = getDriverImage(driverCode, year);
+                    const color = entry.color;
+                    const fullName = driverNameMap.get(driverCode) || driverCode;
+
+                    return (
+                      <div key={driverCode} className="flex items-center gap-2 min-w-[100px]">
+                        <span className="text-[11px] font-bold w-5 text-right" style={{ color }}>
+                          P{position}
+                        </span>
+                        <Avatar className="size-6 shrink-0 border border-white/[0.08]">
+                          <AvatarImage src={headshot} className="object-cover object-top" />
+                          <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                            {driverCode[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[11px] font-semibold text-white/80 truncate">
+                          {fullName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }}
+          cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
+        />
+        <Legend
+          wrapperStyle={{ paddingTop: '20px', fontFamily: 'Inter, sans-serif', fontSize: '11px' }}
+          payload={selectedDrivers.map((driverCode) => {
+            const color = driverColor(driverCode, year);
+            let teammates: string[] = [];
+            Object.values(teamGroups).forEach((drivers) => {
+              if (drivers.includes(driverCode)) teammates = drivers;
+            });
+            const selectedTeammates = teammates.filter((t) => selectedDrivers.includes(t));
+            let lineStyle = '';
+            if (selectedTeammates.length > 1) {
+              const driverIndex = teammates.indexOf(driverCode);
+              switch (driverIndex % 3) {
+                case 1:
+                  lineStyle = 'dashed';
+                  break;
+                case 2:
+                  lineStyle = 'dotted';
+                  break;
+              }
+            }
+            const isInMultiDriverTeam = selectedTeammates.length > 1;
+            return {
+              value:
+                isInMultiDriverTeam && lineStyle !== ''
+                  ? `${driverCode} (${lineStyle})`
+                  : driverCode,
+              type: 'line',
+              id: driverCode,
+              dataKey: driverCode,
+              color: color,
+            };
+          })}
+          onClick={(e: CustomLegendPayload) => {
+            const driverCode = getLegendDriverCode(e);
+            if (driverCode) toggleDriverFocus(driverCode);
+          }}
+          onMouseEnter={(e: CustomLegendPayload) => {
+            const driverCode = getLegendDriverCode(e);
+            if (driverCode) setFocusedDriver(driverCode);
+          }}
+          onMouseLeave={() => setFocusedDriver(null)}
+          formatter={(value, entry) => {
+            const driverCode = getLegendDriverCode(entry as CustomLegendPayload) || String(value);
+            const isFocused = focusedDriver === driverCode;
+            const isDimmed = focusedDriver && focusedDriver !== driverCode;
+
+            return (
+              <span
+                style={{
+                  color: entry.color,
+                  opacity: isDimmed ? 0.3 : 1,
+                  fontWeight: isFocused ? 700 : 400,
+                }}
+              >
+                {value}
+              </span>
+            );
+          }}
+        />
+
+        {incidents.map((incident) => (
+          <ReferenceArea
+            key={`${incident.type}-${incident.startLap}-${incident.endLap}`}
+            x1={incident.startLap}
+            x2={incident.endLap}
+            y1={0}
+            y2={22}
+            ifOverflow="hidden"
+            className={incident.type === 'RedFlag' ? 'fill-red-900/20' : 'fill-yellow-900/20'}
+            stroke={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
+            strokeOpacity={0.3}
+            strokeWidth={1}
+          >
+            <RechartsLabel
+              value={incident.type === 'RedFlag' ? 'Red Flag' : 'SC/VSC'}
+              position="insideTopLeft"
+              offset={5}
+              fill={incident.type === 'RedFlag' ? '#ef4444' : '#eab308'}
+              fontSize={10}
+              fontWeight={600}
+              fontFamily="Inter, sans-serif"
+            />
+          </ReferenceArea>
+        ))}
+
+        {selectedDrivers.map((driverCode) => {
+          const color = driverColor(driverCode, year);
+          if (!driverCodes.includes(driverCode)) return null;
+          let teammates: string[] = [];
+          Object.values(teamGroups).forEach((drivers) => {
+            if (drivers.includes(driverCode)) teammates = drivers;
+          });
+          const lineStyle = getLineStylesForDriver(
+            driverCode,
+            teammates.filter((t) => selectedDrivers.includes(t)),
+            teammates.indexOf(driverCode)
+          );
+          return (
+            <Line
+              key={driverCode}
+              type="monotone"
+              dataKey={driverCode}
+              stroke={color}
+              strokeWidth={focusedDriver === driverCode ? 4 : lineStyle.strokeWidth}
+              strokeDasharray={lineStyle.strokeDasharray}
+              dot={false}
+              activeDot={{ r: 5, strokeWidth: 0, fill: color }}
+              name={driverCode}
+              connectNulls={false}
+              strokeOpacity={
+                focusedDriver
+                  ? focusedDriver === driverCode
+                    ? 1
+                    : 0.1
+                  : favoriteDriver &&
+                      driverCode !== favoriteDriver &&
+                      !selectedDrivers.includes(favoriteDriver)
+                    ? 0.3
+                    : 1
+              }
+              style={
+                favoriteDriver && driverCode === favoriteDriver
+                  ? { filter: 'drop-shadow(0 0 4px rgba(220, 38, 38, 0.8))' }
+                  : undefined
+              }
+            />
+          );
+        })}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
+
 export default PositionChart;

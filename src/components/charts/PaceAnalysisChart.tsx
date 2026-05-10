@@ -14,7 +14,7 @@ import {
   ScatterChart,
   Scatter,
   ReferenceLine,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchPaceDistribution,
