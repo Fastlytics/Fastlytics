@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion, stagger } from 'motion/react';
+import { m, stagger } from 'motion/react';
 import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 
 const FEATURES = [
@@ -169,15 +169,15 @@ export function FeaturesSection() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <div className="grid items-end gap-6 lg:grid-cols-[1fr_1fr]">
           <div>
-            <motion.p
+            <m.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               className="text-[13px] font-semibold uppercase tracking-widest text-red-400"
             >
               Features
-            </motion.p>
-            <motion.h2
+            </m.p>
+            <m.h2
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -185,9 +185,9 @@ export function FeaturesSection() {
               className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl"
             >
               Everything the broadcast doesn't show you
-            </motion.h2>
+            </m.h2>
           </div>
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -196,17 +196,17 @@ export function FeaturesSection() {
           >
             Every module answers a racing question: who is gaining, where, why, and what happens
             next.
-          </motion.p>
+          </m.p>
         </div>
         <div className="mt-12 h-px w-full bg-white/[0.06]" />
-        <motion.div
+        <m.div
           variants={CONTAINER_VARIANTS}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-80px' }}
         >
           {FEATURES.map((feature, index) => (
-            <motion.div
+            <m.div
               key={feature.title}
               variants={ITEM_VARIANTS}
               className="group grid items-center gap-4 border-b border-white/[0.04] py-6 sm:grid-cols-[auto_1fr_1.2fr] sm:gap-8 lg:py-8"
@@ -225,9 +225,9 @@ export function FeaturesSection() {
               <p className="text-[14px] leading-relaxed text-white/35 transition-colors group-hover:text-white/50">
                 {feature.description}
               </p>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );
@@ -239,15 +239,15 @@ export function ProductSection() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <motion.p
+            <m.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
               className="text-[13px] font-semibold uppercase tracking-widest text-red-400"
             >
               Race Desk
-            </motion.p>
-            <motion.h2
+            </m.p>
+            <m.h2
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -255,8 +255,8 @@ export function ProductSection() {
               className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl"
             >
               Built like a pit wall, not a startup dashboard
-            </motion.h2>
-            <motion.p
+            </m.h2>
+            <m.p
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -265,9 +265,9 @@ export function ProductSection() {
             >
               Timing, telemetry, tyre life and race context connected into one operational surface.
               Switch modules without losing the lap, driver or session you're analyzing.
-            </motion.p>
+            </m.p>
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -276,7 +276,7 @@ export function ProductSection() {
             >
               {PRODUCT_BULLETS.map((item) => (
                 <div key={item.label} className="flex gap-3">
-                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                  <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       <path
                         d="M2 5l2.5 2.5L8 3"
@@ -293,9 +293,9 @@ export function ProductSection() {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </m.div>
 
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
@@ -317,10 +317,10 @@ export function ProductSection() {
                   />
                 </svg>
               </Link>
-            </motion.div>
+            </m.div>
           </div>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -335,7 +335,7 @@ export function ProductSection() {
               </div>
               <div className="divide-y divide-white/[0.04] p-4">
                 {SIGNAL_ROWS.map((row, index) => (
-                  <motion.div
+                  <m.div
                     key={row.label}
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -350,11 +350,11 @@ export function ProductSection() {
                       {row.value}
                     </span>
                     <span className="text-[12px] text-white/25">{row.note}</span>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </div>
     </section>
@@ -366,7 +366,7 @@ export function StatsSection() {
     <section className="py-24 lg:py-32">
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <motion.h2
+          <m.h2
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -374,8 +374,8 @@ export function StatsSection() {
           >
             The broadcast shows the result.{' '}
             <span className="text-white/40">We show the cause.</span>
-          </motion.h2>
-          <motion.p
+          </m.h2>
+          <m.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -384,11 +384,11 @@ export function StatsSection() {
           >
             Follow the chain from raw timing to race decisions - pace drift, sector splits,
             degradation curves and pit-loss context in one interface.
-          </motion.p>
+          </m.p>
         </div>
         <div className="mt-16 grid gap-4 sm:grid-cols-3">
           {STATS.map((stat, index) => (
-            <motion.div
+            <m.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -403,7 +403,7 @@ export function StatsSection() {
                 )}
               </div>
               <div className="mt-2 text-[13px] text-white/35">{stat.label}</div>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </div>
@@ -421,15 +421,15 @@ export function CTASection() {
         <div className="absolute bottom-0 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-red-500/[0.06] blur-[120px]" />
       </div>
       <div className="relative z-10 mx-auto max-w-6xl px-5 text-center lg:px-8">
-        <motion.h2
+        <m.h2
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
         >
           Open the race desk before the next session
-        </motion.h2>
-        <motion.p
+        </m.h2>
+        <m.p
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -438,9 +438,9 @@ export function CTASection() {
         >
           Start free with full platform access. Upgrade to Pro for historical season data and
           unlimited session replay.
-        </motion.p>
+        </m.p>
 
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -474,7 +474,7 @@ export function CTASection() {
           >
             Sign in
           </Link>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

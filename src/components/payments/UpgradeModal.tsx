@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { ArrowUpRight, Check, X } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +41,7 @@ function buildReturnUrl(path: string, status: 'cancelled' | 'failed') {
   return `${url.pathname}${url.search}`;
 }
 
-export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
+function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
   const { user, profile } = useAuth();
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(false);
@@ -105,14 +105,14 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 z-[80] bg-[#030406]/70 backdrop-blur-md"
           />
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
@@ -126,7 +126,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                     <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-red-400">
                       Upgrade
                     </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-white lg:text-3xl">
+                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white lg:text-3xl">
                       Unlock historical seasons and unlimited replay
                     </h2>
                     <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-white/45">
@@ -140,7 +140,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                     className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2 text-white/45 transition-colors hover:text-white"
                     aria-label="Close upgrade modal"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="size-5" />
                   </button>
                 </div>
                 <div className="mt-6">
@@ -155,7 +155,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                       <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-red-400">
                         Pro
                       </p>
-                      <h3 className="mt-2 text-[28px] font-bold tracking-[-0.03em] text-white">
+                      <h3 className="mt-2 text-[28px] font-semibold tracking-[-0.03em] text-white">
                         ${selectedProduct.price}
                         <span className="ml-1 text-[14px] font-medium text-white/35">
                           {selectedProduct.suffix}
@@ -170,7 +170,7 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                   <div className="mt-6 space-y-3">
                     {PRO_FEATURES.map((feature) => (
                       <div key={feature} className="flex items-start gap-3">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                        <Check className="mt-0.5 size-4 shrink-0 text-red-400" />
                         <span className="text-[14px] leading-relaxed text-white/62">{feature}</span>
                       </div>
                     ))}
@@ -188,13 +188,13 @@ export function UpgradeModal({ open, onClose, cancelPath }: UpgradeModalProps) {
                     disabled={isLoading}
                     className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-[14px] font-semibold text-black transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowUpRight className="size-4" />
                     {isLoading ? 'Opening Checkout...' : 'Upgrade to Pro'}
                   </button>
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         </>
       )}
     </AnimatePresence>

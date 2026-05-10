@@ -136,12 +136,12 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
         </div>
         <div className="flex h-[200px] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
             <p
               className="text-[12px] text-white animate-pulse"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              Loading performance data...
+              Loading performance data…
             </p>
           </div>
         </div>
@@ -220,7 +220,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
               style={{ animationDelay: `${drvIdx * 150}ms` }}
             >
               <div className="mb-2 flex items-center gap-2.5">
-                <Avatar className="h-7 w-7 shrink-0 border-2" style={{ borderColor: drvColor }}>
+                <Avatar className="size-7 shrink-0 border-2" style={{ borderColor: drvColor }}>
                   <AvatarImage src={headshot} className="object-cover object-top" />
                   <AvatarFallback
                     className="bg-[#1a1a1e] text-[10px] font-bold text-white"
@@ -324,7 +324,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       {deletedLaps.length > 0 && (
         <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-4">
           <div className="mb-3 flex items-center gap-2">
-            <AlertCircleIcon className="h-3.5 w-3.5 text-red-400/60" />
+            <AlertCircleIcon className="size-3.5 text-red-400/60" />
             <p
               className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
               style={{ fontFamily: "'Inter', sans-serif" }}

@@ -9,7 +9,7 @@ export function mergeLandingReplayChunks(chunks: LandingReplayChunk[]): LandingR
   if (chunks.length === 0) return null;
   if (chunks.length === 1) return chunks[0];
 
-  const sorted = [...chunks].sort((a, b) => a.chunk_id - b.chunk_id);
+  const sorted = chunks.toSorted((a, b) => a.chunk_id - b.chunk_id);
   const driverCodes = sorted[0].selected_drivers;
 
   const mergedTime: number[] = [];
@@ -315,7 +315,7 @@ export function getExpandedHeroBounds() {
 }
 
 function orderDriversAtFrame(driverCodes: string[], chunk: LandingReplayChunk, frameIndex: number) {
-  return [...driverCodes].sort((a, b) => {
+  return driverCodes.toSorted((a, b) => {
     const driverA = chunk.drivers[a];
     const driverB = chunk.drivers[b];
     if (!driverA || !driverB) return 0;

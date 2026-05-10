@@ -27,7 +27,7 @@ interface UseChartVisibilityOptions {
  *
  * @example
  * const chartRef = useChartVisibility({ chartName: 'position_chart', page: 'race' });
- * return <div ref={chartRef}><ResponsiveContainer>…</ResponsiveContainer></div>;
+ * return <div ref={chartRef}><ResponsiveContainer>...</ResponsiveContainer></div>;
  */
 export const useChartVisibility = <T extends HTMLElement = HTMLDivElement>({
   chartName,

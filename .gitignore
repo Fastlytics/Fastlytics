@@ -21,6 +21,7 @@
 /backend-api/site/
 /.vite
 *.local
+react-doctor-logs
 
 # Cloudflare Workers
 workers-old (deprecated)

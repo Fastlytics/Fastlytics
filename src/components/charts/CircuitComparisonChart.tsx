@@ -67,7 +67,7 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2.5">
         <div className="relative">
-          <Avatar className="h-8 w-8 shrink-0 border-2" style={{ borderColor: color }}>
+          <Avatar className="size-8 shrink-0 border-2" style={{ borderColor: color }}>
             <AvatarImage src={headshot} className="object-cover object-top" />
             <AvatarFallback
               className="bg-[#1a1a1e] text-[10px] font-bold text-white"
@@ -77,7 +77,7 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
             </AvatarFallback>
           </Avatar>
           <div
-            className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0c0c0e]"
+            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#0c0c0e]"
             style={{ backgroundColor: color }}
           />
         </div>
@@ -128,7 +128,7 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
                 >
                   <div className="flex items-center gap-2.5">
                     <div
-                      className="h-2 w-2 shrink-0 rounded-full"
+                      className="size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: dColor }}
                     />
                     <span className="whitespace-nowrap font-medium">
@@ -392,12 +392,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
       return (
         <div className="flex h-[400px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
             <p
               className="text-[12px] text-white animate-pulse"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              Loading track data...
+              Loading track data…
             </p>
           </div>
         </div>
@@ -407,7 +407,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     if (isError || !comparisonData) {
       return (
         <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05]">
-          <AlertCircleIcon className="mb-3 h-9 w-9 text-red-400" />
+          <AlertCircleIcon className="mb-3 size-9 text-red-400" />
           <p
             className="text-[14px] font-semibold text-red-400"
             style={{ fontFamily: "'Inter', sans-serif" }}
@@ -429,7 +429,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             { code: selectedDriver2, color: driver2Color },
           ].map(({ code, color }) => (
             <div key={code} className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
               <span
                 className="text-[12px] font-bold text-white/70"
                 style={{ fontFamily: "'Inter', sans-serif" }}
@@ -451,7 +451,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             >
               {comparisonData.driver1LapTime}
             </span>
-            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: driver1Color }} />
+            <div className="size-2 rounded-full" style={{ backgroundColor: driver1Color }} />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -463,12 +463,12 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             >
               {comparisonData.driver2LapTime}
             </span>
-            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: driver2Color }} />
+            <div className="size-2 rounded-full" style={{ backgroundColor: driver2Color }} />
           </div>
         </div>
 
         <div className="h-[400px] w-full p-4">
-          <svg viewBox="0 0 1000 500" className="h-full w-full">
+          <svg viewBox="0 0 1000 500" className="size-full">
             <g transform="scale(1,-1) translate(0,-500)">
               <path
                 d={comparisonData.circuitLayout}
@@ -551,7 +551,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
               ].map(({ code, color, speed }) => (
                 <div key={code} className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6 shrink-0 border border-white/[0.08]">
+                    <Avatar className="size-6 shrink-0 border border-white/[0.08]">
                       <AvatarImage
                         src={getDriverImage(code, year)}
                         className="object-cover object-top"
@@ -592,7 +592,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
                 {hoveredSection.advantage !== 0 ? (
                   <>
                     <div
-                      className="h-2 w-2 rounded-full"
+                      className="size-2 rounded-full"
                       style={{
                         backgroundColor: hoveredSection.advantage > 0 ? driver1Color : driver2Color,
                       }}

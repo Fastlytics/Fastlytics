@@ -13,9 +13,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="animate-spin">
-          <Gauge className="h-10 w-10 text-red-600" />
+          <Gauge className="size-10 text-red-600" />
         </div>
       </div>
     );

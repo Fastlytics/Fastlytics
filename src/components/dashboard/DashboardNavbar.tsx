@@ -3,8 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useAuth } from '@/contexts/AuthContext';
 import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { motion, AnimatePresence } from 'motion/react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { m, AnimatePresence } from 'motion/react';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { ArrowUpRight } from 'lucide-react';
@@ -90,7 +89,7 @@ const SeasonDropdown: React.FC<{
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: -8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -136,7 +135,7 @@ const SeasonDropdown: React.FC<{
                         </span>
                       )}
                       {!isLocked && year === selectedYear && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                        <span className="size-1.5 rounded-full bg-red-400" />
                       )}
                     </span>
                   </button>
@@ -148,7 +147,7 @@ const SeasonDropdown: React.FC<{
                 Historical seasons require Pro.
               </div>
             )}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -164,7 +163,6 @@ const DashboardNavbar = () => {
   const [searchParams] = useSearchParams();
   const { user, isSubscribed, refreshSubscription } = useAuth();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -252,9 +250,7 @@ const DashboardNavbar = () => {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, navigate, refreshSubscription, searchParams]);
-
-  if (isMobile) return null;
+  }, [location, navigate, refreshSubscription, searchParams]);
 
   const isActive = (path: string) => location.pathname === path;
   const cancelSearch = new URLSearchParams(location.search);
@@ -292,7 +288,7 @@ const DashboardNavbar = () => {
               >
                 {link.name}
                 {isActive(link.path) && (
-                  <motion.div
+                  <m.div
                     layoutId="dash-nav-indicator"
                     className="absolute inset-x-3 -bottom-px h-px bg-red-500"
                   />
@@ -317,14 +313,14 @@ const DashboardNavbar = () => {
                 onClick={() => setUpgradeOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg border border-sky-400/20 bg-sky-400/12 px-4 py-2.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-sky-200 transition-all hover:border-sky-300/35 hover:bg-sky-400/18 hover:text-sky-100"
               >
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="size-4" />
                 Upgrade
               </button>
             )}
 
             {user ? (
               <Link to="/account">
-                <Avatar className="h-9 w-9 border border-white/[0.1] transition-colors hover:border-white/30">
+                <Avatar className="size-9 border border-white/[0.1] transition-colors hover:border-white/30">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-[#1a1a1e] text-[13px] font-semibold text-white">
                     {user?.email?.substring(0, 2).toUpperCase()}
@@ -352,7 +348,7 @@ const DashboardNavbar = () => {
           {/* Mobile toggle */}
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white md:hidden"
+            className="flex size-9 items-center justify-center rounded-lg border border-white/10 text-white md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
@@ -379,7 +375,7 @@ const DashboardNavbar = () => {
         {/* Mobile menu */}
         <AnimatePresence>
           {mobileOpen && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -417,7 +413,7 @@ const DashboardNavbar = () => {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </nav>
@@ -430,5 +426,4 @@ const DashboardNavbar = () => {
   );
 };
 
-export { DashboardNavbar };
 export default DashboardNavbar;

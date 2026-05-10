@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 
 interface ReplayLoaderProps {
   year: number;
@@ -59,12 +59,12 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-white">
-      <motion.div
+      <m.div
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
         className="mb-8"
       >
-        <svg className="w-16 h-16 text-red-500" fill="none" viewBox="0 0 24 24">
+        <svg className="size-16 text-red-500" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"
@@ -79,10 +79,10 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-      </motion.div>
+      </m.div>
 
       <div className="w-64 md:w-96 h-1.5 bg-white/[0.06] rounded-full overflow-hidden mb-4 border border-white/[0.04]">
-        <motion.div
+        <m.div
           className="h-full bg-red-500 shadow-[0_0_10px_rgba(220,38,38,0.4)]"
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(5, progress.percent * 100)}%` }}

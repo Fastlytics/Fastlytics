@@ -25,7 +25,7 @@ export const getTeamColorClass = (teamName: string | undefined): string => {
 
 export const getChangeIndicator = (change: number | undefined, size: 'sm' | 'md' = 'md') => {
   if (change === undefined) return null;
-  const iconClass = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4';
+  const iconClass = size === 'sm' ? 'size-3' : 'size-4';
   if (change > 0)
     return { color: 'text-emerald-400', icon: <ArrowUp01Icon className={iconClass} /> };
   if (change < 0) return { color: 'text-red-400', icon: <ArrowDown01Icon className={iconClass} /> };

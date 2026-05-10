@@ -12,8 +12,6 @@ import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/champions
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getCarImage } from '@/utils/imageMapping';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileTeamStandings } from '@/components/mobile';
 import { getTeamColorClass, getChangeIndicator, isTestingEvent } from '@/lib/standingsUtils';
 import {
   StandingsLayout,
@@ -26,7 +24,6 @@ import { PodiumCard } from '@/components/standings/PodiumCard';
 import { SEO } from '@/components/layout/SEO';
 
 const TeamStandings = () => {
-  const isMobile = useIsMobile();
   const { selectedYear } = useSeason();
   const { trackPageView } = useAnalytics();
 
@@ -76,18 +73,6 @@ const TeamStandings = () => {
       teamStandings[0].points,
       teamStandings[1].points,
       remainingPoints
-    );
-  }
-
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Team Standings"
-          description={`See the ${selectedYear} team standings with points, wins, podiums, and constructors championship context.`}
-        />
-        <MobileTeamStandings />
-      </>
     );
   }
 
@@ -169,15 +154,15 @@ const TeamStandings = () => {
                     delay={index * 0.04}
                     indicator={getChangeIndicator(team.points_change)}
                     beforeName={
-                      <div className="flex h-28 w-28 shrink-0 items-center justify-center">
+                      <div className="flex size-28 shrink-0 items-center justify-center">
                         {carImg ? (
                           <img
                             src={carImg}
                             alt={team.team}
-                            className="h-full w-full object-contain [mix-blend-mode:lighten]"
+                            className="size-full object-contain [mix-blend-mode:lighten]"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1e]">
+                          <div className="flex size-10 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1e]">
                             <span className="text-[11px] font-bold text-white/55">
                               {team.team.substring(0, 2).toUpperCase()}
                             </span>
@@ -198,5 +183,4 @@ const TeamStandings = () => {
   );
 };
 
-export { TeamStandings };
 export default TeamStandings;

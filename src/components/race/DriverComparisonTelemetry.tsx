@@ -374,7 +374,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color1 }} />
+            <div className="size-2 rounded-full" style={{ backgroundColor: color1 }} />
             <span
               className="text-[11px] font-semibold text-white"
               style={{ fontFamily: "'Inter', sans-serif" }}
@@ -384,7 +384,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           </div>
           <span className="text-[11px] text-white">vs</span>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color2 }} />
+            <div className="size-2 rounded-full" style={{ backgroundColor: color2 }} />
             <span
               className="text-[11px] font-semibold text-white"
               style={{ fontFamily: "'Inter', sans-serif" }}
@@ -394,14 +394,14 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           </div>
           <div className="ml-2 h-4 w-px bg-white/[0.08]" />
           <h3
-            className="text-[13px] font-bold uppercase tracking-wide text-white"
+            className="text-[13px] font-semibold uppercase tracking-wide text-white"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {title}
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="h-4 w-4" />}
+          {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="size-4" />}
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -474,7 +474,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                             return (
                               <div key={index} className="flex items-center gap-2">
                                 <div
-                                  className="h-2 w-2 rounded-full"
+                                  className="size-2 rounded-full"
                                   style={{ backgroundColor: color1 }}
                                 />
                                 <span
@@ -499,7 +499,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                         return (
                           <div key={index} className="mb-1 flex items-center gap-2">
                             <div
-                              className="h-2 w-2 rounded-full"
+                              className="size-2 rounded-full"
                               style={{ backgroundColor: color }}
                             />
                             <span

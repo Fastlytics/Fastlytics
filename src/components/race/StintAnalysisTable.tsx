@@ -174,7 +174,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Driver
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => {
@@ -183,7 +183,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
           const headshot = getDriverImage(code, year);
           return (
             <div className="flex flex-col items-center gap-1 py-1">
-              <Avatar className="h-14 w-14 shrink-0 border border-white/[0.08]">
+              <Avatar className="size-14 shrink-0 border border-white/[0.08]">
                 <AvatarImage src={headshot} className="object-cover object-top" />
                 <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
                   {code}
@@ -213,7 +213,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
         cell: ({ row }) => (
           <div className="flex items-center justify-center">
             <span
-              className="w-3 h-3 rounded-full inline-block mr-2 shadow-sm"
+              className="size-3 rounded-full inline-block mr-2 shadow-sm"
               style={{ backgroundColor: row.original.compoundColor }}
               title={row.original.compound}
             ></span>
@@ -233,7 +233,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Length
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => (
@@ -256,7 +256,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Fastest
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => (
@@ -274,7 +274,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Average
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => (
@@ -295,7 +295,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Consist. (σ)
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => (
@@ -313,7 +313,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
             className="p-0 hover:bg-transparent hover:text-white text-white text-[11px] font-medium uppercase tracking-wider"
           >
             Degr. (Δ/lap)
-            <ArrowUpDownIcon className="ml-1.5 h-3 w-3" />
+            <ArrowUpDownIcon className="ml-1.5 size-3" />
           </Button>
         ),
         cell: ({ row }) => {
@@ -323,7 +323,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
           const Icon = deg < 0 ? ChartDecreaseIcon : ChartIncreaseIcon;
           return (
             <span className={`flex items-center ${color} font-mono font-bold`}>
-              <Icon className={`mr-1 h-3 w-3 ${deg === 0 ? 'opacity-50' : ''}`} />
+              <Icon className={`mr-1 size-3 ${deg === 0 ? 'opacity-50' : ''}`} />
               {deg.toFixed(3)}
             </span>
           );
@@ -360,7 +360,7 @@ const StintAnalysisTable: React.FC<StintAnalysisTableProps> = ({
   if (isError) {
     return (
       <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05] p-6 text-red-400">
-        <AlertCircleIcon className="mb-2 h-7 w-7" />
+        <AlertCircleIcon className="mb-2 size-7" />
         <p className="text-[13px] font-semibold uppercase">Error Loading Stint Analysis</p>
         <p className="mt-1 text-[12px] text-white">
           {(error as Error)?.message || 'Could not fetch stint analysis data.'}

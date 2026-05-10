@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileAuth } from '@/components/mobile';
 import {
   PasswordRequirements,
   getPasswordValidationMessage,
@@ -35,7 +33,7 @@ const RaceDeskPreview = () => {
   ];
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+    <div className="relative flex size-full items-center justify-center overflow-hidden">
       {/* Subtle grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -48,11 +46,11 @@ const RaceDeskPreview = () => {
       />
 
       {/* Ambient glow */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/[0.04] blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[300px] w-[300px] rounded-full bg-orange-500/[0.03] blur-[100px]" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/[0.04] blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-1/4 right-1/4 size-[300px] rounded-full bg-orange-500/[0.03] blur-[100px]" />
 
       {/* Floating Race Desk Card */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -66,15 +64,15 @@ const RaceDeskPreview = () => {
           <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                <div className="size-2.5 rounded-full bg-white/10" />
+                <div className="size-2.5 rounded-full bg-white/10" />
+                <div className="size-2.5 rounded-full bg-white/10" />
               </div>
               <div className="h-4 w-px bg-white/[0.06]" />
               <span className="text-[11px] font-medium text-white/30">Race Desk</span>
             </div>
             <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="size-1.5 rounded-full bg-emerald-400" />
               Live
             </span>
           </div>
@@ -86,7 +84,7 @@ const RaceDeskPreview = () => {
             </div>
             <div className="space-y-0">
               {drivers.map((row, i) => (
-                <motion.div
+                <m.div
                   key={row.code}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -100,7 +98,7 @@ const RaceDeskPreview = () => {
                   />
                   <span className="flex-1 text-[13px] font-semibold text-white">{row.code}</span>
                   <span className="text-[11px] tabular-nums text-white/40">{row.gap}</span>
-                </motion.div>
+                </m.div>
               ))}
             </div>
 
@@ -118,7 +116,7 @@ const RaceDeskPreview = () => {
                   <div key={item.label} className="flex items-center gap-3">
                     <span className="w-12 text-[10px] text-white/30">{item.label}</span>
                     <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                      <motion.div
+                      <m.div
                         className={`h-full rounded-full ${item.color}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${item.value}%` }}
@@ -133,20 +131,20 @@ const RaceDeskPreview = () => {
         </div>
 
         {/* Tagline below card */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.6 }}
           className="mt-10 text-center"
         >
-          <h2 className="text-2xl font-bold tracking-[-0.02em] text-white">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] text-white">
             Race intelligence, <span className="text-white/40">simplified</span>
           </h2>
           <p className="mx-auto mt-2 max-w-sm text-[14px] leading-relaxed text-white/40">
             Telemetry, strategy, pace and championship context wired into one live race desk.
           </p>
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
     </div>
   );
 };
@@ -291,7 +289,6 @@ const Auth = () => {
     isResetMode ? 'signin' : 'signup'
   );
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
   const checkoutRedirectStarted = useRef(false);
@@ -495,16 +492,6 @@ const Auth = () => {
     }
   };
 
-  // Mobile Auth
-  if (isMobile) {
-    return (
-      <>
-        <SEO title={authTitle} description={authDescription} noIndex />
-        <MobileAuth />
-      </>
-    );
-  }
-
   const socialProviders = [
     ...(oauthFlags.enableGoogle
       ? [{ id: 'google' as const, icon: faGoogle, label: 'Google' }]
@@ -529,13 +516,13 @@ const Auth = () => {
       <div className="flex w-full flex-col items-center justify-center px-6 py-12 lg:w-1/2 lg:px-16">
         <div className="w-full max-w-md">
           {/* Header */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="mb-10 text-center"
           >
-            <h1 className="text-3xl font-bold tracking-[-0.03em] text-white">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white">
               {isResetPasswordMode && showForgotPassword
                 ? 'Set new password'
                 : activeTab === 'signup'
@@ -549,11 +536,11 @@ const Auth = () => {
                   ? 'Start analyzing races with advanced telemetry'
                   : 'Sign in to access your race desk'}
             </p>
-          </motion.div>
+          </m.div>
 
           {/* Tab Switcher */}
           {!showForgotPassword && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
@@ -574,7 +561,7 @@ const Auth = () => {
                   >
                     {tab === 'signup' ? 'Sign Up' : 'Sign In'}
                     {activeTab === tab && (
-                      <motion.div
+                      <m.div
                         layoutId="auth-tab-indicator"
                         className="absolute bottom-0 left-0 right-0 h-px bg-white"
                         transition={{ type: 'spring', stiffness: 500, damping: 35 }}
@@ -583,13 +570,13 @@ const Auth = () => {
                   </button>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {/* Forms */}
           <AnimatePresence mode="wait">
             {showForgotPassword ? (
-              <motion.div
+              <m.div
                 key="forgot-password"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -600,10 +587,16 @@ const Auth = () => {
                   /* Reset Password Form */
                   <form onSubmit={handleUpdatePassword} className="space-y-5">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-medium text-white/60">New Password</label>
+                      <label
+                        htmlFor="field-new-password-5"
+                        className="text-[13px] font-medium text-white/60"
+                      >
+                        New Password
+                      </label>
                       <div className="relative">
                         <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                         <input
+                          id="field-new-password-5"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Enter new password"
                           value={password}
@@ -623,12 +616,16 @@ const Auth = () => {
                       <PasswordRequirements password={password} />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-medium text-white/60">
+                      <label
+                        htmlFor="reset-confirm-password"
+                        className="text-[13px] font-medium text-white/60"
+                      >
                         Confirm Password
                       </label>
                       <div className="relative">
                         <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                         <input
+                          id="reset-confirm-password"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Confirm new password"
                           value={confirmPassword}
@@ -650,7 +647,7 @@ const Auth = () => {
                 ) : resetEmailSent ? (
                   /* Reset Email Sent State */
                   <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                    <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
                       <MailIcon className="text-emerald-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-white">Check your email</h3>
@@ -673,10 +670,16 @@ const Auth = () => {
                   /* Forgot Password Form */
                   <form onSubmit={handleForgotPassword} className="space-y-5">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-medium text-white/60">Email</label>
+                      <label
+                        htmlFor="field-email-6"
+                        className="text-[13px] font-medium text-white/60"
+                      >
+                        Email
+                      </label>
                       <div className="relative">
                         <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                         <input
+                          id="field-email-6"
                           type="email"
                           placeholder="name@example.com"
                           value={forgotPasswordEmail}
@@ -708,9 +711,9 @@ const Auth = () => {
                     </div>
                   </form>
                 )}
-              </motion.div>
+              </m.div>
             ) : activeTab === 'signup' ? (
-              <motion.div
+              <m.div
                 key="signup"
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -744,10 +747,16 @@ const Auth = () => {
                     {/* Email Sign Up Form */}
                     <form onSubmit={handleEmailSignUp} className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-[13px] font-medium text-white/60">Email</label>
+                        <label
+                          htmlFor="field-email-7"
+                          className="text-[13px] font-medium text-white/60"
+                        >
+                          Email
+                        </label>
                         <div className="relative">
                           <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                           <input
+                            id="field-email-7"
                             type="email"
                             placeholder="name@example.com"
                             value={email}
@@ -759,10 +768,16 @@ const Auth = () => {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[13px] font-medium text-white/60">Password</label>
+                        <label
+                          htmlFor="field-password-8"
+                          className="text-[13px] font-medium text-white/60"
+                        >
+                          Password
+                        </label>
                         <div className="relative">
                           <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                           <input
+                            id="field-password-8"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Create a password"
                             value={password}
@@ -782,12 +797,16 @@ const Auth = () => {
                         <PasswordRequirements password={password} />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[13px] font-medium text-white/60">
+                        <label
+                          htmlFor="signup-confirm-password"
+                          className="text-[13px] font-medium text-white/60"
+                        >
                           Confirm Password
                         </label>
                         <div className="relative">
                           <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                           <input
+                            id="signup-confirm-password"
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Confirm your password"
                             value={confirmPassword}
@@ -827,12 +846,12 @@ const Auth = () => {
                   </div>
                 ) : (
                   /* Sign Up Success */
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, scale: 0.97 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center"
                   >
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                    <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
                       <MailIcon className="text-emerald-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-white">Check your inbox</h3>
@@ -848,14 +867,14 @@ const Auth = () => {
                       }}
                       className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06]"
                     >
-                      <ArrowLeftIcon className="w-4 h-4" />
+                      <ArrowLeftIcon className="size-4" />
                       Back to sign up
                     </button>
-                  </motion.div>
+                  </m.div>
                 )}
-              </motion.div>
+              </m.div>
             ) : (
-              <motion.div
+              <m.div
                 key="signin"
                 initial={{ opacity: 0, x: 12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -888,10 +907,16 @@ const Auth = () => {
                   {/* Email Sign In Form */}
                   <form onSubmit={handleEmailSignIn} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-medium text-white/60">Email</label>
+                      <label
+                        htmlFor="field-email-9"
+                        className="text-[13px] font-medium text-white/60"
+                      >
+                        Email
+                      </label>
                       <div className="relative">
                         <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                         <input
+                          id="field-email-9"
                           type="email"
                           placeholder="name@example.com"
                           value={email}
@@ -904,7 +929,12 @@ const Auth = () => {
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label className="text-[13px] font-medium text-white/60">Password</label>
+                        <label
+                          htmlFor="signin-password"
+                          className="text-[13px] font-medium text-white/60"
+                        >
+                          Password
+                        </label>
                         <button
                           type="button"
                           onClick={() => {
@@ -919,6 +949,7 @@ const Auth = () => {
                       <div className="relative">
                         <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
                         <input
+                          id="signin-password"
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           value={password}
@@ -946,7 +977,7 @@ const Auth = () => {
                     </button>
                   </form>
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -955,5 +986,4 @@ const Auth = () => {
   );
 };
 
-export { Auth };
 export default Auth;

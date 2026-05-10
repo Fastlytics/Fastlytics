@@ -28,7 +28,7 @@ const Landing: React.FC = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+        <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       </div>
     );
   }
@@ -66,5 +66,4 @@ const Landing: React.FC = () => {
   );
 };
 
-export { Landing };
 export default Landing;

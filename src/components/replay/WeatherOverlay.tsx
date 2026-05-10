@@ -92,7 +92,7 @@ const getWeatherIcon = (rainfall: boolean, temp: number | null, wind: number | n
   if (rainfall) return <CloudRain size={18} className="text-blue-400" />;
   if (wind && wind > 8) return <CloudLightning size={18} className="text-yellow-400" />;
   if (temp && temp > 30) return <Sun size={18} className="text-orange-400" />;
-  if (temp && temp < 15) return <CloudFog size={18} className="text-gray-400" />;
+  if (temp && temp < 15) return <CloudFog size={18} className="text-zinc-400" />;
   return <CloudSun size={18} className="text-yellow-300" />;
 };
 
@@ -167,7 +167,7 @@ const WeatherOverlay: React.FC<WeatherOverlayProps> = ({
       <div className="flex flex-col h-full gap-2">
         {/* Main weather display */}
         <div className="flex items-center gap-3 pb-2 border-b border-white/[0.04]">
-          <div className="w-10 h-10 rounded-lg bg-white/[0.04] flex items-center justify-center">
+          <div className="size-10 rounded-lg bg-white/[0.04] flex items-center justify-center">
             {getWeatherIcon(rainfall, air_temp, wind_speed)}
           </div>
           <div>

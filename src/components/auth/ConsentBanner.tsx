@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import {
   setConsentPreferences,
@@ -107,8 +107,8 @@ const Toggle = ({
   >
     <span
       className={cn(
-        'inline-block h-[14px] w-[14px] rounded-full transition-transform duration-200',
-        checked ? 'translate-x-[15px] bg-black' : 'translate-x-[3px] bg-white/70'
+        'inline-block size-[14px] rounded-full transition-transform duration-200',
+        checked ? 'translate-x-[15px] bg-zinc-950' : 'translate-x-[3px] bg-white/70'
       )}
     />
   </button>
@@ -182,7 +182,7 @@ const ConsentBanner = () => {
   return (
     <AnimatePresence>
       {visible && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -222,7 +222,7 @@ const ConsentBanner = () => {
               {/* Expandable categories */}
               <AnimatePresence>
                 {expanded && (
-                  <motion.div
+                  <m.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -245,7 +245,7 @@ const ConsentBanner = () => {
                         onChange={(v) => updatePref('analytics', v)}
                       />
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
 
@@ -275,7 +275,7 @@ const ConsentBanner = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

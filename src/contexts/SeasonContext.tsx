@@ -2,7 +2,7 @@
 import React, {
   createContext,
   useState,
-  useContext,
+  use,
   ReactNode,
   useMemo,
   useEffect,
@@ -66,14 +66,17 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (availableYears.length === 0) return;
 
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     if (!availableYears.includes(selectedYear)) {
-      setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-      return;
+      timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
+    } else if (!hasUserSelectedYear && selectedYear !== availableYears[0]) {
+      timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
     }
 
-    if (!hasUserSelectedYear && selectedYear !== availableYears[0]) {
-      setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [availableYears, selectedYear, hasUserSelectedYear]);
 
   const value = useMemo(
@@ -89,7 +92,7 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useSeason = (): SeasonContextType => {
-  const context = useContext(SeasonContext);
+  const context = use(SeasonContext);
   if (context === undefined) {
     throw new Error('useSeason must be used within a SeasonProvider');
   }

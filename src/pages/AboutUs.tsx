@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
 import { Link } from 'react-router-dom';
@@ -43,7 +43,7 @@ const AboutUs = () => {
         {/* Hero */}
         <section className="pt-28 pb-20 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -51,13 +51,13 @@ const AboutUs = () => {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
                 About
               </p>
-              <h1 className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+              <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
                 Democratizing F1 data analysis
               </h1>
               <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
                 Built to bridge the gap between complex telemetry data and the passionate F1 fan.
               </p>
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
@@ -65,7 +65,7 @@ const AboutUs = () => {
         <section className="border-y border-white/[0.04] py-20 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -74,7 +74,7 @@ const AboutUs = () => {
                 <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
                   Mission
                 </p>
-                <h2 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-white sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
                   Every fan deserves race strategist insights
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/40">
@@ -82,9 +82,9 @@ const AboutUs = () => {
                   understand. We believe that every fan deserves access to the same insights as the
                   race strategists, presented in a beautiful, intuitive interface.
                 </p>
-              </motion.div>
+              </m.div>
 
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -93,7 +93,7 @@ const AboutUs = () => {
                 <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
                   Vision
                 </p>
-                <h2 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-white sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
                   Community-driven open analytics
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/40">
@@ -105,7 +105,7 @@ const AboutUs = () => {
                   Join us in building the future of fan-powered analysis. Whether you're a
                   developer, a strategist, or just a passionate fan, there's a place for you here.
                 </p>
-              </motion.div>
+              </m.div>
             </div>
           </div>
         </section>
@@ -113,7 +113,7 @@ const AboutUs = () => {
         {/* Features Grid */}
         <section className="py-20 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -122,14 +122,14 @@ const AboutUs = () => {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
                 Capabilities
               </p>
-              <h2 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-white sm:text-3xl">
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
                 Core features
               </h2>
-            </motion.div>
+            </m.div>
 
             <div className="grid gap-5 sm:grid-cols-3">
               {features.map((item, index) => (
-                <motion.div
+                <m.div
                   key={item.title}
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -137,14 +137,14 @@ const AboutUs = () => {
                   transition={{ delay: index * 0.08, duration: 0.5 }}
                   className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 transition-colors hover:border-white/[0.1]"
                 >
-                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06]">
-                    <item.icon className="h-5 w-5 text-red-400" />
+                  <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg bg-white/[0.04] border border-white/[0.06]">
+                    <item.icon className="size-5 text-red-400" />
                   </div>
                   <h3 className="text-[16px] font-semibold text-white">{item.title}</h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-white/40">
                     {item.description}
                   </p>
-                </motion.div>
+                </m.div>
               ))}
             </div>
           </div>
@@ -154,7 +154,7 @@ const AboutUs = () => {
         <section className="border-y border-white/[0.04] py-20 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl">
             <div className="grid items-start gap-12 lg:grid-cols-[1fr_0.7fr] lg:gap-16">
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -163,7 +163,7 @@ const AboutUs = () => {
                 <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
                   Origin
                 </p>
-                <h2 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-white sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-semibold tracking-[-0.02em] text-white sm:text-3xl">
                   The story behind Fastlytics
                 </h2>
                 <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-white/40">
@@ -189,9 +189,9 @@ const AboutUs = () => {
                     degree.
                   </p>
                 </div>
-              </motion.div>
+              </m.div>
 
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -206,13 +206,13 @@ const AboutUs = () => {
                   />
                 </div>
                 <div className="mt-4 flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-red-400" />
+                  <div className="size-2 rounded-full bg-red-400" />
                   <div>
                     <p className="text-[12px] font-medium text-white/30">Creator</p>
                     <p className="text-[15px] font-semibold text-white">Subhash</p>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             </div>
           </div>
         </section>
@@ -220,13 +220,13 @@ const AboutUs = () => {
         {/* CTA */}
         <section className="py-24 px-5 lg:px-8">
           <div className="mx-auto max-w-6xl text-center">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl">
+              <h2 className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl">
                 Ready to dive deep?
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
@@ -255,7 +255,7 @@ const AboutUs = () => {
                   </svg>
                 </Link>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </section>
       </main>
@@ -265,5 +265,4 @@ const AboutUs = () => {
   );
 };
 
-export { AboutUs };
 export default AboutUs;

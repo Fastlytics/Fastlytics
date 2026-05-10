@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { SEO } from '@/components/layout/SEO';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -25,7 +25,7 @@ import {
   GitCompareIcon,
   PlayCircle02Icon,
 } from 'hugeicons-react';
-import { DashboardNavbar } from '@/components/dashboard/DashboardNavbar';
+import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import HistoricalAccessPrompt from '@/components/common/HistoricalAccessPrompt';
 import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { RacingChart } from '@/components/charts/RacingChart';
@@ -71,12 +71,10 @@ import PositionsTabContent from '@/components/race/PositionsTabContent';
 import posthog from 'posthog-js';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileRace } from '@/components/mobile';
-import TireIcon from '@/components/mobile/tireicon';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { getCountryCode } from '@/utils/countryUtils';
 import { APIError } from '@/lib/api-client';
+import TireIcon from '@/components/race/TireIcon';
 
 // --- Helper Functions ---
 
@@ -229,7 +227,7 @@ const SessionResultsTable: React.FC<{
 
   const sortedResults = useMemo(() => {
     if ((isPractice || isQualifying) && results) {
-      return [...results].sort((a, b) => {
+      return results.toSorted((a, b) => {
         const lapDelta = parseLapTime(getPracticeLapTime(a)) - parseLapTime(getPracticeLapTime(b));
         if (lapDelta !== 0) return lapDelta;
         return getPracticeLaps(b) - getPracticeLaps(a);
@@ -266,7 +264,7 @@ const SessionResultsTable: React.FC<{
     {
       key: 'displayPosition',
       label: 'POS',
-      className: 'w-[60px] text-center font-mono font-black text-gray-400',
+      className: 'w-[60px] text-center font-mono font-black text-zinc-400',
     },
     { key: 'driver', label: 'DRIVER' },
     { key: 'team', label: 'TEAM' },
@@ -356,14 +354,14 @@ const SessionResultsTable: React.FC<{
                         </span>
                         {((fastestLapHolder && res.driverCode === fastestLapHolder.driverCode) ||
                           (!fastestLapHolder && res.isFastestLap)) && (
-                          <Clock01Icon className="w-3 h-3 text-purple-500" />
+                          <Clock01Icon className="size-3 text-purple-500" />
                         )}
                       </div>
                     ) : col.key === 'team' ? (
                       <span className="flex items-center gap-2 text-[13px] text-white/45">
                         <span
                           className={cn(
-                            'h-1.5 w-1.5 rounded-full',
+                            'size-1.5 rounded-full',
                             `bg-f1-${getTeamColorClass(res.team)}`
                           )}
                         />
@@ -500,7 +498,7 @@ const NavItem = ({
         : 'text-white/45 hover:text-white hover:bg-white/[0.03] border border-transparent'
     )}
   >
-    <Icon className={cn('h-4 w-4', active ? 'text-red-400' : 'text-white/30')} />
+    <Icon className={cn('size-4', active ? 'text-red-400' : 'text-white/30')} />
     {label}
   </button>
 );
@@ -508,7 +506,6 @@ const NavItem = ({
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
-  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
@@ -732,9 +729,15 @@ const Race = () => {
 
     if (validResults.length === 0) return null;
 
-    return validResults.sort(
-      (a, b) => parseLapTime(a.driverFastestLapTime) - parseLapTime(b.driverFastestLapTime)
-    )[0];
+    return validResults.reduce<DetailedRaceResult | null>((best, result) => {
+      if (!best) {
+        return result;
+      }
+
+      return parseLapTime(result.driverFastestLapTime) < parseLapTime(best.driverFastestLapTime)
+        ? result
+        : best;
+    }, null);
   }, [effectiveSessionResults, selectedSession]);
 
   const topPerformers = useMemo(() => {
@@ -818,16 +821,21 @@ const Race = () => {
 
     const circuitLength = getCircuitLength(eventName);
 
-    const fastest =
-      [...effectiveSessionResults]
-        .filter((result) => !!getSessionWindowLapTime(result))
-        .sort(
-          (a, b) =>
-            parseLapTime(getSessionWindowLapTime(a)) - parseLapTime(getSessionWindowLapTime(b))
-        )[0] ?? null;
+    const fastest = effectiveSessionResults.reduce<DetailedRaceResult | null>((best, result) => {
+      const lapTime = getSessionWindowLapTime(result);
+      if (!lapTime) {
+        return best;
+      }
+
+      if (!best) {
+        return result;
+      }
+
+      return parseLapTime(lapTime) < parseLapTime(getSessionWindowLapTime(best)) ? result : best;
+    }, null);
 
     const mileage =
-      [...effectiveSessionResults].sort(
+      effectiveSessionResults.toSorted(
         (a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a)
       )[0] ?? null;
 
@@ -948,28 +956,6 @@ const Race = () => {
 
   if (!year || !eventSlug) return null;
 
-  // Mobile version
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title={`${eventName} ${year}: weekend breakdown`}
-          description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
-          keywords={[
-            'race analysis',
-            'f1 telemetry',
-            'formula 1 telemetry data',
-            'race results',
-            'tire strategy',
-            eventName,
-            `${year} race weekend`,
-          ]}
-        />
-        <MobileRace />
-      </>
-    );
-  }
-
   if (isLoadingSessions) {
     return (
       <div
@@ -977,8 +963,8 @@ const Race = () => {
         className="flex min-h-screen items-center justify-center bg-[#09090b] text-white"
       >
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-          <div className="text-[13px] text-white/35 animate-pulse">Loading session data...</div>
+          <div className="size-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+          <div className="text-[13px] text-white/35 animate-pulse">Loading session data…</div>
         </div>
       </div>
     );
@@ -1034,7 +1020,7 @@ const Race = () => {
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -1043,14 +1029,14 @@ const Race = () => {
               <div>
                 <div className="mb-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
+                    <span className="relative flex size-1.5">
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex size-1.5 rounded-full bg-red-400" />
                     </span>
                     Season {year}
                   </span>
                 </div>
-                <h1 className="text-3xl font-bold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
+                <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
                   {eventName}
                 </h1>
                 {selectedSession && availableSessions.find((s) => s.type === selectedSession) && (
@@ -1108,7 +1094,7 @@ const Race = () => {
                   </Select>
                 ))}
             </div>
-          </motion.div>
+          </m.div>
           <div className="mt-8 h-px w-full bg-white/[0.05]" />
         </div>
 
@@ -1204,7 +1190,7 @@ const Race = () => {
 
                       return (
                         <div
-                          key={idx}
+                          key={`${session.name}-${session.date}`}
                           className={cn(
                             'flex items-center gap-4 px-5 py-4 transition-colors',
                             isNext ? 'bg-red-500/[0.04]' : 'hover:bg-white/[0.02]'
@@ -1212,6 +1198,7 @@ const Race = () => {
                         >
                           <div className="w-16 shrink-0 text-center">
                             <div
+                              suppressHydrationWarning
                               className={cn(
                                 'text-[15px] font-bold tabular-nums',
                                 isNext ? 'text-white' : 'text-white/60'
@@ -1221,7 +1208,10 @@ const Race = () => {
                                 .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                                 .toUpperCase()}
                             </div>
-                            <div className="text-[10px] uppercase tracking-wider text-white/25">
+                            <div
+                              suppressHydrationWarning
+                              className="text-[10px] uppercase tracking-wider text-white/25"
+                            >
                               {new Date(session.date).toLocaleDateString(undefined, {
                                 weekday: 'short',
                               })}
@@ -1273,9 +1263,9 @@ const Race = () => {
                               if (isLive) {
                                 return (
                                   <div className="flex items-center gap-1.5 text-emerald-400">
-                                    <span className="relative flex h-1.5 w-1.5">
-                                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    <span className="relative flex size-1.5">
+                                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                      <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
                                     </span>
                                     <span className="text-[11px] font-semibold uppercase">
                                       Live
@@ -1348,7 +1338,7 @@ const Race = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+              <div className="size-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
             </div>
           )
         ) : (
@@ -1553,7 +1543,7 @@ const Race = () => {
                     {/* Provisional Results Banner */}
                     {sessionResults && sessionResults.some((r) => r.isProvisional) && (
                       <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-5 py-4">
-                        <Alert02Icon className="h-4 w-4 shrink-0 text-amber-400" />
+                        <Alert02Icon className="size-4 shrink-0 text-amber-400" />
                         <div>
                           <div className="text-[12px] font-semibold uppercase tracking-wider text-amber-400">
                             Provisional Results
@@ -1568,7 +1558,7 @@ const Race = () => {
 
                     {isTestingSession && selectedSession !== 'Summary' && (
                       <div className="mb-5 flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] px-5 py-4">
-                        <Alert02Icon className="h-4 w-4 shrink-0 text-blue-400" />
+                        <Alert02Icon className="size-4 shrink-0 text-blue-400" />
                         <div>
                           <div className="text-[12px] font-semibold uppercase tracking-wider text-blue-400">
                             Testing Focus
@@ -1583,7 +1573,7 @@ const Race = () => {
 
                     {isTestingSession && selectedSession === 'Summary' && (
                       <div className="mb-5 flex items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] px-5 py-4">
-                        <Alert02Icon className="h-4 w-4 shrink-0 text-blue-400" />
+                        <Alert02Icon className="size-4 shrink-0 text-blue-400" />
                         <div>
                           <div className="text-[12px] font-semibold uppercase tracking-wider text-blue-400">
                             3-Day Testing Summary
@@ -2038,8 +2028,8 @@ const Race = () => {
                         fallback={
                           <div className="flex h-full items-center justify-center">
                             <div className="text-center">
-                              <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-                              <div className="text-[11px] text-white/30">Loading replay...</div>
+                              <div className="mx-auto mb-2 size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+                              <div className="text-[11px] text-white/30">Loading replay…</div>
                             </div>
                           </div>
                         }
@@ -2076,5 +2066,4 @@ const Race = () => {
   );
 };
 
-export { Race };
 export default Race;

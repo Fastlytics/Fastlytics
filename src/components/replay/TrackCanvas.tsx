@@ -49,14 +49,14 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
   return (
     <div
-      className="w-full h-full origin-top-left will-change-transform"
+      className="size-full origin-top-left will-change-transform"
       style={{
         transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
       }}
     >
       <svg
         viewBox="0 0 1000 500"
-        className="w-full h-full pointer-events-none"
+        className="size-full pointer-events-none"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* Track */}

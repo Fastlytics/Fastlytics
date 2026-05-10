@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { CrownIcon } from 'hugeicons-react';
 import { cn } from '@/lib/utils';
 
@@ -91,7 +91,7 @@ export const DriverPodium: React.FC<DriverPodiumProps> = ({ drivers, leaderLabel
         const isP1 = driver.position === 1;
 
         return (
-          <motion.div
+          <m.div
             key={driver.code}
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
@@ -103,7 +103,7 @@ export const DriverPodium: React.FC<DriverPodiumProps> = ({ drivers, leaderLabel
               <img
                 src={driver.image}
                 alt={driver.name}
-                className="h-full w-full object-cover object-top"
+                className="size-full object-cover object-top"
                 loading="eager"
               />
             </div>
@@ -125,7 +125,7 @@ export const DriverPodium: React.FC<DriverPodiumProps> = ({ drivers, leaderLabel
               {/* P1 crown */}
               {isP1 && (
                 <div className="absolute -right-2 -top-2 text-amber-500/10">
-                  <CrownIcon className="h-24 w-24" />
+                  <CrownIcon className="size-24" />
                 </div>
               )}
 
@@ -207,7 +207,7 @@ export const DriverPodium: React.FC<DriverPodiumProps> = ({ drivers, leaderLabel
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         );
       })}
     </div>

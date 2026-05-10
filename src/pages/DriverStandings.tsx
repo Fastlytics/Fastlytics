@@ -13,8 +13,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getDriverImage } from '@/utils/imageMapping';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { MobileDriverStandings } from '@/components/mobile';
 import {
   getTeamColorClass,
   getChangeIndicator,
@@ -32,7 +30,6 @@ import { DriverPodium } from '@/components/standings/DriverPodium';
 import { SEO } from '@/components/layout/SEO';
 
 const DriverStandings = () => {
-  const isMobile = useIsMobile();
   const { selectedYear } = useSeason();
   const { trackPageView } = useAnalytics();
 
@@ -86,18 +83,6 @@ const DriverStandings = () => {
     );
   }
 
-  if (isMobile) {
-    return (
-      <>
-        <SEO
-          title="Driver Standings"
-          description={`See the ${selectedYear} driver standings with points, wins, podiums, and championship momentum across the season.`}
-        />
-        <MobileDriverStandings />
-      </>
-    );
-  }
-
   return (
     <StandingsLayout
       title="Driver Standings"
@@ -147,7 +132,7 @@ const DriverStandings = () => {
                   delay={index * 0.04}
                   indicator={getChangeIndicator(driver.points_change)}
                   beforeName={
-                    <Avatar className="h-22 w-22 shrink-0 border border-white/[0.08]">
+                    <Avatar className="size-22 shrink-0 border border-white/[0.08]">
                       <AvatarImage
                         src={getDriverImage(driver.code, selectedYear)}
                         className="object-cover object-top"
@@ -176,5 +161,4 @@ const DriverStandings = () => {
   );
 };
 
-export { DriverStandings };
 export default DriverStandings;

@@ -134,7 +134,7 @@ const TelemetryChartWrapper = <T,>({
     if (isLoading) {
       return (
         <div className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+          <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
         </div>
       );
     }
@@ -142,7 +142,7 @@ const TelemetryChartWrapper = <T,>({
     if (error || !data) {
       return (
         <div className="w-full h-[350px] rounded-xl border border-red-500/20 bg-red-500/[0.05] flex flex-col items-center justify-center">
-          <AlertCircleIcon className="w-10 h-10 mb-2 text-red-400" />
+          <AlertCircleIcon className="size-10 mb-2 text-red-400" />
           <p className="font-bold uppercase tracking-widest text-sm text-red-400" style={inter}>
             Data Unavailable
           </p>
@@ -193,7 +193,7 @@ const TelemetryChartWrapper = <T,>({
             >
               Telemetry
             </span>
-            <h3 className="text-[18px] font-bold uppercase italic text-white" style={inter}>
+            <h3 className="text-[18px] font-semibold uppercase italic text-white" style={inter}>
               {title}
             </h3>
           </div>
@@ -242,7 +242,7 @@ const TelemetryChartWrapper = <T,>({
                   return (
                     <>
                       <div className="relative shrink-0">
-                        <Avatar className="h-6 w-6 border border-white/[0.08]">
+                        <Avatar className="size-6 border border-white/[0.08]">
                           <AvatarImage src={headshot} className="object-cover object-top" />
                           <AvatarFallback
                             className="bg-[#1a1a1e] text-[8px] font-bold text-white"
@@ -252,7 +252,7 @@ const TelemetryChartWrapper = <T,>({
                           </AvatarFallback>
                         </Avatar>
                         <div
-                          className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-[#0c0c0e]"
+                          className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full border border-[#0c0c0e]"
                           style={{ backgroundColor: color }}
                         />
                       </div>
@@ -284,7 +284,7 @@ const TelemetryChartWrapper = <T,>({
                     >
                       <div className="flex items-center gap-2 w-full">
                         <div
-                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          className="size-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: color }}
                         />
                         <span className="whitespace-nowrap">{driver.name || driver.code}</span>

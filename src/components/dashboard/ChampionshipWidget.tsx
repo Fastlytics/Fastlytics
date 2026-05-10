@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -95,7 +95,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                 driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()));
 
             return (
-              <motion.div
+              <m.div
                 key={driver.code}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -123,7 +123,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                 />
 
                 {/* Avatar */}
-                <Avatar className="h-15 w-15 shrink-0 border border-white/[0.08]">
+                <Avatar className="size-15 shrink-0 border border-white/[0.08]">
                   <AvatarImage
                     src={getDriverImageForYear(driver.code)}
                     className="object-cover object-top"
@@ -164,7 +164,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                     {getGap(driver.points, topDrivers[0].points)}
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>
@@ -231,7 +231,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             const carImg = getCarImage(team.team, selectedYear);
 
             return (
-              <motion.div
+              <m.div
                 key={team.team}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -262,10 +262,10 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                     <img
                       src={carImg}
                       alt={team.team}
-                      className="h-full w-full object-contain [mix-blend-mode:lighten]"
+                      className="size-full object-contain [mix-blend-mode:lighten]"
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1e]">
+                    <div className="flex size-16 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1e]">
                       <span className="text-[12px] font-bold text-white/55">
                         {team.team.substring(0, 2).toUpperCase()}
                       </span>
@@ -299,7 +299,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                     {getGap(team.points, topTeams[0].points)}
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>
@@ -341,5 +341,4 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   );
 };
 
-export { ChampionshipWidget };
 export default ChampionshipWidget;

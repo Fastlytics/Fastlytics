@@ -11,11 +11,12 @@ interface SEOProps {
 }
 
 const DOMAIN = 'https://fastlytics.app';
+const EMPTY_KEYWORDS: string[] = [];
 
 export const SEO = ({
   title,
   description,
-  keywords = [],
+  keywords = EMPTY_KEYWORDS,
   image = '/og-image.png',
   url,
   type = 'website',

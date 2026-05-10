@@ -27,17 +27,8 @@ import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
 
 import { getCountryCode } from '@/utils/countryUtils';
 import { SEO } from '@/components/layout/SEO';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion } from 'motion/react';
-import {
-  MobileLayout,
-  MobilePageHeader,
-  MobileNextSessionCard,
-  MobileChampionshipWidget,
-  MobileRecentRaces,
-  MobileFavoritesWidget,
-} from '@/components/mobile';
+import { m } from 'motion/react';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
@@ -149,7 +140,7 @@ const Dashboard = () => {
       return { nextSession: undefined, recentRaces: [], recentTestingEvents: [] };
     const nowDate = new Date();
     let upcomingSession = undefined;
-    const sortedSchedule = [...schedule].sort(
+    const sortedSchedule = schedule.toSorted(
       (a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
     );
     for (const event of sortedSchedule) {
@@ -206,7 +197,7 @@ const Dashboard = () => {
   const testingSpotlightSession = useMemo(() => {
     if (testingAvailableSessions.length === 0) return '';
     return (
-      [...testingAvailableSessions].sort(
+      testingAvailableSessions.toSorted(
         (a, b) => getTestingSessionOrder(b.type) - getTestingSessionOrder(a.type)
       )[0]?.type ?? ''
     );
@@ -262,7 +253,7 @@ const Dashboard = () => {
         const d = parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime);
         return d !== 0 ? d : (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0);
       });
-    const mileage = [...testingSessionResults].sort(
+    const mileage = testingSessionResults.toSorted(
       (a, b) => (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0)
     );
     const totalLaps = testingSessionResults.reduce(
@@ -278,19 +269,39 @@ const Dashboard = () => {
       (s, r) => s + (r.afternoonLapsCompleted ?? 0),
       0
     );
-    const morningFastest =
-      [...testingSessionResults]
-        .filter((r) => !!r.morningFastestLapTime)
-        .sort(
-          (a, b) => parseLapTime(a.morningFastestLapTime) - parseLapTime(b.morningFastestLapTime)
-        )[0] ?? null;
-    const afternoonFastest =
-      [...testingSessionResults]
-        .filter((r) => !!r.afternoonFastestLapTime)
-        .sort(
-          (a, b) =>
-            parseLapTime(a.afternoonFastestLapTime) - parseLapTime(b.afternoonFastestLapTime)
-        )[0] ?? null;
+    const morningFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
+      (best, result) => {
+        if (!result.morningFastestLapTime) {
+          return best;
+        }
+
+        if (!best) {
+          return result;
+        }
+
+        return parseLapTime(result.morningFastestLapTime) < parseLapTime(best.morningFastestLapTime)
+          ? result
+          : best;
+      },
+      null
+    );
+    const afternoonFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
+      (best, result) => {
+        if (!result.afternoonFastestLapTime) {
+          return best;
+        }
+
+        if (!best) {
+          return result;
+        }
+
+        return parseLapTime(result.afternoonFastestLapTime) <
+          parseLapTime(best.afternoonFastestLapTime)
+          ? result
+          : best;
+      },
+      null
+    );
     const leaderLaps = mileage[0]?.lapsCompleted ?? mileage[0]?.laps ?? 0;
     return {
       fastest,
@@ -318,7 +329,6 @@ const Dashboard = () => {
     return driver?.name.split(' ').pop()?.toUpperCase();
   }, [profile, driverStandings]);
 
-  const isMobile = useIsMobile();
   const hasCriticalDashboardError = isScheduleError || isTeamsError || isDriversError;
 
   if (hasCriticalDashboardError) {
@@ -331,144 +341,15 @@ const Dashboard = () => {
         />
         <div className="flex min-h-screen items-center justify-center px-6 text-center">
           <div className="space-y-3">
-            <h1 className="text-2xl font-bold uppercase text-white">Unable to load dashboard</h1>
+            <h1 className="text-2xl font-semibold uppercase text-white">
+              Unable to load dashboard
+            </h1>
             <p className="text-sm text-white/50">
               Critical dashboard data could not be loaded. Please try again shortly.
             </p>
           </div>
         </div>
       </div>
-    );
-  }
-
-  // ── Mobile view ──────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <MobileLayout>
-        <div style={inter} className="min-h-screen bg-[#09090b] text-white">
-          <SEO
-            title="Race Desk"
-            description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
-            keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
-          />
-          <main className="space-y-5 px-4 pb-6 pt-4">
-            <MobilePageHeader />
-            <MobileNextSessionCard nextSession={nextSession} />
-
-            {user && (
-              <MobileFavoritesWidget
-                profile={profile}
-                drivers={driverStandings}
-                teams={teamStandings}
-                schedule={schedule}
-                isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-              />
-            )}
-
-            {isTestingMode ? (
-              <>
-                {/* Testing mode mobile */}
-                <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4">
-                  <div className="mb-4 flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-red-400">
-                      Testing Mode
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { label: 'Session', value: testingSpotlightSessionName || 'Day Session' },
-                      { label: 'Total Laps', value: String(testingInsights.totalLaps) },
-                      { label: 'Morning', value: String(testingInsights.morningLaps) },
-                      { label: 'Afternoon', value: String(testingInsights.afternoonLaps) },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-lg border border-white/[0.04] bg-white/[0.02] p-3"
-                      >
-                        <div className="text-[11px] font-medium text-white/30">{item.label}</div>
-                        <div className="mt-0.5 text-[15px] font-semibold text-white">
-                          {item.value}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {testingInsights.fastest.length > 0 && (
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/race/${selectedYear}-${toRaceSlug(primaryTestingEvent?.EventName || '')}?session=${testingSpotlightSession}&view=analysis`
-                        )
-                      }
-                      className="mt-3 w-full rounded-lg border border-white/[0.06] p-3 text-left transition-colors hover:border-red-500/30"
-                    >
-                      <div className="text-[11px] font-medium text-white/30">Fastest Driver</div>
-                      <div className="mt-0.5 text-[14px] font-semibold text-white">
-                        {testingInsights.fastest[0].fullName}
-                      </div>
-                      <div className="text-[12px] font-medium text-red-400">
-                        {testingInsights.fastest[0].fastestLapTime || '—'}
-                      </div>
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-[15px] font-semibold text-white">Recent Testing</h3>
-                  {(recentTestingEvents.length > 0 ? recentTestingEvents : testingEvents)
-                    .slice(0, 4)
-                    .map((event) => (
-                      <button
-                        key={event.EventName}
-                        onClick={() =>
-                          navigate(
-                            `/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`
-                          )
-                        }
-                        className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-3 text-left transition-colors hover:border-white/[0.1]"
-                      >
-                        <div>
-                          <div className="text-[14px] font-semibold text-white">
-                            {event.EventName}
-                          </div>
-                          <div className="text-[11px] text-white/30">{event.Location}</div>
-                        </div>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                          className="text-white/20"
-                        >
-                          <path
-                            d="M1 6h10M7 2l4 4-4 4"
-                            stroke="currentColor"
-                            strokeWidth="1.4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <MobileChampionshipWidget
-                  drivers={driverStandings}
-                  teams={teamStandings}
-                  schedule={schedule}
-                  raceResults={raceResults}
-                  isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-                  profile={profile}
-                />
-                <MobileRecentRaces recentRaces={recentRaces} />
-              </>
-            )}
-          </main>
-        </div>
-      </MobileLayout>
     );
   }
 
@@ -567,7 +448,7 @@ const TestingCommandCenter = ({
     {/* Header */}
     <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
       <div className="flex items-center gap-3">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+        <span className="size-1.5 animate-pulse rounded-full bg-red-400" />
         <div>
           <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
             Pre-season testing
@@ -658,7 +539,7 @@ const TestingCommandCenter = ({
                 ? Math.round((laps / testingInsights.leaderLaps) * 100)
                 : 0;
             return (
-              <div key={`${driver.driverCode}-${i}`} className="flex items-center gap-4 py-3">
+              <div key={driver.driverCode} className="flex items-center gap-4 py-3">
                 <span className="w-5 shrink-0 text-[15px] tabular-nums text-white/40">{i + 1}</span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[16px] font-semibold text-white">{driver.fullName}</div>
@@ -761,7 +642,7 @@ const RecentEventsSection = ({
         </div>
       ) : (
         events.map((event, i) => (
-          <motion.div
+          <m.div
             key={`${event.EventName}-${event.EventDate}`}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -781,7 +662,7 @@ const RecentEventsSection = ({
               <img
                 src={`https://flagcdn.com/h40/${getCountryCode(event.Country || event.Location)}.png`}
                 alt={event.Country || event.Location}
-                className="h-full w-full object-cover"
+                className="size-full object-cover"
               />
             </div>
 
@@ -809,12 +690,11 @@ const RecentEventsSection = ({
                 strokeLinejoin="round"
               />
             </svg>
-          </motion.div>
+          </m.div>
         ))
       )}
     </div>
   </div>
 );
 
-export { Dashboard };
 export default Dashboard;

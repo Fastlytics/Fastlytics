@@ -418,7 +418,7 @@ export const getAllLapNumbers = (drivers: Record<string, { lap: number[] }>): nu
     }
   }
 
-  return [...lapSet].sort((a, b) => a - b);
+  return lapSet.toSorted((a, b) => a - b);
 };
 
 // ─── Gap Sorting ─────────────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ export const getMessageType = (msg: { message: string; flag?: string }): Message
       iconName: 'CheckCircle',
       color: 'text-green-400',
       border: 'border-green-500',
-      bg: 'bg-gray-900/90',
+      bg: 'bg-zinc-900/90',
       fill: false,
     };
   }
@@ -550,7 +550,7 @@ export const getMessageType = (msg: { message: string; flag?: string }): Message
       iconName: 'Zap',
       color: 'text-green-400',
       border: 'border-green-500',
-      bg: 'bg-gray-900/90',
+      bg: 'bg-zinc-900/90',
       fill: true,
     };
   }
@@ -560,7 +560,7 @@ export const getMessageType = (msg: { message: string; flag?: string }): Message
       iconName: 'ZapOff',
       color: 'text-red-400',
       border: 'border-red-500',
-      bg: 'bg-gray-900/90',
+      bg: 'bg-zinc-900/90',
       fill: false,
     };
   }
@@ -568,9 +568,9 @@ export const getMessageType = (msg: { message: string; flag?: string }): Message
   return {
     type: 'other',
     iconName: 'Info',
-    color: 'text-gray-400',
-    border: 'border-gray-600',
-    bg: 'bg-gray-900/90',
+    color: 'text-zinc-400',
+    border: 'border-zinc-600',
+    bg: 'bg-zinc-900/90',
     fill: false,
   };
 };

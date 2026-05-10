@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { FeatureGate } from './FeatureGate';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { m } from 'motion/react';
 import { LockKeyIcon } from 'hugeicons-react';
 
 interface GatedRouteProps {
@@ -28,7 +28,7 @@ export const GatedRoute = ({
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin">
-            <svg className="h-7 w-7 text-[#ff2a1a]" fill="none" viewBox="0 0 24 24">
+            <svg className="size-7 text-[#ff2a1a]" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -44,7 +44,7 @@ export const GatedRoute = ({
               />
             </svg>
           </div>
-          <span className="text-xs text-white/40 uppercase tracking-wider">Loading...</span>
+          <span className="text-xs text-white/40 uppercase tracking-wider">Loading…</span>
         </div>
       </div>
     );
@@ -59,27 +59,27 @@ export const GatedRoute = ({
       <div className="relative flex items-center justify-center overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] py-10 md:py-14">
         <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
         <div className="relative z-10 text-center max-w-md mx-auto px-6 md:px-8">
-          <motion.div
+          <m.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#ff2a1a]/10 mb-5 md:mb-6"
+            className="inline-flex items-center justify-center size-14 md:w-16 md:h-16 rounded-2xl bg-[#ff2a1a]/10 mb-5 md:mb-6"
           >
-            <LockKeyIcon className="w-7 h-7 md:w-8 md:h-8 text-[#ff2a1a]" />
-          </motion.div>
-          <motion.div
+            <LockKeyIcon className="size-7 md:w-8 md:h-8 text-[#ff2a1a]" />
+          </m.div>
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
           >
-            <h3 className="text-xl md:text-2xl uppercase font-bold text-white mb-2 md:mb-3">
+            <h3 className="text-xl md:text-2xl uppercase font-semibold text-white mb-2 md:mb-3">
               {featureName}
             </h3>
             <p className="text-xs md:text-sm text-white/40 mb-7 md:mb-8 max-w-[280px] md:max-w-full mx-auto uppercase tracking-wider">
               Upgrade to {requiredTier === 'ultra' ? 'Ultra' : 'Pro'} to unlock {featureName}
             </p>
-          </motion.div>
-          <motion.div
+          </m.div>
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
@@ -90,7 +90,7 @@ export const GatedRoute = ({
             >
               View Plans
             </Link>
-          </motion.div>
+          </m.div>
         </div>
       </div>
     );
@@ -98,5 +98,3 @@ export const GatedRoute = ({
 
   return <>{children}</>;
 };
-
-export default GatedRoute;

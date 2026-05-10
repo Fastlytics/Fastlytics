@@ -37,16 +37,16 @@ export const DriverChartTooltip: React.FC<DriverChartTooltipProps> = ({
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
-            <div className="w-8 h-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
+            <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
               {headshot ? (
                 <img
                   src={headshot}
                   alt={selectedDriver}
-                  className="w-full h-full object-cover object-top"
+                  className="size-full object-cover object-top"
                 />
               ) : (
                 <div
-                  className="w-full h-full flex items-center justify-center text-[10px] text-white"
+                  className="size-full flex items-center justify-center text-[10px] text-white"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   {selectedDriver[0]}

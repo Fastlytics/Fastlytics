@@ -54,7 +54,7 @@ export function getPasswordValidationMessage() {
 const RequirementIcon = ({ passed }: { passed: boolean }) => (
   <span
     className={cn(
-      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+      'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
       passed
         ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
         : 'border-white/10 bg-white/[0.03] text-white/30'
@@ -74,7 +74,7 @@ const RequirementIcon = ({ passed }: { passed: boolean }) => (
         <path d="M20 6 9 17l-5-5" />
       </svg>
     ) : (
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <span className="size-1.5 rounded-full bg-current" />
     )}
   </span>
 );

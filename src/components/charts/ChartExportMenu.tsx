@@ -22,7 +22,7 @@ const FORMAT_OPTIONS: {
     description: 'Vector — scalable, editable',
     icon: (
       <svg
-        className="w-4 h-4"
+        className="size-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -41,7 +41,7 @@ const FORMAT_OPTIONS: {
     description: 'High-res raster (4x)',
     icon: (
       <svg
-        className="w-4 h-4"
+        className="size-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -61,7 +61,7 @@ const FORMAT_OPTIONS: {
     description: 'Spreadsheet data',
     icon: (
       <svg
-        className="w-4 h-4"
+        className="size-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -83,7 +83,7 @@ const FORMAT_OPTIONS: {
     description: 'Structured data + metadata',
     icon: (
       <svg
-        className="w-4 h-4"
+        className="size-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -103,7 +103,7 @@ const FORMAT_OPTIONS: {
     description: 'Clipboard — paste into Figma etc.',
     icon: (
       <svg
-        className="w-4 h-4"
+        className="size-4"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -140,7 +140,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
         )}
       >
         {isExporting ? (
-          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+          <svg className="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
             <path
               d="M12 2a10 10 0 0 1 10 10"
@@ -151,7 +151,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
           </svg>
         ) : (
           <svg
-            className="w-3.5 h-3.5"
+            className="size-3.5"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -167,7 +167,7 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
         <span>{isExporting ? 'Exporting...' : 'Export'}</span>
         {!isExporting && (
           <svg
-            className="w-3 h-3"
+            className="size-3"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -181,7 +181,15 @@ const ChartExportMenu: React.FC<ChartExportMenuProps> = ({
       {open && !isExporting && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            role="button"
+            tabIndex={-1}
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setOpen(false);
+            }}
+          />
 
           {/* Dropdown */}
           <div className="absolute right-0 top-full mt-2 z-50 min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] backdrop-blur-md shadow-2xl overflow-hidden">

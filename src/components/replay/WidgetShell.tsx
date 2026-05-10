@@ -195,7 +195,7 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
       <div className={cn('flex-1 overflow-hidden', !noPadding && 'p-3')}>{children}</div>
 
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize flex items-end justify-end p-0.5"
+        className="absolute bottom-0 right-0 size-4 cursor-se-resize flex items-end justify-end p-0.5"
         onPointerDown={handleResizeStart}
         title="Resize"
       >
