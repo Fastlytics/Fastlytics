@@ -8,30 +8,29 @@ import { ScheduleEvent, RaceResult } from '@/lib/api';
 interface RaceCardProps {
   event: ScheduleEvent;
   result?: RaceResult;
-  isUpcoming: boolean;
-  isTesting?: boolean;
+  status: 'finished' | 'upcoming' | 'next' | 'testing';
   isSprint: boolean;
   countryCode?: string;
   displayLocation?: string;
   displayDate: string;
   selectedYear: number;
-  isNextRace?: boolean;
 }
 
 const RaceCard: React.FC<RaceCardProps> = ({
   event,
   result,
-  isUpcoming,
-  isTesting = false,
+  status,
   isSprint,
   countryCode,
   displayLocation,
   displayDate,
   selectedYear,
-  isNextRace = false,
 }) => {
   const navigate = useNavigate();
-  const isFinished = !isUpcoming && !!result && !isTesting;
+  const isNextRace = status === 'next';
+  const isUpcoming = status === 'upcoming' || status === 'next';
+  const isTesting = status === 'testing';
+  const isFinished = status === 'finished';
 
   return (
     <m.div

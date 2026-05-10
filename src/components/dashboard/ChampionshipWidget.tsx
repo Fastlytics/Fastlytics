@@ -1,16 +1,14 @@
-// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
-
-const WIDGET_SKELETONS = ['ws-0', 'ws-1'];
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { useSeason } from '@/contexts/SeasonContext';
 import { Profile } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getCarImage } from '@/utils/imageMapping';
-import { getDriverImage } from '@/utils/imageMapping';
+import { getCarImage, getDriverImage } from '@/utils/imageMapping';
+
+const WIDGET_SKELETONS = ['ws-0', 'ws-1'];
 
 interface ChampionshipWidgetProps {
   drivers: DriverStanding[];
@@ -22,6 +20,86 @@ interface ChampionshipWidgetProps {
 }
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
+function DriverRow({
+  driver,
+  index,
+  isLeader,
+  isPreSeason,
+  champStatus,
+  isFav,
+  leaderPts,
+  getDriverImageForYear,
+  getGap,
+}: {
+  driver: DriverStanding;
+  index: number;
+  isLeader: boolean;
+  isPreSeason: boolean;
+  champStatus: 'leader' | 'champion';
+  isFav: boolean;
+  leaderPts: number;
+  getDriverImageForYear: (code: string) => string;
+  getGap: (pts: number, leaderPts: number) => string;
+}) {
+  return (
+    <m.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.07, duration: 0.4 }}
+      className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
+        isLeader && champStatus === 'champion'
+          ? 'bg-amber-500/[0.06]'
+          : isLeader
+            ? 'bg-white/[0.03]'
+            : isFav
+              ? 'bg-red-500/[0.05]'
+              : 'transparent'
+      }`}
+    >
+      <span
+        className={`w-5 shrink-0 text-[15px] tabular-nums font-medium ${isLeader ? 'text-amber-400' : 'text-white/40'}`}
+      >
+        {index + 1}
+      </span>
+      <div
+        className={`h-8 w-0.5 shrink-0 rounded-full ${isFav ? 'bg-red-500' : isLeader ? 'bg-amber-400/60' : 'bg-white/10'}`}
+      />
+      <Avatar className="size-15 shrink-0 border border-white/[0.08]">
+        <AvatarImage src={getDriverImageForYear(driver.code)} className="object-cover object-top" />
+        <AvatarFallback className="bg-[#1a1a1e] text-[12px] font-bold text-white">
+          {driver.code}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-[16px] font-semibold text-white">
+            {driver.name.split(' ').pop()?.toUpperCase()}
+          </span>
+          {isLeader && champStatus === 'champion' && (
+            <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] font-semibold text-amber-400">
+              Champ
+            </span>
+          )}
+          {isFav && (
+            <span className="inline-flex rounded bg-red-500/10 px-1.5 py-0.5 text-[12px] font-semibold text-red-400">
+              Fav
+            </span>
+          )}
+        </div>
+        <div className="text-[13px] text-white/45">{driver.team}</div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="text-[18px] font-bold tabular-nums text-white">{driver.points}</div>
+        <div
+          className={`text-[13px] tabular-nums ${isLeader ? 'text-amber-400' : 'text-white/45'}`}
+        >
+          {getGap(driver.points, leaderPts)}
+        </div>
+      </div>
+    </m.div>
+  );
+}
 
 const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   drivers,
@@ -38,11 +116,8 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
   const isPreSeasonTeam = teams.length > 0 && teams[0].points === 0;
 
   const getDriverImageForYear = (code: string) => getDriverImage(code, selectedYear);
-
-  const getGap = (pts: number, leaderPts: number) => {
-    const gap = leaderPts - pts;
-    return gap === 0 ? 'Leader' : `−${gap}`;
-  };
+  const getGap = (pts: number, leaderPts: number) =>
+    leaderPts - pts === 0 ? 'Leader' : `−${leaderPts - pts}`;
 
   let driverChampStatus: 'leader' | 'champion' = 'leader';
   if (drivers.length >= 2 && schedule.length > 0 && raceResults) {
@@ -56,7 +131,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
     teamChampStatus = getChampionshipStatus(teams[0].points, teams[1].points, remaining);
   }
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div style={inter} className="grid gap-6 md:grid-cols-2">
         {WIDGET_SKELETONS.map((id) => (
@@ -67,11 +142,9 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
         ))}
       </div>
     );
-  }
 
   return (
     <div style={inter} className="grid gap-6 md:grid-cols-2">
-      {/* ── Drivers Championship ── */}
       <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
           <div>
@@ -88,90 +161,26 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             </span>
           )}
         </div>
-
         <div className="flex-1 divide-y divide-white/[0.04] p-3">
-          {topDrivers.map((driver, i) => {
-            const isLeader = i === 0 && !isPreSeasonDriver;
-            const isFav =
-              !!profile?.favorite_driver &&
-              (driver.code === profile.favorite_driver ||
-                driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()));
-
-            return (
-              <m.div
-                key={driver.code}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07, duration: 0.4 }}
-                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
-                  isLeader && driverChampStatus === 'champion'
-                    ? 'bg-amber-500/[0.06]'
-                    : isLeader
-                      ? 'bg-white/[0.03]'
-                      : isFav
-                        ? 'bg-red-500/[0.05]'
-                        : 'transparent'
-                }`}
-              >
-                {/* Position */}
-                <span
-                  className={`w-5 shrink-0 text-[15px] tabular-nums font-medium ${isLeader ? 'text-amber-400' : 'text-white/40'}`}
-                >
-                  {i + 1}
-                </span>
-
-                {/* Accent bar */}
-                <div
-                  className={`h-8 w-0.5 shrink-0 rounded-full ${isFav ? 'bg-red-500' : isLeader ? 'bg-amber-400/60' : 'bg-white/10'}`}
-                />
-
-                {/* Avatar */}
-                <Avatar className="size-15 shrink-0 border border-white/[0.08]">
-                  <AvatarImage
-                    src={getDriverImageForYear(driver.code)}
-                    className="object-cover object-top"
-                  />
-                  <AvatarFallback className="bg-[#1a1a1e] text-[12px] font-bold text-white">
-                    {driver.code}
-                  </AvatarFallback>
-                </Avatar>
-
-                {/* Name + team */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-[16px] font-semibold text-white">
-                      {driver.name.split(' ').pop()?.toUpperCase()}
-                    </span>
-                    {isLeader && driverChampStatus === 'champion' && (
-                      <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] font-semibold text-amber-400">
-                        Champ
-                      </span>
-                    )}
-                    {isFav && (
-                      <span className="inline-flex rounded bg-red-500/10 px-1.5 py-0.5 text-[12px] font-semibold text-red-400">
-                        Fav
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[13px] text-white/45">{driver.team}</div>
-                </div>
-
-                {/* Points + gap */}
-                <div className="shrink-0 text-right">
-                  <div className="text-[18px] font-bold tabular-nums text-white">
-                    {driver.points}
-                  </div>
-                  <div
-                    className={`text-[13px] tabular-nums ${isLeader ? 'text-amber-400' : 'text-white/45'}`}
-                  >
-                    {getGap(driver.points, topDrivers[0].points)}
-                  </div>
-                </div>
-              </m.div>
-            );
-          })}
+          {topDrivers.map((driver, i) => (
+            <DriverRow
+              key={driver.code}
+              driver={driver}
+              index={i}
+              isLeader={i === 0 && !isPreSeasonDriver}
+              isPreSeason={isPreSeasonDriver}
+              champStatus={driverChampStatus}
+              isFav={
+                !!profile?.favorite_driver &&
+                (driver.code === profile.favorite_driver ||
+                  driver.name.toLowerCase().includes(profile.favorite_driver.toLowerCase()))
+              }
+              leaderPts={topDrivers[0].points}
+              getDriverImageForYear={getDriverImageForYear}
+              getGap={getGap}
+            />
+          ))}
         </div>
-
         <div className="border-t border-white/[0.06] px-6 py-3.5 flex items-center justify-between">
           <Link
             to="/standings/progression"
@@ -205,8 +214,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
           </Link>
         </div>
       </div>
-
-      {/* ── Constructors Championship ── */}
       <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
         <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
           <div>
@@ -223,7 +230,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             </span>
           )}
         </div>
-
         <div className="flex-1 divide-y divide-white/[0.04] p-3">
           {topTeams.map((team, i) => {
             const isLeader = i === 0 && !isPreSeasonTeam;
@@ -232,34 +238,22 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
               (team.team === profile.favorite_team ||
                 team.team.toLowerCase().includes(profile.favorite_team.toLowerCase()));
             const carImg = getCarImage(team.team, selectedYear);
-
             return (
               <m.div
                 key={team.team}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.07 + 0.2, duration: 0.4 }}
-                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
-                  isLeader && teamChampStatus === 'champion'
-                    ? 'bg-amber-500/[0.06]'
-                    : isLeader
-                      ? 'bg-white/[0.03]'
-                      : isFav
-                        ? 'bg-red-500/[0.05]'
-                        : 'transparent'
-                }`}
+                className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${isLeader && teamChampStatus === 'champion' ? 'bg-amber-500/[0.06]' : isLeader ? 'bg-white/[0.03]' : isFav ? 'bg-red-500/[0.05]' : 'transparent'}`}
               >
                 <span
                   className={`w-5 shrink-0 text-[15px] tabular-nums font-medium ${isLeader ? 'text-amber-400' : 'text-white/40'}`}
                 >
                   {i + 1}
                 </span>
-
                 <div
                   className={`h-8 w-0.5 shrink-0 rounded-full ${isFav ? 'bg-red-500' : isLeader ? 'bg-amber-400/60' : 'bg-white/10'}`}
                 />
-
-                {/* Car image or fallback */}
                 <div className="flex h-16 w-[72px] shrink-0 items-center justify-center">
                   {carImg ? (
                     <img
@@ -275,7 +269,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                     </div>
                   )}
                 </div>
-
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-[16px] font-semibold text-white">
@@ -293,7 +286,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                     )}
                   </div>
                 </div>
-
                 <div className="shrink-0 text-right">
                   <div className="text-[18px] font-bold tabular-nums text-white">{team.points}</div>
                   <div
@@ -306,7 +298,6 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
             );
           })}
         </div>
-
         <div className="border-t border-white/[0.06] px-6 py-3.5 flex items-center justify-between">
           <Link
             to="/team-pace"

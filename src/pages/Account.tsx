@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useEffect } from 'react';
+import React, { useState, useReducer, useEffect } from 'react';
 import { m } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -71,7 +71,7 @@ const Account = () => {
   const [activeSection, setActiveSection] = useState(
     initialSection === 'subscription' ? 'subscription' : 'profile'
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useReducer((_: boolean, a: boolean) => a, false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -87,9 +87,6 @@ const Account = () => {
   const [teams, setTeams] = useState<TeamStanding[]>([]);
   const [favoriteDriver, setFavoriteDriver] = useState<string | null>(null);
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
-
-  const [userActivity, setUserActivity] = useState<ActivityItemProps['activity'][]>([]);
-  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -120,27 +117,22 @@ const Account = () => {
     loadF1Data();
   }, []);
 
-  useEffect(() => {
-    const fetchActivity = async () => {
-      if (!user) return;
-      setIsLoadingActivity(true);
-      try {
-        const { data, error } = await supabase
-          .from('user_activity')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(100);
-        if (error) throw error;
-        setUserActivity(data || []);
-      } catch (error) {
-        console.error('Error fetching activity:', error);
-      } finally {
-        setIsLoadingActivity(false);
-      }
-    };
-    if (activeSection === 'history') fetchActivity();
-  }, [user, activeSection]);
+  const { data: userActivity = [], isLoading: isLoadingActivity } = useQuery<
+    ActivityItemProps['activity'][]
+  >({
+    queryKey: ['userActivity', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_activity')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user && activeSection === 'history',
+  });
 
   const getDriverImageForYear = (driverCode: string) =>
     getDriverImage(driverCode, getCurrentSeasonYear());

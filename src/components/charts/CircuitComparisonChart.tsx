@@ -206,6 +206,15 @@ interface CircuitComparisonChartProps {
   }) => void;
 }
 
+type HoveredSection = {
+  name: string;
+  advantage: number;
+  driver1AvgSpeed?: number;
+  driver2AvgSpeed?: number;
+  x: number;
+  y: number;
+};
+
 const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   className,
   delay = 0,
@@ -250,22 +259,46 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     return availableDrivers?.[1]?.code || '';
   }, [initialDriver2, userSelectedDriver2, availableDrivers]);
 
-  const setSelectedDriver1 = (value: string) => setUserSelectedDriver1(value);
-  const setSelectedDriver2 = (value: string) => setUserSelectedDriver2(value);
+  const notify = (d1: string, d2: string, l1: string | number, l2: string | number) => {
+    onDriversSelected?.({
+      driver1: d1,
+      driver2: d2,
+      lap1: l1,
+      lap2: l2,
+      shouldLoadChart: !!(d1 && d2 && d1 !== d2),
+    });
+  };
+  const setSelectedDriver1 = (v: string) => {
+    setUserSelectedDriver1(v);
+    notify(v, selectedDriver2, selectedLap1, selectedLap2);
+  };
+  const setSelectedDriver2 = (v: string) => {
+    setUserSelectedDriver2(v);
+    notify(selectedDriver1, v, selectedLap1, selectedLap2);
+  };
+  const setLap1 = (v: string | number) => {
+    setSelectedLap1(v);
+    notify(selectedDriver1, selectedDriver2, v, selectedLap2);
+  };
+  const setLap2 = (v: string | number) => {
+    setSelectedLap2(v);
+    notify(selectedDriver1, selectedDriver2, selectedLap1, v);
+  };
+  useEffect(() => {
+    if (!isLoadingDrivers && selectedDriver1 && selectedDriver2) {
+      notify(selectedDriver1, selectedDriver2, selectedLap1, selectedLap2);
+    }
+  }, [isLoadingDrivers]);
 
   const shouldLoadChart = useMemo(
     () => !!(selectedDriver1 && selectedDriver2 && selectedDriver1 !== selectedDriver2),
     [selectedDriver1, selectedDriver2]
   );
 
-  const [hoveredSection, setHoveredSection] = useState<{
-    name: string;
-    advantage: number;
-    driver1AvgSpeed?: number;
-    driver2AvgSpeed?: number;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [hoveredSection, setHoveredSection] = useReducer(
+    (_: HoveredSection | null, v: HoveredSection | null) => v,
+    null as HoveredSection | null
+  );
 
   const handleSectionHover = (e: React.MouseEvent, section: TrackSection, advantage: number) => {
     setHoveredSection({
@@ -281,25 +314,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   const handleSectionLeave = () => {
     setHoveredSection(null);
   };
-
-  useEffect(() => {
-    if (onDriversSelected) {
-      onDriversSelected({
-        driver1: selectedDriver1,
-        driver2: selectedDriver2,
-        lap1: selectedLap1,
-        lap2: selectedLap2,
-        shouldLoadChart,
-      });
-    }
-  }, [
-    selectedDriver1,
-    selectedDriver2,
-    selectedLap1,
-    selectedLap2,
-    shouldLoadChart,
-    onDriversSelected,
-  ]);
 
   const { data: lapTimes1, isLoading: isLoadingLaps1 } = useQuery<number[]>({
     queryKey: ['driverLapNumbers', year, event, session, selectedDriver1],
@@ -378,255 +392,6 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     driver2Color = '#FFFFFF';
   }
 
-  const renderContent = () => {
-    if (!shouldLoadChart) {
-      return (
-        <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-          <p className="text-[13px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Select two different drivers to compare
-          </p>
-        </div>
-      );
-    }
-
-    if (isLoading) {
-      return (
-        <div className="flex h-[400px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-            <p
-              className="text-[12px] text-white animate-pulse"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Loading track data…
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (isError || !comparisonData) {
-      return (
-        <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05]">
-          <AlertCircleIcon className="mb-3 size-9 text-red-400" />
-          <p
-            className="text-[14px] font-semibold text-red-400"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Error loading comparison data
-          </p>
-          <p className="mt-1 text-[12px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {(error as Error)?.message || 'Could not fetch data.'}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="group/chart relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-        <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 pointer-events-none">
-          {[
-            { code: selectedDriver1, color: driver1Color },
-            { code: selectedDriver2, color: driver2Color },
-          ].map(({ code, color }) => (
-            <div key={code} className="flex items-center gap-2">
-              <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
-              <span
-                className="text-[12px] font-bold text-white/70"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                {code}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Lap {comparisonData.driver1LapNumber}
-            </span>
-            <span
-              className="text-[13px] font-bold text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {comparisonData.driver1LapTime}
-            </span>
-            <div className="size-2 rounded-full" style={{ backgroundColor: driver1Color }} />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Lap {comparisonData.driver2LapNumber}
-            </span>
-            <span
-              className="text-[13px] font-bold text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {comparisonData.driver2LapTime}
-            </span>
-            <div className="size-2 rounded-full" style={{ backgroundColor: driver2Color }} />
-          </div>
-        </div>
-
-        <div className="h-[400px] w-full p-4">
-          <svg viewBox="0 0 1000 500" className="size-full">
-            <g transform="scale(1,-1) translate(0,-500)">
-              <path
-                d={comparisonData.circuitLayout}
-                fill="none"
-                stroke="#1a1a1a"
-                strokeWidth="12"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {comparisonData.sections.map((section) => {
-                let strokeColor = '#222';
-                let advantage = 0;
-
-                if (section.driver1Advantage && section.driver1Advantage > 0) {
-                  strokeColor = driver1Color;
-                  advantage = section.driver1Advantage;
-                } else if (section.driver1Advantage && section.driver1Advantage < 0) {
-                  strokeColor = driver2Color;
-                  advantage = section.driver1Advantage;
-                }
-
-                return (
-                  <path
-                    key={section.id}
-                    d={section.path}
-                    fill="none"
-                    stroke={strokeColor}
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="cursor-crosshair opacity-85 transition-all duration-300 hover:stroke-[18] hover:opacity-100"
-                    onMouseEnter={(e) => handleSectionHover(e, section, advantage)}
-                    onMouseLeave={handleSectionLeave}
-                    onMouseMove={(e) => handleSectionHover(e, section, advantage)}
-                  />
-                );
-              })}
-            </g>
-          </svg>
-        </div>
-
-        {hoveredSection && (
-          <div
-            className="pointer-events-none fixed z-50 min-w-[200px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-4 shadow-2xl"
-            style={{
-              left: hoveredSection.x,
-              top: hoveredSection.y,
-              transform: 'translate(-50%, calc(-100% - 16px))',
-            }}
-          >
-            <div className="flex flex-col gap-3">
-              <div>
-                <p
-                  className="text-[10px] font-semibold uppercase tracking-wider text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Sector
-                </p>
-                <p
-                  className="text-[14px] font-bold text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  {hoveredSection.name}
-                </p>
-              </div>
-
-              <div className="h-px w-full bg-white/[0.06]" />
-
-              {[
-                {
-                  code: selectedDriver1,
-                  color: driver1Color,
-                  speed: hoveredSection.driver1AvgSpeed,
-                },
-                {
-                  code: selectedDriver2,
-                  color: driver2Color,
-                  speed: hoveredSection.driver2AvgSpeed,
-                },
-              ].map(({ code, color, speed }) => (
-                <div key={code} className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="size-6 shrink-0 border border-white/[0.08]">
-                      <AvatarImage
-                        src={getDriverImage(code, year)}
-                        className="object-cover object-top"
-                      />
-                      <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
-                        {code[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span
-                      className="text-[12px] font-bold text-white/70"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      {code}
-                    </span>
-                  </div>
-                  {speed && (
-                    <div className="flex flex-col items-end">
-                      <span
-                        className="text-[9px] font-medium uppercase tracking-wider text-white"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        Avg Speed
-                      </span>
-                      <span
-                        className="text-[12px] font-semibold text-white"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        {Math.round(speed)} km/h
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <div className="h-px w-full bg-white/[0.06]" />
-
-              <div className="flex items-center gap-2">
-                {hoveredSection.advantage !== 0 ? (
-                  <>
-                    <div
-                      className="size-2 rounded-full"
-                      style={{
-                        backgroundColor: hoveredSection.advantage > 0 ? driver1Color : driver2Color,
-                      }}
-                    />
-                    <span
-                      className="text-[12px] font-bold text-white"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      {hoveredSection.advantage > 0 ? selectedDriver1 : selectedDriver2}
-                    </span>
-                    <span
-                      className="text-[12px] font-bold text-red-400"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      -{Math.abs(hoveredSection.advantage).toFixed(3)}s
-                    </span>
-                  </>
-                ) : (
-                  <span
-                    className="text-[12px] text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    Equal pace
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div
       ref={(el) => {
@@ -672,7 +437,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             driverCode={selectedDriver1}
             selectedLap={selectedLap1}
             onSelectDriver={setSelectedDriver1}
-            onSelectLap={setSelectedLap1}
+            onSelectLap={setLap1}
             lapOptions={lapOptions1}
             isLoadingDrivers={isLoadingDrivers}
             isLoadingLaps={isLoadingLaps1}
@@ -688,7 +453,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             driverCode={selectedDriver2}
             selectedLap={selectedLap2}
             onSelectDriver={setSelectedDriver2}
-            onSelectLap={setSelectedLap2}
+            onSelectLap={setLap2}
             lapOptions={lapOptions2}
             isLoadingDrivers={isLoadingDrivers}
             isLoadingLaps={isLoadingLaps2}
@@ -702,10 +467,260 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         </div>
       </div>
 
-      {renderContent()}
+      <CircuitContent />
     </div>
   );
 };
 
 export { CircuitComparisonChart };
+
+const CircuitContent: React.FC<Record<string, unknown>> = () => {
+  if (!shouldLoadChart) {
+    return (
+      <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <p className="text-[13px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+          Select two different drivers to compare
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+          <p
+            className="text-[12px] text-white animate-pulse"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            Loading track data…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !comparisonData) {
+    return (
+      <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05]">
+        <AlertCircleIcon className="mb-3 size-9 text-red-400" />
+        <p
+          className="text-[14px] font-semibold text-red-400"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          Error loading comparison data
+        </p>
+        <p className="mt-1 text-[12px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+          {(error as Error)?.message || 'Could not fetch data.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group/chart relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+      <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 pointer-events-none">
+        {[
+          { code: selectedDriver1, color: driver1Color },
+          { code: selectedDriver2, color: driver2Color },
+        ].map(({ code, color }) => (
+          <div key={code} className="flex items-center gap-2">
+            <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
+            <span
+              className="text-[12px] font-bold text-white/70"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              {code}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Lap {comparisonData.driver1LapNumber}
+          </span>
+          <span
+            className="text-[13px] font-bold text-white"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            {comparisonData.driver1LapTime}
+          </span>
+          <div className="size-2 rounded-full" style={{ backgroundColor: driver1Color }} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+            Lap {comparisonData.driver2LapNumber}
+          </span>
+          <span
+            className="text-[13px] font-bold text-white"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            {comparisonData.driver2LapTime}
+          </span>
+          <div className="size-2 rounded-full" style={{ backgroundColor: driver2Color }} />
+        </div>
+      </div>
+
+      <div className="h-[400px] w-full p-4">
+        <svg viewBox="0 0 1000 500" className="size-full">
+          <g transform="scale(1,-1) translate(0,-500)">
+            <path
+              d={comparisonData.circuitLayout}
+              fill="none"
+              stroke="#1a1a1a"
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {comparisonData.sections.map((section) => {
+              let strokeColor = '#222';
+              let advantage = 0;
+
+              if (section.driver1Advantage && section.driver1Advantage > 0) {
+                strokeColor = driver1Color;
+                advantage = section.driver1Advantage;
+              } else if (section.driver1Advantage && section.driver1Advantage < 0) {
+                strokeColor = driver2Color;
+                advantage = section.driver1Advantage;
+              }
+
+              return (
+                <path
+                  key={section.id}
+                  d={section.path}
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="cursor-crosshair opacity-85 transition-all duration-300 hover:stroke-[18] hover:opacity-100"
+                  onMouseEnter={(e) => handleSectionHover(e, section, advantage)}
+                  onMouseLeave={handleSectionLeave}
+                  onMouseMove={(e) => handleSectionHover(e, section, advantage)}
+                />
+              );
+            })}
+          </g>
+        </svg>
+      </div>
+
+      {hoveredSection && (
+        <div
+          className="pointer-events-none fixed z-50 min-w-[200px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-4 shadow-2xl"
+          style={{
+            left: hoveredSection.x,
+            top: hoveredSection.y,
+            transform: 'translate(-50%, calc(-100% - 16px))',
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div>
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wider text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                Sector
+              </p>
+              <p
+                className="text-[14px] font-bold text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {hoveredSection.name}
+              </p>
+            </div>
+
+            <div className="h-px w-full bg-white/[0.06]" />
+
+            {[
+              {
+                code: selectedDriver1,
+                color: driver1Color,
+                speed: hoveredSection.driver1AvgSpeed,
+              },
+              {
+                code: selectedDriver2,
+                color: driver2Color,
+                speed: hoveredSection.driver2AvgSpeed,
+              },
+            ].map(({ code, color, speed }) => (
+              <div key={code} className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-6 shrink-0 border border-white/[0.08]">
+                    <AvatarImage
+                      src={getDriverImage(code, year)}
+                      className="object-cover object-top"
+                    />
+                    <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
+                      {code[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span
+                    className="text-[12px] font-bold text-white/70"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {code}
+                  </span>
+                </div>
+                {speed && (
+                  <div className="flex flex-col items-end">
+                    <span
+                      className="text-[9px] font-medium uppercase tracking-wider text-white"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      Avg Speed
+                    </span>
+                    <span
+                      className="text-[12px] font-semibold text-white"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      {Math.round(speed)} km/h
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div className="h-px w-full bg-white/[0.06]" />
+
+            <div className="flex items-center gap-2">
+              {hoveredSection.advantage !== 0 ? (
+                <>
+                  <div
+                    className="size-2 rounded-full"
+                    style={{
+                      backgroundColor: hoveredSection.advantage > 0 ? driver1Color : driver2Color,
+                    }}
+                  />
+                  <span
+                    className="text-[12px] font-bold text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {hoveredSection.advantage > 0 ? selectedDriver1 : selectedDriver2}
+                  </span>
+                  <span
+                    className="text-[12px] font-bold text-red-400"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    -{Math.abs(hoveredSection.advantage).toFixed(3)}s
+                  </span>
+                </>
+              ) : (
+                <span
+                  className="text-[12px] text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Equal pace
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default CircuitComparisonChart;

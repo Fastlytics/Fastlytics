@@ -279,8 +279,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isLoading, setIsLoading] = useReducer((_: boolean, a: boolean) => a, false);
+  const [isSendingReset, setIsSendingReset] = useReducer((_: boolean, a: boolean) => a, false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [searchParams] = useSearchParams();
   const isResetMode = searchParams.get('reset') === 'true';

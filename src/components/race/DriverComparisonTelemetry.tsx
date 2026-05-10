@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
   ReferenceLine,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchTelemetryThrottle,

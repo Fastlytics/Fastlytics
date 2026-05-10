@@ -100,18 +100,17 @@ async function fetchChunkWithRetry(
   event: string,
   session: string,
   chunkId: number,
-  signal?: AbortSignal
-) {
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await fetchChunk(year, event, session, chunkId, signal);
-    } catch (err) {
-      if (signal?.aborted) throw err;
-      if (attempt === MAX_RETRIES) throw err;
-      await sleep(RETRY_DELAYS[attempt] || 4000, signal);
-    }
+  signal?: AbortSignal,
+  attempt = 0
+): Promise<ChunkData> {
+  try {
+    return await fetchChunk(year, event, session, chunkId, signal);
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    if (attempt >= MAX_RETRIES) throw err;
+    await sleep(RETRY_DELAYS[attempt] || 4000, signal);
+    return fetchChunkWithRetry(fetchChunk, year, event, session, chunkId, signal, attempt + 1);
   }
-  throw new Error('Unreachable');
 }
 
 function getChunkIndexForTime(manifest: ChunkManifest[], time: number) {

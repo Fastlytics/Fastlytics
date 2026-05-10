@@ -1,6 +1,7 @@
 // knip-ignore
 import React, { useEffect, useState } from 'react';
 import { m } from 'motion/react';
+import { useQuery } from '@tanstack/react-query';
 
 interface ReplayLoaderProps {
   year: number;
@@ -13,11 +14,31 @@ interface ProgressData {
   percent: number;
 }
 
-const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => {
-  const [progress, setProgress] = useState<ProgressData>({
-    message: 'Initializing...',
-    percent: 0,
+const fetchReplayProgress = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<ProgressData> => {
+  const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/replay/session/progress?year=${year}&event=${event}&session=${session}`;
+  const res = await fetch(url, {
+    headers: {
+      'X-API-Key': import.meta.env.VITE_FASTLYTICS_API_KEY || '',
+    },
   });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch progress: ${res.status}`);
+  }
+  return res.json();
+};
+
+const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => {
+  const { data: progress } = useQuery<ProgressData>({
+    queryKey: ['replayProgress', year, event, session],
+    queryFn: () => fetchReplayProgress(year, event, session),
+    refetchInterval: 750,
+    initialData: { message: 'Initializing...', percent: 0 },
+  });
+
   const [dots, setDots] = useState('');
 
   useEffect(() => {
@@ -26,37 +47,6 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
     }, 500);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    const poll = async () => {
-      try {
-        const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/replay/session/progress?year=${year}&event=${event}&session=${session}`;
-
-        const res = await fetch(url, {
-          headers: {
-            'X-API-Key': import.meta.env.VITE_FASTLYTICS_API_KEY || '',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data) {
-            setProgress(data);
-          }
-        }
-      } catch (e) {
-        console.warn('Progress poll failed:', e);
-      }
-    };
-
-    poll();
-    const intervalId = setInterval(poll, 750);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [year, event, session]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] w-full text-white">

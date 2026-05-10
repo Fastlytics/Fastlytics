@@ -83,7 +83,6 @@ export function useCamera(
     if (!container) return;
 
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
       const scaleSensitivity = 0.001;
       const delta = -e.deltaY * scaleSensitivity;
 
@@ -106,8 +105,12 @@ export function useCamera(
       });
     };
 
-    container.addEventListener('wheel', onWheel, { passive: false });
-    return () => container.removeEventListener('wheel', onWheel);
+    container.style.touchAction = 'none';
+    container.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      container.style.touchAction = '';
+      container.removeEventListener('wheel', onWheel);
+    };
   }, [containerRef, isLoading, isFollowing]);
 
   useEffect(() => {

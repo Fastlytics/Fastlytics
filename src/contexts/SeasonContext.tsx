@@ -68,17 +68,14 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (availableYears.length === 0) return;
 
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const needsReset =
+      !availableYears.includes(selectedYear) ||
+      (!hasUserSelectedYearRef.current && selectedYear !== availableYears[0]);
 
-    if (!availableYears.includes(selectedYear)) {
-      timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-    } else if (!hasUserSelectedYearRef.current && selectedYear !== availableYears[0]) {
-      timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-    }
+    if (!needsReset) return;
 
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+    const timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
+    return () => clearTimeout(timeoutId);
   }, [availableYears, selectedYear]);
 
   const value = useMemo(
