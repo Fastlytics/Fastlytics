@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { ArrowUpRight, Check, X } from 'lucide-react';
 

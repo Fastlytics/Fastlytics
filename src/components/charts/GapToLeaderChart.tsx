@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useMemo } from 'react';
+import React, { useMemo, type Dispatch, type SetStateAction } from 'react';
 import {
   LineChart,
   Line,
@@ -294,14 +294,73 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
         </div>
       </div>
 
-      <GapToLeaderContent />
+      <GapToLeaderContent
+        shouldLoadChart={shouldLoadChart}
+        staticData={staticData}
+        trackInteraction={trackInteraction}
+        year={year}
+        event={event}
+        session={session}
+        setShouldLoadChart={setShouldLoadChart}
+        selectedDrivers={selectedDrivers}
+        MIN_DRIVERS={MIN_DRIVERS}
+        isLoadingDrivers={isLoadingDrivers}
+        isLoadingAll={isLoadingAll}
+        isError={isError}
+        error={error}
+        gapData={gapData}
+        driversToDisplay={driversToDisplay}
+        driverNameMap={driverNameMap}
+        focusedDriver={focusedDriver}
+        setFocusedDriver={setFocusedDriver}
+      />
     </div>
   );
 };
 
 export { GapToLeaderChart };
 
-const GapToLeaderContent: React.FC<Record<string, unknown>> = () => {
+interface GapToLeaderContentProps {
+  shouldLoadChart: boolean;
+  staticData?: LapTimeDataPoint[];
+  trackInteraction: (action: string, meta?: Record<string, unknown>) => void;
+  year: number;
+  event: string;
+  session: string;
+  setShouldLoadChart: (val: boolean) => void;
+  selectedDrivers: string[];
+  MIN_DRIVERS: number;
+  isLoadingDrivers: boolean;
+  isLoadingAll: boolean;
+  isError: boolean;
+  error: Error | null;
+  gapData: LapTimeDataPoint[];
+  driversToDisplay: string[];
+  driverNameMap: Map<string, string>;
+  focusedDriver: string | null;
+  setFocusedDriver: Dispatch<SetStateAction<string | null>>;
+}
+
+const GapToLeaderContent: React.FC<GapToLeaderContentProps> = ({
+  shouldLoadChart,
+  staticData,
+  trackInteraction,
+  year,
+  event,
+  session,
+  setShouldLoadChart,
+  selectedDrivers,
+  MIN_DRIVERS,
+  isLoadingDrivers,
+  isLoadingAll,
+  isError,
+  error,
+  gapData,
+  driversToDisplay,
+  driverNameMap,
+  focusedDriver,
+  setFocusedDriver,
+}) => {
   if (!shouldLoadChart && !staticData) {
     return (
       <div className="w-full h-[300px] flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] gap-4">

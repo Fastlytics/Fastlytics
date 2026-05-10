@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';

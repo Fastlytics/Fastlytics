@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -467,14 +467,58 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         </div>
       </div>
 
-      <CircuitContent />
+      <CircuitContent
+        shouldLoadChart={shouldLoadChart}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        comparisonData={comparisonData}
+        selectedDriver1={selectedDriver1}
+        selectedDriver2={selectedDriver2}
+        driver1Color={driver1Color}
+        driver2Color={driver2Color}
+        handleSectionHover={handleSectionHover}
+        handleSectionLeave={handleSectionLeave}
+        hoveredSection={hoveredSection}
+        year={year}
+      />
     </div>
   );
 };
 
 export { CircuitComparisonChart };
 
-const CircuitContent: React.FC<Record<string, unknown>> = () => {
+interface CircuitContentProps {
+  shouldLoadChart: boolean;
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  comparisonData?: SectorComparisonData;
+  selectedDriver1: string;
+  selectedDriver2: string;
+  driver1Color: string;
+  driver2Color: string;
+  handleSectionHover: (e: React.MouseEvent, section: TrackSection, advantage: number) => void;
+  handleSectionLeave: () => void;
+  hoveredSection: HoveredSection | null;
+  year: number;
+}
+
+const CircuitContent: React.FC<CircuitContentProps> = ({
+  shouldLoadChart,
+  isLoading,
+  isError,
+  error,
+  comparisonData,
+  selectedDriver1,
+  selectedDriver2,
+  driver1Color,
+  driver2Color,
+  handleSectionHover,
+  handleSectionLeave,
+  hoveredSection,
+  year,
+}) => {
   if (!shouldLoadChart) {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">

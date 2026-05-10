@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useMemo } from 'react';
+import React, { useMemo, useReducer } from 'react';
 
 const STRATEGY_SKELETONS = Array.from({ length: 8 }, (_, i) => `ss-${i}`);
 import { cn } from '@/lib/utils';
@@ -180,7 +180,19 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
           value="overview"
           className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
         >
-          <StrategyOverview />
+          <StrategyOverview
+            isLoadingStrategy={isLoadingStrategy}
+            isErrorStrategy={isErrorStrategy}
+            errorStrategy={errorStrategy}
+            strategyData={strategyData}
+            maxLaps={maxLaps}
+            driverPositionMap={driverPositionMap}
+            favoriteDriver={favoriteDriver}
+            focusedDriver={focusedDriver}
+            toggleDriverFocus={toggleDriverFocus}
+            getDriverFullName={getDriverFullName}
+            year={year}
+          />
         </TabsContent>
         <TabsContent
           value="analysis"
@@ -200,7 +212,33 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
 
 export { TireStrategy };
 
-const StrategyOverview: React.FC<Record<string, unknown>> = () => {
+interface StrategyOverviewProps {
+  isLoadingStrategy: boolean;
+  isErrorStrategy: boolean;
+  errorStrategy: Error | null;
+  strategyData: DriverStrategy[] | undefined;
+  maxLaps: number;
+  driverPositionMap: Map<string, number>;
+  favoriteDriver?: string | null;
+  focusedDriver: string | null;
+  toggleDriverFocus: (driver: string) => void;
+  getDriverFullName: (code: string) => string;
+  year: number;
+}
+
+const StrategyOverview: React.FC<StrategyOverviewProps> = ({
+  isLoadingStrategy,
+  isErrorStrategy,
+  errorStrategy,
+  strategyData,
+  maxLaps,
+  driverPositionMap,
+  favoriteDriver,
+  focusedDriver,
+  toggleDriverFocus,
+  getDriverFullName,
+  year,
+}) => {
   if (isLoadingStrategy) {
     return (
       <div className="space-y-3 pt-4 animate-pulse">
@@ -271,7 +309,6 @@ const StrategyOverview: React.FC<Record<string, unknown>> = () => {
           </div>
 
           {strategyData.map((driverData) => {
-            const isRaceSession = session === 'R' || session === 'Sprint';
             const position = driverPositionMap.get(driverData.driver);
             const positionText = position !== undefined && isFinite(position) ? `P${position}` : '';
             const isFav =
