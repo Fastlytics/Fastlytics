@@ -16,6 +16,7 @@ export interface ChartStateDisplayProps {
 
   onRetry?: () => void;
   onBack?: () => void;
+  retryLabel?: string;
 }
 
 export const ChartStateDisplay: React.FC<ChartStateDisplayProps> = ({
@@ -29,6 +30,7 @@ export const ChartStateDisplay: React.FC<ChartStateDisplayProps> = ({
   className,
   onRetry,
   onBack,
+  retryLabel = 'Retry',
 }) => {
   const containerStyle = typeof height === 'number' ? { height: `${height}px` } : { height };
 
@@ -69,7 +71,7 @@ export const ChartStateDisplay: React.FC<ChartStateDisplayProps> = ({
               size="sm"
               className="mt-2 rounded-lg border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold text-[11px] uppercase tracking-wider"
             >
-              Retry
+              {retryLabel}
             </Button>
           )}
         </div>

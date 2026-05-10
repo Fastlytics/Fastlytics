@@ -18,40 +18,18 @@ import {
   fetchTelemetryRPM,
   fetchTelemetryDRS,
   fetchTelemetrySpeed,
-  ThrottleDataPoint,
-  BrakeDataPoint,
-  RPMDataPoint,
-  DRSDataPoint,
-  SpeedDataPoint,
-  SpeedTraceResponse,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
-
-type TelemetryType = 'speed' | 'throttle' | 'brake' | 'rpm' | 'drs' | 'gap';
-type TelemetryDataPoint =
-  | ThrottleDataPoint
-  | BrakeDataPoint
-  | RPMDataPoint
-  | DRSDataPoint
-  | SpeedDataPoint;
-
-type TelemetryKey = 'Speed' | 'Throttle' | 'Brake' | 'RPM' | 'DRS';
-
-function getTelemetryValue(
-  point: TelemetryDataPoint,
-  key: TelemetryKey
-): number | null | undefined {
-  if (key === 'Speed' && 'Speed' in point) return (point as SpeedDataPoint).Speed;
-  if (key === 'Throttle' && 'Throttle' in point) return (point as ThrottleDataPoint).Throttle;
-  if (key === 'Brake' && 'Brake' in point) return (point as BrakeDataPoint).Brake;
-  if (key === 'RPM' && 'RPM' in point) return (point as RPMDataPoint).RPM;
-  if (key === 'DRS' && 'DRS' in point) return (point as DRSDataPoint).DRS;
-  return null;
-}
+import {
+  buildCombinedTelemetryData,
+  getTelemetryProps,
+  TelemetryDataPoint,
+  TelemetryType,
+} from './driverComparisonTelemetryUtils';
 
 interface TooltipPayloadEntry {
   name?: string;
@@ -122,235 +100,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     staleTime: Infinity,
   });
 
-  const combinedTelemetryData = React.useMemo(() => {
-    if (!telemetryData1 || !telemetryData2) return [];
-
-    if (telemetryType === 'gap') {
-      const extractSpeedData = (data: unknown): SpeedDataPoint[] => {
-        if (Array.isArray(data)) return data as SpeedDataPoint[];
-        if (data && typeof data === 'object' && 'trace' in data)
-          return (data as SpeedTraceResponse).trace;
-        return [];
-      };
-      const speedData1 = extractSpeedData(telemetryData1);
-      const speedData2 = extractSpeedData(telemetryData2);
-
-      const calculateTime = (speedData: SpeedDataPoint[]) => {
-        let time = 0;
-        return speedData.map((point, i) => {
-          if (i === 0) return { ...point, time: 0 };
-          const prev = speedData[i - 1];
-          const distDelta = point.Distance - prev.Distance;
-          const avgSpeed = (point.Speed + prev.Speed) / 2 / 3.6;
-          const timeDelta = avgSpeed > 0 ? distDelta / avgSpeed : 0;
-          time += timeDelta;
-          return { ...point, time };
-        });
-      };
-
-      const timeData1 = calculateTime(speedData1);
-      const timeData2 = calculateTime(speedData2);
-
-      return timeData1.map((d1) => {
-        let t2 = 0;
-        const exactMatch = timeData2.find((d) => d.Distance === d1.Distance);
-        if (exactMatch) {
-          t2 = exactMatch.time;
-        } else {
-          const before = timeData2.filter((d) => d.Distance < d1.Distance).pop();
-          const after = timeData2.find((d) => d.Distance > d1.Distance);
-          if (before && after) {
-            const ratio = (d1.Distance - before.Distance) / (after.Distance - before.Distance);
-            t2 = before.time + ratio * (after.time - before.time);
-          } else if (before) {
-            t2 = before.time;
-          } else if (after) {
-            t2 = after.time;
-          }
-        }
-        return { Distance: d1.Distance, Gap: d1.time - t2, Baseline: 0 };
-      });
-    }
-
-    const findInterpolationPoints = (distance: number, data: TelemetryDataPoint[]) => {
-      let beforePoint: TelemetryDataPoint | null = null;
-      let afterPoint: TelemetryDataPoint | null = null;
-      for (let i = 0; i < data.length; i++) {
-        if (data[i].Distance <= distance) {
-          beforePoint = data[i];
-        } else {
-          afterPoint = data[i];
-          break;
-        }
-      }
-      return { beforePoint, afterPoint };
-    };
-
-    const getDataKey = (type: string): TelemetryKey => {
-      switch (type) {
-        case 'throttle':
-          return 'Throttle';
-        case 'brake':
-          return 'Brake';
-        case 'rpm':
-          return 'RPM';
-        case 'drs':
-          return 'DRS';
-        case 'speed':
-        default:
-          return 'Speed';
-      }
-    };
-
-    const dataKey = getDataKey(telemetryType);
-
-    const interpolateTelemetry = (
-      distance: number,
-      data: TelemetryDataPoint[],
-      key: TelemetryKey
-    ): number | null => {
-      if (!data.length) return null;
-      const exactMatch = data.find((point) => point.Distance === distance);
-      if (exactMatch) {
-        const val = getTelemetryValue(exactMatch, key);
-        return val !== undefined ? val : null;
-      }
-      const { beforePoint, afterPoint } = findInterpolationPoints(distance, data);
-      if (!beforePoint) {
-        if (!afterPoint) return null;
-        const val = getTelemetryValue(afterPoint, key);
-        return val !== undefined ? val : null;
-      }
-      if (!afterPoint) {
-        const val = getTelemetryValue(beforePoint, key);
-        return val !== undefined ? val : null;
-      }
-      const beforeValue = getTelemetryValue(beforePoint, key);
-      const afterValue = getTelemetryValue(afterPoint, key);
-      if (beforeValue === null || beforeValue === undefined) return afterValue ?? null;
-      if (afterValue === null || afterValue === undefined) return beforeValue;
-      const distRatio =
-        (distance - beforePoint.Distance) / (afterPoint.Distance - beforePoint.Distance);
-      return beforeValue + distRatio * (afterValue - beforeValue);
-    };
-
-    const baseData =
-      telemetryData1.length > telemetryData2.length ? telemetryData1 : telemetryData2;
-    const otherData =
-      telemetryData1.length > telemetryData2.length ? telemetryData2 : telemetryData1;
-    const isDriver1Base = telemetryData1.length > telemetryData2.length;
-
-    return baseData.map((point) => {
-      const distance = point.Distance;
-      const baseValue = getTelemetryValue(point, dataKey);
-      const otherValue = interpolateTelemetry(distance, otherData, dataKey);
-      return {
-        Distance: distance,
-        [isDriver1Base ? driver1 : driver2]: baseValue,
-        [isDriver1Base ? driver2 : driver1]: otherValue,
-      };
-    });
-  }, [telemetryData1, telemetryData2, telemetryType, driver1, driver2]);
-
-  const getTelemetryProps = () => {
-    switch (telemetryType) {
-      case 'throttle':
-        return {
-          dataKey: 'Throttle',
-          yAxisFormatter: (value: number) => `${value.toFixed(0)}%`,
-          color1: '#10b981',
-          color2: '#10b981',
-          domain: [0, 100] as [number, number],
-          tooltipUnit: '%',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-      case 'brake':
-        return {
-          dataKey: 'Brake',
-          yAxisFormatter: (value: number) => `${value.toFixed(0)}%`,
-          color1: '#ef4444',
-          color2: '#ef4444',
-          domain: [0, 100] as [number, number],
-          tooltipUnit: '%',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-      case 'rpm':
-        return {
-          dataKey: 'RPM',
-          yAxisFormatter: (value: number) => `${Math.round(value / 1000)}k`,
-          color1: '#fb923c',
-          color2: '#fb923c',
-          domain: [0, 13000] as [number, number],
-          tooltipUnit: ' RPM',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-      case 'drs':
-        return {
-          dataKey: 'DRS',
-          yAxisFormatter: (value: number) => (value === 1 ? 'ON' : 'OFF'),
-          color1: '#3b82f6',
-          color2: '#3b82f6',
-          domain: [-0.1, 1.1] as [number, number],
-          tooltipUnit: '',
-          type: 'stepAfter' as const,
-          showYAxisTicks: false,
-          showActiveDot: false,
-        };
-      case 'speed':
-        return {
-          dataKey: 'Speed',
-          yAxisFormatter: (value: number) => `${Math.round(value)}`,
-          color1: '#3b82f6',
-          color2: '#3b82f6',
-          domain: ['auto', 'auto'] as [
-            number | 'auto' | 'dataMin' | 'dataMax',
-            number | 'auto' | 'dataMin' | 'dataMax',
-          ],
-          tooltipUnit: ' km/h',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-      case 'gap':
-        return {
-          dataKey: 'Gap',
-          yAxisFormatter: (value: number) => `${value.toFixed(2)}s`,
-          color1: '#ef4444',
-          color2: '#666666',
-          domain: ['auto', 'auto'] as [
-            number | 'auto' | 'dataMin' | 'dataMax',
-            number | 'auto' | 'dataMin' | 'dataMax',
-          ],
-          tooltipUnit: 's',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-      default:
-        return {
-          dataKey: 'Value',
-          yAxisFormatter: (value: number) => `${value}`,
-          color1: '#8884d8',
-          color2: '#82ca9d',
-          domain: ['auto', 'auto'] as [
-            number | 'auto' | 'dataMin' | 'dataMax',
-            number | 'auto' | 'dataMin' | 'dataMax',
-          ],
-          tooltipUnit: '',
-          type: 'monotone' as const,
-          showYAxisTicks: true,
-          showActiveDot: true,
-        };
-    }
-  };
-
-  const props = getTelemetryProps();
+  const combinedTelemetryData = useMemo(
+    () =>
+      buildCombinedTelemetryData(telemetryData1, telemetryData2, telemetryType, driver1, driver2),
+    [telemetryData1, telemetryData2, telemetryType, driver1, driver2]
+  );
+  const props = getTelemetryProps(telemetryType);
   const color1 = driverColor(driver1, year);
   const color2 = driverColor(driver2, year);
 

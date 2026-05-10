@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ComposedChart,
   BarChart,
@@ -11,9 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
-  ScatterChart,
   Scatter,
-  ReferenceLine,
 } from '@/lib/recharts-lazy';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -29,11 +27,8 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { driverColor } from '@/lib/driverColor';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getDriverImage } from '@/utils/imageMapping';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowUpDownIcon } from 'hugeicons-react';
+import { DriverMultiSelect } from '@/components/charts/shared/DriverMultiSelect';
+import { ChartStateDisplay } from '@/components/charts/shared/ChartStateDisplay';
 
 interface PaceChartDataPoint extends PaceDistributionData {
   iqr: [number, number];
@@ -85,6 +80,85 @@ const CustomTooltip: React.FC<PaceTooltipProps> = ({ active, payload, label }) =
   }
   return null;
 };
+
+interface PaceDistributionChartCardProps {
+  chartData: PaceChartDataPoint[];
+  finalDriverColors: Record<string, string>;
+  minPace: number;
+  domainPadding: number;
+  maxPace: number;
+}
+
+const PaceDistributionChartCard: React.FC<PaceDistributionChartCardProps> = ({
+  chartData,
+  finalDriverColors,
+  minPace,
+  domainPadding,
+  maxPace,
+}) => (
+  <div className="h-[500px] w-full">
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis
+          dataKey="driverCode"
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+        />
+        <YAxis
+          domain={[minPace - domainPadding, maxPace + domainPadding]}
+          tickFormatter={formatTime}
+          stroke="rgba(255,255,255,0.15)"
+          tick={{
+            fill: 'rgba(255,255,255,0.5)',
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+          }}
+          width={80}
+        />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+        <Legend wrapperStyle={{ fontFamily: 'Inter, sans-serif', fontSize: '11px' }} />
+        <Bar dataKey="iqr" name="IQR (Q1-Q3)" fill="#8884d8" barSize={40} radius={[4, 4, 4, 4]}>
+          {chartData.map((entry) => (
+            <Cell
+              key={entry.driverCode}
+              fill={finalDriverColors[entry.driverCode] || '#fff'}
+              opacity={0.5}
+            />
+          ))}
+        </Bar>
+        <Scatter name="Median" dataKey="median" fill="#fff" shape="square" legendType="square" />
+        <Scatter
+          name="Fastest Lap"
+          dataKey="min"
+          fill="#10b981"
+          shape="triangle"
+          legendType="triangle"
+        />
+        <Scatter
+          name="Slowest Lap"
+          dataKey="max"
+          fill="#ef4444"
+          shape="triangle"
+          legendType="triangle"
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+    <div className="mt-4 text-[11px] text-center text-white/40">
+      Box represents the middle 50% of laps (Interquartile Range).
+      <span className="mx-2 text-white font-semibold">■ Median</span>
+      <span className="mx-2 text-emerald-400 font-semibold">▲ Fastest</span>
+      <span className="mx-2 text-red-400 font-semibold">▲ Slowest</span>
+    </div>
+  </div>
+);
 
 interface PaceAnalysisChartProps {
   year: number;
@@ -182,6 +256,27 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
   const minPace = chartData.length > 0 ? Math.min(...chartData.map((d) => d.min)) : 0;
   const maxPace = chartData.length > 0 ? Math.max(...chartData.map((d) => d.max)) : 0;
   const domainPadding = (maxPace - minPace) * 0.1;
+  const availableDriverCodes = sessionDrivers?.map((driver) => driver.code) || [];
+
+  const handleSelectAllDrivers = () => {
+    trackInteraction('select_all_drivers', {
+      chart: 'pace_analysis',
+      year,
+      event,
+      session,
+    });
+    setSelectedDrivers(availableDriverCodes);
+  };
+
+  const handleClearDrivers = () => {
+    trackInteraction('deselect_all_drivers', {
+      chart: 'pace_analysis',
+      year,
+      event,
+      session,
+    });
+    setSelectedDrivers([]);
+  };
 
   return (
     <div
@@ -208,234 +303,50 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               }
               isExporting={isExporting}
             />
-
-            {/* Driver Selector */}
-            <Popover open={isDriverPopoverOpen} onOpenChange={setIsDriverPopoverOpen}>
-              <PopoverTrigger asChild>
+            <DriverMultiSelect
+              availableDrivers={availableDriverCodes}
+              selectedDrivers={selectedDrivers}
+              driverNameMap={driverNameMap}
+              year={year}
+              onDriverToggle={toggleDriver}
+              onSelectAll={handleSelectAllDrivers}
+              onSelectNone={handleClearDrivers}
+              isOpen={isDriverPopoverOpen}
+              onOpenChange={setIsDriverPopoverOpen}
+              triggerLabel={
                 <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider">
                   <span>
-                    {selectedDrivers.length === (sessionDrivers?.length || 0)
+                    {selectedDrivers.length === availableDriverCodes.length
                       ? 'All Drivers'
-                      : `${selectedDrivers.length} / ${sessionDrivers?.length || 0} Selected`}
+                      : `${selectedDrivers.length} / ${availableDriverCodes.length} Selected`}
                   </span>
-                  <ArrowUpDownIcon className="size-3.5 opacity-50" />
+                  <span className="size-3.5 opacity-50">↕</span>
                 </button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
-                style={inter}
-                align="end"
-              >
-                <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-                    {selectedDrivers.length} / {sessionDrivers?.length || 0} visible
-                  </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        trackInteraction('select_all_drivers', {
-                          chart: 'pace_analysis',
-                          year,
-                          event,
-                          session,
-                        });
-                        setSelectedDrivers(sessionDrivers?.map((d) => d.code) || []);
-                      }}
-                      className="text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => {
-                        trackInteraction('deselect_all_drivers', {
-                          chart: 'pace_analysis',
-                          year,
-                          event,
-                          session,
-                        });
-                        setSelectedDrivers([]);
-                      }}
-                      className="text-[10px] font-semibold uppercase tracking-wider text-white/50 hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
-                    >
-                      None
-                    </button>
-                  </div>
-                </div>
-                <ScrollArea className="h-[300px]">
-                  <div className="grid gap-0.5">
-                    {sessionDrivers?.map((driver) => {
-                      const isSelected = selectedDrivers.includes(driver.code);
-                      const headshot = getDriverImage(driver.code, year);
-                      const color = finalDriverColors[driver.code] || '#fff';
-                      const fullName = driverNameMap.get(driver.code) || driver.code;
-
-                      return (
-                        <button
-                          key={driver.code}
-                          onClick={() => toggleDriver(driver.code)}
-                          className={cn(
-                            'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
-                            isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70'
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
-                              isSelected
-                                ? 'bg-red-500 border-red-500'
-                                : 'border-white/[0.15] bg-transparent'
-                            )}
-                          >
-                            {isSelected && (
-                              <svg
-                                className="size-2.5 text-white"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                          </div>
-                          <div
-                            className="h-8 w-0.5 rounded-full shrink-0"
-                            style={{ backgroundColor: color, opacity: isSelected ? 1 : 0.3 }}
-                          />
-                          <Avatar className="size-8 shrink-0 border border-white/[0.08]">
-                            <AvatarImage src={headshot} className="object-cover object-top" />
-                            <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white/60">
-                              {driver.code[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <span
-                              className={cn(
-                                'text-[12px] font-semibold truncate',
-                                isSelected ? 'text-white' : 'text-white/60'
-                              )}
-                            >
-                              {fullName}
-                            </span>
-                            <span
-                              className={cn(
-                                'text-[10px] font-medium',
-                                isSelected ? 'text-white/40' : 'text-white/25'
-                              )}
-                            >
-                              {driver.code}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
+              }
+            />
           </div>
         </div>
       </div>
 
       {selectedDrivers.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-white/50 border border-dashed border-white/[0.1] rounded-xl text-[13px] font-medium">
-          Select drivers to compare pace distribution
-        </div>
+        <ChartStateDisplay
+          isEmpty
+          height={256}
+          className="border-dashed border-white/[0.1]"
+          emptyMessage="Select drivers to compare pace distribution"
+        />
       ) : isLoading ? (
-        <div className="h-[400px] flex items-center justify-center text-white/50 animate-pulse">
-          Loading Pace Analysis…
-        </div>
+        <ChartStateDisplay isLoading height={400} loadingMessage="Loading Pace Analysis..." />
       ) : error ? (
-        <div className="h-[400px] flex items-center justify-center text-red-400">
-          Failed to load data.
-        </div>
+        <ChartStateDisplay isError height={400} errorMessage="Failed to load data." />
       ) : (
-        <div className="h-[500px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.06)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="driverCode"
-                stroke="rgba(255,255,255,0.15)"
-                tick={{
-                  fill: 'rgba(255,255,255,0.5)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-              />
-              <YAxis
-                domain={[minPace - domainPadding, maxPace + domainPadding]}
-                tickFormatter={formatTime}
-                stroke="rgba(255,255,255,0.15)"
-                tick={{
-                  fill: 'rgba(255,255,255,0.5)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: 'Inter, sans-serif',
-                }}
-                width={80}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Legend wrapperStyle={{ fontFamily: 'Inter, sans-serif', fontSize: '11px' }} />
-
-              {/* The Box (Q1 to Q3) */}
-              <Bar
-                dataKey="iqr"
-                name="IQR (Q1-Q3)"
-                fill="#8884d8"
-                barSize={40}
-                radius={[4, 4, 4, 4]}
-              >
-                {chartData.map((entry) => (
-                  <Cell
-                    key={entry.driverCode}
-                    fill={finalDriverColors[entry.driverCode] || '#fff'}
-                    opacity={0.5}
-                  />
-                ))}
-              </Bar>
-
-              {/* Median Line */}
-              <Scatter
-                name="Median"
-                dataKey="median"
-                fill="#fff"
-                shape="square"
-                legendType="square"
-              />
-
-              {/* Min/Max */}
-              <Scatter
-                name="Fastest Lap"
-                dataKey="min"
-                fill="#10b981"
-                shape="triangle"
-                legendType="triangle"
-              />
-              <Scatter
-                name="Slowest Lap"
-                dataKey="max"
-                fill="#ef4444"
-                shape="triangle"
-                legendType="triangle"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <div className="mt-4 text-[11px] text-center text-white/40">
-            Box represents the middle 50% of laps (Interquartile Range).
-            <span className="mx-2 text-white font-semibold">■ Median</span>
-            <span className="mx-2 text-emerald-400 font-semibold">▲ Fastest</span>
-            <span className="mx-2 text-red-400 font-semibold">▲ Slowest</span>
-          </div>
-        </div>
+        <PaceDistributionChartCard
+          chartData={chartData}
+          finalDriverColors={finalDriverColors}
+          minPace={minPace}
+          domainPadding={domainPadding}
+          maxPace={maxPace}
+        />
       )}
     </div>
   );
