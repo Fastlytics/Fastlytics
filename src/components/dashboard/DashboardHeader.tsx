@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { m } from 'motion/react';
 import { getCountryCode } from '@/utils/countryUtils';
 import { useNavigate } from 'react-router-dom';
@@ -40,11 +40,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     calcTimeLeft
   );
 
+  const calcTimeLeftRef = useRef(calcTimeLeft);
+  useEffect(() => {
+    calcTimeLeftRef.current = calcTimeLeft;
+  }, [calcTimeLeft]);
+
   useEffect(() => {
     if (!nextSession?.date) return;
-    const id = setInterval(() => setTimeLeft(calcTimeLeft()), 1000);
+    const id = setInterval(() => setTimeLeft(calcTimeLeftRef.current()), 1000);
     return () => clearInterval(id);
-  }, [nextSession, calcTimeLeft]);
+  }, [nextSession]);
 
   const handleSessionClick = () => {
     if (!nextSession) return;

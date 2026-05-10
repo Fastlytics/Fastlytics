@@ -81,7 +81,7 @@ import TireIcon from '@/components/race/TireIcon';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
-export const parseRaceLapTime = (timeStr: string | null | undefined): number => {
+const parseRaceLapTime = (timeStr: string | null | undefined): number => {
   if (!timeStr) return Infinity;
   try {
     const parts = timeStr.split(/[:.]/);
@@ -99,7 +99,7 @@ const parseLapTime = parseRaceLapTime;
 
 const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
 
-export const parseRaceTestingSessionAlias = (
+const parseRaceTestingSessionAlias = (
   sessionType: string
 ): { day: number; window: 'morning' | 'afternoon' } | null => {
   const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
@@ -111,14 +111,14 @@ export const parseRaceTestingSessionAlias = (
 };
 const parseTestingSessionAlias = parseRaceTestingSessionAlias;
 
-export const resolveRaceSessionForAnalysis = (sessionType: string): string => {
+const resolveRaceSessionForAnalysis = (sessionType: string): string => {
   const parsed = parseTestingSessionAlias(sessionType);
   if (!parsed) return sessionType;
   return `FP${parsed.day}`;
 };
 const resolveSessionForAnalysis = resolveRaceSessionForAnalysis;
 
-export const formatRaceSessionTime = (
+const formatRaceSessionTime = (
   timeStr: string | null | undefined,
   isWinner: boolean = false
 ): string => {
@@ -875,6 +875,11 @@ const Race = () => {
     return { days, hours, minutes, seconds };
   }, [nextSession, now]);
 
+  const nextSessionDate = useMemo(
+    () => (nextSession ? { name: nextSession.name, date: new Date(nextSession.date) } : null),
+    [nextSession]
+  );
+
   const scheduleHeroDate = useMemo(() => {
     if (!sessionSchedule?.sessions.length) return 'Dates TBD';
     const sortedDates = sessionSchedule.sessions
@@ -908,6 +913,14 @@ const Race = () => {
       return timeStr;
     }
   };
+
+  const toDate = (dateStr: string) => new Date(dateStr);
+
+  const formatShortDate = (dateStr: string) =>
+    toDate(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }).toUpperCase();
+
+  const formatWeekday = (dateStr: string) =>
+    toDate(dateStr).toLocaleDateString(undefined, { weekday: 'short' });
 
   const formatDate = (dateStr: string) => {
     try {
@@ -1115,9 +1128,7 @@ const Race = () => {
                 countryCode={scheduleHeroCountryCode}
                 countryAlt={sessionSchedule.country || sessionSchedule.location}
                 isSprint={sessionSchedule.eventFormat?.toLowerCase().includes('sprint')}
-                nextSession={
-                  nextSession ? { name: nextSession.name, date: new Date(nextSession.date) } : null
-                }
+                nextSession={nextSessionDate}
                 countdownFallbackLabel={countdown ? undefined : 'Session in Progress'}
               />
 
@@ -1203,23 +1214,15 @@ const Race = () => {
                         >
                           <div className="w-16 shrink-0 text-center">
                             <div
-                              suppressHydrationWarning
                               className={cn(
                                 'text-[15px] font-bold tabular-nums',
                                 isNext ? 'text-white' : 'text-white/60'
                               )}
                             >
-                              {new Date(session.date)
-                                .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-                                .toUpperCase()}
+                              {formatShortDate(session.date)}
                             </div>
-                            <div
-                              suppressHydrationWarning
-                              className="text-[10px] uppercase tracking-wider text-white/25"
-                            >
-                              {new Date(session.date).toLocaleDateString(undefined, {
-                                weekday: 'short',
-                              })}
+                            <div className="text-[10px] uppercase tracking-wider text-white/25">
+                              {formatWeekday(session.date)}
                             </div>
                           </div>
                           <div
@@ -1257,9 +1260,9 @@ const Race = () => {
                           </div>
                           <div className="hidden shrink-0 md:block">
                             {(() => {
-                              const sessionDate = new Date(session.date);
+                              const sessionDate = toDate(session.date);
                               const diffMins =
-                                (new Date().getTime() - sessionDate.getTime()) / (1000 * 60);
+                                (now.getTime() - sessionDate.getTime()) / (1000 * 60);
                               let duration = 60;
                               if (sessionType === 'R') duration = 180;
                               else if (sessionType === 'Sprint') duration = 60;

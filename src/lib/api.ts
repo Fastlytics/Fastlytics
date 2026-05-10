@@ -868,11 +868,10 @@ export const getCircuitLength = (eventName?: string, location?: string): number 
     return CIRCUIT_LENGTHS[normalizedLocation];
   }
 
-  for (const [key, length] of Object.entries(CIRCUIT_LENGTHS)) {
-    if (normalizedEventName.includes(key) || normalizedLocation.includes(key)) {
-      return length;
-    }
-  }
+  const circuitKey = Object.keys(CIRCUIT_LENGTHS).find(
+    (key) => normalizedEventName.includes(key) || normalizedLocation.includes(key)
+  );
+  if (circuitKey) return CIRCUIT_LENGTHS[circuitKey];
 
   return 5.0;
 };

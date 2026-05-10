@@ -634,9 +634,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
                     </h4>
                   </div>
                   <div className="space-y-1.5">
-                    {deletedLaps.slice(0, 10).map((dl, i) => (
+                    {deletedLaps.slice(0, 10).map((dl) => (
                       <div
-                        key={`dl-${dl.driver}-${i}`}
+                        key={`dl-${dl.driver}-${dl.lapNumber || ''}`}
                         className="flex items-center gap-3 text-[12px]"
                       >
                         <span

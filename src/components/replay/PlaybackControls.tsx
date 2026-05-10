@@ -65,9 +65,9 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             {/* Track Status Overlay Segments */}
             {seekbarStatusSegments.length > 0 && (
               <div className="absolute inset-y-0 left-0 right-0 flex items-center pointer-events-none z-10">
-                {seekbarStatusSegments.map((seg, i) => (
+                {seekbarStatusSegments.map((seg) => (
                   <div
-                    key={`status-seg-${i}`}
+                    key={`ss-${seg.startPct}`}
                     className="absolute h-1 rounded-full"
                     style={{
                       left: `${seg.startPct * 100}%`,

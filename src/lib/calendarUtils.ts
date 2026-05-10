@@ -59,11 +59,10 @@ export const getTestingVenue = (
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
 
-  for (const [hint, venue] of Object.entries(TESTING_LOCATION_HINTS)) {
-    if (normalizedName.includes(hint)) {
-      return venue;
-    }
-  }
+  const hintEntry = Object.entries(TESTING_LOCATION_HINTS).find(([hint]) =>
+    normalizedName.includes(hint)
+  );
+  if (hintEntry) return hintEntry[1];
 
   if (normalizedName.includes('pre_season_testing')) {
     return TESTING_LOCATION_HINTS.bahrain;

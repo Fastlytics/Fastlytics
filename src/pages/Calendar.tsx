@@ -1,6 +1,8 @@
 // knip-ignore
 import React, { useEffect } from 'react';
 
+const CAL_SKELETON_IDS = Array.from({ length: 9 }, (_, i) => `cs-${i}`);
+
 import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -83,9 +85,9 @@ const Calendar = () => {
         <div className="w-full">
           {isLoading ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(9)].map((_, i) => (
+              {CAL_SKELETON_IDS.map((id) => (
                 <div
-                  key={`skeleton-${i}`}
+                  key={id}
                   className="h-52 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
                 />
               ))}

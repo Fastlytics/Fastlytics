@@ -82,9 +82,9 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
         {/* Heatmap */}
         {showHeatmap &&
-          heatmapSegments.map((seg, i) => (
+          heatmapSegments.map((seg) => (
             <path
-              key={`heatmap-${i}`}
+              key={`hm-${seg.path.substring(0, 12)}`}
               d={seg.path}
               fill="none"
               stroke={seg.color}
@@ -142,9 +142,9 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
         {/* Trails */}
         {Object.entries(driverTrails).map(([code, trail]) =>
-          trail.map((pt, i) => (
+          trail.map((pt) => (
             <circle
-              key={`trail-${code}-${i}`}
+              key={`tr-${code}-${pt.x}-${pt.y}`}
               cx={pt.x}
               cy={pt.y}
               r={2}

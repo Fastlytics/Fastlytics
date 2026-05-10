@@ -1,5 +1,7 @@
 // knip-ignore
 import React from 'react';
+
+const TEAM_SKELETONS = Array.from({ length: 7 }, (_, i) => `ts-${i}`);
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { m } from 'motion/react';
@@ -49,11 +51,8 @@ const TeamProfile = () => {
               <div className="lg:col-span-2 space-y-4">
                 <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
                 <div className="grid grid-cols-4 gap-3">
-                  {[...Array(7)].map((_, i) => (
-                    <div
-                      key={`skeleton-${i}`}
-                      className="h-20 animate-pulse rounded-xl bg-white/[0.04]"
-                    />
+                  {TEAM_SKELETONS.map((id) => (
+                    <div key={id} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />
                   ))}
                 </div>
               </div>

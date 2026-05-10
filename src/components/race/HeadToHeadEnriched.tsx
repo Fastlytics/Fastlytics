@@ -336,7 +336,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
           <div className="flex flex-col gap-1.5">
             {deletedLaps.slice(0, 10).map((dl, i) => (
               <div
-                key={`${dl.driver}-${i}`}
+                key={dl.driver}
                 className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.02]"
               >
                 <span

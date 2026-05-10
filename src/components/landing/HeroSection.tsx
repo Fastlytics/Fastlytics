@@ -78,6 +78,7 @@ function LoadingBar({ className = '' }: { className?: string }) {
 
 function LoadingPositionsPanel({ variant }: { variant: 'compact' | 'expanded' }) {
   const rows = variant === 'compact' ? 5 : 10;
+  const rowIds = useMemo(() => Array.from({ length: rows }, (_, i) => i), [rows]);
 
   return (
     <div className={`bg-[#0c0c0e] p-5 ${variant === 'expanded' ? 'flex min-h-0 flex-col' : ''}`}>
@@ -92,13 +93,13 @@ function LoadingPositionsPanel({ variant }: { variant: 'compact' | 'expanded' })
           variant === 'compact' ? 'space-y-0' : 'min-h-0 flex-1 overflow-y-auto space-y-0 pr-1'
         }
       >
-        {Array.from({ length: rows }, (_, index) => (
+        {rowIds.map((rowId) => (
           <div
-            key={`driver-row-${index}`}
-            className={`flex items-center gap-3 border-b border-white/[0.04] py-4 last:border-b-0 ${index === 0 ? 'rounded-md bg-white/[0.03] px-2' : ''} ${variant === 'expanded' ? 'px-2' : ''}`}
+            key={rowId}
+            className={`flex items-center gap-3 border-b border-white/[0.04] py-4 last:border-b-0 ${rowId === 0 ? 'rounded-md bg-white/[0.03] px-2' : ''} ${variant === 'expanded' ? 'px-2' : ''}`}
           >
             <div className="flex w-5 justify-center text-[13px] tabular-nums text-white/18">
-              {index + 1}
+              {rowId + 1}
             </div>
             <div
               className={`h-4 w-[3px] rounded-full ${index < 3 ? 'bg-red-500/60' : 'bg-white/12'}`}
@@ -338,9 +339,9 @@ function LoadingTelemetryAndStrategyPanel() {
           { width: '26%', color: 'bg-red-500/70' },
           { width: '34%', color: 'bg-amber-400/70' },
           { width: '22%', color: 'bg-white/75' },
-        ].map((stint, index) => (
+        ].map((stint) => (
           <div
-            key={`stint-${stint.width}-${index}`}
+            key={stint.width}
             className="overflow-hidden rounded-md"
             style={{ width: stint.width }}
           >
@@ -375,9 +376,9 @@ function LoadingCompactLayout({ chartType }: { chartType: ChartType }) {
               { width: '28%', color: 'bg-red-500/75' },
               { width: '37%', color: 'bg-amber-400/75' },
               { width: '24%', color: 'bg-white/80' },
-            ].map((stint, index) => (
+            ].map((stint) => (
               <div
-                key={`stint-${stint.width}-${index}`}
+                key={stint.width}
                 className="overflow-hidden rounded-md"
                 style={{ width: stint.width }}
               >
@@ -1092,11 +1093,16 @@ export default function HeroSection() {
     }, 420);
   }, []);
 
+  const closeExpandedHeroRef = useRef(closeExpandedHero);
+  useEffect(() => {
+    closeExpandedHeroRef.current = closeExpandedHero;
+  }, [closeExpandedHero]);
+
   useEffect(() => {
     if (!isHeroExpanded) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeExpandedHero();
+      if (event.key === 'Escape') closeExpandedHeroRef.current();
     };
 
     const previousOverflow = document.body.style.overflow;
@@ -1107,7 +1113,7 @@ export default function HeroSection() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [closeExpandedHero, isHeroExpanded]);
+  }, [isHeroExpanded]);
 
   const preparedReplay = useMemo(() => {
     if (!selectedCache || !metadata || !chunk) return null;

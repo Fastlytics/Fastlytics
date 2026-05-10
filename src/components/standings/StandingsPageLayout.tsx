@@ -1,5 +1,5 @@
 // knip-ignore
-import React from 'react';
+import React, { useMemo } from 'react';
 import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { SEO } from '@/components/layout/SEO';
@@ -59,21 +59,24 @@ export const StandingsLayout: React.FC<StandingsLayoutProps> = ({
   </div>
 );
 
+const SKELETON_IDS_1 = Array.from({ length: 3 }, (_, i) => `sk-${i}`);
+const SKELETON_IDS_2 = Array.from({ length: 7 }, (_, i) => `sk-${i}`);
+
 /** Shared loading skeleton for standings pages */
 export const StandingsLoadingSkeleton: React.FC = () => (
   <div className="space-y-4">
     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-      {[...Array(3)].map((_, i) => (
+      {SKELETON_IDS_1.map((id) => (
         <div
-          key={i}
+          key={id}
           className="h-72 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
         />
       ))}
     </div>
     <div className="mt-6 space-y-3">
-      {[...Array(7)].map((_, i) => (
+      {SKELETON_IDS_2.map((id) => (
         <div
-          key={i}
+          key={id}
           className="h-16 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
         />
       ))}
