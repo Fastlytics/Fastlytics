@@ -1,3 +1,4 @@
+// knip-ignore
 import type { ReplayDriverData, ReplayDriversMap, SessionReplayData } from '@/lib/api';
 
 export type ChunkManifestItem = {

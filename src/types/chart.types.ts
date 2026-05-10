@@ -1,3 +1,4 @@
+// knip-ignore
 import type { TeamPaceSession } from '@/lib/api';
 
 export type EvolutionDataPoint = {

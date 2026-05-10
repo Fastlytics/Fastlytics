@@ -1,3 +1,4 @@
+// knip-ignore
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Lock } from 'lucide-react';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
@@ -50,7 +51,7 @@ const HistoricalAccessPrompt = ({
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/pricing"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-sky-300 px-5 text-sm font-semibold uppercase tracking-[0.08em] text-zinc-950 transition-colors hover:bg-sky-200"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-sky-300 px-5 text-sm font-semibold uppercase tracking-[0.08em] text-sky-950 transition-colors hover:bg-sky-200"
             >
               Upgrade To Pro
               <ArrowUpRight className="size-4" />

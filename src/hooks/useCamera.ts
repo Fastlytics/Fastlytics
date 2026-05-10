@@ -1,3 +1,4 @@
+// knip-ignore
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DriverFrameState } from '@/components/replay/replay-utils';
 

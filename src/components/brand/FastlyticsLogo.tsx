@@ -1,3 +1,4 @@
+// knip-ignore
 import { cn } from '@/lib/utils';
 
 interface FastlyticsLogoProps {

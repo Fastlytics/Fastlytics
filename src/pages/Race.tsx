@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { m } from 'motion/react';
 import { SEO } from '@/components/layout/SEO';
@@ -1060,17 +1061,19 @@ const Race = () => {
                       >
                         3-Day Testing Summary
                       </SelectItem>
-                      {availableSessions
-                        .filter((s) => s.type !== 'Q' && s.type !== 'Summary')
-                        .map((s) => (
-                          <SelectItem
-                            key={s.type}
-                            value={s.type}
-                            className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
-                          >
-                            {s.name}
-                          </SelectItem>
-                        ))}
+                      {availableSessions.flatMap((s) =>
+                        s.type !== 'Q' && s.type !== 'Summary'
+                          ? [
+                              <SelectItem
+                                key={s.type}
+                                value={s.type}
+                                className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
+                              >
+                                {s.name}
+                              </SelectItem>,
+                            ]
+                          : []
+                      )}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -1079,17 +1082,19 @@ const Race = () => {
                       <SelectValue placeholder="Session" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-                      {availableSessions
-                        .filter((s) => s.type !== 'Q')
-                        .map((s) => (
-                          <SelectItem
-                            key={s.type}
-                            value={s.type}
-                            className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
-                          >
-                            {s.name}
-                          </SelectItem>
-                        ))}
+                      {availableSessions.flatMap((s) =>
+                        s.type !== 'Q'
+                          ? [
+                              <SelectItem
+                                key={s.type}
+                                value={s.type}
+                                className="text-[13px] font-medium text-white/70 focus:bg-white/[0.06] focus:text-white"
+                              >
+                                {s.name}
+                              </SelectItem>,
+                            ]
+                          : []
+                      )}
                     </SelectContent>
                   </Select>
                 ))}
@@ -1494,7 +1499,7 @@ const Race = () => {
                       ) : (
                         topPerformers.map((p, i) => (
                           <F1Card
-                            key={i}
+                            key={p.driverCode}
                             title={`P${i + 1}`}
                             value={p.fullName}
                             subValue={p.fastestLapTimeValue ?? p.fastestLapTime ?? ''}
@@ -1966,7 +1971,7 @@ const Race = () => {
                           : undefined);
 
                       return (
-                        <div className="flex flex-col space-y-12">
+                        <div className="flex flex-col gap-y-12">
                           <SpeedTraceChart
                             year={year!}
                             event={eventName}

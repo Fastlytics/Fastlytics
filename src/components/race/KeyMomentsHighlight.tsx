@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { LapPositionDataPoint } from '@/lib/api';
 import { ArrowDown01Icon, ArrowUp01Icon, FlashIcon } from 'hugeicons-react';

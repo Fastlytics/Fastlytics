@@ -328,24 +328,19 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const segments: { start: number; end: number; color: string }[] = [];
     let currentColor = '#1a1a1e';
     let segStart = 0;
+    const redFlagRe = /RED FLAG|SUSPENDED/;
+    const greenRe = /GREEN|CLEAR|RESUMED/;
+    const yellowRe = /YELLOW|SAFETY CAR|VIRTUAL|(?<!\w)SC(?!\w)/;
+    const excludeRe = /INFRINGEMENT|PENALTY|INVESTIGATION|BLUE/;
 
     for (const msg of data.race_control_messages) {
       const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
       let newColor = currentColor;
-      if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
+      if (redFlagRe.test(text)) {
         newColor = '#dc2626';
-      } else if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED')) {
+      } else if (greenRe.test(text)) {
         newColor = '#1a1a1e';
-      } else if (
-        (text.includes('YELLOW') ||
-          text.includes('SAFETY CAR') ||
-          text.includes('VIRTUAL') ||
-          /\bSC\b/.test(text)) &&
-        !text.includes('INFRINGEMENT') &&
-        !text.includes('PENALTY') &&
-        !text.includes('INVESTIGATION') &&
-        !text.includes('BLUE')
-      ) {
+      } else if (yellowRe.test(text) && !excludeRe.test(text)) {
         newColor = '#ca8a04';
       }
 
@@ -394,9 +389,9 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
   const getSeekTimeForLap = useCallback(
     (lap: number) => {
-      const lapTimestamps = (metadata?.completed_laps || [])
-        .filter((entry) => entry.lap === lap)
-        .map((entry) => entry.timestamp);
+      const lapTimestamps = (metadata?.completed_laps || []).flatMap((entry) =>
+        entry.lap === lap ? [entry.timestamp] : []
+      );
 
       if (lapTimestamps.length > 0) {
         return Math.min(...lapTimestamps);

@@ -94,7 +94,7 @@ function LoadingPositionsPanel({ variant }: { variant: 'compact' | 'expanded' })
       >
         {Array.from({ length: rows }, (_, index) => (
           <div
-            key={index}
+            key={`driver-row-${index}`}
             className={`flex items-center gap-3 border-b border-white/[0.04] py-4 last:border-b-0 ${index === 0 ? 'rounded-md bg-white/[0.03] px-2' : ''} ${variant === 'expanded' ? 'px-2' : ''}`}
           >
             <div className="flex w-5 justify-center text-[13px] tabular-nums text-white/18">
@@ -228,7 +228,7 @@ function LoadingTelemetryPanel({ variant }: { variant: 'compact' | 'expanded' })
                 <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
                   Sync
                 </div>
-                <div className="mt-1 text-[24px] font-bold tabular-nums text-white/85">--</div>
+                <div className="mt-1 text-[24px] font-semibold tabular-nums text-white/85">--</div>
               </div>
             </div>
           </div>
@@ -339,9 +339,13 @@ function LoadingTelemetryAndStrategyPanel() {
           { width: '34%', color: 'bg-amber-400/70' },
           { width: '22%', color: 'bg-white/75' },
         ].map((stint, index) => (
-          <div key={index} className="overflow-hidden rounded-md" style={{ width: stint.width }}>
+          <div
+            key={`stint-${stint.width}-${index}`}
+            className="overflow-hidden rounded-md"
+            style={{ width: stint.width }}
+          >
             <div
-              className={`px-2 py-2.5 text-center text-[12px] font-bold text-transparent ${stint.color} animate-pulse`}
+              className={`px-2 py-2.5 text-center text-[12px] font-semibold text-transparent ${stint.color} animate-pulse`}
             >
               .
             </div>
@@ -373,12 +377,12 @@ function LoadingCompactLayout({ chartType }: { chartType: ChartType }) {
               { width: '24%', color: 'bg-white/80' },
             ].map((stint, index) => (
               <div
-                key={index}
+                key={`stint-${stint.width}-${index}`}
                 className="overflow-hidden rounded-md"
                 style={{ width: stint.width }}
               >
                 <div
-                  className={`px-3 py-2.5 text-center text-[13px] font-bold text-transparent ${stint.color} animate-pulse`}
+                  className={`px-3 py-2.5 text-center text-[13px] font-semibold text-transparent ${stint.color} animate-pulse`}
                 >
                   .
                 </div>
@@ -615,7 +619,7 @@ function TelemetryPanel({
               <span className="text-[12px] font-semibold uppercase tracking-wider text-white/40">
                 Lap Timer
               </span>
-              <span className="text-[20px] font-bold tabular-nums leading-none text-white">
+              <span className="text-[20px] font-semibold tabular-nums leading-none text-white">
                 {hero.lapElapsed}
               </span>
             </div>
@@ -629,7 +633,7 @@ function TelemetryPanel({
                     {sector.label}
                   </span>
                   <span
-                    className={`text-[14px] font-bold tabular-nums ${hero[sector.tintKey] ? '' : 'text-white/70'}`}
+                    className={`text-[14px] font-semibold tabular-nums ${hero[sector.tintKey] ? '' : 'text-white/70'}`}
                   >
                     {hero[sector.key]}
                   </span>
@@ -666,7 +670,7 @@ function TelemetryPanel({
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
                   {item.label}
                 </div>
-                <div className="mt-1 text-[18px] font-bold tabular-nums text-white">
+                <div className="mt-1 text-[18px] font-semibold tabular-nums text-white">
                   {item.value}
                 </div>
               </div>
@@ -693,7 +697,7 @@ function SectorBoardPanel({ hero }: { hero: HeroViewModel }) {
             <div className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
               {sector.label}
             </div>
-            <div className="mt-1 text-[20px] font-bold tabular-nums text-white">
+            <div className="mt-1 text-[20px] font-semibold tabular-nums text-white">
               {hero[sector.key]}
             </div>
           </div>
@@ -757,7 +761,7 @@ function StrategyPanel({
             style={{ width: stint.width }}
           >
             <div
-              className={`${stint.color === '#ffffff' ? 'text-black' : 'text-white'} px-3 py-2.5 text-center text-[13px] font-bold`}
+              className={`${stint.color === '#ffffff' ? 'text-black' : 'text-white'} px-3 py-2.5 text-center text-[13px] font-semibold`}
               style={{ backgroundColor: stint.color }}
             >
               {stint.compound}
@@ -984,7 +988,7 @@ function ExpandedLayout({
                 style={{ width: stint.width }}
               >
                 <div
-                  className={`${stint.color === '#ffffff' ? 'text-black' : 'text-white'} px-2 py-2.5 text-center text-[12px] font-bold`}
+                  className={`${stint.color === '#ffffff' ? 'text-black' : 'text-white'} px-2 py-2.5 text-center text-[12px] font-semibold`}
                   style={{ backgroundColor: stint.color }}
                 >
                   {stint.compound}
@@ -1162,7 +1166,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl font-bold leading-[1.08] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
+            className="text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
           >
             Race intelligence <span className="text-red-500">for every</span> Formula 1 session
           </m.h1>

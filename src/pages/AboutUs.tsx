@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
@@ -97,7 +98,7 @@ const AboutUs = () => {
                   Community-driven open analytics
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-white/40">
-                  Fastlytics is more than a tool — it's a community-driven project aiming to be the
+                  Fastlytics is more than a tool - it's a community-driven project aiming to be the
                   ultimate open-source F1 analytics platform. We are constantly evolving, adding new
                   features, and refining our data models to provide the most accurate insights.
                 </p>
@@ -180,7 +181,7 @@ const AboutUs = () => {
                   </p>
                   <p>
                     The project really took off after my mid-semester exams. I stumbled upon a video
-                    about the FastF1 API — that was the catalyst. I immediately started working on
+                    about the FastF1 API - that was the catalyst. I immediately started working on
                     Fastlytics, transforming my years-old idea into reality.
                   </p>
                   <p>

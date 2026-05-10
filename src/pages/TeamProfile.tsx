@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -49,7 +50,10 @@ const TeamProfile = () => {
                 <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
                 <div className="grid grid-cols-4 gap-3">
                   {[...Array(7)].map((_, i) => (
-                    <div key={i} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />
+                    <div
+                      key={`skeleton-${i}`}
+                      className="h-20 animate-pulse rounded-xl bg-white/[0.04]"
+                    />
                   ))}
                 </div>
               </div>

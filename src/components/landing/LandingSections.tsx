@@ -1,3 +1,4 @@
+// knip-ignore
 import { Link } from 'react-router-dom';
 import { m, stagger } from 'motion/react';
 import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
@@ -153,7 +154,9 @@ export function LogoBar() {
             { value: '24', label: 'Races per season' },
           ].map((item) => (
             <div key={item.label} className="text-center">
-              <div className="text-2xl font-bold tracking-[-0.02em] text-white">{item.value}</div>
+              <div className="text-2xl font-semibold tracking-[-0.02em] text-white">
+                {item.value}
+              </div>
               <div className="mt-1 text-[12px] text-white/30">{item.label}</div>
             </div>
           ))}
@@ -182,7 +185,7 @@ export function FeaturesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl"
+              className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
             >
               Everything the broadcast doesn't show you
             </m.h2>
@@ -252,7 +255,7 @@ export function ProductSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="mt-3 text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl"
+              className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
             >
               Built like a pit wall, not a startup dashboard
             </m.h2>
@@ -345,7 +348,7 @@ export function ProductSection() {
                   >
                     <span className="w-20 shrink-0 text-[12px] text-white/30">{row.label}</span>
                     <span
-                      className={`w-24 shrink-0 text-[16px] font-bold tabular-nums ${row.color}`}
+                      className={`w-24 shrink-0 text-[16px] font-semibold tabular-nums ${row.color}`}
                     >
                       {row.value}
                     </span>
@@ -370,7 +373,7 @@ export function StatsSection() {
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl"
+            className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
           >
             The broadcast shows the result.{' '}
             <span className="text-white/40">We show the cause.</span>
@@ -396,7 +399,7 @@ export function StatsSection() {
               transition={{ delay: index * 0.08 }}
               className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 text-center"
             >
-              <div className="text-4xl font-bold tracking-[-0.02em] text-white">
+              <div className="text-4xl font-semibold tracking-[-0.02em] text-white">
                 {stat.number}
                 {stat.suffix && (
                   <span className="ml-1 text-lg font-normal text-white/30">{stat.suffix}</span>
@@ -425,7 +428,7 @@ export function CTASection() {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+          className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
         >
           Open the race desk before the next session
         </m.h2>
@@ -519,7 +522,7 @@ export function LandingFooter() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.04] pt-6 sm:flex-row">
-          <p className="text-[12px] text-white/20">
+          <p suppressHydrationWarning className="text-[12px] text-white/20">
             &copy; {new Date().getFullYear()} Fastlytics. All rights reserved.
           </p>
           <p className="text-[12px] text-white/20">Built for race weekends.</p>

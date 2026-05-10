@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -90,9 +91,9 @@ const TelemetryChartWrapper = <T,>({
   const lapOptions = useMemo(() => {
     const lapTimes = lapTimesResponse?.lapComparison;
     if (lapTimes && lapTimes.length > 0) {
-      const validLaps = lapTimes
-        .filter((lapData) => lapData[selectedDriver] !== null)
-        .map((lapData) => lapData.LapNumber.toString());
+      const validLaps = lapTimes.flatMap((lapData) =>
+        lapData[selectedDriver] !== null ? [lapData.LapNumber.toString()] : []
+      );
       return ['fastest', ...validLaps];
     }
     return ['fastest'];

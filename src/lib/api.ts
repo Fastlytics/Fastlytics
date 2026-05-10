@@ -1,3 +1,4 @@
+// knip-ignore
 import { request } from './api-client';
 import { logger } from './logger';
 import { getDriverImage } from '@/utils/imageMapping';

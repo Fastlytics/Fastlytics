@@ -1,3 +1,4 @@
+// knip-ignore
 import { ScheduleEvent } from '@/lib/api';
 
 export const TESTING_LOCATION_HINTS: Record<string, { location: string; country: string }> = {

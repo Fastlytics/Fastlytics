@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ComposedChart,

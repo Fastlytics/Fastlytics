@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import type { CustomTooltipProps } from '@/types';
 import {

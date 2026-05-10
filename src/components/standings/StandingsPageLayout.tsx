@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';

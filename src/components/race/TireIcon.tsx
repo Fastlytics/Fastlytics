@@ -25,14 +25,14 @@ const TireIcon = (props: React.SVGProps<SVGSVGElement>) => (
       strokeLinejoin="round"
     />
     <path
-      d="M17.6294 8.75L13.2993 11.25M10.7012 12.75L6.37109 15.25"
+      d="M17.63 8.75L13.3 11.25M10.7 12.75L6.37 15.25"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
-      d="M17.6294 15.25L13.2993 12.75M10.7012 11.25L6.37109 8.75"
+      d="M17.63 15.25L13.3 12.75M10.7 11.25L6.37 8.75"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
@@ -46,7 +46,7 @@ const TireIcon = (props: React.SVGProps<SVGSVGElement>) => (
       strokeLinejoin="round"
     />
     <path
-      d="M13.5 12C13.5 12.8284 12.8284 13.5 12 13.5C11.1716 13.5 10.5 12.8284 10.5 12C10.5 11.1716 11.1716 10.5 12 10.5C12.8284 10.5 13.5 11.1716 13.5 12Z"
+      d="M13.5 12C13.5 12.83 12.83 13.5 12 13.5C11.17 13.5 10.5 12.83 10.5 12C10.5 11.17 11.17 10.5 12 10.5C12.83 10.5 13.5 11.17 13.5 12Z"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"

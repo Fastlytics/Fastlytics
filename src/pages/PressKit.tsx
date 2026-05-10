@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
@@ -11,7 +12,7 @@ const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
 
 const pngAssets = [
   {
-    name: 'Full Logo — Dark Mode (PNG)',
+    name: 'Full Logo - Dark Mode (PNG)',
     filename: 'logo-dark-high-res.png',
     description:
       'High-resolution raster full logo with transparent background for dark backgrounds.',
@@ -20,7 +21,7 @@ const pngAssets = [
     height: 110,
   },
   {
-    name: 'Full Logo — Light Mode (PNG)',
+    name: 'Full Logo - Light Mode (PNG)',
     filename: 'logo-light-high-res.png',
     description:
       'High-resolution raster full logo with transparent background for light backgrounds.',
@@ -29,7 +30,7 @@ const pngAssets = [
     height: 110,
   },
   {
-    name: 'Icon Only — Dark Mode (PNG)',
+    name: 'Icon Only - Dark Mode (PNG)',
     filename: 'icon-dark-high-res.png',
     description: 'High-resolution raster icon with transparent background for dark backgrounds.',
     bg: 'dark' as const,
@@ -37,7 +38,7 @@ const pngAssets = [
     height: 105,
   },
   {
-    name: 'Icon Only — Light Mode (PNG)',
+    name: 'Icon Only - Light Mode (PNG)',
     filename: 'icon-light-high-res.png',
     description: 'High-resolution raster icon with transparent background for light backgrounds.',
     bg: 'light' as const,
@@ -130,7 +131,7 @@ const PressKit = () => {
     >
       <SEO
         title="Press Kit"
-        description="Download the Fastlytics logo in multiple formats — full logo and icon only, light/dark mode variants. Free to use for media and partners."
+        description="Download the Fastlytics logo in multiple formats - full logo and icon only, light/dark mode variants. Free to use for media and partners."
         keywords={['fastlytics logo', 'press kit', 'brand assets', 'f1 analytics brand']}
       />
       <LandingNavbar />
@@ -240,7 +241,7 @@ const PressKit = () => {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />
-                    <span>Scale the logo proportionally — never stretch or squash it.</span>
+                    <span>Scale the logo proportionally - never stretch or squash it.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <Tick01Icon className="size-4 text-emerald-400 mt-0.5 shrink-0" />

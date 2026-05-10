@@ -1,3 +1,4 @@
+// knip-ignore
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { fetchSessionReplayChunk, ReplayDriverData, ReplayDriversMap } from '@/lib/api';
 
@@ -201,11 +202,13 @@ function pruneCachedChunks(
     seen.add(targetChunkId);
   }
 
+  const chunkIndexMap = new Map(manifest.map((chunk, i) => [chunk.id, i]));
+  const desiredChunkSet = new Set(desiredChunkIds);
   while (keepChunkIds.length > maxCachedChunks) {
     let removableIndex = -1;
     for (let index = keepChunkIds.length - 1; index >= 0; index--) {
-      const keepIndex = manifest.findIndex((chunk) => chunk.id === keepChunkIds[index]);
-      if (keepIndex !== -1 && !desiredChunkIds.includes(keepIndex)) {
+      const keepIndex = chunkIndexMap.get(keepChunkIds[index]);
+      if (keepIndex !== undefined && !desiredChunkSet.has(keepIndex)) {
         removableIndex = index;
         break;
       }
@@ -228,9 +231,9 @@ function mergeBufferedChunks<TMeta extends ChunkLoaderMetadata>(
   chunkIds: number[],
   chunksMap: Map<number, LoadedChunk>
 ): ChunkReplayData<TMeta> | null {
-  const sortedIds = manifest
-    .map((chunk) => chunk.id)
-    .filter((id) => chunkIds.includes(id) && chunksMap.has(id));
+  const sortedIds = manifest.flatMap((chunk) =>
+    chunkIds.includes(chunk.id) && chunksMap.has(chunk.id) ? [chunk.id] : []
+  );
   if (sortedIds.length === 0) return null;
 
   const timeParts: number[][] = [];

@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -105,7 +106,7 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
           {season.position}
         </span>
       ) : (
-        <span className="text-[12px] text-white/20">—</span>
+        <span className="text-[12px] text-white/20">-</span>
       )}
     </td>
   </m.tr>

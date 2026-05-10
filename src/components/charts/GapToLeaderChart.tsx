@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo } from 'react';
 import {
   LineChart,

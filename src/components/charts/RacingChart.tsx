@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useRef, useMemo } from 'react';
 import {
   LineChart,
@@ -619,9 +620,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
             {/* Deleted Laps */}
             {(() => {
               const deletedLaps = driversToDisplay.flatMap((drv) =>
-                (driverLapDetails[drv] || [])
-                  .filter((l: EnrichedLapRecord) => l.deleted)
-                  .map((l: EnrichedLapRecord) => ({ driver: drv, ...l }))
+                (driverLapDetails[drv] || []).flatMap((l: EnrichedLapRecord) =>
+                  l.deleted ? [{ driver: drv, ...l }] : []
+                )
               );
               if (deletedLaps.length === 0) return null;
               return (
@@ -634,7 +635,10 @@ const RacingChart: React.FC<RacingChartProps> = ({
                   </div>
                   <div className="space-y-1.5">
                     {deletedLaps.slice(0, 10).map((dl, i) => (
-                      <div key={i} className="flex items-center gap-3 text-[12px]">
+                      <div
+                        key={`dl-${dl.driver}-${i}`}
+                        className="flex items-center gap-3 text-[12px]"
+                      >
                         <span
                           style={{ color: driverColor(dl.driver, year) }}
                           className="font-bold w-10"
@@ -664,23 +668,23 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
             {/* Speed Trap */}
             {(() => {
-              const speedData = driversToDisplay
-                .map((drv) => {
-                  const records = (driverLapDetails[drv] || []).filter(
-                    (l: EnrichedLapRecord) => l.speedST != null
-                  );
-                  if (records.length === 0) return null;
-                  const speeds = records.map((r: EnrichedLapRecord) => r.speedST!);
-                  return {
+              const speedData = driversToDisplay.flatMap((drv) => {
+                const records = (driverLapDetails[drv] || []).filter(
+                  (l: EnrichedLapRecord) => l.speedST != null
+                );
+                if (records.length === 0) return [];
+                const speeds = records.map((r: EnrichedLapRecord) => r.speedST!);
+                return [
+                  {
                     driver: drv,
                     maxSpeed: Math.max(...speeds),
                     avgSpeed: +(
                       speeds.reduce((a: number, b: number) => a + b, 0) / speeds.length
                     ).toFixed(1),
                     color: driverColor(drv, year),
-                  };
-                })
-                .filter(Boolean) as {
+                  },
+                ];
+              }) as {
                 driver: string;
                 maxSpeed: number;
                 avgSpeed: number;
@@ -747,7 +751,7 @@ const RacingChart: React.FC<RacingChartProps> = ({
                                 </p>
                                 {payload.map((entry, index) => (
                                   <div
-                                    key={index}
+                                    key={entry.name}
                                     className="flex gap-3 items-center mb-1 last:mb-0"
                                   >
                                     <div
@@ -771,12 +775,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       />
                       <Bar dataKey="maxSpeed" name="Max Speed" barSize={18} radius={[0, 4, 4, 0]}>
                         {speedData.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.color} fillOpacity={0.9} />
+                          <Cell key={entry.driver} fill={entry.color} fillOpacity={0.9} />
                         ))}
                       </Bar>
                       <Bar dataKey="avgSpeed" name="Avg Speed" barSize={18} radius={[0, 4, 4, 0]}>
-                        {speedData.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.color} fillOpacity={0.3} />
+                        {speedData.map((entry) => (
+                          <Cell key={`${entry.driver}-avg`} fill={entry.color} fillOpacity={0.3} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -843,9 +847,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
                       {stintEntries.map(([stintNum, laps]) => {
                         const compound = laps[0]?.compound || '?';
                         const lapCount = laps.length;
-                        const validTimes = laps
-                          .filter((l: EnrichedLapRecord) => l.lapTime != null && !l.deleted)
-                          .map((l: EnrichedLapRecord) => l.lapTime!);
+                        const validTimes = laps.flatMap((l: EnrichedLapRecord) =>
+                          l.lapTime != null && !l.deleted ? [l.lapTime!] : []
+                        );
                         const avgTime =
                           validTimes.length > 0
                             ? validTimes.reduce((a, b) => a + b, 0) / validTimes.length

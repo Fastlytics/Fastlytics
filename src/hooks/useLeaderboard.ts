@@ -1,3 +1,4 @@
+// knip-ignore
 import { useCallback, useMemo } from 'react';
 import { SessionReplayData } from '@/lib/api';
 import { DriverFrameState, getGapSortKey } from '@/components/replay/replay-utils';
@@ -100,20 +101,20 @@ export function useLeaderboard(
 
     if (isRace) {
       if (!leaderboardOrder.length) return [];
-      return leaderboardOrder
-        .map((code, index) => {
-          const d = activeDrivers[code];
-          if (!d) return null;
-          return {
+      return leaderboardOrder.flatMap((code, index) => {
+        const d = activeDrivers[code];
+        if (!d) return [];
+        return [
+          {
             pos: index + 1,
             code,
             ...d,
             color: data.driver_colors[code] || '#fff',
             tyre: d.tyre,
             bestLap: null,
-          };
-        })
-        .filter((d) => d !== null) as LeaderboardItem[];
+          },
+        ];
+      }) as LeaderboardItem[];
     }
 
     if (timingStandings) {

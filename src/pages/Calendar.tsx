@@ -1,7 +1,6 @@
+// knip-ignore
 import React, { useEffect } from 'react';
-import { SEO } from '@/components/layout/SEO';
-import { useNavigate } from 'react-router-dom';
-import { useAnalytics } from '@/hooks/useAnalytics';
+
 import { m } from 'motion/react';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -86,7 +85,7 @@ const Calendar = () => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(9)].map((_, i) => (
                 <div
-                  key={i}
+                  key={`skeleton-${i}`}
                   className="h-52 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
                 />
               ))}

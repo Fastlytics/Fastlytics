@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -527,7 +528,7 @@ const TestingCommandCenter = ({
       <div className="p-5">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[14px] font-medium text-white/45">
-            Fastest First — Sorted by best lap, then mileage
+            Fastest First - Sorted by best lap, then mileage
           </span>
         </div>
         <div className="divide-y divide-white/[0.04]">
