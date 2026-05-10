@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
 import HeroDashboard from './HeroDashboard';
@@ -15,8 +15,58 @@ import { useLandingHeroSource } from './useLandingHeroSource';
 
 const HERO_DRIVER_CODE_KEY = 'hero-driver-code-v1';
 
+type HeroState = {
+  playbackTime: number;
+  chartType: ChartType;
+  heroModalPhase: 'closed' | 'open' | 'closing';
+  userSelectedDriverCode: string | null;
+  heroWindowAnimation: { origin: HeroWindowBounds; target: HeroWindowBounds } | null;
+};
+
+type HeroAction =
+  | { type: 'setPlaybackTime'; value: HeroState['playbackTime'] }
+  | { type: 'setChartType'; value: ChartType }
+  | { type: 'openHero'; origin: HeroWindowBounds; target: HeroWindowBounds }
+  | { type: 'closeHero' }
+  | { type: 'finishClosing' }
+  | { type: 'setUserSelectedDriverCode'; value: string | null }
+  | { type: 'resetForNewCache' };
+
+const heroReducer = (state: HeroState, action: HeroAction): HeroState => {
+  switch (action.type) {
+    case 'setPlaybackTime':
+      return { ...state, playbackTime: action.value };
+    case 'setChartType':
+      return { ...state, chartType: action.value };
+    case 'openHero':
+      return {
+        ...state,
+        heroModalPhase: 'open',
+        heroWindowAnimation: { origin: action.origin, target: action.target },
+      };
+    case 'closeHero':
+      return { ...state, heroModalPhase: state.heroModalPhase === 'closed' ? 'closed' : 'closing' };
+    case 'finishClosing':
+      return { ...state, heroModalPhase: 'closed' };
+    case 'setUserSelectedDriverCode':
+      return { ...state, userSelectedDriverCode: action.value };
+    case 'resetForNewCache':
+      return { ...state, playbackTime: 0, chartType: 'speed', userSelectedDriverCode: null };
+    default:
+      return state;
+  }
+};
+
 export default function HeroSection() {
-  const [playbackTime, setPlaybackTime] = useState(0);
+  const [heroState, dispatch] = useReducer(heroReducer, {
+    playbackTime: 0,
+    chartType: 'speed',
+    heroModalPhase: 'closed',
+    userSelectedDriverCode: null,
+    heroWindowAnimation: null,
+  });
+  const { playbackTime, chartType, heroModalPhase, userSelectedDriverCode, heroWindowAnimation } =
+    heroState;
   const {
     selectedCache,
     metadata,
@@ -30,13 +80,7 @@ export default function HeroSection() {
   const cacheKey = selectedCache ? pickLandingReplayKey(selectedCache) : '';
   const cacheKeyRef = useRef(cacheKey);
   const compactHeroWindowRef = useRef<HTMLDivElement>(null);
-  const [chartType, setChartType] = useState<ChartType>('speed');
-  const [heroModalPhase, setHeroModalPhase] = useState<'closed' | 'open' | 'closing'>('closed');
   const closeTimeoutRef = useRef<number | null>(null);
-  const [heroWindowAnimation, setHeroWindowAnimation] = useState<{
-    origin: HeroWindowBounds;
-    target: HeroWindowBounds;
-  } | null>(null);
   const isHeroExpanded = heroModalPhase !== 'closed';
   const isHeroClosing = heroModalPhase === 'closing';
   const leaderCode = metadata?.selected_drivers?.[0] || chunk?.selected_drivers?.[0] || null;
@@ -50,11 +94,10 @@ export default function HeroSection() {
     return leaderCode;
   }, [leaderCode, metadata?.selected_drivers, chunk?.selected_drivers]);
 
-  const [userSelectedDriverCode, setUserSelectedDriverCode] = useState<string | null>(null);
   const selectedDriverCode = userSelectedDriverCode || derivedDriverCode;
 
   const handleSelectDriver = useCallback((value: string) => {
-    setUserSelectedDriverCode(value);
+    dispatch({ type: 'setUserSelectedDriverCode', value });
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(HERO_DRIVER_CODE_KEY, value);
     }
@@ -63,9 +106,7 @@ export default function HeroSection() {
   useEffect(() => {
     if (cacheKeyRef.current !== cacheKey) {
       cacheKeyRef.current = cacheKey;
-      setPlaybackTime(0);
-      setChartType('speed');
-      setUserSelectedDriverCode(null);
+      dispatch({ type: 'resetForNewCache' });
     }
   }, [cacheKey]);
 
@@ -73,19 +114,21 @@ export default function HeroSection() {
     if (!chunk || chunk.time.length <= 1 || playbackEndTime <= playbackStartTime) return;
 
     const intervalId = window.setInterval(() => {
-      setPlaybackTime((current) => {
-        const baseTime = current < playbackStartTime ? playbackStartTime : current;
-        const next = baseTime + 1 / 25;
-        const totalEnd = playbackEndTime;
-        const hasFullTail = loadedDuration >= totalEnd;
-        const playableEnd = hasFullTail
-          ? totalEnd
-          : Math.max(playbackStartTime, Math.min(totalEnd, loadedDuration - 0.25));
+      const baseTime = playbackTime < playbackStartTime ? playbackStartTime : playbackTime;
+      const next = baseTime + 1 / 25;
+      const totalEnd = playbackEndTime;
+      const hasFullTail = loadedDuration >= totalEnd;
+      const playableEnd = hasFullTail
+        ? totalEnd
+        : Math.max(playbackStartTime, Math.min(totalEnd, loadedDuration - 0.25));
 
-        if (next >= totalEnd) return playbackStartTime;
-        if (!hasFullTail && next >= playableEnd) return playableEnd;
-        return next;
-      });
+      const newTime =
+        next >= totalEnd
+          ? playbackStartTime
+          : !hasFullTail && next >= playableEnd
+            ? playableEnd
+            : next;
+      dispatch({ type: 'setPlaybackTime', value: newTime });
     }, 1000 / 25);
 
     return () => window.clearInterval(intervalId);
@@ -97,9 +140,9 @@ export default function HeroSection() {
   }, [chunk, playbackTime]);
 
   const closeExpandedHero = useCallback(() => {
-    setHeroModalPhase((current) => (current === 'closed' ? current : 'closing'));
+    dispatch({ type: 'closeHero' });
     closeTimeoutRef.current = window.setTimeout(() => {
-      setHeroModalPhase('closed');
+      dispatch({ type: 'finishClosing' });
       closeTimeoutRef.current = null;
     }, 420);
   }, []);
@@ -153,8 +196,7 @@ export default function HeroSection() {
         }
       : target;
 
-    setHeroWindowAnimation({ origin, target });
-    setHeroModalPhase('open');
+    dispatch({ type: 'openHero', origin, target });
   };
 
   const isHeroLoading = !hero;
@@ -254,7 +296,7 @@ export default function HeroSection() {
               variant="compact"
               isLoading={isHeroLoading}
               chartType={chartType}
-              setChartType={setChartType}
+              setChartType={(value: ChartType) => dispatch({ type: 'setChartType', value })}
               selectedDriverCode={selectedDriverCode}
               canSelectDifferentCache={canSelectDifferentCache}
               selectDifferentCache={selectDifferentCache}
@@ -287,7 +329,7 @@ export default function HeroSection() {
                 variant={isHeroClosing ? 'compact' : 'expanded'}
                 isLoading={false}
                 chartType={chartType}
-                setChartType={setChartType}
+                setChartType={(value: ChartType) => dispatch({ type: 'setChartType', value })}
                 selectedDriverCode={selectedDriverCode}
                 canSelectDifferentCache={canSelectDifferentCache}
                 selectDifferentCache={selectDifferentCache}

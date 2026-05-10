@@ -159,5 +159,3 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
     </div>
   );
 };
-
-export default TeamPaceBreakdown;

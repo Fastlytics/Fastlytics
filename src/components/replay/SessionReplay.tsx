@@ -14,20 +14,18 @@ import {
   getTrackStatusSegments,
   getTimeForLap,
 } from './replay-utils';
+import { sampleRecentSeries, normalizeBrakeSeries, findSectorBoundaryTime } from './replay-math';
 
 import ReplayLoader from './ReplayLoader';
 import PlaybackControls from './PlaybackControls';
 import RaceControlToasts from './RaceControlToasts';
-import RaceControlFeed from './RaceControlFeed';
 import Leaderboard from './Leaderboard';
 import TrackCanvas from './TrackCanvas';
-import WeatherOverlay from './WeatherOverlay';
-import SectorTimesPanel from './SectorTimesPanel';
 import QualifyingCountdown from './QualifyingCountdown';
-import TelemetryOverlay from './TelemetryOverlay';
-import LapHistoryPanel from './LapHistoryPanel';
 import ReplayToolbar from './ReplayToolbar';
-import { Play, Gauge } from 'lucide-react';
+import ReplayWidgetRenderer from './ReplayWidgetRenderer';
+import ReplayStartOverlay from './ReplayStartOverlay';
+import { Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SessionReplayProps {
@@ -41,91 +39,6 @@ interface SessionReplayMetadata extends SessionReplayData {
   chunk_manifest?: { id: number; start: number; end: number }[];
   total_duration?: number;
 }
-
-function interpolateSeriesValue(timeline: number[], values: number[], time: number) {
-  if (!timeline.length || !values.length) return 0;
-  if (time <= timeline[0]) return values[0] ?? 0;
-  const lastIndex = Math.min(timeline.length, values.length) - 1;
-  if (time >= timeline[lastIndex]) return values[lastIndex] ?? 0;
-
-  let low = 0;
-  let high = lastIndex;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const sampleTime = timeline[mid];
-
-    if (sampleTime === time) return values[mid] ?? 0;
-    if (sampleTime < time) {
-      low = mid + 1;
-    } else {
-      high = mid - 1;
-    }
-  }
-
-  const prevIndex = Math.max(0, high);
-  const nextIndex = Math.min(lastIndex, low);
-  const prevTime = timeline[prevIndex];
-  const nextTime = timeline[nextIndex];
-  const prevValue = values[prevIndex] ?? 0;
-  const nextValue = values[nextIndex] ?? prevValue;
-  const alpha = nextTime === prevTime ? 0 : (time - prevTime) / (nextTime - prevTime);
-
-  return prevValue + (nextValue - prevValue) * alpha;
-}
-
-function sampleRecentSeries(
-  timeline: number[] | undefined,
-  values: number[] | undefined,
-  currentTime: number,
-  durationSeconds = 6,
-  sampleCount = 150
-) {
-  if (!timeline?.length || !values?.length) return [];
-
-  const startTime = Math.max(timeline[0], currentTime - durationSeconds);
-  const endTime = Math.min(currentTime, timeline[Math.min(timeline.length, values.length) - 1]);
-  if (endTime <= startTime) return [interpolateSeriesValue(timeline, values, endTime)];
-
-  return Array.from({ length: sampleCount }, (_, index) => {
-    const alpha = sampleCount === 1 ? 1 : index / (sampleCount - 1);
-    return interpolateSeriesValue(timeline, values, startTime + (endTime - startTime) * alpha);
-  });
-}
-
-const normalizeBrakeValue = (value: number) =>
-  Number.isFinite(value) && value >= 0 && value <= 1 ? value * 100 : value;
-
-const normalizeBrakeSeries = (values: number[] | undefined) =>
-  values?.map((value) => normalizeBrakeValue(value)) ?? [];
-
-function findSectorBoundaryTime(
-  timeline: number[] | undefined,
-  laps: number[] | undefined,
-  relativeDistances: number[] | undefined,
-  lap: number,
-  boundary: number,
-  fallbackTime: number
-) {
-  if (!timeline?.length || !laps?.length || !relativeDistances?.length) return fallbackTime;
-  if (boundary <= 0) return fallbackTime;
-
-  const limit = Math.min(timeline.length, laps.length, relativeDistances.length);
-  for (let i = 1; i < limit; i++) {
-    if (laps[i] !== lap) continue;
-
-    const previousRel = laps[i - 1] === lap ? relativeDistances[i - 1] : 0;
-    const currentRel = relativeDistances[i];
-    if (previousRel <= boundary && currentRel >= boundary) {
-      const span = currentRel - previousRel;
-      const alpha = span === 0 ? 0 : (boundary - previousRel) / span;
-      return timeline[i - 1] + (timeline[i] - timeline[i - 1]) * alpha;
-    }
-  }
-
-  return fallbackTime;
-}
-
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
   const { trackEvent, trackPageView } = useAnalytics();
   const [viewportSize, setViewportSize] = useState(() => ({
@@ -674,101 +587,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     { id: 'telemetry', condition: showTelemetry },
   ];
 
-  const renderWidget = (id: WidgetId) => {
-    switch (id) {
-      case 'weather':
-        return (
-          <WeatherOverlay
-            key={id}
-            weather={data.weather}
-            currentTime={currentTime}
-            layout={layouts.weather}
-            onUpdateLayout={(u) => updateLayout('weather', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowWeather(false)}
-          />
-        );
-      case 'racecontrol':
-        return (
-          <RaceControlFeed
-            key={id}
-            messages={data.race_control_messages}
-            currentTime={currentTime}
-            onSeek={(time) => setCurrentTime(time)}
-            layout={layouts.racecontrol}
-            onUpdateLayout={(u) => updateLayout('racecontrol', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowRaceControlFeed(false)}
-          />
-        );
-      case 'sectors':
-        return (
-          <SectorTimesPanel
-            key={id}
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-            fastestSectors={data.fastest_sectors}
-            liveSector={liveSector}
-            layout={layouts.sectors}
-            onUpdateLayout={(u) => updateLayout('sectors', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowSectorTimes(false)}
-          />
-        );
-      case 'laphistory':
-        return (
-          <LapHistoryPanel
-            key={id}
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-            driverData={selectedDriverFullData}
-            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-            onSeekToLap={(lap) => {
-              const time = getSeekTimeForLap(lap);
-              if (time !== null) setCurrentTime(time);
-            }}
-            layout={layouts.laphistory}
-            onUpdateLayout={(u) => updateLayout('laphistory', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowLapHistory(false)}
-          />
-        );
-      case 'telemetry':
-        return (
-          <TelemetryOverlay
-            key={id}
-            driverCode={selectedDriver}
-            telemetry={
-              selectedDriver && currentFrameDrivers[selectedDriver]
-                ? {
-                    speed: currentFrameDrivers[selectedDriver].speed,
-                    gear: currentFrameDrivers[selectedDriver].gear,
-                    throttle: currentFrameDrivers[selectedDriver].throttle,
-                    brake: normalizeBrakeValue(currentFrameDrivers[selectedDriver].brake),
-                    drs: currentFrameDrivers[selectedDriver].drs,
-                    rpm: currentFrameDrivers[selectedDriver].rpm,
-                  }
-                : null
-            }
-            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-            speedHistory={recentSpeedHistory}
-            throttleHistory={recentThrottleHistory}
-            brakeHistory={recentBrakeHistory}
-            rpmHistory={recentRpmHistory}
-            liveLapTime={liveLapTime}
-            layout={layouts.telemetry}
-            onUpdateLayout={(u) => updateLayout('telemetry', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowTelemetry(false)}
-          />
-        );
-    }
-
-    return null;
-  };
-
   return (
     <div
       ref={rootRef}
@@ -885,29 +703,46 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
       {isFullscreen && (
         <div className="absolute inset-0 z-[45] pointer-events-none">
-          {visibleWidgetIds.map(({ id, condition }) => (condition ? renderWidget(id) : null))}
+          {visibleWidgetIds.map(({ id, condition }) =>
+            condition ? (
+              <ReplayWidgetRenderer
+                key={id}
+                id={id}
+                data={data}
+                currentTime={currentTime}
+                selectedDriver={selectedDriver}
+                liveSector={liveSector}
+                selectedDriverFullData={selectedDriverFullData}
+                currentFrameDrivers={currentFrameDrivers}
+                recentSpeedHistory={recentSpeedHistory}
+                recentThrottleHistory={recentThrottleHistory}
+                recentBrakeHistory={recentBrakeHistory}
+                recentRpmHistory={recentRpmHistory}
+                liveLapTime={liveLapTime}
+                layouts={layouts}
+                updateLayout={updateLayout}
+                widgetBounds={widgetBounds}
+                getSeekTimeForLap={getSeekTimeForLap}
+                setCurrentTime={setCurrentTime}
+                onCloseWeather={() => setShowWeather(false)}
+                onCloseRaceControl={() => setShowRaceControlFeed(false)}
+                onCloseSectors={() => setShowSectorTimes(false)}
+                onCloseLapHistory={() => setShowLapHistory(false)}
+                onCloseTelemetry={() => setShowTelemetry(false)}
+              />
+            ) : null
+          )}
         </div>
       )}
 
       {!hasStarted && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-500">
-          <button
-            onClick={() => {
-              setHasStarted(true);
-              setIsPlaying(true);
-              trackEvent('replay_started', { year, event, session });
-            }}
-            className="group relative flex items-center justify-center size-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
-          >
-            <Play size={48} className="text-white fill-white ml-2" />
-            <div className="absolute inset-0 rounded-full ring-4 ring-white/20 group-hover:ring-white/40 animate-pulse" />
-          </button>
-          <div className="absolute bottom-20 text-center">
-            <p className="text-white font-bold text-lg tracking-widest uppercase drop-shadow-md">
-              Start Replay
-            </p>
-          </div>
-        </div>
+        <ReplayStartOverlay
+          onStart={() => {
+            setHasStarted(true);
+            setIsPlaying(true);
+            trackEvent('replay_started', { year, event, session });
+          }}
+        />
       )}
 
       <PlaybackControls

@@ -159,6 +159,17 @@ const RacingChart: React.FC<RacingChartProps> = ({
     setSelectedDrivers(availableDriverCodes.slice(0, MIN_DRIVERS));
   };
 
+  const chartStatus: ChartStatus =
+    !shouldLoadChart && !staticData
+      ? 'idle'
+      : isLoading
+        ? 'loading'
+        : isError || !chartData
+          ? 'error'
+          : chartData.length === 0
+            ? 'empty'
+            : 'ready';
+
   return (
     <div
       ref={(el) => {
@@ -269,7 +280,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
       </div>
 
       <RacingChartContent
-        shouldLoadChart={shouldLoadChart}
+        status={chartStatus}
+        error={error}
         staticData={staticData}
         selectedDrivers={selectedDrivers}
         isLoadingDrivers={isLoadingDrivers}
@@ -278,9 +290,6 @@ const RacingChart: React.FC<RacingChartProps> = ({
         year={year}
         event={event}
         session={session}
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
         chartData={chartData}
         driversToDisplay={driversToDisplay}
         driverNameMap={driverNameMap}
@@ -295,8 +304,11 @@ const RacingChart: React.FC<RacingChartProps> = ({
 };
 
 export { RacingChart };
+type ChartStatus = 'idle' | 'loading' | 'error' | 'empty' | 'ready';
+
 interface RacingChartContentProps {
-  shouldLoadChart: boolean;
+  status: ChartStatus;
+  error: unknown;
   staticData?: LapTimeDataPoint[];
   selectedDrivers: string[];
   isLoadingDrivers: boolean;
@@ -305,9 +317,6 @@ interface RacingChartContentProps {
   year: number;
   event: string;
   session: string;
-  isLoading: boolean;
-  isError: boolean;
-  error: unknown;
   chartData?: LapTimeDataPoint[];
   driversToDisplay: string[];
   driverNameMap: Map<string, string>;
@@ -319,7 +328,8 @@ interface RacingChartContentProps {
 }
 
 const RacingChartContent: React.FC<RacingChartContentProps> = ({
-  shouldLoadChart,
+  status,
+  error,
   staticData,
   selectedDrivers,
   isLoadingDrivers,
@@ -328,9 +338,6 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
   year,
   event,
   session,
-  isLoading,
-  isError,
-  error,
   chartData,
   driversToDisplay,
   driverNameMap,
@@ -340,7 +347,7 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
   weatherData,
   fastestLaps,
 }) => {
-  if (!shouldLoadChart && !staticData) {
+  if (status === 'idle' && !staticData) {
     return (
       <ChartLoadPrompt
         message="Select drivers to compare"
@@ -353,14 +360,14 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
     );
   }
 
-  if (isLoading) {
+  if (status === 'loading') {
     return (
       <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
         <LoadingSpinnerF1 />
       </div>
     );
   }
-  if (isError || !chartData) {
+  if (status === 'error' || !chartData) {
     return (
       <ChartStateDisplay
         isError
@@ -375,7 +382,7 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
       />
     );
   }
-  if (chartData.length === 0) {
+  if (status === 'empty') {
     return (
       <ChartStateDisplay
         isEmpty

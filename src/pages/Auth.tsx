@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -14,26 +14,105 @@ import AuthContent, {
   isPasswordValid,
 } from './auth/AuthContent';
 
+type AuthFlags = {
+  showPassword: boolean;
+  showForgotPassword: boolean;
+  resetEmailSent: boolean;
+  isResetPasswordMode: boolean;
+  isSignUpSuccess: boolean;
+};
+
+type AuthFlagsAction =
+  | { type: 'TOGGLE_SHOW_PASSWORD' }
+  | { type: 'SET_SHOW_FORGOT_PASSWORD'; value: boolean }
+  | { type: 'SET_RESET_EMAIL_SENT'; value: boolean }
+  | { type: 'SET_IS_RESET_PASSWORD_MODE'; value: boolean }
+  | { type: 'SET_IS_SIGN_UP_SUCCESS'; value: boolean }
+  | { type: 'OPEN_FORGOT_PASSWORD' }
+  | { type: 'CLOSE_FORGOT_PASSWORD' }
+  | { type: 'RESET_SIGN_UP' };
+
+function authFlagsReducer(state: AuthFlags, action: AuthFlagsAction): AuthFlags {
+  switch (action.type) {
+    case 'TOGGLE_SHOW_PASSWORD':
+      return { ...state, showPassword: !state.showPassword };
+    case 'SET_SHOW_FORGOT_PASSWORD':
+      return { ...state, showForgotPassword: action.value };
+    case 'SET_RESET_EMAIL_SENT':
+      return { ...state, resetEmailSent: action.value };
+    case 'SET_IS_RESET_PASSWORD_MODE':
+      return { ...state, isResetPasswordMode: action.value };
+    case 'SET_IS_SIGN_UP_SUCCESS':
+      return { ...state, isSignUpSuccess: action.value };
+    case 'OPEN_FORGOT_PASSWORD':
+      return { ...state, showForgotPassword: true };
+    case 'CLOSE_FORGOT_PASSWORD':
+      return { ...state, showForgotPassword: false, resetEmailSent: false };
+    case 'RESET_SIGN_UP':
+      return { ...state, isSignUpSuccess: false };
+    default:
+      return state;
+  }
+}
+
+type AuthFormState = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  forgotPasswordEmail: string;
+  activeTab: 'signup' | 'signin';
+};
+
+type AuthFormAction =
+  | { type: 'setEmail'; value: string }
+  | { type: 'setPassword'; value: string }
+  | { type: 'setConfirmPassword'; value: string }
+  | { type: 'setForgotPasswordEmail'; value: string }
+  | { type: 'setActiveTab'; value: 'signup' | 'signin' }
+  | { type: 'resetSignUp' };
+
+const authFormReducer = (state: AuthFormState, action: AuthFormAction): AuthFormState => {
+  switch (action.type) {
+    case 'setEmail':
+      return { ...state, email: action.value };
+    case 'setPassword':
+      return { ...state, password: action.value };
+    case 'setConfirmPassword':
+      return { ...state, confirmPassword: action.value };
+    case 'setForgotPasswordEmail':
+      return { ...state, forgotPasswordEmail: action.value };
+    case 'setActiveTab':
+      return { ...state, activeTab: action.value };
+    case 'resetSignUp':
+      return { ...state, email: '', password: '', confirmPassword: '' };
+    default:
+      return state;
+  }
+};
+
 const Auth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [searchParams] = useSearchParams();
+  const isResetMode = searchParams.get('reset') === 'true';
+  const [formState, dispatchForm] = useReducer(authFormReducer, {
+    email: '',
+    password: '',
+    confirmPassword: '',
+    forgotPasswordEmail: '',
+    activeTab: (isResetMode ? 'signin' : 'signup') as 'signup' | 'signin',
+  });
+  const { email, password, confirmPassword, forgotPasswordEmail, activeTab } = formState;
   const [isLoading, setIsLoading] = useReducer((_: boolean, value: boolean) => value, false);
   const [isSendingReset, setIsSendingReset] = useReducer(
     (_: boolean, value: boolean) => value,
     false
   );
-  const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [searchParams] = useSearchParams();
-  const isResetMode = searchParams.get('reset') === 'true';
-  const [isResetPasswordMode, setIsResetPasswordMode] = useState(isResetMode);
-  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'signup' | 'signin'>(
-    isResetMode ? 'signin' : 'signup'
-  );
+  const [flags, dispatchFlags] = useReducer(authFlagsReducer, {
+    showPassword: false,
+    showForgotPassword: false,
+    resetEmailSent: false,
+    isResetPasswordMode: isResetMode,
+    isSignUpSuccess: false,
+  } as AuthFlags);
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -43,13 +122,13 @@ const Auth = () => {
   const checkoutTier = searchParams.get('checkoutTier');
   const checkoutInterval = searchParams.get('checkoutInterval') || 'monthly';
   const authTitle =
-    isResetPasswordMode && showForgotPassword
+    flags.isResetPasswordMode && flags.showForgotPassword
       ? 'Reset Password'
       : activeTab === 'signup'
         ? 'Create Account'
         : 'Sign In';
   const authDescription =
-    isResetPasswordMode && showForgotPassword
+    flags.isResetPasswordMode && flags.showForgotPassword
       ? 'Reset your Fastlytics password and get back to your race desk.'
       : activeTab === 'signup'
         ? 'Create a Fastlytics account to save favorites and unlock a personalized race desk.'
@@ -121,8 +200,8 @@ const Auth = () => {
           refresh_token: hashParams.get('refresh_token') || '',
         })
         .then(() => {
-          setIsResetPasswordMode(true);
-          setShowForgotPassword(true);
+          dispatchFlags({ type: 'SET_IS_RESET_PASSWORD_MODE', value: true });
+          dispatchFlags({ type: 'SET_SHOW_FORGOT_PASSWORD', value: true });
           window.history.replaceState(null, '', '/auth?reset=true');
         });
     }
@@ -184,7 +263,7 @@ const Auth = () => {
         },
       });
       if (error) throw error;
-      setIsSignUpSuccess(true);
+      dispatchFlags({ type: 'SET_IS_SIGN_UP_SUCCESS', value: true });
       setIsLoading(false);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
@@ -205,7 +284,7 @@ const Auth = () => {
         redirectTo: `${window.location.origin}/auth?reset=true`,
       });
       if (error) throw error;
-      setResetEmailSent(true);
+      dispatchFlags({ type: 'SET_RESET_EMAIL_SENT', value: true });
       toast.success('Password reset email sent! Check your inbox.');
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
@@ -246,43 +325,44 @@ const Auth = () => {
         email={email}
         password={password}
         confirmPassword={confirmPassword}
-        showPassword={showPassword}
-        showForgotPassword={showForgotPassword}
+        showPassword={flags.showPassword}
+        showForgotPassword={flags.showForgotPassword}
         forgotPasswordEmail={forgotPasswordEmail}
         isLoading={isLoading}
         isSendingReset={isSendingReset}
-        resetEmailSent={resetEmailSent}
-        isResetPasswordMode={isResetPasswordMode}
-        isSignUpSuccess={isSignUpSuccess}
+        resetEmailSent={flags.resetEmailSent}
+        isResetPasswordMode={flags.isResetPasswordMode}
+        isSignUpSuccess={flags.isSignUpSuccess}
         activeTab={activeTab}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onShowPasswordToggle={() => setShowPassword((value) => !value)}
-        onShowForgotPasswordChange={setShowForgotPassword}
-        onForgotPasswordEmailChange={setForgotPasswordEmail}
-        onSignUpSuccessChange={setIsSignUpSuccess}
-        onResetEmailSentChange={setResetEmailSent}
-        onActiveTabChange={setActiveTab}
+        onEmailChange={(value) => dispatchForm({ type: 'setEmail', value })}
+        onPasswordChange={(value) => dispatchForm({ type: 'setPassword', value })}
+        onConfirmPasswordChange={(value) => dispatchForm({ type: 'setConfirmPassword', value })}
+        onShowPasswordToggle={() => dispatchFlags({ type: 'TOGGLE_SHOW_PASSWORD' })}
+        onShowForgotPasswordChange={(value) =>
+          dispatchFlags({ type: 'SET_SHOW_FORGOT_PASSWORD', value })
+        }
+        onForgotPasswordEmailChange={(value) =>
+          dispatchForm({ type: 'setForgotPasswordEmail', value })
+        }
+        onSignUpSuccessChange={(value) => dispatchFlags({ type: 'SET_IS_SIGN_UP_SUCCESS', value })}
+        onResetEmailSentChange={(value) => dispatchFlags({ type: 'SET_RESET_EMAIL_SENT', value })}
+        onActiveTabChange={(value) => dispatchForm({ type: 'setActiveTab', value })}
         onResetPasswordSubmit={handleUpdatePassword}
         onForgotPasswordSubmit={handleForgotPassword}
         onEmailSignUpSubmit={handleEmailSignUp}
         onEmailSignInSubmit={handleEmailSignIn}
         onSocialLogin={handleSocialLogin}
         onResetToSignUp={() => {
-          setIsSignUpSuccess(false);
-          setEmail('');
-          setPassword('');
-          setConfirmPassword('');
+          dispatchFlags({ type: 'RESET_SIGN_UP' });
+          dispatchForm({ type: 'resetSignUp' });
         }}
         onBackToSignIn={() => {
-          setShowForgotPassword(false);
-          setResetEmailSent(false);
-          setForgotPasswordEmail('');
+          dispatchFlags({ type: 'CLOSE_FORGOT_PASSWORD' });
+          dispatchForm({ type: 'setForgotPasswordEmail', value: '' });
         }}
         onPrepareForgotPassword={() => {
-          setShowForgotPassword(true);
-          setForgotPasswordEmail(email);
+          dispatchFlags({ type: 'OPEN_FORGOT_PASSWORD' });
+          dispatchForm({ type: 'setForgotPasswordEmail', value: email });
         }}
       />
     </div>
