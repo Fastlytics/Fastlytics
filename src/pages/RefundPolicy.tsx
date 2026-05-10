@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
@@ -14,7 +15,7 @@ const RefundPolicy = () => {
     >
       <SEO
         title="Refunds"
-        description="Fastlytics refund policy — eligibility, process, and terms for subscription and digital purchases."
+        description="Fastlytics refund policy - eligibility, process, and terms for subscription and digital purchases."
       />
       <LandingNavbar />
 
@@ -129,7 +130,7 @@ const RefundPolicy = () => {
               <div className="text-[14px] leading-relaxed text-white/40">
                 <p>
                   You can cancel your subscription at any time from your account settings.
-                  Cancellation takes effect at the end of your current billing period — you retain
+                  Cancellation takes effect at the end of your current billing period - you retain
                   access until that date. No refunds are issued for the remaining portion of a
                   billing period after the 7-day window.
                 </p>

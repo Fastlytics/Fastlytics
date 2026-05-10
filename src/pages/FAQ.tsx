@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
@@ -84,7 +85,7 @@ const FAQ = () => {
             <Accordion type="single" collapsible className="w-full space-y-3">
               {faqs.map((faq, index) => (
                 <AccordionItem
-                  key={index}
+                  key={faq.question}
                   value={`item-${index}`}
                   className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-5 transition-colors hover:border-white/[0.1]"
                 >

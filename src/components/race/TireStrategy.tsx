@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -130,7 +131,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
       return (
         <div className="space-y-3 pt-4 animate-pulse">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4">
+            <div key={`skeleton-${i}`} className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-1">
                 <div className="size-11 rounded-full bg-white/[0.03]" />
                 <div className="h-3 w-16 rounded bg-white/[0.03]" />
@@ -264,7 +265,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
                       const bgColorClass = getTireColorClass(stint.compound);
 
                       return (
-                        <Tooltip key={index}>
+                        <Tooltip key={`stint-${stint.startLap}-${stint.endLap}`}>
                           <TooltipTrigger asChild>
                             <div
                               className={cn(

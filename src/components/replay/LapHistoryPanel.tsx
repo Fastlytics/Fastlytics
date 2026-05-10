@@ -101,7 +101,7 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
 
   return (
     <WidgetShell
-      title={`Lap History — ${selectedDriver}`}
+      title={`Lap History - ${selectedDriver}`}
       icon={<History size={12} className="text-white/60" />}
       layout={layout}
       bounds={bounds}
@@ -127,7 +127,7 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
           <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-white/[0.03] border border-white/[0.05]">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-white/60 font-semibold uppercase tracking-wider">
-                L{selectedLap} — {detailConfig[detailView].label}
+                L{selectedLap} - {detailConfig[detailView].label}
               </span>
               <button
                 onClick={() => setDetailView(null)}

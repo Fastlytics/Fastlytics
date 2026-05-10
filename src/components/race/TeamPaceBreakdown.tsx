@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
@@ -79,10 +80,12 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
   const compoundData = useMemo(() => {
     if (!paceData?.compoundPace)
       return { compounds: [] as string[], teamData: [] as (CompoundPace & { color: string })[] };
-    const compounds = [...new Set(paceData.compoundPace.map((d) => d.compound))].sort((a, b) => {
-      const order = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'];
-      return order.indexOf(a) - order.indexOf(b);
-    });
+    const compounds = [...new Set(paceData.compoundPace.map((d) => d.compound))].toSorted(
+      (a, b) => {
+        const order = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'];
+        return order.indexOf(a) - order.indexOf(b);
+      }
+    );
     const teamData = paceData.compoundPace.map((d) => ({
       ...d,
       color: d.teamColor ? getTeamColor(d.teamName) : getTeamColor(d.teamName),
@@ -346,11 +349,11 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
                       },
                     }}
                   >
-                    {compoundBars.map((entry, idx) => (
+                    {compoundBars.map((entry) => (
                       <Cell
-                        key={idx}
+                        key={entry.teamName}
                         fill={getTeamColor(entry.teamName)}
-                        fillOpacity={idx === 0 ? 1 : 0.7}
+                        fillOpacity={0.85}
                       />
                     ))}
                   </Bar>

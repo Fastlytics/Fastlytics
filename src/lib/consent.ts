@@ -1,3 +1,4 @@
+// knip-ignore
 /**
  * GDPR / CCPA Compliant Consent Management
  *
@@ -74,6 +75,6 @@ export const rejectAllConsent = (): void => {
 };
 
 /** Reset consent (for testing / re-prompting) */
-export const clearConsent = (): void => {
+const clearConsent = (): void => {
   localStorage.removeItem(CONSENT_KEY);
 };

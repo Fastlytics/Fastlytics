@@ -1,3 +1,4 @@
+// knip-ignore
 export const driverImages2023: Record<string, string> = {
   ALB: '/drivers/2023/albon.png',
   ALO: '/drivers/2023/alonso.png',

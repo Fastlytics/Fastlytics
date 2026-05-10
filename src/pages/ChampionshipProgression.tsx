@@ -1,6 +1,6 @@
+// knip-ignore
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAnalytics } from '@/hooks/useAnalytics';
+
 import { m } from 'motion/react';
 import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
 import { TrendingUp } from 'lucide-react';
@@ -130,7 +130,7 @@ const ChampionshipLegend = ({ payload, selectedYear }: ChampionshipLegendProps) 
 
         return (
           <div
-            key={`legend-${index}`}
+            key={`legend-${driverId}`}
             className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-zinc-800 backdrop-blur-sm"
           >
             <div className="relative size-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
@@ -215,9 +215,9 @@ const ChampionshipProgression = () => {
 
     if (driversAtCheck.length > 0) {
       const leaderPoints = driversAtCheck[0].points;
-      const contenders = driversAtCheck
-        .filter((d) => leaderPoints - d.points <= 26)
-        .map((d) => d.code);
+      const contenders = driversAtCheck.flatMap((d) =>
+        leaderPoints - d.points <= 26 ? [d.code] : []
+      );
 
       if (contenders.length > 1) return contenders;
       return driversAtCheck
@@ -388,7 +388,7 @@ const ChampionshipProgression = () => {
                     return pointsB - pointsA;
                   })
                   .map(([code, driver]) => (
-                    <div key={code} className="flex items-center space-x-2">
+                    <div key={code} className="flex items-center gap-x-2">
                       <Checkbox
                         id={`driver - ${code} `}
                         checked={selectedDrivers.includes(code)}

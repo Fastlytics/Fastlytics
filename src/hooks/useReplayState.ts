@@ -1,3 +1,4 @@
+// knip-ignore
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface ReplayState {

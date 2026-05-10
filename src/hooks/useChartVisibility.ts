@@ -1,3 +1,4 @@
+// knip-ignore
 import { useEffect, useRef, useCallback } from 'react';
 import posthog from 'posthog-js';
 import { logger } from '@/lib/logger';

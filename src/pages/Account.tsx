@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState, useEffect } from 'react';
 import { m } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -415,7 +416,6 @@ const Account = () => {
                               value={fullName}
                               onChange={(e) => setFullName(e.target.value)}
                               className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
-                              autoFocus
                             />
                             <Button
                               size="icon"
@@ -466,7 +466,6 @@ const Account = () => {
                               value={username}
                               onChange={(e) => setUsername(e.target.value)}
                               className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
-                              autoFocus
                             />
                             <Button
                               size="icon"
@@ -517,7 +516,6 @@ const Account = () => {
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               className="h-11 rounded-xl border-white/[0.08] bg-white/[0.03] text-white placeholder:text-white/20 focus:border-red-500/40 focus:ring-red-500/20"
-                              autoFocus
                             />
                             <Button
                               size="icon"

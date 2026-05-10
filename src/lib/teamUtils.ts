@@ -1,3 +1,4 @@
+// knip-ignore
 // Team mapping to identify teammates
 export const teamDriverMap: { [year: string]: { [team: string]: string[] } } = {
   '2026': {

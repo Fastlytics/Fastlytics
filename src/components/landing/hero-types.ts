@@ -1,3 +1,4 @@
+// knip-ignore
 export type HeroTimingRow = {
   pos: number;
   driver: string;

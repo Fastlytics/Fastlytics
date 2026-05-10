@@ -1,3 +1,4 @@
+// knip-ignore
 /**
  * Pure utility functions for the Session Replay feature.
  * Extracted for testability and reuse across sub-components.

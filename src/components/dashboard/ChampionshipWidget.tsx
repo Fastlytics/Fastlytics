@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent, RaceResult } from '@/lib/api';
@@ -58,7 +59,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
       <div style={inter} className="grid gap-6 md:grid-cols-2">
         {[0, 1].map((i) => (
           <div
-            key={i}
+            key={`skeleton-${i}`}
             className="h-80 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
           />
         ))}

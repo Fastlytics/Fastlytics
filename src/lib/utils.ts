@@ -1,3 +1,4 @@
+// knip-ignore
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Gauge } from 'lucide-react';

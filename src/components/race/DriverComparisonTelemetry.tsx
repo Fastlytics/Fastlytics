@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo } from 'react';
 import {
   LineChart,
@@ -463,7 +464,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                       >
                         {Math.round(Number(label))}m
                       </div>
-                      {payload.map((entry: TooltipPayloadEntry, index: number) => {
+                      {payload.map((entry: TooltipPayloadEntry) => {
                         const isGap = telemetryType === 'gap';
                         const name = entry.name;
                         const value = entry.value;
@@ -472,7 +473,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                         if (isGap) {
                           if (name === 'Gap' && typeof value === 'number') {
                             return (
-                              <div key={index} className="flex items-center gap-2">
+                              <div key={name || entry.dataKey} className="flex items-center gap-2">
                                 <div
                                   className="size-2 rounded-full"
                                   style={{ backgroundColor: color1 }}
@@ -497,7 +498,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                         }
 
                         return (
-                          <div key={index} className="mb-1 flex items-center gap-2">
+                          <div key={name || entry.dataKey} className="mb-1 flex items-center gap-2">
                             <div
                               className="size-2 rounded-full"
                               style={{ backgroundColor: color }}

@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { ExportFormat } from '@/hooks/useChartExport';

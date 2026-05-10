@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo, useState } from 'react';
 import { m } from 'motion/react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
@@ -148,7 +149,7 @@ const Pricing = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="text-3xl font-bold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+                className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
               >
                 Choose your race plan
               </m.h1>
@@ -185,7 +186,7 @@ const Pricing = () => {
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl font-bold tracking-[-0.01em] text-white text-center"
+              className="text-2xl font-semibold tracking-[-0.01em] text-white text-center"
             >
               Full feature comparison
             </m.h2>

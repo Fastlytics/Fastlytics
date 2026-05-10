@@ -60,7 +60,9 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
       (_, index) => futureScheduleChecks[index]?.data === true
     );
 
-    return [...new Set([...discoveredFutureYears, ...defaultAvailableYears])].sort((a, b) => b - a);
+    return [...new Set([...discoveredFutureYears, ...defaultAvailableYears])].toSorted(
+      (a, b) => b - a
+    );
   }, [futureScheduleChecks]);
 
   useEffect(() => {

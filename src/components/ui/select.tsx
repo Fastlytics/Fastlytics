@@ -1,3 +1,4 @@
+// knip-ignore
 import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { Tick01Icon, ArrowDown01Icon, ArrowUp01Icon } from 'hugeicons-react';

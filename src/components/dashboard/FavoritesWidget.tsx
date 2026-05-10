@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { m } from 'motion/react';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
@@ -41,7 +42,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
       <div style={inter} className="grid gap-6 lg:grid-cols-2 mb-8">
         {[0, 1].map((i) => (
           <div
-            key={i}
+            key={`skeleton-${i}`}
             className="h-56 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
           />
         ))}

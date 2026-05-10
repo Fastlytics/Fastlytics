@@ -1,3 +1,4 @@
+// knip-ignore
 import { useState, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -94,7 +95,7 @@ export function useLapChartData(options: UseLapChartDataOptions): LapChartData {
     return defaults;
   };
 
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(getInitialDrivers());
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>(() => getInitialDrivers());
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],

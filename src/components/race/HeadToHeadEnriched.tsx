@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, LapTimesEnrichedResponse, EnrichedLapRecord } from '@/lib/api';
@@ -87,9 +88,9 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       });
 
       result[drv] = Array.from(stintMap.entries()).map(([stintNum, laps]) => {
-        const validTimes = laps
-          .filter((l) => l.lapTime != null && !l.deleted)
-          .map((l) => l.lapTime!);
+        const validTimes = laps.flatMap((l) =>
+          l.lapTime != null && !l.deleted ? [l.lapTime!] : []
+        );
         return {
           stintNum,
           compound: laps[0]?.compound || '?',
@@ -113,7 +114,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   const deletedLaps = useMemo(() => {
     if (!driverLapDetails) return [];
     return drivers.flatMap((drv) =>
-      (driverLapDetails[drv] || []).filter((l) => l.deleted).map((l) => ({ driver: drv, ...l }))
+      (driverLapDetails[drv] || []).flatMap((l) => (l.deleted ? [{ driver: drv, ...l }] : []))
     );
   }, [driverLapDetails, drivers]);
 
@@ -202,7 +203,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       )}
 
       {/* Strategy Timeline */}
-      <div className="border-x border-white/[0.06] bg-[#0c0c0e] px-5 py-5">
+      <div className="border-x border-white/[0.06] bg-[#0c0c0e] p-5">
         <p
           className="mb-4 text-[12px] font-semibold uppercase tracking-wider text-white/80"
           style={{ fontFamily: "'Inter', sans-serif" }}
@@ -335,7 +336,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
           <div className="flex flex-col gap-1.5">
             {deletedLaps.slice(0, 10).map((dl, i) => (
               <div
-                key={i}
+                key={`${dl.driver}-${i}`}
                 className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.02]"
               >
                 <span

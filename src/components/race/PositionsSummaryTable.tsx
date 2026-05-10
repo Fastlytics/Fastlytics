@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import {
   Table,

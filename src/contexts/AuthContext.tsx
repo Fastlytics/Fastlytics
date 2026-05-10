@@ -26,7 +26,7 @@ export interface Profile {
   onboarding_completed: boolean;
 }
 
-export interface Subscription {
+interface Subscription {
   plan: 'free' | 'pro' | 'ultra';
   status: 'active' | 'cancelled' | 'expired' | 'on_hold';
   billing_interval?: 'monthly' | 'yearly';

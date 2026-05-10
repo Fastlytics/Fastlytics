@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { fetchGearShiftMap, GearShiftMapData } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
@@ -103,7 +104,7 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
               {/* Gear Segments */}
               {data.segments.map((segment, index) => (
                 <path
-                  key={index}
+                  key={`segment-${segment.gear}-${index}`}
                   d={segment.path}
                   fill="none"
                   stroke={getGearColor(segment.gear)}

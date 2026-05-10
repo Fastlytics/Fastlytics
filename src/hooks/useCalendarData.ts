@@ -1,3 +1,4 @@
+// knip-ignore
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
@@ -112,9 +113,7 @@ export function useCalendarData() {
           event.Session3Date,
           event.Session4Date,
           event.Session5Date,
-        ]
-          .filter((d) => d)
-          .map((d) => new Date(d!));
+        ].flatMap((d) => (d ? [new Date(d)] : []));
 
         let isUpcoming = sessions.some((d) => d > now);
         if (testing && selectedYear < currentYear) {

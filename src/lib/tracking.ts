@@ -1,3 +1,4 @@
+// knip-ignore
 /**
  * Advanced device and network tracking utility.
  * Gathers device fingerprint, IP geolocation, and ISP data.

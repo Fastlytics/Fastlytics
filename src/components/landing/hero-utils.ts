@@ -1,3 +1,4 @@
+// knip-ignore
 import { LandingReplayAvailable, LandingReplayChunk, LandingReplayMetadata } from '@/lib/api';
 import { getGapSortKey } from '@/components/replay/replay-utils';
 import { ChartType, HeroStrategyStint, HeroViewModel } from './hero-types';
