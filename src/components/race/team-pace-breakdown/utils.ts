@@ -64,7 +64,7 @@ export const buildCompoundData = (paceData?: TeamPaceResponse | null) => {
 export const buildSectorData = (paceData?: TeamPaceResponse | null) => {
   if (!paceData?.sectorPace) return [] as SectorPace[];
 
-  return [...paceData.sectorPace].sort((a, b) => {
+  return paceData.sectorPace.toSorted((a, b) => {
     const totalA = (a.sector1Median ?? 999) + (a.sector2Median ?? 999) + (a.sector3Median ?? 999);
     const totalB = (b.sector1Median ?? 999) + (b.sector2Median ?? 999) + (b.sector3Median ?? 999);
     return totalA - totalB;
@@ -86,7 +86,7 @@ export const buildDriversByTeam = (paceData?: TeamPaceResponse | null) => {
 
 export const buildTeamRanking = (paceData?: TeamPaceResponse | null) => {
   if (!paceData?.teamPace) return [] as TeamPaceSession[];
-  return [...paceData.teamPace].sort((a, b) => a.medianTime - b.medianTime);
+  return paceData.teamPace.toSorted((a, b) => a.medianTime - b.medianTime);
 };
 
 export const getSectorBestValues = (sectorData: SectorPace[]) => ({

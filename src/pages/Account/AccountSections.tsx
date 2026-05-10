@@ -547,7 +547,10 @@ export function SubscriptionSection({
                   {subscription.billing_interval || 'Monthly'}
                 </p>
               </div>
-              <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+              <div
+                className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4"
+                suppressHydrationWarning
+              >
                 <p className="text-[11px] font-medium uppercase tracking-wider text-white/35">
                   Renews / Expires
                 </p>

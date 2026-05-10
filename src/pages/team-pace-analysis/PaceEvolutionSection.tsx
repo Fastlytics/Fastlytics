@@ -28,7 +28,7 @@ interface PaceEvolutionSectionProps {
 const TeamPaceTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
   if (!active || !payload?.length) return null;
 
-  const sortedPayload = [...payload].sort((a, b) => (a.value || 0) - (b.value || 0));
+  const sortedPayload = payload.toSorted((a, b) => (a.value || 0) - (b.value || 0));
   return (
     <div className="min-w-[200px] rounded-xl border border-zinc-800 bg-black/95 p-4 shadow-2xl backdrop-blur-md">
       <p className="mb-3 border-b border-zinc-800 pb-2 font-mono text-xs uppercase tracking-wider text-zinc-400">

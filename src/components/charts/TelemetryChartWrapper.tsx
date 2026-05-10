@@ -39,6 +39,77 @@ interface TelemetryChartWrapperProps<T> {
   renderStats?: (data: T) => React.ReactNode;
 }
 
+interface TelemetryChartContentProps<T> {
+  selectedDriver: string;
+  isLoading: boolean;
+  error: unknown;
+  data: T | undefined;
+  currentColor: string;
+  renderChart: (data: T, color: string, selectedDriver: string) => React.ReactNode;
+  renderStats?: (data: T) => React.ReactNode;
+}
+
+const TelemetryChartContent = <T,>({
+  selectedDriver,
+  isLoading,
+  error,
+  data,
+  currentColor,
+  renderChart,
+  renderStats,
+}: TelemetryChartContentProps<T>) => {
+  if (!selectedDriver) {
+    return (
+      <div
+        className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] text-white text-[12px] font-semibold uppercase tracking-widest"
+        style={inter}
+      >
+        Select a driver to view telemetry
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+        <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="w-full h-[350px] rounded-xl border border-red-500/20 bg-red-500/[0.05] flex flex-col items-center justify-center">
+        <AlertCircleIcon className="size-10 mb-2 text-red-400" />
+        <p className="font-bold uppercase tracking-widest text-sm text-red-400" style={inter}>
+          Data Unavailable
+        </p>
+        <p className="text-[10px] text-white mt-1" style={inter}>
+          {(error as Error)?.message || 'Could not fetch telemetry.'}
+        </p>
+      </div>
+    );
+  }
+
+  if (Array.isArray(data) && data.length === 0) {
+    return (
+      <div
+        className="w-full h-[350px] rounded-xl border border-white/[0.06] bg-[#0c0c0e] flex items-center justify-center text-white text-[12px] font-semibold uppercase tracking-widest"
+        style={inter}
+      >
+        No data for {selectedDriver}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 w-full min-w-0">
+      {renderChart(data, currentColor, selectedDriver)}
+      {renderStats && renderStats(data)}
+    </div>
+  );
+};
+
 const TelemetryChartWrapper = <T,>({
   className,
   title,
@@ -125,59 +196,6 @@ const TelemetryChartWrapper = <T,>({
       : 'Select Driver');
 
   const selectedDriverObj = availableDrivers?.find((d) => d.code === selectedDriver);
-
-  const renderContent = () => {
-    if (!selectedDriver) {
-      return (
-        <div
-          className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] text-white text-[12px] font-semibold uppercase tracking-widest"
-          style={inter}
-        >
-          Select a driver to view telemetry
-        </div>
-      );
-    }
-
-    if (isLoading) {
-      return (
-        <div className="w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-          <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-        </div>
-      );
-    }
-
-    if (error || !data) {
-      return (
-        <div className="w-full h-[350px] rounded-xl border border-red-500/20 bg-red-500/[0.05] flex flex-col items-center justify-center">
-          <AlertCircleIcon className="size-10 mb-2 text-red-400" />
-          <p className="font-bold uppercase tracking-widest text-sm text-red-400" style={inter}>
-            Data Unavailable
-          </p>
-          <p className="text-[10px] text-white mt-1" style={inter}>
-            {(error as Error)?.message || 'Could not fetch telemetry.'}
-          </p>
-        </div>
-      );
-    }
-
-    if (Array.isArray(data) && data.length === 0) {
-      return (
-        <div
-          className="w-full h-[350px] rounded-xl border border-white/[0.06] bg-[#0c0c0e] flex items-center justify-center text-white text-[12px] font-semibold uppercase tracking-widest"
-          style={inter}
-        >
-          No data for {selectedDriver}
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-col gap-4 w-full min-w-0">
-        {renderChart(data, currentColor, selectedDriver)}
-        {renderStats && renderStats(data)}
-      </div>
-    );
-  };
 
   return (
     <div
@@ -339,7 +357,15 @@ const TelemetryChartWrapper = <T,>({
         </div>
       </div>
 
-      {renderContent()}
+      <TelemetryChartContent
+        selectedDriver={selectedDriver}
+        isLoading={isLoading}
+        error={error}
+        data={data}
+        currentColor={currentColor}
+        renderChart={renderChart}
+        renderStats={renderStats}
+      />
     </div>
   );
 };

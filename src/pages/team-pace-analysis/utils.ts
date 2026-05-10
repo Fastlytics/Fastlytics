@@ -81,7 +81,7 @@ export const getLatestAvailableSession = (sessions: Record<string, TeamPaceSessi
 };
 
 export const sortSessions = (sessions: string[]) =>
-  [...sessions].sort((a, b) => SESSION_ORDER.indexOf(a) - SESSION_ORDER.indexOf(b));
+  sessions.toSorted((a, b) => SESSION_ORDER.indexOf(a) - SESSION_ORDER.indexOf(b));
 
 export const getActiveTeams = (eventData: TeamPaceEvent | null, selectedSession: string) => {
   if (!eventData) return [];

@@ -1,15 +1,15 @@
 import { AnimatePresence, m } from 'motion/react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
+import { cn } from '@/lib/utils';
 import {
-  PasswordRequirements,
   isPasswordValid,
   getPasswordValidationMessage,
 } from '@/components/auth/PasswordRequirements';
-import { oauthFlags } from '@/config/featureFlags';
-import { cn } from '@/lib/utils';
+import ForgotPasswordFlow from './ForgotPasswordFlow';
+import SignUpForm from './SignUpForm';
+import SignInForm from './SignInForm';
 
 export { isPasswordValid, getPasswordValidationMessage };
+export { MailIcon, LockIcon, EyeIcon, EyeOffIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 
 export type AuthTab = 'signup' | 'signin';
 export type SocialProvider = 'google' | 'github' | 'discord';
@@ -45,14 +45,6 @@ interface AuthContentProps {
   onBackToSignIn: () => void;
   onPrepareForgotPassword: () => void;
 }
-
-const socialProviders = [
-  ...(oauthFlags.enableGoogle ? [{ id: 'google' as const, icon: faGoogle, label: 'Google' }] : []),
-  ...(oauthFlags.enableGithub ? [{ id: 'github' as const, icon: faGithub, label: 'GitHub' }] : []),
-  ...(oauthFlags.enableDiscord
-    ? [{ id: 'discord' as const, icon: faDiscord, label: 'Discord' }]
-    : []),
-];
 
 export function RaceDeskPreview() {
   const drivers = [
@@ -170,110 +162,6 @@ export function RaceDeskPreview() {
   );
 }
 
-const MailIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <rect width="20" height="16" x="2" y="4" rx="2" />
-    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-  </svg>
-);
-
-const LockIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </svg>
-);
-
-const EyeIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-
-const EyeOffIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7c.78 0 1.53-.09 2.24-.26" />
-    <path d="M2 2l20 20" />
-  </svg>
-);
-
-const ArrowLeftIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="m12 19-7-7 7-7" />
-    <path d="M19 12H5" />
-  </svg>
-);
-
-const ArrowRightIcon = ({ className }: { className?: string }) => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </svg>
-);
-
 export default function AuthContent(props: AuthContentProps) {
   const heading =
     props.isResetPasswordMode && props.showForgotPassword
@@ -337,431 +225,58 @@ export default function AuthContent(props: AuthContentProps) {
 
         <AnimatePresence mode="wait">
           {props.showForgotPassword ? (
-            <m.div
-              key="forgot-password"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {props.isResetPasswordMode ? (
-                <form onSubmit={props.onResetPasswordSubmit} className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="field-new-password"
-                      className="text-[13px] font-medium text-white/60"
-                    >
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                      <input
-                        id="field-new-password"
-                        type={props.showPassword ? 'text' : 'password'}
-                        placeholder="Enter new password"
-                        value={props.password}
-                        onChange={(event) => props.onPasswordChange(event.target.value)}
-                        required
-                        disabled={props.isLoading}
-                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={props.onShowPasswordToggle}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/50"
-                      >
-                        {props.showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                      </button>
-                    </div>
-                    <PasswordRequirements password={props.password} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="reset-confirm-password"
-                      className="text-[13px] font-medium text-white/60"
-                    >
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                      <input
-                        id="reset-confirm-password"
-                        type={props.showPassword ? 'text' : 'password'}
-                        placeholder="Confirm new password"
-                        value={props.confirmPassword}
-                        onChange={(event) => props.onConfirmPasswordChange(event.target.value)}
-                        required
-                        disabled={props.isLoading}
-                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={props.isLoading}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
-                  >
-                    {props.isLoading ? 'Updating...' : 'Update Password'}
-                  </button>
-                </form>
-              ) : props.resetEmailSent ? (
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
-                    <MailIcon className="text-emerald-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">Check your email</h3>
-                  <p className="mt-1 text-[14px] text-white/40">
-                    We sent a reset link to{' '}
-                    <span className="text-white/60">{props.forgotPasswordEmail}</span>
-                  </p>
-                  <button
-                    onClick={props.onBackToSignIn}
-                    className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06]"
-                  >
-                    Back to sign in
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={props.onForgotPasswordSubmit} className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="field-email-reset"
-                      className="text-[13px] font-medium text-white/60"
-                    >
-                      Email
-                    </label>
-                    <div className="relative">
-                      <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                      <input
-                        id="field-email-reset"
-                        type="email"
-                        placeholder="name@example.com"
-                        value={props.forgotPasswordEmail}
-                        onChange={(event) => props.onForgotPasswordEmailChange(event.target.value)}
-                        required
-                        disabled={props.isSendingReset}
-                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-4 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        props.onShowForgotPasswordChange(false);
-                        props.onResetEmailSentChange(false);
-                      }}
-                      className="flex h-11 flex-1 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-[14px] font-medium text-white/60 transition-all hover:border-white/20 hover:bg-white/[0.06] hover:text-white/80"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={props.isSendingReset}
-                      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
-                    >
-                      {props.isSendingReset ? 'Sending...' : 'Send link'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </m.div>
+            <ForgotPasswordFlow
+              password={props.password}
+              confirmPassword={props.confirmPassword}
+              forgotPasswordEmail={props.forgotPasswordEmail}
+              isResetPasswordMode={props.isResetPasswordMode}
+              resetEmailSent={props.resetEmailSent}
+              showPassword={props.showPassword}
+              isLoading={props.isLoading}
+              isSendingReset={props.isSendingReset}
+              onPasswordChange={props.onPasswordChange}
+              onConfirmPasswordChange={props.onConfirmPasswordChange}
+              onForgotPasswordEmailChange={props.onForgotPasswordEmailChange}
+              onShowPasswordToggle={props.onShowPasswordToggle}
+              onResetPasswordSubmit={props.onResetPasswordSubmit}
+              onForgotPasswordSubmit={props.onForgotPasswordSubmit}
+              onBackToSignIn={props.onBackToSignIn}
+              onCancel={() => {
+                props.onShowForgotPasswordChange(false);
+                props.onResetEmailSentChange(false);
+              }}
+            />
           ) : props.activeTab === 'signup' ? (
-            <m.div
-              key="signup"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 12 }}
-              transition={{ duration: 0.2 }}
-            >
-              {!props.isSignUpSuccess ? (
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    {socialProviders.map((provider) => (
-                      <button
-                        key={provider.id}
-                        onClick={() => props.onSocialLogin(provider.id)}
-                        disabled={props.isLoading}
-                        className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06] disabled:opacity-50"
-                      >
-                        <FontAwesomeIcon icon={provider.icon} className="text-white/60" />
-                        Continue with {provider.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-white/[0.06]" />
-                    <span className="text-[12px] font-medium text-white/25">or</span>
-                    <div className="h-px flex-1 bg-white/[0.06]" />
-                  </div>
-
-                  <form onSubmit={props.onEmailSignUpSubmit} className="space-y-4">
-                    <InputField
-                      id="signup-email"
-                      label="Email"
-                      icon={
-                        <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                      }
-                      type="email"
-                      placeholder="name@example.com"
-                      value={props.email}
-                      onChange={props.onEmailChange}
-                      disabled={props.isLoading}
-                    />
-                    <PasswordField
-                      id="signup-password"
-                      label="Password"
-                      placeholder="Create a password"
-                      value={props.password}
-                      onChange={props.onPasswordChange}
-                      showPassword={props.showPassword}
-                      onTogglePassword={props.onShowPasswordToggle}
-                      disabled={props.isLoading}
-                    />
-                    <PasswordRequirements password={props.password} />
-                    <PasswordField
-                      id="signup-confirm-password"
-                      label="Confirm Password"
-                      placeholder="Confirm your password"
-                      value={props.confirmPassword}
-                      onChange={props.onConfirmPasswordChange}
-                      showPassword={props.showPassword}
-                      onTogglePassword={props.onShowPasswordToggle}
-                      disabled={props.isLoading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={props.isLoading}
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
-                    >
-                      {props.isLoading ? 'Creating account...' : 'Create Account'}
-                    </button>
-                  </form>
-
-                  <p className="text-center text-[12px] leading-relaxed text-white/25">
-                    By continuing, you agree to our{' '}
-                    <a
-                      href="/terms-of-service"
-                      className="text-white/40 transition-colors hover:text-white/60"
-                    >
-                      Terms
-                    </a>{' '}
-                    and{' '}
-                    <a
-                      href="/privacy-policy"
-                      className="text-white/40 transition-colors hover:text-white/60"
-                    >
-                      Privacy Policy
-                    </a>
-                    .
-                  </p>
-                </div>
-              ) : (
-                <m.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center"
-                >
-                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
-                    <MailIcon className="text-emerald-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-white">Check your inbox</h3>
-                  <p className="mt-1 text-[14px] text-white/40">
-                    We sent a verification link to{' '}
-                    <span className="text-white/60">{props.email}</span>
-                  </p>
-                  <button
-                    onClick={props.onResetToSignUp}
-                    className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06]"
-                  >
-                    <ArrowLeftIcon className="size-4" />
-                    Back to sign up
-                  </button>
-                </m.div>
-              )}
-            </m.div>
+            <SignUpForm
+              email={props.email}
+              password={props.password}
+              confirmPassword={props.confirmPassword}
+              showPassword={props.showPassword}
+              isLoading={props.isLoading}
+              isSignUpSuccess={props.isSignUpSuccess}
+              onEmailChange={props.onEmailChange}
+              onPasswordChange={props.onPasswordChange}
+              onConfirmPasswordChange={props.onConfirmPasswordChange}
+              onShowPasswordToggle={props.onShowPasswordToggle}
+              onEmailSignUpSubmit={props.onEmailSignUpSubmit}
+              onSocialLogin={props.onSocialLogin}
+              onResetToSignUp={props.onResetToSignUp}
+            />
           ) : (
-            <m.div
-              key="signin"
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  {socialProviders.map((provider) => (
-                    <button
-                      key={provider.id}
-                      onClick={() => props.onSocialLogin(provider.id)}
-                      disabled={props.isLoading}
-                      className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06] disabled:opacity-50"
-                    >
-                      <FontAwesomeIcon icon={provider.icon} className="text-white/60" />
-                      Continue with {provider.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="h-px flex-1 bg-white/[0.06]" />
-                  <span className="text-[12px] font-medium text-white/25">or</span>
-                  <div className="h-px flex-1 bg-white/[0.06]" />
-                </div>
-
-                <form onSubmit={props.onEmailSignInSubmit} className="space-y-4">
-                  <InputField
-                    id="signin-email"
-                    label="Email"
-                    icon={
-                      <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                    }
-                    type="email"
-                    placeholder="name@example.com"
-                    value={props.email}
-                    onChange={props.onEmailChange}
-                    disabled={props.isLoading}
-                  />
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="signin-password"
-                        className="text-[13px] font-medium text-white/60"
-                      >
-                        Password
-                      </label>
-                      <button
-                        type="button"
-                        onClick={props.onPrepareForgotPassword}
-                        className="text-[12px] text-white/30 transition-colors hover:text-white/60"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-                      <input
-                        id="signin-password"
-                        type={props.showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={props.password}
-                        onChange={(event) => props.onPasswordChange(event.target.value)}
-                        required
-                        disabled={props.isLoading}
-                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={props.onShowPasswordToggle}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/50"
-                      >
-                        {props.showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={props.isLoading}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
-                  >
-                    {props.isLoading ? 'Signing in...' : 'Sign In'}
-                    {!props.isLoading && <ArrowRightIcon />}
-                  </button>
-                </form>
-              </div>
-            </m.div>
+            <SignInForm
+              email={props.email}
+              password={props.password}
+              showPassword={props.showPassword}
+              isLoading={props.isLoading}
+              onEmailChange={props.onEmailChange}
+              onPasswordChange={props.onPasswordChange}
+              onShowPasswordToggle={props.onShowPasswordToggle}
+              onEmailSignInSubmit={props.onEmailSignInSubmit}
+              onSocialLogin={props.onSocialLogin}
+              onPrepareForgotPassword={props.onPrepareForgotPassword}
+            />
           )}
         </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-function InputField({
-  id,
-  label,
-  icon,
-  type,
-  placeholder,
-  value,
-  onChange,
-  disabled,
-}: {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  type: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="text-[13px] font-medium text-white/60">
-        {label}
-      </label>
-      <div className="relative">
-        {icon}
-        <input
-          id={id}
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          required
-          disabled={disabled}
-          className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-4 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-        />
-      </div>
-    </div>
-  );
-}
-
-function PasswordField({
-  id,
-  label,
-  placeholder,
-  value,
-  onChange,
-  showPassword,
-  onTogglePassword,
-  disabled,
-}: {
-  id: string;
-  label: string;
-  placeholder: string;
-  value: string;
-  onChange: (value: string) => void;
-  showPassword: boolean;
-  onTogglePassword: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="text-[13px] font-medium text-white/60">
-        {label}
-      </label>
-      <div className="relative">
-        <LockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25" />
-        <input
-          id={id}
-          type={showPassword ? 'text' : 'password'}
-          placeholder={placeholder}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          required
-          disabled={disabled}
-          className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] pl-10 pr-10 text-[14px] text-white placeholder:text-white/20 outline-none transition-colors focus:border-red-500/50 disabled:opacity-50"
-        />
-        <button
-          type="button"
-          onClick={onTogglePassword}
-          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/25 transition-colors hover:text-white/50"
-        >
-          {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-        </button>
       </div>
     </div>
   );

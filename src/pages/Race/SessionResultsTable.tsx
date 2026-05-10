@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -7,10 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Clock01Icon } from 'hugeicons-react';
 import { getTeamColorClass } from '@/lib/teamColors';
 import { getDriverImage } from '@/utils/imageMapping';
 import { DetailedRaceResult, calculateDistance, formatDistance, getCircuitLength } from '@/lib/api';
 import { formatRaceSessionTime } from '@/utils/formatters';
+import { parseRaceLapTime as parseLapTime } from '@/pages/Race/race-utils';
 import { cn } from '@/lib/utils';
 export const SessionResultsTable: React.FC<{
   results: DetailedRaceResult[];
