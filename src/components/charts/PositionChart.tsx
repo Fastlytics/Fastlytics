@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, type Dispatch, type SetStateAction } from 'react';
 import {
   LineChart,
   Line,
@@ -299,14 +299,55 @@ const PositionChart: React.FC<PositionChartProps> = ({
         </div>
       </div>
 
-      <PositionContent />
+      <PositionContent
+        positionData={positionData}
+        driverCodes={driverCodes}
+        selectedDrivers={selectedDrivers}
+        year={year}
+        incidents={incidents}
+        currentLap={currentLap}
+        focusedDriver={focusedDriver}
+        favoriteDriver={favoriteDriver}
+        getLegendDriverCode={getLegendDriverCode}
+        toggleDriverFocus={toggleDriverFocus}
+        setFocusedDriver={setFocusedDriver}
+        driverNameMap={driverNameMap}
+      />
     </div>
   );
 };
 
 export { PositionChart };
 
-const PositionContent: React.FC<Record<string, unknown>> = () => {
+interface PositionContentProps {
+  positionData: LapPositionDataPoint[];
+  driverCodes: string[];
+  selectedDrivers: string[];
+  year: number;
+  incidents: SessionIncident[];
+  currentLap: number;
+  focusedDriver: string | null;
+  favoriteDriver?: string | null;
+  getLegendDriverCode: (entry?: CustomLegendPayload | null) => string | null;
+  toggleDriverFocus: (driver: string) => void;
+  setFocusedDriver: Dispatch<SetStateAction<string | null>>;
+  driverNameMap: Map<string, string>;
+}
+
+const PositionContent: React.FC<PositionContentProps> = ({
+  positionData,
+  driverCodes,
+  selectedDrivers,
+  year,
+  incidents,
+  currentLap,
+  focusedDriver,
+  favoriteDriver,
+  getLegendDriverCode,
+  toggleDriverFocus,
+  setFocusedDriver,
+  driverNameMap,
+}) => {
   if (!positionData || positionData.length === 0 || driverCodes.length === 0) {
     return (
       <div className="w-full h-[480px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] text-white text-[13px] font-medium uppercase tracking-wider">

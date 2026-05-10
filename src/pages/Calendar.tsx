@@ -1,14 +1,17 @@
 // knip-ignore
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CAL_SKELETON_IDS = Array.from({ length: 9 }, (_, i) => `cs-${i}`);
 
 import { m } from 'motion/react';
+import { SEO } from '@/components/layout/SEO';
 import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { useSeason } from '@/contexts/SeasonContext';
 import RaceCard from '@/components/calendar/RaceCard';
 import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { useCalendarData } from '@/hooks/useCalendarData';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
