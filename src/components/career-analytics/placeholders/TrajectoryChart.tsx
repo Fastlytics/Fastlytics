@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { fetchDriverCareer, fetchDriverStandings, DriverCareer } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { cn } from '@/lib/utils';
@@ -210,6 +209,9 @@ export default function TrajectoryChart({ career, entityType }: TrajectoryChartP
   if (hasError) {
     return (
       <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+        <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+          <span className="text-sm text-red-400">!</span>
+        </div>
         <p className="text-[14px] text-white/40">Unable to load career trajectory data.</p>
         <button
           onClick={() => setRetryCount((c) => c + 1)}
@@ -223,8 +225,9 @@ export default function TrajectoryChart({ career, entityType }: TrajectoryChartP
 
   if (hasInsufficientData) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">Insufficient data for trajectory visualization</p>
+        <p className="text-[11px] text-white/25">At least 2 seasons of data required</p>
       </div>
     );
   }
@@ -247,7 +250,12 @@ export default function TrajectoryChart({ career, entityType }: TrajectoryChartP
     <div className="space-y-10">
       {/* Controls */}
       <section>
-        <SectionHeader title="Metric Selection" />
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+            Metric Selection
+          </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
@@ -339,7 +347,12 @@ export default function TrajectoryChart({ career, entityType }: TrajectoryChartP
 
       {/* Chart */}
       <section>
-        <SectionHeader title="Trajectory" />
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+            Trajectory
+          </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
           <div className="h-[280px] w-full sm:h-[320px] lg:h-[380px]">
             <ResponsiveContainer width="100%" height="100%">

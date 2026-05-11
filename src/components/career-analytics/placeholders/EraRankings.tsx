@@ -171,10 +171,11 @@ export default function EraRankings({ career, entityType = 'driver' }: EraRankin
 
   if (seasons.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">
           No career data available for era-adjusted rankings.
         </p>
+        <p className="text-[11px] text-white/25">Season data required for analysis</p>
       </div>
     );
   }
@@ -221,7 +222,10 @@ export default function EraRankings({ career, entityType = 'driver' }: EraRankin
       {isLoading && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-white/[0.04]" />
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]"
+            />
           ))}
         </div>
       )}
@@ -353,9 +357,12 @@ export default function EraRankings({ career, entityType = 'driver' }: EraRankin
 
               {/* All-time greats reference list */}
               <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  All-Time Greats Reference
-                </p>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+                    All-Time Greats Reference
+                  </h3>
+                  <div className="h-px flex-1 bg-white/[0.05]" />
+                </div>
                 <div className="space-y-1.5">
                   {rankings && rankings.length > 0 && (
                     <RankingRow

@@ -344,10 +344,11 @@ export default function CareerComparison({
           </Select>
         </div>
 
-        <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+        <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
           <p className="text-[14px] text-white/40">
             Select at least 2 {entityType === 'driver' ? 'drivers' : 'teams'} to begin comparison
           </p>
+          <p className="text-[11px] text-white/25">Use the dropdown above to add entities</p>
         </div>
       </div>
     );
@@ -644,6 +645,9 @@ export default function CareerComparison({
       {/* Global fetch error */}
       {fetchError && !isLoading && (
         <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+          <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+            <span className="text-sm text-red-400">!</span>
+          </div>
           <p className="text-[14px] text-white/40">Unable to load comparison data.</p>
           <button
             onClick={() => setSelectedSlugs([...selectedSlugs])}

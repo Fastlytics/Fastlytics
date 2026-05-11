@@ -338,10 +338,11 @@ export default function MovementMap({ career, entityType }: MovementMapProps) {
   // No data available
   if (stints.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">
           Team movement data is unavailable for this {entityType === 'driver' ? 'driver' : 'team'}.
         </p>
+        <p className="text-[11px] text-white/25">Data appears after career progression</p>
       </div>
     );
   }

@@ -5,7 +5,7 @@ import { ArrowDown01Icon } from 'hugeicons-react';
 import type { CollapsibleSectionProps } from '@/lib/types/career-analytics';
 
 function SectionSkeleton() {
-  return <div className="h-[200px] animate-pulse rounded-lg bg-white/[0.04]" />;
+  return <div className="h-[200px] animate-pulse rounded-xl bg-white/[0.04]" />;
 }
 
 function SectionErrorFallback({
@@ -16,12 +16,15 @@ function SectionErrorFallback({
   resetErrorBoundary: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-red-500/20 bg-red-500/[0.04] px-6 py-8 text-center">
-      <p className="text-sm text-zinc-400">Something went wrong loading this section.</p>
-      <p className="max-w-md text-xs text-zinc-500">{error.message}</p>
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.04] px-6 py-8 text-center">
+      <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+        <span className="text-sm text-red-400">!</span>
+      </div>
+      <p className="text-[14px] text-white/40">Something went wrong loading this section.</p>
+      <p className="max-w-md text-[11px] text-white/25">{error.message}</p>
       <button
         onClick={resetErrorBoundary}
-        className="mt-2 rounded-md bg-red-500 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600"
+        className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.04] px-4 py-2 text-[12px] font-semibold uppercase tracking-wider text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
       >
         Retry
       </button>
@@ -57,14 +60,14 @@ export function CollapsibleSection({
         aria-expanded={isExpanded}
         aria-controls={`section-content-${id}`}
       >
-        {icon && <span className="text-zinc-400">{icon}</span>}
-        <h3 className="flex-1 text-lg font-semibold text-white">{title}</h3>
+        {icon && <span className="text-white/30">{icon}</span>}
+        <h3 className="flex-1 text-[15px] font-semibold text-white">{title}</h3>
         <m.span
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
-          className="text-zinc-400"
+          className="text-white/30"
         >
-          <ArrowDown01Icon className="size-5" />
+          <ArrowDown01Icon className="size-4" />
         </m.span>
       </button>
 

@@ -213,7 +213,10 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
   // Error state
   if (isError) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+        <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+          <span className="text-sm text-red-400">!</span>
+        </div>
         <p className="text-[14px] text-white/40">
           Failed to load peak season data. Please try again.
         </p>
@@ -224,10 +227,11 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
   // No data state
   if (!analysis) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">
           No race data available for peak season analysis.
         </p>
+        <p className="text-[11px] text-white/25">Complete races to unlock this analysis</p>
       </div>
     );
   }
@@ -258,9 +262,11 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
       {/* Race Strip Visualization */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
-            Race Results
-          </h4>
+          <div className="flex items-center gap-3">
+            <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+              Race Results
+            </h4>
+          </div>
           <div className="flex flex-wrap items-center gap-2 text-[10px] text-white/30 sm:gap-3">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-sm bg-[#eab308]" /> Win
@@ -377,9 +383,12 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
 
       {/* Qualifying vs Race Position Comparison */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <h4 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Qualifying vs Race Position
-        </h4>
+        <div className="flex items-center gap-3 mb-4">
+          <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Qualifying vs Race Position
+          </h4>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
@@ -439,9 +448,12 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
 
       {/* Cumulative Points Chart vs Rival */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <h4 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Cumulative Points vs Rival
-        </h4>
+        <div className="flex items-center gap-3 mb-4">
+          <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Cumulative Points vs Rival
+          </h4>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="h-[220px] w-full sm:h-[250px] lg:h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
@@ -529,9 +541,12 @@ export default function PeakSeason({ slug: slugProp, entityType }: PeakSeasonPro
 
       {/* Expandable Race Detail Cards */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <h4 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Race Details
-        </h4>
+        <div className="flex items-center gap-3 mb-4">
+          <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Race Details
+          </h4>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="space-y-1">
           {analysis.raceResults.map((race, idx) => (
             <div key={race.round}>

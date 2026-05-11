@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/utils';
 import type { WhatIfPointsProps } from '@/lib/types/career-analytics';
 import { useRaceResults } from '@/hooks/useCareerAnalytics';
@@ -31,7 +30,10 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-5 w-40 animate-pulse rounded-lg bg-white/[0.04]" />
+        <div className="flex items-center gap-3">
+          <div className="h-5 w-40 animate-pulse rounded-lg bg-white/[0.04]" />
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="h-[300px] animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]" />
       </div>
     );
@@ -40,6 +42,9 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
   if (error) {
     return (
       <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+        <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+          <span className="text-sm text-red-400">!</span>
+        </div>
         <p className="text-[14px] text-white/40">Failed to load race results data.</p>
         <button
           onClick={() => refetch()}
@@ -53,10 +58,11 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
 
   if (!raceResults || raceResults.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">
           No race results available for points recalculation.
         </p>
+        <p className="text-[11px] text-white/25">Complete races to unlock this analysis</p>
       </div>
     );
   }
@@ -65,7 +71,12 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
     <div className="space-y-10">
       {/* Points System Selector */}
       <section>
-        <SectionHeader title="Points System" />
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+            Points System
+          </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
           <div className="flex flex-wrap items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1">
             {POINTS_SYSTEMS.map((system) => (
@@ -89,7 +100,12 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
       {/* Summary Cards */}
       {recalculation && (
         <section>
-          <SectionHeader title="Comparison Summary" />
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+              Comparison Summary
+            </h2>
+            <div className="h-px flex-1 bg-white/[0.05]" />
+          </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 text-center">
               <div className="text-[11px] font-medium uppercase tracking-wider text-white/30">
@@ -145,7 +161,12 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
       {/* Season Breakdown Chart */}
       {recalculation && recalculation.seasonBreakdown.length > 0 && (
         <section>
-          <SectionHeader title="Season Breakdown" />
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+              Season Breakdown
+            </h2>
+            <div className="h-px flex-1 bg-white/[0.05]" />
+          </div>
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
             <div className="h-[280px] w-full sm:h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -219,7 +240,12 @@ export default function WhatIfPoints({ slug: slugProp }: WhatIfPointsProps) {
       {/* Season Table */}
       {recalculation && recalculation.seasonBreakdown.length > 0 && (
         <section>
-          <SectionHeader title="Season Details" />
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+              Season Details
+            </h2>
+            <div className="h-px flex-1 bg-white/[0.05]" />
+          </div>
           <div className="overflow-hidden rounded-xl border border-white/[0.06]">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
