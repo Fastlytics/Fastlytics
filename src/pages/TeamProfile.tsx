@@ -1,5 +1,5 @@
 // knip-ignore
-import React from 'react';
+import React, { lazy, useState, useCallback } from 'react';
 
 const TEAM_SKELETONS = Array.from({ length: 7 }, (_, i) => `ts-${i}`);
 import { useParams } from 'react-router-dom';
@@ -17,12 +17,43 @@ import {
   ProfileSeasonRow,
   SeasonHistoryTable,
 } from '@/components/standings/ProfileComponents';
+import { CollapsibleSection } from '@/components/career-analytics/CollapsibleSection';
+import AnalyticsSubNav from '@/components/career-analytics/AnalyticsSubNav';
+
+// Lazy-loaded analytics section placeholders (will be replaced with real components later)
+const TrajectoryChart = lazy(
+  () => import('@/components/career-analytics/placeholders/TrajectoryChart')
+);
+const MilestonesTimeline = lazy(
+  () => import('@/components/career-analytics/placeholders/MilestonesTimeline')
+);
+const ConsistencyScore = lazy(
+  () => import('@/components/career-analytics/placeholders/ConsistencyScore')
+);
+const MovementMap = lazy(() => import('@/components/career-analytics/placeholders/MovementMap'));
+const EraRankings = lazy(() => import('@/components/career-analytics/placeholders/EraRankings'));
+const CareerComparison = lazy(
+  () => import('@/components/career-analytics/placeholders/CareerComparison')
+);
+const PeakSeason = lazy(() => import('@/components/career-analytics/placeholders/PeakSeason'));
 
 const inter = { fontFamily: "'Inter', sans-serif" } as const;
+
+/** Team-applicable analytics sections (excludes driver-only: Teammate H2H, What-If Points, Form Streaks, Fingerprint) */
+const TEAM_ANALYTICS_SECTIONS = [
+  { id: 'trajectory', label: 'Trajectory', available: true },
+  { id: 'milestones', label: 'Milestones', available: true },
+  { id: 'consistency', label: 'Consistency', available: true },
+  { id: 'movement', label: 'Movement Map', available: true },
+  { id: 'era-rankings', label: 'Era Rankings', available: true },
+  { id: 'comparison', label: 'Career Comparison', available: true },
+  { id: 'peak-season', label: 'Peak Season', available: true },
+];
 
 const TeamProfile = () => {
   const { slug } = useParams<{ slug: string }>();
   const { selectedYear } = useSeason();
+  const [activeSection, setActiveSection] = useState(TEAM_ANALYTICS_SECTIONS[0].id);
 
   const {
     data: career,
@@ -38,6 +69,10 @@ const TeamProfile = () => {
   const teamColor = career?.name ? getTeamColorClass(career.name) : 'gray';
   const carImage = career?.name ? getCarImage(career.name, selectedYear) : '';
   const summary = career?.careerSummary;
+
+  const handleSubNavNavigate = useCallback((sectionId: string) => {
+    setActiveSection(sectionId);
+  }, []);
 
   if (isLoading) {
     return (
@@ -91,6 +126,13 @@ const TeamProfile = () => {
         description={`Explore team results, wins, podiums, and season history for ${career.name} on Fastlytics.`}
       />
       <DashboardNavbar />
+
+      {/* Sticky Analytics Sub-Navigation */}
+      <AnalyticsSubNav
+        sections={TEAM_ANALYTICS_SECTIONS}
+        activeSection={activeSection}
+        onNavigate={handleSubNavNavigate}
+      />
 
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         {/* Header */}
@@ -230,6 +272,51 @@ const TeamProfile = () => {
             ))}
           </tbody>
         </SeasonHistoryTable>
+
+        {/* Analytics Sections */}
+        <div className="mt-12">
+          <div id="trajectory">
+            <CollapsibleSection id="trajectory" title="Career Trajectory">
+              <TrajectoryChart career={career} entityType="team" />
+            </CollapsibleSection>
+          </div>
+
+          <div id="milestones">
+            <CollapsibleSection id="milestones" title="Milestones">
+              <MilestonesTimeline slug={slug!} entityType="team" />
+            </CollapsibleSection>
+          </div>
+
+          <div id="consistency">
+            <CollapsibleSection id="consistency" title="Consistency Score">
+              <ConsistencyScore career={career} entityType="team" />
+            </CollapsibleSection>
+          </div>
+
+          <div id="movement">
+            <CollapsibleSection id="movement" title="Movement Map">
+              <MovementMap career={career} entityType="team" />
+            </CollapsibleSection>
+          </div>
+
+          <div id="era-rankings">
+            <CollapsibleSection id="era-rankings" title="Era Rankings">
+              <EraRankings career={career} entityType="team" />
+            </CollapsibleSection>
+          </div>
+
+          <div id="comparison">
+            <CollapsibleSection id="comparison" title="Career Comparison">
+              <CareerComparison entityType="team" initialSlug={slug} />
+            </CollapsibleSection>
+          </div>
+
+          <div id="peak-season">
+            <CollapsibleSection id="peak-season" title="Peak Season">
+              <PeakSeason slug={slug!} entityType="team" />
+            </CollapsibleSection>
+          </div>
+        </div>
       </main>
     </div>
   );

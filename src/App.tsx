@@ -17,6 +17,8 @@ import ChampionshipProgression from './pages/ChampionshipProgression';
 import TeamPaceAnalysis from './pages/TeamPaceAnalysis';
 import DriverProfile from './pages/DriverProfile';
 import TeamProfile from './pages/TeamProfile';
+import CompareDrivers from './pages/CompareDrivers';
+import CompareTeams from './pages/CompareTeams';
 
 import NotFound from './pages/NotFound';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -210,6 +212,24 @@ const App = () => (
                     >
                       <TeamPaceAnalysis />
                     </GatedRoute>
+                  </DashboardLayout>
+                }
+              />
+
+              {/* Comparison Pages - public */}
+              <Route
+                path="/compare/drivers"
+                element={
+                  <DashboardLayout>
+                    <CompareDrivers />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/compare/teams"
+                element={
+                  <DashboardLayout>
+                    <CompareTeams />
                   </DashboardLayout>
                 }
               />
