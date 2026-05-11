@@ -25,10 +25,13 @@ export const TestingDashboard: React.FC<TestingDashboardProps> = ({
   getSessionWindowLaps,
   year,
 }) => {
-  const fastestLapTime = getSessionWindowLapTime(testingInsights.fastest) ?? '-';
+  const fastestLapTime = testingInsights.fastest
+    ? (getSessionWindowLapTime(testingInsights.fastest) ?? '-')
+    : '-';
 
-  const mileageDistance =
-    getSessionWindowLaps(testingInsights.mileage) * testingInsights.circuitLength;
+  const mileageDistance = testingInsights.mileage
+    ? getSessionWindowLaps(testingInsights.mileage) * testingInsights.circuitLength
+    : 0;
 
   return (
     <>

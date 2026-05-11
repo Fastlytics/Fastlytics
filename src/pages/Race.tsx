@@ -200,7 +200,7 @@ const Race = () => {
     if (availableSessions.length > 0 && !searchParams.get('session')) {
       let defaultSession = '';
       if (isTestingEvent) {
-        defaultSession = 'Summary';
+        defaultSession = availableSessions[0].type;
       } else if (availableSessions.some((s) => s.type === 'R')) {
         defaultSession = 'R';
       } else {
