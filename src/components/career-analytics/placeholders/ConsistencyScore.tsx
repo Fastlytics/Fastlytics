@@ -293,10 +293,11 @@ export default function ConsistencyScore({ career, entityType }: ConsistencyScor
   // Loading state not needed since computation is synchronous from career data
   if (careerData.races === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">
           No race data available for consistency analysis.
         </p>
+        <p className="text-[11px] text-white/25">Complete races to unlock this analysis</p>
       </div>
     );
   }
@@ -416,9 +417,12 @@ export default function ConsistencyScore({ career, entityType }: ConsistencyScor
 
       {/* Metric Details */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <h4 className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Metric Breakdown
-        </h4>
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Metric Breakdown
+          </h3>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="space-y-2">
           <MetricRow
             label="Win Rate"

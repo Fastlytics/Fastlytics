@@ -229,9 +229,12 @@ export default function DrivingFingerprint({ slug }: DrivingFingerprintProps) {
 
       {/* Comparison controls */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Compare Driving Styles
-        </p>
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Compare Driving Styles
+          </h3>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
 
         {/* Added comparison drivers */}
         {comparisonDrivers.length > 0 && (
@@ -288,9 +291,12 @@ export default function DrivingFingerprint({ slug }: DrivingFingerprintProps) {
 
       {/* Score breakdown */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
-        <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-white/30">
-          Score Breakdown
-        </p>
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Score Breakdown
+          </h3>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {AXES.map((axis) => {
             const score = data.scores[axis.key];

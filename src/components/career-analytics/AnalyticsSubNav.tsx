@@ -2,11 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { AnalyticsSubNavProps } from '@/lib/types/career-analytics';
 
-/** Height of the main DashboardNavbar (h-16 = 64px) */
 const NAVBAR_HEIGHT = 64;
-/** Height of the sub-nav itself */
 const SUBNAV_HEIGHT = 48;
-/** Total offset for scroll calculations */
 const SCROLL_OFFSET = NAVBAR_HEIGHT + SUBNAV_HEIGHT + 16;
 
 export default function AnalyticsSubNav({
@@ -20,7 +17,6 @@ export default function AnalyticsSubNav({
 
   const availableSections = sections.filter((s) => s.available);
 
-  // Track active section via IntersectionObserver
   useEffect(() => {
     const sectionElements = availableSections
       .map((s) => document.getElementById(s.id))
@@ -30,11 +26,9 @@ export default function AnalyticsSubNav({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the most visible section that's intersecting
         const visibleEntries = entries.filter((entry) => entry.isIntersecting);
         if (visibleEntries.length === 0) return;
 
-        // Pick the entry with the highest intersection ratio
         const mostVisible = visibleEntries.reduce((best, entry) =>
           entry.intersectionRatio > best.intersectionRatio ? entry : best
         );
@@ -58,7 +52,6 @@ export default function AnalyticsSubNav({
     };
   }, [availableSections, onNavigate]);
 
-  // Auto-scroll the active button into view within the horizontal scroll container
   useEffect(() => {
     if (activeButtonRef.current && scrollContainerRef.current) {
       const container = scrollContainerRef.current;

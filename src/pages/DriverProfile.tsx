@@ -11,6 +11,8 @@ import { getNationalityCountryCode } from '@/utils/countryUtils';
 import { cn } from '@/lib/utils';
 import { useSeason } from '@/contexts/SeasonContext';
 import { SEO } from '@/components/layout/SEO';
+import { DriverHeader } from '@/pages/Driver/DriverHeader';
+import { DriverStatCard } from '@/pages/Driver/DriverStatCard';
 import {
   ChartLineData01Icon,
   UserGroupIcon,
@@ -25,7 +27,6 @@ import {
   DashboardSpeed01Icon,
 } from 'hugeicons-react';
 
-// Lazy-loaded analytics sections
 const TrajectoryChart = lazy(
   () => import('@/components/career-analytics/placeholders/TrajectoryChart')
 );
@@ -54,7 +55,6 @@ const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 const DRIVER_SKELETONS = Array.from({ length: 8 }, (_, i) => `ds-${i}`);
 
-/** Navigation sections matching the Race page's TelemetryTabs pattern */
 const NAV_SECTIONS = [
   { id: 'overview', label: 'Overview', icon: ChartLineData01Icon },
   { id: 'trajectory', label: 'Trajectory', icon: Analytics01Icon },
@@ -125,7 +125,7 @@ const DriverProfile = () => {
             <div className="h-8 w-48 animate-pulse rounded-lg bg-white/[0.04]" />
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <div className="h-96 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]" />
-              <div className="lg:col-span-2 space-y-4">
+              <div className="space-y-4 lg:col-span-2">
                 <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
                 <div className="grid grid-cols-4 gap-3">
                   {DRIVER_SKELETONS.map((id) => (
@@ -170,50 +170,16 @@ const DriverProfile = () => {
       <DashboardNavbar />
 
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-        {/* Header — matches Race page pattern */}
-        <div className="mb-10">
-          <m.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
-                Driver Profile
-              </span>
-            </div>
-            <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
-              {career.name}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {countryCode !== 'xx' && (
-                <img
-                  src={`https://flagcdn.com/h40/${countryCode}.png`}
-                  alt={career.nationality}
-                  className="h-4 w-auto rounded-sm opacity-80"
-                />
-              )}
-              <span className="text-[15px] text-white/50">{career.nationality}</span>
-              {career.seasons[0]?.team && (
-                <>
-                  <span className="text-white/20">·</span>
-                  <span className="text-[15px] text-white/50">{career.seasons[0].team}</span>
-                </>
-              )}
-              {career.seasons[0]?.position === 1 && (
-                <>
-                  <span className="text-white/20">·</span>
-                  <span className="rounded-full border border-amber-500/20 bg-amber-500/[0.07] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                    World Champion
-                  </span>
-                </>
-              )}
-            </div>
-          </m.div>
-          <div className="mt-8 h-px w-full bg-white/[0.05]" />
-        </div>
+        <DriverHeader
+          career={career}
+          teamColor={teamColor}
+          countryCode={countryCode}
+          currentImageUrl={currentImageUrl}
+          availableImages={availableImages}
+          selectedImageYear={selectedImageYear}
+          setSelectedImageYear={setSelectedImageYear}
+        />
 
-        {/* Sidebar + Content — matches Race page layout */}
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Sidebar Navigation */}
           <aside className="hidden w-56 shrink-0 lg:block">
@@ -241,7 +207,7 @@ const DriverProfile = () => {
           </aside>
 
           {/* Mobile Navigation */}
-          <div className="flex gap-1 overflow-x-auto pb-2 lg:hidden scrollbar-hide">
+          <div className="scrollbar-hide flex gap-1 overflow-x-auto pb-2 lg:hidden">
             {NAV_SECTIONS.map((section) => {
               const isActive = activeSection === section.id;
               return (
@@ -251,7 +217,7 @@ const DriverProfile = () => {
                   className={cn(
                     'shrink-0 rounded-lg px-3 py-2 text-[12px] font-semibold transition-colors',
                     isActive
-                      ? 'bg-red-500/[0.08] text-white border border-red-500/20'
+                      ? 'border border-red-500/20 bg-red-500/[0.08] text-white'
                       : 'text-white/50 hover:text-white/80'
                   )}
                 >
@@ -267,10 +233,6 @@ const DriverProfile = () => {
               <OverviewSection
                 career={career}
                 teamColor={teamColor}
-                currentImageUrl={currentImageUrl}
-                availableImages={availableImages}
-                selectedImageYear={selectedImageYear}
-                setSelectedImageYear={setSelectedImageYear}
                 summary={summary}
                 rookieSeason={rookieSeason}
                 selectedYear={selectedYear}
@@ -349,7 +311,6 @@ const DriverProfile = () => {
   );
 };
 
-/** Analytics section wrapper — consistent section header + suspense boundary */
 function AnalyticsSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <m.div
@@ -358,32 +319,24 @@ function AnalyticsSection({ title, children }: { title: string; children: React.
       transition={{ duration: 0.4 }}
       className="space-y-6"
     >
-      <div className="mb-6 flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">{title}</h2>
+        <div className="h-px flex-1 bg-white/[0.05]" />
       </div>
       <Suspense fallback={<SectionSkeleton />}>{children}</Suspense>
     </m.div>
   );
 }
 
-/** Overview section — driver image, stats, and season history */
 function OverviewSection({
   career,
   teamColor,
-  currentImageUrl,
-  availableImages,
-  selectedImageYear,
-  setSelectedImageYear,
   summary,
   rookieSeason,
   selectedYear,
 }: {
   career: DriverCareer;
   teamColor: string;
-  currentImageUrl: string | undefined;
-  availableImages: { year: number; url: string }[];
-  selectedImageYear: number | null;
-  setSelectedImageYear: (year: number | null) => void;
   summary: DriverCareer['careerSummary'] | undefined;
   rookieSeason: number | null;
   selectedYear: number;
@@ -401,116 +354,50 @@ function OverviewSection({
 
   return (
     <div className="space-y-10">
-      {/* Driver Image + Stats */}
+      {/* Career Stats */}
       <section>
-        <div className="mb-6 flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
-            Career Overview
+            Career Stats
           </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
         </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-end">
-          {/* Driver Image Card */}
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-              <div className={cn('absolute inset-0 opacity-10', `bg-f1-${teamColor}`)} />
-              <div className="relative flex justify-center pt-6">
-                <div className="relative h-64 w-48 lg:h-72 lg:w-56">
-                  {currentImageUrl ? (
-                    <img
-                      src={currentImageUrl}
-                      alt={career.name}
-                      className="size-full object-cover object-top"
-                      style={{
-                        maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)',
-                      }}
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center">
-                      <span className="text-4xl font-black italic text-white/10">
-                        {career.code}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              {availableImages.length > 1 && (
-                <div className="relative z-10 flex items-center justify-center gap-1.5 pb-4">
-                  {availableImages.map((img) => (
-                    <button
-                      key={img.year}
-                      onClick={() =>
-                        setSelectedImageYear(selectedImageYear === img.year ? null : img.year)
-                      }
-                      className={cn(
-                        'rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums uppercase tracking-wider transition-all',
-                        selectedImageYear === img.year ||
-                          (selectedImageYear === null && img.year === availableImages[0].year)
-                          ? 'bg-white/[0.08] text-white'
-                          : 'text-white/30 hover:text-white/60'
-                      )}
-                    >
-                      {img.year}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </m.div>
-
-          {/* Stats Grid */}
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="md:col-span-2"
-          >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {stats.map((stat, i) => (
-                <m.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.05 }}
-                  className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 text-center"
-                >
-                  <div className="text-2xl font-bold tabular-nums text-white">{stat.value}</div>
-                  <div className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/30">
-                    {stat.label}
-                  </div>
-                </m.div>
-              ))}
-            </div>
-          </m.div>
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {stats.map((stat, i) => (
+            <DriverStatCard
+              key={stat.label}
+              label={stat.label}
+              value={stat.value}
+              teamColor={teamColor}
+              delay={i * 0.05}
+            />
+          ))}
         </div>
       </section>
 
       {/* Season History */}
       <section>
-        <div className="mb-6 flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
             Season by Season
           </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/[0.06]">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-[#0c0c0e] text-[11px] font-bold uppercase tracking-wider text-white/30">
-                  <th className="py-3 px-4 text-left">Season</th>
-                  <th className="py-3 px-4 text-left">Team</th>
-                  <th className="py-3 px-4 text-center">Races</th>
-                  <th className="py-3 px-4 text-center">Wins</th>
-                  <th className="py-3 px-4 text-center">Podiums</th>
-                  <th className="py-3 px-4 text-center">Poles</th>
-                  <th className="py-3 px-4 text-center">FL</th>
-                  <th className="py-3 px-4 text-center">Points</th>
-                  <th className="py-3 px-4 text-center">WDC</th>
+                  <th className="px-4 py-3 text-left">Season</th>
+                  <th className="px-4 py-3 text-left">Team</th>
+                  <th className="px-4 py-3 text-center">Races</th>
+                  <th className="px-4 py-3 text-center">Wins</th>
+                  <th className="px-4 py-3 text-center">Podiums</th>
+                  <th className="px-4 py-3 text-center">Poles</th>
+                  <th className="px-4 py-3 text-center">FL</th>
+                  <th className="px-4 py-3 text-center">Points</th>
+                  <th className="px-4 py-3 text-center">WDC</th>
                 </tr>
               </thead>
               <tbody>
@@ -533,7 +420,7 @@ function OverviewSection({
                           'border-l-2 border-l-amber-500 bg-amber-500/[0.02]'
                       )}
                     >
-                      <td className="py-3 px-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className="text-[15px] font-bold tabular-nums text-white">
                             {season.season}
@@ -550,44 +437,72 @@ function OverviewSection({
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className="text-[14px] text-white/60">{season.team}</span>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              'h-2.5 w-1 rounded-full',
+                              `bg-f1-${getTeamColorClass(season.team)}`
+                            )}
+                          />
+                          <span className="text-[14px] text-white/60">{season.team}</span>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="px-4 py-3 text-center">
                         <span className="text-[14px] font-medium tabular-nums text-white">
                           {season.races}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[14px] font-medium tabular-nums text-white">
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={cn(
+                            'text-[14px] font-medium tabular-nums',
+                            season.wins > 0 ? 'text-white' : 'text-white/30'
+                          )}
+                        >
                           {season.wins}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[14px] font-medium tabular-nums text-white">
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={cn(
+                            'text-[14px] font-medium tabular-nums',
+                            season.podiums > 0 ? 'text-white' : 'text-white/30'
+                          )}
+                        >
                           {season.podiums}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[14px] font-medium tabular-nums text-white">
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={cn(
+                            'text-[14px] font-medium tabular-nums',
+                            season.poles > 0 ? 'text-white' : 'text-white/30'
+                          )}
+                        >
                           {season.poles}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[14px] font-medium tabular-nums text-white">
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={cn(
+                            'text-[14px] font-medium tabular-nums',
+                            season.fastestLaps > 0 ? 'text-purple-400' : 'text-white/30'
+                          )}
+                        >
                           {season.fastestLaps}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="px-4 py-3 text-center">
                         <span className="text-[14px] font-bold tabular-nums text-white">
                           {season.points}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="px-4 py-3 text-center">
                         {season.position ? (
                           <span
                             className={cn(
-                              'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
+                              'inline-flex size-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
                               season.position === 1 && 'bg-amber-500/20 text-amber-400',
                               season.position === 2 && 'bg-zinc-500/20 text-zinc-300',
                               season.position === 3 && 'bg-orange-500/20 text-orange-400',
@@ -597,7 +512,7 @@ function OverviewSection({
                             {season.position}
                           </span>
                         ) : (
-                          <span className="text-[12px] text-white/20">-</span>
+                          <span className="text-[12px] text-white/20">—</span>
                         )}
                       </td>
                     </m.tr>

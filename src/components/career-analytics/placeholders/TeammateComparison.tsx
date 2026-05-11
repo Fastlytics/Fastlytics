@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   Cell,
 } from '@/lib/recharts-lazy';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useTeammateComparison } from '@/hooks/useCareerAnalytics';
 import type { TeammateComparisonProps, TeammateSeasonData } from '@/lib/types/career-analytics';
 
@@ -279,7 +278,10 @@ export default function TeammateComparison({ slug }: TeammateComparisonProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-5 w-40 animate-pulse rounded-lg bg-white/[0.04]" />
+        <div className="flex items-center gap-3">
+          <div className="h-5 w-40 animate-pulse rounded-lg bg-white/[0.04]" />
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="h-[300px] animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]" />
       </div>
     );
@@ -288,7 +290,7 @@ export default function TeammateComparison({ slug }: TeammateComparisonProps) {
   if (isError) {
     return (
       <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
-        <div className="mx-auto flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+        <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
           <span className="text-sm text-red-400">!</span>
         </div>
         <p className="text-[14px] text-white/40">Failed to load teammate comparison data.</p>
@@ -304,8 +306,11 @@ export default function TeammateComparison({ slug }: TeammateComparisonProps) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">No teammate comparison data available.</p>
+        <p className="text-[11px] text-white/25">
+          Data appears after completing races with teammates
+        </p>
       </div>
     );
   }
@@ -314,7 +319,12 @@ export default function TeammateComparison({ slug }: TeammateComparisonProps) {
     <div className="space-y-10">
       {/* Legend */}
       <section>
-        <SectionHeader title="Teammate Battles" />
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
+            Teammate Battles
+          </h2>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
         <div className="flex items-center gap-5 text-[11px]">
           <div className="flex items-center gap-1.5">
             <div className="size-2.5 rounded-sm bg-emerald-400" />

@@ -201,7 +201,10 @@ export default function FormStreaks(_props: FormStreaksProps) {
   // Error state
   if (isError) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+        <div className="flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
+          <span className="text-sm text-red-400">!</span>
+        </div>
         <p className="text-[14px] text-white/40">Failed to load streak data. Please try again.</p>
       </div>
     );
@@ -210,8 +213,9 @@ export default function FormStreaks(_props: FormStreaksProps) {
   // No data / no streaks edge case
   if (!analysis || sortedResults.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8">
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center">
         <p className="text-[14px] text-white/40">No race data available for streak analysis.</p>
+        <p className="text-[11px] text-white/25">Complete races to unlock this analysis</p>
       </div>
     );
   }
@@ -228,9 +232,11 @@ export default function FormStreaks(_props: FormStreaksProps) {
       {/* Race Strip Visualization */}
       <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
-            Career Race Strip
-          </h4>
+          <div className="flex items-center gap-3">
+            <h4 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+              Career Race Strip
+            </h4>
+          </div>
           <div className="flex flex-wrap items-center gap-2 text-[10px] text-white/30 sm:gap-3">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-sm bg-[#eab308]" /> Win
