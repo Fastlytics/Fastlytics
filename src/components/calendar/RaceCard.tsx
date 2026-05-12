@@ -1,9 +1,8 @@
-// knip-ignore
-import React from 'react';
 import { m } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { FlashIcon } from 'hugeicons-react';
 import { ScheduleEvent, RaceResult } from '@/lib/api';
+import { CARD_CONTAINER, CARD_LABEL, CARD_DATA_VALUE } from '@/lib/card-styles';
 
 interface RaceCardProps {
   event: ScheduleEvent;
@@ -16,6 +15,17 @@ interface RaceCardProps {
   selectedYear: number;
 }
 
+const StatusDot = ({ status }: { status: RaceCardProps['status'] }) => {
+  const color = {
+    finished: 'bg-emerald-400',
+    next: 'bg-amber-400',
+    upcoming: 'bg-white/20',
+    testing: 'bg-white/15',
+  }[status];
+
+  return <span className={`inline-block size-1.5 rounded-full ${color}`} />;
+};
+
 const RaceCard: React.FC<RaceCardProps> = ({
   event,
   result,
@@ -27,189 +37,90 @@ const RaceCard: React.FC<RaceCardProps> = ({
   selectedYear,
 }) => {
   const navigate = useNavigate();
-  const isNextRace = status === 'next';
-  const isUpcoming = status === 'upcoming' || status === 'next';
   const isTesting = status === 'testing';
   const isFinished = status === 'finished';
 
   return (
     <m.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.4 }}
-      onClick={() => {
-        navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
-      }}
-      className={`group cursor-pointer overflow-hidden rounded-xl border transition-colors ${
-        isNextRace
-          ? 'border-red-500/50 bg-red-500/[0.04] shadow-[0_0_40px_rgba(239,68,68,0.08)] hover:border-red-500/80 hover:shadow-[0_0_60px_rgba(239,68,68,0.12)]'
-          : isFinished
-            ? 'border-white/[0.1] bg-[#0c0c0e] hover:border-white/[0.15]'
-            : isTesting
-              ? 'border-white/[0.06] bg-[#0c0c0e] hover:border-white/[0.1]'
-              : 'border-white/[0.04] bg-[#0c0c0e]/60 opacity-50 hover:opacity-70 hover:border-white/[0.08]'
-      }`}
+      transition={{ duration: 0.25 }}
+      onClick={() =>
+        navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)
+      }
+      className={`${CARD_CONTAINER} cursor-pointer p-4 transition-colors hover:border-white/[0.08] ${
+        status === 'next' ? 'border-white/[0.08]' : ''
+      } ${status === 'upcoming' ? 'opacity-60' : ''}`}
     >
-      {/* Next race pulse bar */}
-      {isNextRace && (
-        <div className="relative h-0.5 w-full bg-red-500/20">
-          <div className="absolute inset-0 animate-[shimmer_3s_linear_infinite] bg-gradient-to-r from-transparent via-red-500/60 to-transparent bg-[length:200%_100%]" />
-        </div>
-      )}
-
-      {/* Header */}
-      <div
-        className={`flex items-center justify-between border-b px-5 py-4 ${
-          isNextRace ? 'border-red-500/10' : 'border-white/[0.04]'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`h-7 w-10 shrink-0 overflow-hidden rounded border ${
-              isNextRace ? 'border-red-500/20' : 'border-white/[0.06]'
-            }`}
-          >
-            {countryCode && (
-              <img
-                src={`https://flagcdn.com/h40/${countryCode}.png`}
-                alt={event.Country || event.Location}
-                className={`size-full object-cover ${isUpcoming && !isNextRace ? 'opacity-40' : 'opacity-80'} transition-opacity group-hover:opacity-100`}
-              />
-            )}
-          </div>
+      {/* Top row: round + status dot */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {!isTesting && (
+            <span className="font-mono text-[11px] text-white/80">
+              R{String(event.RoundNumber).padStart(2, '0')}
+            </span>
+          )}
+          {isTesting && <span className="text-[11px] text-white/80">Pre-season</span>}
           {isSprint && !isTesting && (
-            <span
-              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
-                isNextRace
-                  ? 'bg-red-500/15 text-red-400'
-                  : isFinished
-                    ? 'bg-red-500/10 text-red-400'
-                    : 'bg-white/[0.04] text-white/25'
-              }`}
-            >
-              <FlashIcon className="size-3" />
+            <span className="flex items-center gap-0.5 text-[11px] text-white/80">
+              <FlashIcon className="size-2.5" />
               Sprint
             </span>
           )}
         </div>
-        <div className="text-right">
-          {isTesting ? (
-            <span
-              className={`text-[11px] font-medium uppercase tracking-wider ${
-                isNextRace ? 'text-red-400/50' : 'text-white/30'
-              }`}
-            >
-              Pre-Season
-            </span>
-          ) : (
-            <>
-              <div
-                className={`text-[11px] font-medium uppercase tracking-wider ${
-                  isNextRace ? 'text-red-400/50' : isFinished ? 'text-white/40' : 'text-white/20'
-                }`}
-              >
-                Round
-              </div>
-              <div
-                className={`text-[18px] font-bold tabular-nums leading-none ${
-                  isNextRace ? 'text-red-400' : isFinished ? 'text-white' : 'text-white/40'
-                }`}
-              >
-                {event.RoundNumber}
-              </div>
-            </>
-          )}
-        </div>
+        <StatusDot status={status} />
       </div>
 
-      {/* Body */}
-      <div className="p-5">
-        {/* Event Name */}
-        <h3
-          className={`mb-1 text-[18px] font-semibold uppercase transition-colors ${
-            isNextRace
-              ? 'text-red-400'
-              : isFinished
-                ? 'text-white group-hover:text-red-400'
-                : 'text-white/35 group-hover:text-white/50'
-          }`}
-        >
-          {event.EventName}
-        </h3>
+      {/* Event name */}
+      <h3 className="mb-1 text-[14px] font-medium text-white">{event.EventName}</h3>
 
-        {/* Location & Date */}
-        <div
-          className={`mb-5 flex items-center gap-2 text-[13px] ${
-            isFinished ? 'text-white/50' : isNextRace ? 'text-white/50' : 'text-white/25'
-          }`}
-        >
-          <span>{displayLocation || event.Location || event.Country || 'Testing Venue'}</span>
-          <span className={isNextRace ? 'text-red-500/20' : 'text-white/15'}>·</span>
-          <span>{displayDate}</span>
-        </div>
+      {/* Location · Date */}
+      <div className="flex items-center gap-1.5 text-[12px] text-white/80">
+        {countryCode && (
+          <img
+            src={`https://flagcdn.com/${countryCode}.svg`}
+            alt={event.Country || event.Location}
+            className="h-2.5 rounded-[1px]"
+          />
+        )}
+        <span>{displayLocation || event.Location}</span>
+        <span className="text-white/50">·</span>
+        <span className="font-mono text-white/80">{displayDate}</span>
+      </div>
 
-        {/* Divider */}
-        <div className={`h-px w-full mb-4 ${isNextRace ? 'bg-red-500/10' : 'bg-white/[0.04]'}`} />
-
-        {/* Content: Results or Status */}
-        <div>
-          {isTesting ? (
-            <div
-              className={`text-[13px] font-medium ${isFinished ? 'text-white/40' : 'text-white/25'}`}
-            >
-              Testing session data available
-            </div>
-          ) : isNextRace ? (
-            <div className="flex items-center gap-2">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-              </span>
-              <span className="text-[13px] font-semibold text-red-400 uppercase tracking-wider">
-                Up Next
-              </span>
-            </div>
-          ) : isUpcoming ? (
-            <div className="text-[13px] font-medium text-white/20">Upcoming</div>
-          ) : result?.podium ? (
-            <div className="space-y-2">
-              {result.podium.slice(0, 3).map((p) => (
-                <div key={p.position} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`w-4 text-[15px] tabular-nums font-medium ${
-                        p.position === 1
-                          ? 'text-amber-400'
-                          : p.position === 2
-                            ? 'text-white/60'
-                            : 'text-amber-700'
-                      }`}
-                    >
-                      {p.position}
-                    </span>
-                    <span className="text-[14px] font-semibold text-white">{p.driver}</span>
-                  </div>
-                  <div
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }}
-                    title={p.team}
-                  />
+      {/* Podium results for finished races */}
+      {isFinished && result?.podium && (
+        <div className="mt-3 border-t border-white/[0.04] pt-3">
+          <div className="space-y-1">
+            {result.podium.slice(0, 3).map((p) => (
+              <div key={p.position} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`${CARD_DATA_VALUE} w-3 text-[11px] text-white`}>
+                    {p.position}
+                  </span>
+                  <span className="text-[12px] text-white/80">{p.driver}</span>
                 </div>
-              ))}
-            </div>
-          ) : result ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-semibold text-white">{result.driver}</span>
+                <div
+                  className="size-1.5 rounded-full"
+                  style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }}
+                  title={p.team}
+                />
               </div>
-              <span className="text-[12px] text-white/50">{result.team}</span>
-            </div>
-          ) : (
-            <div className="text-[13px] font-medium text-white/20">Results pending</div>
-          )}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Winner only fallback */}
+      {isFinished && result && !result.podium && (
+        <div className="mt-3 border-t border-white/[0.04] pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-white/80">{result.driver}</span>
+            <span className={CARD_LABEL}>{result.team}</span>
+          </div>
+        </div>
+      )}
     </m.div>
   );
 };

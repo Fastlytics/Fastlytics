@@ -83,7 +83,7 @@ const DRSTooltip = ({
               DRS Status
             </span>
             <span
-              className="text-xl font-black text-white"
+              className="text-xl font-semibold text-white"
               style={{ color: color, fontFamily: "'Inter', sans-serif" }}
             >
               {data.DRS === 1 ? 'ENABLED' : 'DISABLED'}

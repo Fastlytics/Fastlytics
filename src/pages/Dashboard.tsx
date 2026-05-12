@@ -9,29 +9,41 @@ import {
   fetchRaceResults,
   fetchAvailableSessions,
   fetchSpecificRaceResults,
+  fetchEventSessionSchedule,
+  fetchPitStats,
   TeamStanding,
   DriverStanding,
   ScheduleEvent,
+  EventSessionSchedule,
   RaceResult,
   AvailableSession,
   DetailedRaceResult,
+  PitStopTeamStat,
   getCircuitLength,
   calculateDistance,
   formatDistance,
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import PageHeader from '@/components/dashboard/PageHeader';
+import CircuitPreview from '@/components/dashboard/CircuitPreview';
+import ForYouWidget from '@/components/dashboard/ForYouWidget';
+import LastRaceSummary from '@/components/dashboard/LastRaceSummary';
+import PitStopLeaderboard from '@/components/dashboard/PitStopLeaderboard';
+import SeasonStats from '@/components/dashboard/SeasonStats';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
 
 import { getCountryCode } from '@/utils/countryUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 import { SEO } from '@/components/layout/SEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useLastRaceDetails } from '@/hooks/useLastRaceDetails';
+import { useCircuitWeather } from '@/hooks/useCircuitWeather';
+import { getCircuitCoords } from '@/lib/circuit-coordinates';
 import { m } from 'motion/react';
 import {
-  inter,
   isTestingDashboardEvent,
   getDashboardEventStartDate,
   toDashboardRaceSlug,
@@ -61,6 +73,28 @@ const Dashboard = () => {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
   const { trackEvent, trackPageView } = useAnalytics();
+
+  const greeting = useMemo(() => {
+    const name = profile?.full_name?.trim() || user?.email?.split('@')[0] || '';
+    if (!name) return 'Dashboard';
+
+    const hour = new Date().getHours();
+
+    const timeGreeting = (() => {
+      if (hour >= 5 && hour < 12) return 'Good morning';
+      if (hour >= 12 && hour < 17) return 'Good afternoon';
+      if (hour >= 17 && hour < 21) return 'Good evening';
+      return 'Good night';
+    })();
+
+    const casualGreetings = ['Howdy', 'Hey', 'Hello', 'Hi', 'Welcome back'];
+    const day = new Date().getDate();
+
+    const greetingWord =
+      day % 4 === 0 ? casualGreetings[day % casualGreetings.length] : timeGreeting;
+
+    return `${greetingWord}, ${name}`;
+  }, [profile, user]);
 
   useEffect(() => {
     trackPageView('dashboard', { year: selectedYear });
@@ -121,9 +155,14 @@ const Dashboard = () => {
     queryFn: () => fetchDriverStandings(selectedYear),
   });
 
-  const { nextSession, recentRaces, recentTestingEvents } = useMemo(() => {
+  const { nextSession, nextRace, recentRaces, recentTestingEvents } = useMemo(() => {
     if (schedule.length === 0)
-      return { nextSession: undefined, recentRaces: [], recentTestingEvents: [] };
+      return {
+        nextSession: undefined,
+        nextRace: undefined,
+        recentRaces: [],
+        recentTestingEvents: [],
+      };
     const nowDate = new Date();
     let upcomingSession = undefined;
     const sortedSchedule = schedule.toSorted(
@@ -151,6 +190,10 @@ const Dashboard = () => {
       }
       if (upcomingSession) break;
     }
+    // Next race weekend = first non-testing event whose EventDate is in the future.
+    const upcomingRace = raceEvents
+      .toSorted((a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime())
+      .find((e) => new Date(e.EventDate).getTime() >= nowDate.getTime());
     const recentRaceEvents = raceEvents
       .filter((e) => getEventStartDate(e) < nowDate)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
@@ -161,6 +204,7 @@ const Dashboard = () => {
       .slice(0, 4);
     return {
       nextSession: upcomingSession,
+      nextRace: upcomingRace,
       recentRaces: recentRaceEvents,
       recentTestingEvents: recentTesting,
     };
@@ -257,14 +301,8 @@ const Dashboard = () => {
     );
     const morningFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
       (best, result) => {
-        if (!result.morningFastestLapTime) {
-          return best;
-        }
-
-        if (!best) {
-          return result;
-        }
-
+        if (!result.morningFastestLapTime) return best;
+        if (!best) return result;
         return parseLapTime(result.morningFastestLapTime) < parseLapTime(best.morningFastestLapTime)
           ? result
           : best;
@@ -273,14 +311,8 @@ const Dashboard = () => {
     );
     const afternoonFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
       (best, result) => {
-        if (!result.afternoonFastestLapTime) {
-          return best;
-        }
-
-        if (!best) {
-          return result;
-        }
-
+        if (!result.afternoonFastestLapTime) return best;
+        if (!best) return result;
         return parseLapTime(result.afternoonFastestLapTime) <
           parseLapTime(best.afternoonFastestLapTime)
           ? result
@@ -312,99 +344,378 @@ const Dashboard = () => {
         d.code === profile.favorite_driver ||
         d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
     );
-    return driver?.name.split(' ').pop()?.toUpperCase();
+    return driver?.name.split(' ').pop();
   }, [profile, driverStandings]);
 
+  const favoriteTeamName = useMemo(() => {
+    if (!profile?.favorite_team || teamStandings.length === 0) return undefined;
+    const team = teamStandings.find(
+      (t) =>
+        t.team === profile.favorite_team ||
+        t.team.toLowerCase().includes(profile.favorite_team.toLowerCase())
+    );
+    return team?.team ?? profile.favorite_team;
+  }, [profile, teamStandings]);
+
+  /* ── Computed dashboard-level stats ───────────────────────────── */
+
+  const leaderName = useMemo(() => driverStandings[0]?.name.split(' ').pop(), [driverStandings]);
+
+  // Most recent race (by round number)
+  const lastRace = useMemo(() => {
+    if (raceResults.length === 0) return null;
+    return [...raceResults].sort((a, b) => (b.round ?? 0) - (a.round ?? 0))[0];
+  }, [raceResults]);
+
+  const lastRaceCountryCode = useMemo(() => {
+    if (!lastRace) return undefined;
+    // RaceResult doesn't carry country directly — match against schedule
+    const match = schedule.find(
+      (e) => e.EventName === lastRace.event || e.RoundNumber === lastRace.round
+    );
+    const src = match?.Country || match?.Location || lastRace.location;
+    return src ? getCountryCode(src) : undefined;
+  }, [lastRace, schedule]);
+
+  // Pit stop data from OpenF1
+  const { data: pitStats = [], isLoading: isLoadingPitStats } = useQuery<PitStopTeamStat[]>({
+    queryKey: ['pitStats', selectedYear],
+    queryFn: () => fetchPitStats(selectedYear),
+    staleTime: 1000 * 60 * 30, // 30 min
+  });
+
+  // TODO: Replace season stats with real data once /api/season-records lands.
+  const seasonStats = useMemo(
+    () => [
+      {
+        label: 'Fastest avg speed',
+        value: '262.4',
+        unit: 'km/h',
+        context: 'Monza',
+        tone: 'sky' as const,
+      },
+      {
+        label: 'Longest stint',
+        value: '45',
+        unit: 'laps',
+        context: 'Silverstone',
+        tone: 'amber' as const,
+      },
+      {
+        label: 'Biggest grid gain',
+        value: '+14',
+        unit: 'places',
+        context: 'Baku',
+        tone: 'emerald' as const,
+      },
+      {
+        label: 'Most laps led',
+        value: `${driverStandings[0]?.points ?? 0}`,
+        unit: 'laps',
+        context: leaderName,
+        tone: 'amber' as const,
+      },
+      {
+        label: 'Most podiums',
+        value: `${driverStandings[0]?.podiums ?? 0}`,
+        context: leaderName,
+        tone: 'amber' as const,
+      },
+      {
+        label: 'Most wins',
+        value: `${driverStandings[0]?.wins ?? 0}`,
+        context: leaderName,
+        tone: 'emerald' as const,
+      },
+    ],
+    [driverStandings, leaderName]
+  );
+
+  // Page header badge: show "LIVE NOW" if a session is in progress, else an info pill about next session.
+  const headerBadge = useMemo(() => {
+    if (!nextSession) return null;
+    const diff = new Date(nextSession.date).getTime() - now;
+    if (diff <= 0) {
+      return { label: `LIVE NOW — ${nextSession.sessionName}`, tone: 'live' as const };
+    }
+    const hours = diff / (1000 * 60 * 60);
+    if (hours < 24) {
+      return {
+        label: `${nextSession.sessionName} in ${Math.ceil(hours)}h`,
+        tone: 'info' as const,
+      };
+    }
+    return null;
+  }, [nextSession, now]);
+
+  const nextRaceCountryCode = useMemo(
+    () => (nextRace ? getCountryCode(nextRace.Country || nextRace.Location) : undefined),
+    [nextRace]
+  );
+
+  const nextRaceCircuitLength = useMemo(
+    () => getCircuitLength(nextRace?.EventName, nextRace?.Location),
+    [nextRace]
+  );
+
+  // Circuit coords + weather forecast for the next race (Open-Meteo)
+  const nextRaceCoords = useMemo(
+    () => (nextRace ? getCircuitCoords(nextRace.EventName, nextRace.Location) : null),
+    [nextRace]
+  );
+
+  // Fetch the session schedule for the next race to get exact start times
+  const nextRaceSlug = useMemo(
+    () => (nextRace ? toDashboardRaceSlug(nextRace.EventName) : undefined),
+    [nextRace]
+  );
+
+  const { data: nextRaceSchedule } = useQuery<EventSessionSchedule>({
+    queryKey: ['sessionSchedule', selectedYear, nextRaceSlug],
+    queryFn: () => fetchEventSessionSchedule(selectedYear, nextRaceSlug!),
+    enabled: !!nextRaceSlug,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const raceSessionStartTime = useMemo(() => {
+    const raceSession = nextRaceSchedule?.sessions.find((s) => s.name === 'Race');
+    return raceSession?.date ?? nextRace?.EventDate;
+  }, [nextRaceSchedule, nextRace]);
+
+  const { data: nextRaceWeather, isLoading: isLoadingWeather } = useCircuitWeather(
+    nextRaceCoords?.lat,
+    nextRaceCoords?.lng,
+    nextRace?.EventDate,
+    nextRaceCoords?.timezone,
+    raceSessionStartTime
+  );
+
+  // Rich details for the most recent race (podium gaps, pole, fastest lap, DNFs, biggest gainer)
+  const { data: lastRaceDetails, isLoading: isLoadingLastRaceDetails } = useLastRaceDetails(
+    selectedYear,
+    lastRace?.event
+  );
+
+  const prevYear = selectedYear - 1;
+
+  const { data: prevYearSchedule = [] } = useQuery<ScheduleEvent[]>({
+    queryKey: ['schedule', prevYear],
+    queryFn: () => fetchSchedule(prevYear),
+    enabled: !!nextRace && prevYear >= 1950,
+  });
+
+  const prevYearEvent = useMemo(() => {
+    if (!nextRace || prevYearSchedule.length === 0) return undefined;
+    const byName = prevYearSchedule.find(
+      (e) => e.EventName === nextRace.EventName && !isTestingEvent(e)
+    );
+    if (byName) return byName;
+    return prevYearSchedule.find(
+      (e) => e.RoundNumber === nextRace.RoundNumber && !isTestingEvent(e)
+    );
+  }, [nextRace, prevYearSchedule]);
+
+  const { data: prevYearRaceResults = [] } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['prevYearRaceResults', prevYear, prevYearEvent?.EventName],
+    queryFn: () => fetchSpecificRaceResults(prevYear, toRaceSlug(prevYearEvent!.EventName), 'R'),
+    enabled: !!prevYearEvent,
+  });
+
+  const lastYearPole = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const poleSitter = prevYearRaceResults.find((r) => r.gridPosition === 1);
+    if (!poleSitter) return null;
+    return {
+      driver: poleSitter.fullName,
+      lapTime: poleSitter.poleLapTimeValue || '',
+      headshotUrl: getDriverImage(poleSitter.driverCode, prevYear) || null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
+  const lastYearWinner = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const winner = prevYearRaceResults.find((r) => r.position === 1);
+    if (!winner) return null;
+    return {
+      driver: winner.fullName,
+      team: winner.team,
+      headshotUrl: getDriverImage(winner.driverCode, prevYear) || null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
+  const lastYearFastestLap = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const fl = prevYearRaceResults.find((r) => r.isFastestLap);
+    if (fl)
+      return {
+        driver: fl.fullName,
+        lapTime: fl.fastestLapTimeValue || '',
+        headshotUrl: getDriverImage(fl.driverCode, prevYear) || null,
+      };
+    const fastest = [...prevYearRaceResults]
+      .filter((r) => r.fastestLapTimeValue)
+      .sort((a, b) => parseLapTime(a.fastestLapTimeValue) - parseLapTime(b.fastestLapTimeValue));
+    if (fastest.length === 0) return null;
+    return {
+      driver: fastest[0].fullName,
+      lapTime: fastest[0].fastestLapTimeValue || '',
+      headshotUrl: fastest[0].driverCode
+        ? getDriverImage(fastest[0].driverCode, prevYear) || null
+        : null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
   const hasCriticalDashboardError = isScheduleError || isTeamsError || isDriversError;
+  const isLoadingCore = isLoadingDrivers || isLoadingTeams || isLoadingSchedule;
 
   if (hasCriticalDashboardError) {
     return (
-      <div style={inter} className="min-h-screen bg-[#09090b] text-white">
+      <>
         <SEO
-          title="Race Desk"
+          title="Dashboard"
           description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
           keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
         />
-        <div className="flex min-h-screen items-center justify-center px-6 text-center">
-          <div className="space-y-3">
-            <h1 className="text-2xl font-semibold uppercase text-white">
-              Unable to load dashboard
-            </h1>
-            <p className="text-sm text-white/50">
-              Critical dashboard data could not be loaded. Please try again shortly.
+        <div className="flex min-h-[60vh] items-center justify-center text-center">
+          <div className="space-y-2">
+            <h1 className="text-[18px] font-medium text-white">Unable to load dashboard</h1>
+            <p className="text-[13px] text-white/80">
+              Critical data could not be loaded. Please try again shortly.
             </p>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  // ── Desktop view ──────────────────────────────────────────────────────────
   return (
-    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+    <>
       <SEO
-        title="Race Desk"
+        title="Dashboard"
         description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
         keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
       />
-      <DashboardNavbar />
 
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-        <DashboardHeader
+      <div className="space-y-5 text-white">
+        {/* 1. Page header */}
+        <PageHeader
+          title={greeting}
+          titleClassName="text-[22px] font-bold"
+          subtitle={`Season ${selectedYear} overview`}
           selectedYear={selectedYear}
-          nextSession={nextSession}
-          favoriteDriverName={favoriteDriverName}
+          badge={headerBadge}
         />
 
-        {/* Favorites widget (auth-gated) */}
-        {user && (
-          <FavoritesWidget
-            profile={profile}
-            drivers={driverStandings}
-            teams={teamStandings}
-            schedule={schedule}
-            isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-          />
-        )}
-
-        {/* Championship or Testing Mode */}
-        <div className="mb-8">
-          {isTestingMode ? (
-            <TestingCommandCenter
-              testingSpotlightSessionName={testingSpotlightSessionName}
-              testingSpotlightSession={testingSpotlightSession}
-              testingInsights={testingInsights}
-              primaryTestingEvent={primaryTestingEvent}
-              selectedYear={selectedYear}
-              navigate={navigate}
-              toRaceSlug={toRaceSlug}
-              calculateDistance={calculateDistance}
-              formatDistance={formatDistance}
+        {/* 2. Circuit preview + Last race + For You */}
+        <div className="grid gap-5 lg:grid-cols-4">
+          <div className="lg:col-span-2 h-full">
+            <CircuitPreview
+              nextRace={nextRace}
+              circuitLengthKm={nextRaceCircuitLength}
+              countryCode={nextRaceCountryCode}
+              lastYearPole={lastYearPole}
+              lastYearWinner={lastYearWinner}
+              lastYearFastestLap={lastYearFastestLap}
+              weather={nextRaceWeather}
+              isLoadingWeather={isLoadingWeather}
+              isLoading={isLoadingSchedule}
+              onClick={() => {
+                if (!nextRace) return;
+                trackEvent('widget_clicked', {
+                  widget: 'circuit_preview',
+                  event: nextRace.EventName,
+                });
+                navigate(`/race/${selectedYear}-${toRaceSlug(nextRace.EventName)}`);
+              }}
             />
-          ) : (
-            <ChampionshipWidget
-              drivers={driverStandings}
-              teams={teamStandings}
-              schedule={schedule}
-              raceResults={raceResults}
-              isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-              profile={profile}
+          </div>
+          <div className="h-full">
+            <LastRaceSummary
+              raceName={lastRace?.event ?? ''}
+              roundNumber={lastRace?.round ?? 0}
+              countryCode={lastRaceCountryCode}
+              date={lastRace?.date ?? ''}
+              podium={lastRaceDetails?.podium ?? []}
+              pole={lastRaceDetails?.pole}
+              fastestLap={lastRaceDetails?.fastestLap}
+              biggestGainer={lastRaceDetails?.biggestGainer}
+              dnfCount={lastRaceDetails?.dnfCount ?? 0}
+              isLoading={(isLoadingSchedule && !lastRace) || isLoadingLastRaceDetails}
+              onClick={() => {
+                if (!lastRace?.event) return;
+                trackEvent('widget_clicked', {
+                  widget: 'last_race_summary',
+                  event: lastRace.event,
+                });
+                navigate(`/race/${selectedYear}-${toRaceSlug(lastRace.event)}?view=analysis`);
+              }}
             />
-          )}
+          </div>
+          <div>
+            <ForYouWidget
+              favoriteDriverName={favoriteDriverName}
+              favoriteTeamName={favoriteTeamName}
+            />
+          </div>
         </div>
 
-        {/* Recent Races / Testing */}
-        <RecentEventsSection
-          isTestingMode={isTestingMode}
-          events={isTestingMode ? recentTestingEvents : recentRaces}
-          selectedYear={selectedYear}
-          navigate={navigate}
-          trackEvent={trackEvent}
-          toRaceSlug={toRaceSlug}
-          getCountryCode={getCountryCode}
-        />
-      </main>
-    </div>
+        {/* 5. Pit stops + Season stats */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <PitStopLeaderboard teamStats={pitStats} isLoading={isLoadingPitStats} />
+          <SeasonStats stats={seasonStats} isLoading={isLoadingCore} />
+        </div>
+
+        {/* 6. My Garage + Championship */}
+        {isTestingMode ? (
+          <TestingCommandCenter
+            testingSpotlightSessionName={testingSpotlightSessionName}
+            testingSpotlightSession={testingSpotlightSession}
+            testingInsights={testingInsights}
+            primaryTestingEvent={primaryTestingEvent}
+            selectedYear={selectedYear}
+            navigate={navigate}
+            toRaceSlug={toRaceSlug}
+            calculateDistance={calculateDistance}
+            formatDistance={formatDistance}
+          />
+        ) : (
+          <div className={`grid gap-5 ${user ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+            {user && (
+              <div className="h-full">
+                <FavoritesWidget
+                  profile={profile}
+                  drivers={driverStandings}
+                  teams={teamStandings}
+                  schedule={schedule}
+                  isLoading={isLoadingCore}
+                />
+              </div>
+            )}
+            <div className={`h-full ${user ? 'lg:col-span-2' : 'lg:col-span-2'}`}>
+              <ChampionshipWidget
+                drivers={driverStandings}
+                teams={teamStandings}
+                schedule={schedule}
+                raceResults={raceResults}
+                isLoading={isLoadingCore}
+                profile={profile}
+              />
+            </div>
+            <div className="h-full">
+              <RecentEventsSection
+                isTestingMode={false}
+                events={recentRaces}
+                selectedYear={selectedYear}
+                navigate={navigate}
+                trackEvent={trackEvent}
+                toRaceSlug={toRaceSlug}
+                getCountryCode={getCountryCode}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
@@ -430,18 +741,10 @@ const TestingCommandCenter = ({
   calculateDistance: (laps: number, circuitLength: number) => number;
   formatDistance: (dist: number) => string;
 }) => (
-  <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+  <div className={CARD_CONTAINER}>
     {/* Header */}
-    <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
-      <div className="flex items-center gap-3">
-        <span className="size-1.5 animate-pulse rounded-full bg-red-400" />
-        <div>
-          <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
-            Pre-season testing
-          </p>
-          <p className="mt-0.5 text-[18px] font-semibold text-white">Testing Command Center</p>
-        </div>
-      </div>
+    <div className="flex items-center justify-between px-5 pt-5 pb-4">
+      <span className={CARD_LABEL}>Pre-Season Testing</span>
       {primaryTestingEvent && (
         <button
           onClick={() =>
@@ -449,10 +752,10 @@ const TestingCommandCenter = ({
               `/race/${selectedYear}-${toRaceSlug(primaryTestingEvent.EventName)}?session=${testingSpotlightSession}&view=analysis`
             )
           }
-          className="flex items-center gap-1.5 text-[15px] font-medium text-white/55 transition-colors hover:text-white"
+          className="flex items-center gap-1 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
         >
           Open Analysis
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
             <path
               d="M1 6h10M7 2l4 4-4 4"
               stroke="currentColor"
@@ -466,23 +769,23 @@ const TestingCommandCenter = ({
     </div>
 
     {/* Stats grid */}
-    <div className="grid grid-cols-2 gap-px bg-white/[0.04] p-px md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-px border-t border-white/[0.04] md:grid-cols-4">
       {[
-        { label: 'Spotlight Session', value: testingSpotlightSessionName || 'Day Session' },
-        { label: 'Full-Day Distance', value: formatDistance(testingInsights.totalDistance) },
-        { label: 'Morning Laps', value: String(testingInsights.morningLaps) },
-        { label: 'Afternoon Laps', value: String(testingInsights.afternoonLaps) },
+        { label: 'Session', value: testingSpotlightSessionName || 'Day Session' },
+        { label: 'Distance', value: formatDistance(testingInsights.totalDistance) },
+        { label: 'AM Laps', value: String(testingInsights.morningLaps) },
+        { label: 'PM Laps', value: String(testingInsights.afternoonLaps) },
       ].map((item) => (
-        <div key={item.label} className="bg-[#0c0c0e] p-5">
-          <div className="text-[13px] font-medium text-white/40">{item.label}</div>
-          <div className="mt-1 text-[24px] font-bold tabular-nums text-white">{item.value}</div>
+        <div key={item.label} className="px-5 py-4">
+          <div className={CARD_LABEL}>{item.label}</div>
+          <div className="mt-1 font-mono text-[20px] tabular-nums text-white">{item.value}</div>
         </div>
       ))}
     </div>
 
     {/* Session splits */}
     {(testingInsights.morningFastest || testingInsights.afternoonFastest) && (
-      <div className="grid gap-px bg-white/[0.04] p-px md:grid-cols-2">
+      <div className="grid border-t border-white/[0.04] md:grid-cols-2">
         {[
           {
             label: 'Morning Fastest',
@@ -495,12 +798,12 @@ const TestingCommandCenter = ({
             timeKey: 'afternoonFastestLapTime' as const,
           },
         ].map((slot) => (
-          <div key={slot.label} className="bg-[#0c0c0e] p-5">
-            <div className="text-[13px] font-medium text-white/40">{slot.label}</div>
-            <div className="mt-1 text-[17px] font-semibold text-white">
+          <div key={slot.label} className="px-5 py-4 border-r border-white/[0.04] last:border-r-0">
+            <div className={CARD_LABEL}>{slot.label}</div>
+            <div className="mt-1 text-[14px] font-medium text-white">
               {slot.result?.fullName || '—'}
             </div>
-            <div className="text-[15px] font-medium text-red-400">
+            <div className="font-mono text-[13px] tabular-nums text-emerald-400">
               {slot.result?.[slot.timeKey] || '—'}
             </div>
           </div>
@@ -510,39 +813,40 @@ const TestingCommandCenter = ({
 
     {/* Fastest drivers table */}
     {testingInsights.fastest.length > 0 && (
-      <div className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[14px] font-medium text-white/45">
-            Fastest First - Sorted by best lap, then mileage
-          </span>
+      <div className="border-t border-white/[0.04] px-2 py-3">
+        <div className="px-3 pb-2">
+          <span className={CARD_LABEL}>Fastest — sorted by best lap, then mileage</span>
         </div>
-        <div className="divide-y divide-white/[0.04]">
-          {testingInsights.fastest.slice(0, 5).map((driver, i) => {
-            const laps = driver.lapsCompleted ?? driver.laps ?? 0;
-            const distance = calculateDistance(laps, testingInsights.circuitLength);
-            const reliability =
-              testingInsights.leaderLaps > 0
-                ? Math.round((laps / testingInsights.leaderLaps) * 100)
-                : 0;
-            return (
-              <div key={driver.driverCode} className="flex items-center gap-4 py-3">
-                <span className="w-5 shrink-0 text-[15px] tabular-nums text-white/40">{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[16px] font-semibold text-white">{driver.fullName}</div>
-                  <div className="text-[13px] text-white/45">{driver.team}</div>
+        {testingInsights.fastest.slice(0, 5).map((driver, i) => {
+          const laps = driver.lapsCompleted ?? driver.laps ?? 0;
+          const distance = calculateDistance(laps, testingInsights.circuitLength);
+          const reliability =
+            testingInsights.leaderLaps > 0
+              ? Math.round((laps / testingInsights.leaderLaps) * 100)
+              : 0;
+          return (
+            <div
+              key={driver.driverCode}
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
+            >
+              <span className="w-4 shrink-0 font-mono text-[13px] tabular-nums text-white">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium text-white">{driver.fullName}</div>
+                <div className="text-[12px] text-white/80">{driver.team}</div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="font-mono text-[13px] tabular-nums text-emerald-400">
+                  {driver.fastestLapTime || '—'}
                 </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-[16px] font-semibold tabular-nums text-red-400">
-                    {driver.fastestLapTime || '—'}
-                  </div>
-                  <div className="text-[13px] text-white/40">
-                    {formatDistance(distance)} · {reliability}% rel.
-                  </div>
+                <div className="font-mono text-[11px] tabular-nums text-white/80">
+                  {formatDistance(distance)} · {reliability}%
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     )}
   </div>
@@ -566,17 +870,10 @@ const RecentEventsSection = ({
   toRaceSlug: (name: string) => string;
   getCountryCode: (country: string) => string;
 }) => (
-  <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+  <div className={`h-full ${CARD_CONTAINER}`}>
     {/* Header */}
-    <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5">
-      <div>
-        <p className="text-[13px] font-semibold uppercase tracking-wider text-white/40">
-          {isTestingMode ? 'Recent Testing' : 'Recent Races'}
-        </p>
-        <p className="mt-0.5 text-[18px] font-semibold uppercase italic text-white">
-          {isTestingMode ? 'Pre-season sessions' : 'Last sessions'}
-        </p>
-      </div>
+    <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <span className={CARD_LABEL}>{isTestingMode ? 'Recent Testing' : 'Recent Races'}</span>
       <button
         onClick={() => {
           trackEvent('widget_clicked', {
@@ -585,10 +882,10 @@ const RecentEventsSection = ({
           });
           navigate('/calendar');
         }}
-        className="flex items-center gap-1.5 text-[15px] font-bold uppercase text-white/45 transition-colors hover:text-white"
+        className="flex items-center gap-1 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
       >
         View calendar
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
           <path
             d="M1 6h10M7 2l4 4-4 4"
             stroke="currentColor"
@@ -601,20 +898,20 @@ const RecentEventsSection = ({
     </div>
 
     {/* Event list */}
-    <div className="divide-y divide-white/[0.04]">
+    <div className="px-2 pb-3">
       {events.length === 0 ? (
-        <div className="py-10 text-center text-[15px] text-white/40">
+        <div className="py-8 text-center text-[13px] text-white/80">
           {isTestingMode
             ? 'No testing sessions completed yet.'
             : 'No races completed yet this season.'}
         </div>
       ) : (
-        events.map((event, i) => (
+        events.map((event) => (
           <m.div
             key={`${event.EventName}-${event.EventDate}`}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
             onClick={() => {
               trackEvent('widget_clicked', {
                 widget: isTestingMode ? 'recent_testing' : 'recent_races',
@@ -623,12 +920,12 @@ const RecentEventsSection = ({
               });
               navigate(`/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`);
             }}
-            className="group flex cursor-pointer items-center gap-4 px-6 py-5 transition-colors hover:bg-white/[0.02]"
+            className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
           >
             {/* Flag */}
-            <div className="h-8 w-12 shrink-0 overflow-hidden rounded border border-white/[0.06]">
+            <div className="h-6 w-9 shrink-0 overflow-hidden rounded border border-white/[0.06]">
               <img
-                src={`https://flagcdn.com/h40/${getCountryCode(event.Country || event.Location)}.png`}
+                src={`https://flagcdn.com/${getCountryCode(event.Country || event.Location)}.svg`}
                 alt={event.Country || event.Location}
                 className="size-full object-cover"
               />
@@ -636,19 +933,19 @@ const RecentEventsSection = ({
 
             {/* Name */}
             <div className="min-w-0 flex-1">
-              <div className="text-[16px] font-semibold text-white group-hover:text-red-400 transition-colors truncate">
+              <div className="truncate text-[14px] font-medium text-white transition-colors group-hover:text-white">
                 {event.EventName}
               </div>
-              <div className="text-[13px] text-white/45">{event.Location}</div>
+              <div className="text-[12px] text-white/80">{event.Location}</div>
             </div>
 
             {/* Arrow */}
             <svg
-              width="12"
-              height="12"
+              width="10"
+              height="10"
               viewBox="0 0 12 12"
               fill="none"
-              className="shrink-0 text-white/30 transition-colors group-hover:text-white/60"
+              className="shrink-0 text-white/50 transition-colors group-hover:text-white/80"
             >
               <path
                 d="M1 6h10M7 2l4 4-4 4"

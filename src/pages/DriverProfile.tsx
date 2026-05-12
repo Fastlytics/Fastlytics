@@ -3,7 +3,6 @@ import React, { useMemo, useState, useCallback, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { m } from 'motion/react';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { fetchDriverCareer, DriverCareer } from '@/lib/api';
 import { getDriverImage, getDriverImagesByCode } from '@/utils/imageMapping';
 import { getTeamColorClass } from '@/lib/standingsUtils';
@@ -119,7 +118,6 @@ const DriverProfile = () => {
   if (isLoading) {
     return (
       <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <DashboardNavbar />
         <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
           <div className="space-y-6">
             <div className="h-8 w-48 animate-pulse rounded-lg bg-white/[0.04]" />
@@ -143,7 +141,6 @@ const DriverProfile = () => {
   if (isError || !career) {
     return (
       <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <DashboardNavbar />
         <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 pb-20 pt-24 lg:px-8">
           <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-10 py-16 text-center">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
@@ -167,7 +164,6 @@ const DriverProfile = () => {
         title={`${career.name}: profile`}
         description={`Explore career stats, results, wins, podiums, and season history for ${career.name} on Fastlytics.`}
       />
-      <DashboardNavbar />
 
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         <DriverHeader

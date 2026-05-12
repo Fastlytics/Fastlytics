@@ -1,30 +1,21 @@
-// knip-ignore
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchLapTimes, LapTimesEnrichedResponse, EnrichedLapRecord } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDriverImage } from '@/utils/imageMapping';
-import { AlertCircleIcon } from 'hugeicons-react';
-
-const COMPOUND_COLORS: Record<string, string> = {
-  SOFT: '#ff2800',
-  MEDIUM: '#ffcc00',
-  HARD: '#ffffff',
-  INTERMEDIATE: '#43b02a',
-  WET: '#0067ad',
-};
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { cn } from '@/lib/utils';
 
 const COMPOUND_BG: Record<string, string> = {
-  SOFT: 'bg-[#ff2800]',
-  MEDIUM: 'bg-[#ffcc00]',
+  SOFT: 'bg-red-600',
+  MEDIUM: 'bg-yellow-400',
   HARD: 'bg-white',
-  INTERMEDIATE: 'bg-[#43b02a]',
-  WET: 'bg-[#0067ad]',
+  INTERMEDIATE: 'bg-emerald-500',
+  WET: 'bg-blue-500',
 };
 
 const formatLapTime = (totalSeconds: number | null): string => {
-  if (totalSeconds === null || isNaN(totalSeconds)) return 'N/A';
+  if (totalSeconds === null || isNaN(totalSeconds)) return '—';
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toFixed(3).padStart(6, '0')}`;
@@ -120,30 +111,15 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
-        <div className="mb-6">
-          <p
-            className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Comparison
-          </p>
-          <p
-            className="mt-0.5 text-[18px] font-bold uppercase italic text-white"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Race Performance
-          </p>
+      <div className={CARD_CONTAINER}>
+        <div className="px-5 pt-5 pb-4">
+          <h3 className="text-[16px] font-semibold text-white">Race Performance</h3>
+          <p className="mt-0.5 text-[12px] text-white/80">Strategy and stint comparison</p>
         </div>
-        <div className="flex h-[200px] items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-            <p
-              className="text-[12px] text-white animate-pulse"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Loading performance data…
-            </p>
+        <div className="flex h-[200px] items-center justify-center border-t border-white/[0.04]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-5 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/60" />
+            <span className="text-[12px] text-white/80">Loading performance data</span>
           </div>
         </div>
       </div>
@@ -153,163 +129,127 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   if (isError || !driverLapDetails) return null;
 
   return (
-    <div className="space-y-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
-      {/* Weather Strip */}
+    <div className={CARD_CONTAINER}>
+      {/* Header */}
+      <div className="px-5 pt-5 pb-4">
+        <h3 className="text-[16px] font-semibold text-white">Race Performance</h3>
+        <p className="mt-0.5 text-[12px] text-white/80">Strategy and stint comparison</p>
+      </div>
+
+      {/* Weather conditions */}
       {weatherData && (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-t-xl border border-b-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-3">
-          <span
-            className="text-[11px] font-semibold uppercase tracking-wider text-white/80"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Conditions
-          </span>
-          <div
-            className="flex items-center gap-1.5 text-[12px]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <span className="text-white">Air</span>
-            <span className="font-semibold text-white">{weatherData.airTemp.toFixed(1)}°C</span>
+        <div className="grid grid-cols-2 divide-x divide-white/[0.04] border-y border-white/[0.04] lg:grid-cols-5">
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Air temp</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">
+              {weatherData.airTemp.toFixed(1)}°C
+            </div>
           </div>
-          <div
-            className="flex items-center gap-1.5 text-[12px]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <span className="text-white">Track</span>
-            <span className="font-semibold text-white">{weatherData.trackTemp.toFixed(1)}°C</span>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Track temp</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">
+              {weatherData.trackTemp.toFixed(1)}°C
+            </div>
           </div>
-          <div
-            className="flex items-center gap-1.5 text-[12px]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <span className="text-white">Humidity</span>
-            <span className="font-semibold text-white">{weatherData.humidity.toFixed(0)}%</span>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Humidity</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">
+              {weatherData.humidity.toFixed(0)}%
+            </div>
           </div>
-          <div
-            className="flex items-center gap-1.5 text-[12px]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <span className="text-white">Wind</span>
-            <span className="font-semibold text-white">{weatherData.windSpeed.toFixed(1)} m/s</span>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Wind</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">
+              {weatherData.windSpeed.toFixed(1)} m/s
+            </div>
           </div>
-          {weatherData.rainfall && (
-            <span
-              className="rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-400"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              RAIN
-            </span>
-          )}
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Conditions</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">
+              {weatherData.rainfall ? <span className="text-blue-400">Wet</span> : 'Dry'}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Strategy Timeline */}
-      <div className="border-x border-white/[0.06] bg-[#0c0c0e] p-5">
-        <p
-          className="mb-4 text-[12px] font-semibold uppercase tracking-wider text-white/80"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Strategy
-        </p>
-        {drivers.map((drv, drvIdx) => {
+      {/* Strategy comparison */}
+      <div className="p-5 space-y-5">
+        {drivers.map((drv) => {
           const stints = driverStints[drv] || [];
           const drvColor = driverColor(drv, year);
           const headshot = getDriverImage(drv, year);
+
           return (
-            <div
-              key={drv}
-              className={`${drvIdx > 0 ? 'mt-4' : ''} animate-in fade-in slide-in-from-left-2 duration-200`}
-              style={{ animationDelay: `${drvIdx * 150}ms` }}
-            >
-              <div className="mb-2 flex items-center gap-2.5">
-                <Avatar className="size-7 shrink-0 border-2" style={{ borderColor: drvColor }}>
-                  <AvatarImage src={headshot} className="object-cover object-top" />
-                  <AvatarFallback
-                    className="bg-[#1a1a1e] text-[10px] font-bold text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {drv}
-                  </AvatarFallback>
-                </Avatar>
-                <span
-                  className="text-[13px] font-bold uppercase tracking-wide"
-                  style={{ color: drvColor, fontFamily: "'Inter', sans-serif" }}
-                >
-                  {drv}
-                </span>
+            <div key={drv}>
+              {/* Driver header */}
+              <div className="mb-3 flex items-center gap-2.5">
+                <img
+                  src={headshot}
+                  alt=""
+                  className="size-8 shrink-0 rounded-full object-cover object-top"
+                  style={{ borderWidth: 2, borderColor: drvColor, borderStyle: 'solid' }}
+                />
+                <span className="text-[14px] font-semibold text-white">{drv}</span>
+                <span className="text-[12px] text-white/80">{stints.length} stints</span>
               </div>
-              <div className="flex flex-col gap-1.5">
-                {stints.map((stint, stintIdx) => (
+
+              {/* Stint rows */}
+              <div className="space-y-1.5">
+                {stints.map((stint) => (
                   <div
                     key={stint.stintNum}
-                    className="group flex items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.02] px-3.5 py-2.5 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.04]"
-                    style={{ animationDelay: `${drvIdx * 150 + stintIdx * 80}ms` }}
+                    className="flex items-center justify-between rounded-lg border border-white/[0.04] px-4 py-3 transition-colors hover:border-white/[0.08]"
                   >
                     <div className="flex items-center gap-3">
+                      {/* Compound indicator */}
                       <div
-                        className={`flex h-7 w-11 items-center justify-center rounded-md ${COMPOUND_BG[stint.compound] || 'bg-white/30'}`}
+                        className={cn(
+                          'flex h-6 w-10 items-center justify-center rounded',
+                          COMPOUND_BG[stint.compound?.toUpperCase()] || 'bg-white/30'
+                        )}
                       >
-                        <span
-                          className="text-[11px] font-bold uppercase text-black"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {stint.compound[0]}
+                        <span className="text-[10px] font-bold text-black">
+                          {stint.compound?.[0] || '?'}
                         </span>
                       </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span
-                          className="text-[13px] font-bold text-white"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          L{stint.startLap}–{stint.endLap}
-                        </span>
-                        <span
-                          className="text-[11px] text-white"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {stint.lapCount} laps
-                        </span>
+                      <div>
+                        <div className="text-[13px] font-medium text-white">
+                          Lap {stint.startLap}–{stint.endLap}
+                        </div>
+                        <div className="text-[11px] text-white/80">{stint.lapCount} laps</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-5">
-                      <div className="hidden sm:flex flex-col items-end gap-0.5">
+                      {/* Avg / Best times */}
+                      <div className="hidden text-right sm:block">
                         {stint.avgTime != null && (
-                          <span
-                            className="text-[12px] text-white"
-                            style={{ fontFamily: "'Inter', sans-serif" }}
-                          >
+                          <div className="text-[12px] text-white/80">
                             Avg{' '}
-                            <span className="font-semibold text-white">
+                            <span className="font-medium text-white">
                               {formatLapTime(stint.avgTime)}
                             </span>
-                          </span>
+                          </div>
                         )}
                         {stint.bestTime != null && (
-                          <span
-                            className="text-[11px] text-white"
-                            style={{ fontFamily: "'Inter', sans-serif" }}
-                          >
+                          <div className="text-[11px] text-white/80">
                             Best <span className="text-white">{formatLapTime(stint.bestTime)}</span>
-                          </span>
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex min-w-[64px] flex-col items-end gap-0.5">
-                        <span
-                          className={`text-[10px] font-semibold uppercase ${
+                      {/* Tyre state */}
+                      <div className="text-right">
+                        <div
+                          className={cn(
+                            'text-[11px] font-medium',
                             stint.freshTyre ? 'text-emerald-400' : 'text-amber-400'
-                          }`}
-                          style={{ fontFamily: "'Inter', sans-serif" }}
+                          )}
                         >
-                          {stint.freshTyre ? '● NEW' : '● USED'}
-                        </span>
+                          {stint.freshTyre ? 'New' : 'Used'}
+                        </div>
                         {stint.tyreLifeEnd != null && (
-                          <span
-                            className="text-[10px] text-white"
-                            style={{ fontFamily: "'Inter', sans-serif" }}
-                          >
-                            Life {stint.tyreLifeEnd}
-                          </span>
+                          <div className="text-[11px] text-white/80">Life {stint.tyreLifeEnd}</div>
                         )}
                       </div>
                     </div>
@@ -321,59 +261,37 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
         })}
       </div>
 
-      {/* Deleted Laps */}
+      {/* Deleted laps */}
       {deletedLaps.length > 0 && (
-        <div className="rounded-b-xl border border-t-0 border-white/[0.06] bg-[#0c0c0e] px-5 py-4">
-          <div className="mb-3 flex items-center gap-2">
-            <AlertCircleIcon className="size-3.5 text-red-400/60" />
-            <p
-              className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Deleted Laps ({deletedLaps.length})
-            </p>
+        <div className="border-t border-white/[0.04] px-5 py-4">
+          <div className="mb-3">
+            <span className={CARD_LABEL}>Deleted laps ({deletedLaps.length})</span>
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="space-y-1">
             {deletedLaps.slice(0, 10).map((dl, i) => (
               <div
-                key={dl.driver}
-                className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-white/[0.02]"
+                key={`${dl.driver}-${dl.lapNumber}-${i}`}
+                className="flex items-center gap-3 rounded-md px-2 py-1.5 text-[12px]"
               >
                 <span
-                  className="w-10 text-[12px] font-bold uppercase"
-                  style={{ color: driverColor(dl.driver, year), fontFamily: "'Inter', sans-serif" }}
+                  className="w-10 font-semibold"
+                  style={{ color: driverColor(dl.driver, year) }}
                 >
                   {dl.driver}
                 </span>
-                <span
-                  className="text-[12px] text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Lap {dl.lapNumber}
-                </span>
+                <span className="text-white/80">Lap {dl.lapNumber}</span>
                 {dl.lapTime != null && (
-                  <span
-                    className="text-[12px] text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {formatLapTime(dl.lapTime)}
-                  </span>
+                  <span className="text-white">{formatLapTime(dl.lapTime)}</span>
                 )}
                 {dl.deletedReason && (
-                  <span
-                    className="rounded-md bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
+                  <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
                     {dl.deletedReason}
                   </span>
                 )}
               </div>
             ))}
             {deletedLaps.length > 10 && (
-              <span
-                className="px-2 text-[11px] text-white"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
+              <span className="px-2 text-[11px] text-white/80">
                 +{deletedLaps.length - 10} more
               </span>
             )}

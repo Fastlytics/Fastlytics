@@ -3,7 +3,6 @@ import { useEffect, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -24,8 +23,6 @@ import {
   SubscriptionSection,
 } from './Account/AccountSections';
 import { accountReducer, getInitialAccountState } from './Account/accountState';
-
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 const Account = () => {
   const { user, profile, refreshProfile, signOut, subscription, isSubscribed } = useAuth();
@@ -265,24 +262,23 @@ const Account = () => {
   if (!user) return null;
 
   return (
-    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+    <>
       <SEO
         title="Account"
         description="Manage your Fastlytics account, profile, favorites, and preferences."
         noIndex
       />
-      <DashboardNavbar />
 
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
+      <div className="mx-auto max-w-5xl px-6 py-10">
         <AccountHeader onSignOut={handleSignOut} />
 
-        <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex flex-col gap-10 lg:flex-row">
           <AccountSidebar
             activeSection={state.activeSection}
             onSelectSection={(section) => dispatch({ type: 'setActiveSection', section })}
           />
 
-          <div className="min-h-[500px] flex-1">
+          <div className="min-h-[400px] flex-1">
             {state.activeSection === 'profile' && (
               <ProfileSection
                 user={user}
@@ -340,14 +336,14 @@ const Account = () => {
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       <UpgradeModal
         open={state.upgradeOpen}
         onClose={() => dispatch({ type: 'setUpgradeOpen', value: false })}
         cancelPath="/account?section=subscription"
       />
-    </div>
+    </>
   );
 };
 

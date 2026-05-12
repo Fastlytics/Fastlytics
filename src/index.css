@@ -34,7 +34,7 @@
 
   /* Custom fonts - Inter */
   --font-sans: 'Inter', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: 'Inter', sans-serif;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -261,7 +261,7 @@
   kbd,
   samp,
   pre {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: 'Inter', sans-serif;
   }
 
   input,
@@ -476,13 +476,13 @@
 }
 
 .race-micro {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .race-pixel {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0;
 }
 

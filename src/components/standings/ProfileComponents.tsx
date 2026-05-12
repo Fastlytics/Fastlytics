@@ -17,9 +17,7 @@ export const StatBox: React.FC<StatBoxProps> = ({ label, value, delay = 0 }) => 
     className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 text-center"
   >
     <div className="text-2xl font-bold tabular-nums text-white">{value}</div>
-    <div className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/30">
-      {label}
-    </div>
+    <div className="mt-1 text-[11px] font-medium tracking-wider text-white/40">{label}</div>
   </m.div>
 );
 
@@ -61,7 +59,7 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
       <div className="flex items-center gap-2">
         <span className="text-[15px] font-bold tabular-nums text-white">{season.season}</span>
         {isCurrent && (
-          <span className="rounded-full border border-red-500/20 bg-red-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
+          <span className="rounded-full border border-red-500/20 bg-red-500/[0.07] px-2 py-0.5 text-[10px] font-bold tracking-wider text-red-400">
             Current
           </span>
         )}
@@ -69,7 +67,7 @@ export const ProfileSeasonRow: React.FC<ProfileSeasonRowProps> = ({
           <span
             key={`${badge.color}-${badge.label}`}
             className={cn(
-              'rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+              'rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wider',
               badge.color === 'amber'
                 ? 'border-amber-500/20 bg-amber-500/[0.07] text-amber-400'
                 : 'border-red-500/20 bg-red-500/[0.07] text-red-400'
@@ -127,9 +125,7 @@ export const SeasonHistoryTable: React.FC<SeasonHistoryTableProps> = ({
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: 0.3 }}
   >
-    <h2 className="mb-4 text-xl font-semibold uppercase italic tracking-[-0.025em] text-white">
-      {title}
-    </h2>
+    <h2 className="mb-4 text-xl font-semibold tracking-[-0.025em] text-white">{title}</h2>
     <div className="overflow-hidden rounded-xl border border-white/[0.06]">
       <table className="w-full text-sm">{children}</table>
     </div>

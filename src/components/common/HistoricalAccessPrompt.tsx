@@ -1,6 +1,6 @@
 // knip-ignore
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Lock } from 'lucide-react';
+import { ArrowUpRight01Icon, LockKeyIcon } from 'hugeicons-react';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 interface HistoricalAccessPromptProps {
@@ -31,7 +31,7 @@ const HistoricalAccessPrompt = ({
       <div className="relative grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-200">
-            <Lock className="size-3.5" />
+            <LockKeyIcon className="size-3.5" />
             Pro Archive
           </div>
 
@@ -54,7 +54,7 @@ const HistoricalAccessPrompt = ({
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-sky-300 px-5 text-sm font-semibold uppercase tracking-[0.08em] text-sky-950 transition-colors hover:bg-sky-200"
             >
               Upgrade To Pro
-              <ArrowUpRight className="size-4" />
+              <ArrowUpRight01Icon className="size-4" />
             </Link>
             <div className="text-xs uppercase tracking-[0.16em] text-white/38">
               Historical archive, unlimited replay, deeper analysis
@@ -112,7 +112,7 @@ const HistoricalAccessPrompt = ({
                   </div>
                 </div>
                 <div className="flex size-14 items-center justify-center rounded-2xl border border-sky-300/20 bg-[#0d1119] text-sky-200 shadow-[0_16px_40px_rgba(56,189,248,0.16)]">
-                  <Lock className="size-6" />
+                  <LockKeyIcon className="size-6" />
                 </div>
               </div>
             </div>

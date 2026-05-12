@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { m, AnimatePresence } from 'motion/react';
 import { useSeason } from '@/contexts/SeasonContext';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight01Icon } from 'hugeicons-react';
 import { toast } from 'sonner';
 
 import UpgradeModal from '@/components/payments/UpgradeModal';
@@ -308,7 +308,7 @@ const DashboardNavbar = () => {
                 onClick={() => setUpgradeOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg border border-sky-400/20 bg-sky-400/12 px-4 py-2.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-sky-200 transition-all hover:border-sky-300/35 hover:bg-sky-400/18 hover:text-sky-100"
               >
-                <ArrowUpRight className="size-4" />
+                <ArrowUpRight01Icon className="size-4" />
                 Upgrade
               </button>
             )}

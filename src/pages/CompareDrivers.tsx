@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { SEO } from '@/components/layout/SEO';
 
 const CareerComparison = lazy(
@@ -15,7 +14,6 @@ const CompareDrivers = () => {
         title="Compare Drivers"
         description="Compare career trajectories, stats, and achievements of F1 drivers side-by-side."
       />
-      <DashboardNavbar />
 
       <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
         <div className="mb-8">

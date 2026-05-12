@@ -10,6 +10,15 @@ import Onboarding from './pages/Onboarding';
 import Account from './pages/Account';
 import AboutUs from './pages/AboutUs';
 import Race from './pages/Race';
+import RaceIndex from './pages/Race/RaceIndex';
+import OverviewSection from './pages/Race/sections/OverviewSection';
+import ReplaySection from './pages/Race/sections/ReplaySection';
+import StrategySection from './pages/Race/sections/StrategySection';
+import LapAnalysisSection from './pages/Race/sections/LapAnalysisSection';
+import HeadToHeadSection from './pages/Race/sections/HeadToHeadSection';
+import TelemetrySection from './pages/Race/sections/TelemetrySection';
+import TeamPaceRedirect from './pages/Race/sections/TeamPaceRedirect';
+import RaceSectionFallback from './pages/Race/RaceSectionFallback';
 import TeamStandings from './pages/TeamStandings';
 import DriverStandings from './pages/DriverStandings';
 import Calendar from './pages/Calendar';
@@ -19,6 +28,12 @@ import DriverProfile from './pages/DriverProfile';
 import TeamProfile from './pages/TeamProfile';
 import CompareDrivers from './pages/CompareDrivers';
 import CompareTeams from './pages/CompareTeams';
+import Drivers from './pages/Drivers';
+import Teams from './pages/Teams';
+import Watchlist from './pages/Watchlist';
+import News from './pages/News';
+import NewsDiscussion from './pages/NewsDiscussion';
+import Notifications from './pages/Notifications';
 
 import NotFound from './pages/NotFound';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -37,6 +52,7 @@ import RouteTracker from '@/components/layout/RouteTracker';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import ConsentBanner from '@/components/auth/ConsentBanner';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
@@ -46,11 +62,6 @@ const queryClient = new QueryClient();
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
   return <div className="min-h-screen flex flex-col">{children}</div>;
 };
-
-// Dashboard layout without footer
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen flex flex-col">{children}</div>
-);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -164,7 +175,17 @@ const App = () => (
                     <Race />
                   </DashboardLayout>
                 }
-              />
+              >
+                <Route index element={<RaceIndex />} />
+                <Route path="overview" element={<OverviewSection />} />
+                <Route path="replay" element={<ReplaySection />} />
+                <Route path="strategy" element={<StrategySection />} />
+                <Route path="lap-analysis" element={<LapAnalysisSection />} />
+                <Route path="head-to-head" element={<HeadToHeadSection />} />
+                <Route path="telemetry" element={<TelemetrySection />} />
+                <Route path="team-pace" element={<TeamPaceRedirect />} />
+                <Route path="*" element={<RaceSectionFallback />} />
+              </Route>
               <Route
                 path="/calendar"
                 element={
@@ -258,6 +279,56 @@ const App = () => (
                     >
                       <SessionReplayPage />
                     </GatedRoute>
+                  </DashboardLayout>
+                }
+              />
+
+              {/* Directory index pages (must come BEFORE the :slug routes below) */}
+              <Route
+                path="/drivers"
+                element={
+                  <DashboardLayout>
+                    <Drivers />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/teams"
+                element={
+                  <DashboardLayout>
+                    <Teams />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/watchlist"
+                element={
+                  <DashboardLayout>
+                    <Watchlist />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/news"
+                element={
+                  <DashboardLayout>
+                    <News />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/news/:articleId"
+                element={
+                  <DashboardLayout>
+                    <NewsDiscussion />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <DashboardLayout>
+                    <Notifications />
                   </DashboardLayout>
                 }
               />

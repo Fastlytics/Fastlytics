@@ -3,8 +3,8 @@ import { useEffect, useMemo, useReducer } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { Activity01Icon, AlertCircleIcon } from 'hugeicons-react';
+import { useSearchParams } from 'react-router-dom';
 
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { SEO } from '@/components/layout/SEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
@@ -32,6 +32,7 @@ import {
 
 const TeamPaceAnalysis = () => {
   const { trackEvent, trackPageView } = useAnalytics();
+  const [searchParams] = useSearchParams();
   const {
     chartRef: evolutionRef,
     exportChart: exportEvolution,
@@ -48,6 +49,17 @@ const TeamPaceAnalysis = () => {
     isExporting: isExportingScatter,
   } = useChartExport();
   const [state, dispatch] = useReducer(teamPaceAnalysisReducer, initialTeamPaceAnalysisState);
+
+  // Accept ?race= query param from redirects (e.g. /race/:raceId/team-pace → /team-pace?race=slug)
+  useEffect(() => {
+    const raceParam = searchParams.get('race');
+    if (raceParam) {
+      // Strip leading year prefix (e.g. "2026-australian-grand-prix" → "australian-grand-prix")
+      const slug = raceParam.replace(/^\d{4}-/, '');
+      dispatch({ type: 'eventChanged', eventSlug: slug });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     trackPageView('team_pace_analysis', { year: state.selectedYear });
@@ -126,7 +138,6 @@ const TeamPaceAnalysis = () => {
           'team performance data',
         ]}
       />
-      <DashboardNavbar />
 
       <main className="mx-auto w-full max-w-7xl flex-grow px-4 pb-20 pt-32 sm:px-6 lg:px-8">
         <TeamPaceHeader

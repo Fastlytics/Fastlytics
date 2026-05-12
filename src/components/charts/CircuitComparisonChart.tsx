@@ -108,7 +108,7 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
         >
           <SelectValue placeholder="Select driver" />
         </SelectTrigger>
-        <SelectContent className="min-w-[220px] rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl">
+        <SelectContent className="min-w-[220px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl">
           <SelectGroup>
             <SelectLabel
               className="text-[11px] font-semibold uppercase tracking-wider text-white"
@@ -168,7 +168,7 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
               </span>
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl">
+          <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl">
             <SelectGroup>
               {lapOptions.map((lapOpt) => (
                 <SelectItem
@@ -430,7 +430,7 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
         />
       </div>
 
-      <div className="mb-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5">
+      <div className="mb-4 rounded-lg border border-white/[0.04] p-5">
         <div className="flex flex-col gap-4">
           <DriverSelector
             label="Driver 1"
@@ -521,7 +521,7 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
 }) => {
   if (!shouldLoadChart) {
     return (
-      <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+      <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-white/[0.04]">
         <p className="text-[13px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
           Select two different drivers to compare
         </p>
@@ -531,7 +531,7 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex h-[400px] items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+      <div className="flex h-[400px] items-center justify-center rounded-lg border border-white/[0.04]">
         <div className="flex flex-col items-center gap-4">
           <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
           <p
@@ -547,7 +547,7 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
 
   if (isError || !comparisonData) {
     return (
-      <div className="flex h-[400px] flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05]">
+      <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-red-500/20">
         <AlertCircleIcon className="mb-3 size-9 text-red-400" />
         <p
           className="text-[14px] font-semibold text-red-400"
@@ -563,7 +563,7 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
   }
 
   return (
-    <div className="group/chart relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+    <div className="group/chart relative overflow-hidden rounded-lg border border-white/[0.04]">
       <div className="absolute left-4 top-4 z-10 flex flex-col gap-2 pointer-events-none">
         {[
           { code: selectedDriver1, color: driver1Color },

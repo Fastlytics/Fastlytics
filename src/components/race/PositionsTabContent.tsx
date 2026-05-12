@@ -9,12 +9,11 @@ import {
   SessionIncident,
 } from '@/lib/api';
 import PositionChart from '@/components/charts/PositionChart';
-import { AlertCircleIcon, ChartLineData01Icon, Menu01Icon } from 'hugeicons-react';
 import PositionsSummaryTable from './PositionsSummaryTable';
 import KeyMomentsHighlight from './KeyMomentsHighlight';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 
 interface PositionsTabContentProps {
   year: number;
@@ -31,7 +30,7 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
   session,
   favoriteDriver,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('chart');
   const { trackInteraction } = useAnalytics();
 
   const queries: Readonly<
@@ -79,19 +78,15 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
-        <div className="mb-6">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
-            Positions
-          </p>
-          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
-            Lap-by-Lap Positions
-          </p>
+      <div className={CARD_CONTAINER}>
+        <div className="px-5 pt-5 pb-4">
+          <h3 className="text-[16px] font-semibold text-white">Position Changes</h3>
+          <p className="mt-0.5 text-[12px] text-white/80">Lap-by-lap position tracking</p>
         </div>
-        <div className="flex h-[500px] items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-            <div className="text-[12px] text-white animate-pulse">Loading position data…</div>
+        <div className="flex h-[500px] items-center justify-center border-t border-white/[0.04]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-5 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/60" />
+            <span className="text-[12px] text-white/80">Loading position data</span>
           </div>
         </div>
       </div>
@@ -100,20 +95,15 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isError || !lapPositionsData || !sessionResultsData) {
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
-        <div className="mb-6">
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
-            Positions
-          </p>
-          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
-            Lap-by-Lap Positions
-          </p>
+      <div className={CARD_CONTAINER}>
+        <div className="px-5 pt-5 pb-4">
+          <h3 className="text-[16px] font-semibold text-white">Position Changes</h3>
+          <p className="mt-0.5 text-[12px] text-white/80">Lap-by-lap position tracking</p>
         </div>
-        <div className="flex h-[500px] items-center justify-center">
-          <div className="text-center text-red-400">
-            <AlertCircleIcon className="mx-auto mb-3 size-9" />
-            <p className="text-[14px] font-semibold">Error Loading Data</p>
-            <p className="mt-1 text-[12px] text-white">
+        <div className="flex h-[400px] items-center justify-center border-t border-white/[0.04]">
+          <div className="text-center">
+            <p className="text-[14px] font-medium text-red-400">Error loading data</p>
+            <p className="mt-1 text-[12px] text-white/80">
               {combinedError?.message || 'Could not fetch position data.'}
             </p>
           </div>
@@ -123,49 +113,49 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className={CARD_CONTAINER}>
+      {/* Header + view toggle */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-white/80">
-            Positions
-          </p>
-          <p className="mt-0.5 text-[18px] font-bold uppercase italic text-white">
-            Lap-by-Lap Positions
-          </p>
+          <h3 className="text-[16px] font-semibold text-white">Position Changes</h3>
+          <p className="mt-0.5 text-[12px] text-white/80">Lap-by-lap position tracking</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-white/[0.04] p-0.5">
+          <button
+            onClick={() => {
+              setActiveTab('chart');
+              trackInteraction('positions_subtab_changed', { tab: 'chart' });
+            }}
+            className={cn(
+              'rounded-[5px] px-3 py-1.5 text-[12px] font-medium transition-colors',
+              activeTab === 'chart'
+                ? 'bg-white/[0.06] text-white'
+                : 'text-white/80 hover:text-white'
+            )}
+          >
+            Chart
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('analysis');
+              trackInteraction('positions_subtab_changed', { tab: 'analysis' });
+            }}
+            className={cn(
+              'rounded-[5px] px-3 py-1.5 text-[12px] font-medium transition-colors',
+              activeTab === 'analysis'
+                ? 'bg-white/[0.06] text-white'
+                : 'text-white/80 hover:text-white'
+            )}
+          >
+            Analysis
+          </button>
         </div>
       </div>
 
-      <Tabs
-        defaultValue="overview"
-        className="w-full"
-        onValueChange={(value) => {
-          trackInteraction('positions_subtab_changed', { tab: value });
-          setActiveTab(value);
-        }}
-        value={activeTab}
-      >
-        <TabsList className="h-auto w-full gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] p-1 sm:w-auto">
-          <TabsTrigger
-            value="overview"
-            className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
-          >
-            <ChartLineData01Icon className="mr-1.5 size-3.5" />
-            Chart
-          </TabsTrigger>
-          <TabsTrigger
-            value="analysis"
-            className="flex-1 rounded-md text-[12px] font-semibold uppercase tracking-wider text-white transition-all hover:text-white data-[state=active]:bg-white/[0.08] data-[state=active]:text-white sm:flex-none"
-          >
-            <Menu01Icon className="mr-1.5 size-3.5" />
-            Analysis
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="overview"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200"
-        >
-          <div className="h-[600px]">
+      {/* Content */}
+      <div className="border-t border-white/[0.04]">
+        {activeTab === 'chart' ? (
+          <div className="h-[600px] p-5">
             <PositionChart
               lapData={lapPositionsData}
               incidents={incidentsData}
@@ -174,16 +164,13 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
               favoriteDriver={favoriteDriver}
             />
           </div>
-        </TabsContent>
-
-        <TabsContent
-          value="analysis"
-          className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-200 space-y-6"
-        >
-          <KeyMomentsHighlight lapData={lapPositionsData} />
-          <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
-        </TabsContent>
-      </Tabs>
+        ) : (
+          <div className="space-y-5 p-5">
+            <KeyMomentsHighlight lapData={lapPositionsData} />
+            <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
