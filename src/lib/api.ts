@@ -760,6 +760,23 @@ export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> 
   return request<TeamStanding[]>(`/api/standings/teams?${params.toString()}`);
 };
 
+/** Pit stop team stats from OpenF1 */
+export interface PitStopTeamStat {
+  team: string;
+  teamColor: string;
+  fastestStopSeconds: number | null;
+  averageStopSeconds: number | null;
+  validStopCount: number;
+  fastestStopDriver: string;
+  fastestStopRace: string;
+}
+
+/** Fetches aggregated pit stop stats by team for a given year (from OpenF1). */
+export const fetchPitStats = async (year: number): Promise<PitStopTeamStat[]> => {
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<PitStopTeamStat[]>(`/api/openf1/pit-stats?${params.toString()}`);
+};
+
 /** Fetches race results summary (winners) for a given year. */
 export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
   const params = new URLSearchParams({ year: year.toString() });

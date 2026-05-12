@@ -1,4 +1,5 @@
-import React, { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   fetchDriverStandings,
@@ -9,28 +10,20 @@ import {
   RaceResult,
 } from '@/lib/api';
 import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
-import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
-import { getDriverImage } from '@/utils/imageMapping';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  getTeamColorClass,
-  getChangeIndicator,
-  isRookie,
-  isTestingEvent,
-} from '@/lib/standingsUtils';
-import {
-  StandingsLayout,
-  StandingsLoadingSkeleton,
-  StandingsErrorState,
-  StandingsEmptyState,
-  StandingsTableRow,
-} from '@/components/standings/StandingsPageLayout';
-import { DriverPodium } from '@/components/standings/DriverPodium';
+import { useAuth } from '@/contexts/AuthContext';
+import { isTestingEvent } from '@/lib/standingsUtils';
 import { SEO } from '@/components/layout/SEO';
+import { CARD_CONTAINER, CARD_GAP } from '@/lib/card-styles';
+import { StandingsHeader } from '@/components/standings/StandingsHeader';
+import { DriverStandingsCard } from '@/components/standings/DriverStandingsCard';
+
+const HERO_SKELETONS = ['p1', 'p2', 'p3'] as const;
+const GRID_SKELETONS = Array.from({ length: 8 }, (_, i) => `ds-${i}`);
 
 const DriverStandings = () => {
   const { selectedYear } = useSeason();
+  const { profile } = useAuth();
   const { trackPageView } = useAnalytics();
 
   useEffect(() => {
@@ -53,7 +46,7 @@ const DriverStandings = () => {
     queryFn: () => fetchSchedule(selectedYear),
   });
 
-  const [now] = React.useState(() => Date.now());
+  const [now] = useState(() => Date.now());
   const hasCompletedRaceEventsInSchedule = useMemo(
     () =>
       (schedule ?? []).some(
@@ -70,8 +63,9 @@ const DriverStandings = () => {
 
   const isPreSeason =
     driverStandings && driverStandings.length > 0 && driverStandings[0].points === 0;
-  const top3 = isPreSeason ? [] : driverStandings?.slice(0, 3) || [];
-  const rest = isPreSeason ? driverStandings || [] : driverStandings?.slice(3) || [];
+
+  const heroDrivers = isPreSeason ? [] : driverStandings?.slice(0, 3) || [];
+  const restDrivers = isPreSeason ? driverStandings || [] : driverStandings?.slice(3) || [];
 
   let championshipStatus: 'leader' | 'champion' = 'leader';
   if (driverStandings && driverStandings.length >= 2 && schedule && raceResults) {
@@ -83,81 +77,98 @@ const DriverStandings = () => {
     );
   }
 
-  return (
-    <StandingsLayout
-      title="Driver Standings"
-      subtitle="World Drivers Championship"
-      seoTitle="Driver Standings"
-      seoDescription={`See the ${selectedYear} driver standings with points, wins, podiums, and championship momentum across the season.`}
-      selectedYear={selectedYear}
-    >
-      {isLoading ? (
-        <StandingsLoadingSkeleton />
-      ) : isError ? (
-        <StandingsErrorState message={(error as Error)?.message || 'Please try again later.'} />
-      ) : driverStandings && driverStandings.length > 0 ? (
-        <>
-          {/* Podium Section */}
-          <DriverPodium
-            drivers={top3.map((driver, i) => ({
-              position: (i + 1) as 1 | 2 | 3,
-              name: driver.name,
-              team: driver.team,
-              code: driver.code,
-              points: driver.points,
-              wins: driver.wins,
-              podiums: driver.podiums,
-              image: getDriverImage(driver.code, selectedYear),
-              colorClass: getTeamColorClass(driver.team),
-            }))}
-            leaderLabel={
-              championshipStatus === 'champion' ? 'World Champion' : 'Championship Leader'
-            }
-          />
+  const leaderLabel = championshipStatus === 'champion' ? 'World Champion' : 'Championship Leader';
 
-          {/* Rest of the Grid */}
-          <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-            <div className="divide-y divide-white/[0.04]">
-              {rest.map((driver, index) => (
-                <StandingsTableRow
+  const favoriteDriverCode = profile?.favorite_driver ?? null;
+  const isFav = (driver: DriverStanding) =>
+    !!favoriteDriverCode &&
+    (driver.code === favoriteDriverCode ||
+      driver.name.toLowerCase().includes(favoriteDriverCode.toLowerCase()));
+
+  return (
+    <>
+      <SEO
+        title="Driver Standings"
+        description={`See the ${selectedYear} driver standings with points, wins, podiums, and championship momentum across the season.`}
+        keywords={['f1 driver standings', 'f1 championship', `${selectedYear} drivers`]}
+      />
+
+      <StandingsHeader
+        title="Driver Standings"
+        subtitle="World Drivers Championship"
+        selectedYear={selectedYear}
+      />
+
+      {isLoading ? (
+        <div className="space-y-5">
+          <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-3`}>
+            {HERO_SKELETONS.map((id) => (
+              <div key={id} className={`h-[180px] animate-pulse ${CARD_CONTAINER}`} />
+            ))}
+          </div>
+          <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 lg:grid-cols-3`}>
+            {GRID_SKELETONS.map((id) => (
+              <div key={id} className={`h-[140px] animate-pulse ${CARD_CONTAINER}`} />
+            ))}
+          </div>
+        </div>
+      ) : isError ? (
+        <div className={`${CARD_CONTAINER} px-5 py-12 text-center`}>
+          <p className="text-[13px] text-white/80">
+            {(error as Error)?.message || 'Could not load driver standings.'}
+          </p>
+        </div>
+      ) : driverStandings && driverStandings.length > 0 ? (
+        <div className="space-y-5">
+          {/* Hero row — P1/P2/P3 with P1 visually centered on desktop */}
+          {heroDrivers.length > 0 && (
+            <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-3`}>
+              {heroDrivers.map((driver, i) => (
+                <div
                   key={driver.code}
-                  rank={driver.rank}
-                  colorClass={getTeamColorClass(driver.team)}
-                  name={driver.name}
-                  team={driver.team}
-                  wins={driver.wins}
-                  podiums={driver.podiums}
-                  points={driver.points}
-                  pointsChange={driver.points_change}
-                  delay={index * 0.04}
-                  indicator={getChangeIndicator(driver.points_change)}
-                  beforeName={
-                    <Avatar className="size-22 shrink-0 border border-white/[0.08]">
-                      <AvatarImage
-                        src={getDriverImage(driver.code, selectedYear)}
-                        className="object-cover object-top"
-                      />
-                      <AvatarFallback className="bg-[#1a1a1e] text-[11px] font-bold">
-                        {driver.code}
-                      </AvatarFallback>
-                    </Avatar>
+                  className={
+                    driver.rank === 1
+                      ? 'md:order-2'
+                      : driver.rank === 2
+                        ? 'md:order-1'
+                        : 'md:order-3'
                   }
-                  nameExtras={
-                    isRookie(driver.code, selectedYear) && (
-                      <span className="inline-flex rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-400">
-                        R
-                      </span>
-                    )
-                  }
+                >
+                  <DriverStandingsCard
+                    driver={driver}
+                    year={selectedYear}
+                    variant="hero"
+                    leaderLabel={driver.rank === 1 ? leaderLabel : undefined}
+                    isFavorite={isFav(driver)}
+                    delay={i * 0.03}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Rest of the grid */}
+          {restDrivers.length > 0 && (
+            <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 lg:grid-cols-3`}>
+              {restDrivers.map((driver, i) => (
+                <DriverStandingsCard
+                  key={driver.code}
+                  driver={driver}
+                  year={selectedYear}
+                  variant="regular"
+                  isFavorite={isFav(driver)}
+                  delay={Math.min(i * 0.015, 0.2)}
                 />
               ))}
             </div>
-          </div>
-        </>
+          )}
+        </div>
       ) : (
-        <StandingsEmptyState year={selectedYear} />
+        <div className={`${CARD_CONTAINER} px-5 py-12 text-center`}>
+          <p className="text-[13px] text-white/80">No standings data for {selectedYear}.</p>
+        </div>
       )}
-    </StandingsLayout>
+    </>
   );
 };
 

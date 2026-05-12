@@ -41,7 +41,7 @@ const SpeedTooltip = ({
     const color = driverColor(selectedDriver, year);
 
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-4 shadow-2xl min-w-[200px]">
+      <div className="rounded-lg border border-white/[0.04] p-4 shadow-2xl min-w-[200px]">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
             <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
@@ -84,7 +84,7 @@ const SpeedTooltip = ({
               Speed
             </span>
             <span
-              className="text-xl font-black text-white"
+              className="text-xl font-semibold text-white"
               style={{ color: color, fontFamily: "'Inter', sans-serif" }}
             >
               {Math.round(data.Speed)} <span className="text-xs text-white">km/h</span>
@@ -107,7 +107,7 @@ const SpeedTooltip = ({
                 <span>Brake</span>
                 <span
                   className={cn(
-                    'text-right font-black',
+                    'text-right font-semibold',
                     data.Brake > 0 ? 'text-red-400' : 'text-white'
                   )}
                 >
@@ -126,7 +126,7 @@ const SpeedTooltip = ({
                 <span>DRS</span>
                 <span
                   className={cn(
-                    'text-right font-black',
+                    'text-right font-semibold',
                     data.DRS >= 10 ? 'text-green-400' : 'text-white'
                   )}
                 >
@@ -251,9 +251,9 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
           <div className="space-y-4 border-t border-white/[0.06] pt-4">
             {/* Speed stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="flex flex-col gap-1 p-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+              <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                 <span
-                  className="text-[9px] text-white uppercase tracking-wider font-black"
+                  className="text-[9px] text-white uppercase tracking-wider font-semibold"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Max Speed
@@ -265,9 +265,9 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                   {Math.round(maxSpeed)} <span className="text-[10px] text-white">km/h</span>
                 </span>
               </div>
-              <div className="flex flex-col gap-1 p-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+              <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                 <span
-                  className="text-[9px] text-white uppercase tracking-wider font-black"
+                  className="text-[9px] text-white uppercase tracking-wider font-semibold"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Avg Speed
@@ -280,9 +280,9 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 </span>
               </div>
               {meta?.lapTime != null && (
-                <div className="flex flex-col gap-1 p-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                   <span
-                    className="text-[9px] text-white uppercase tracking-wider font-black"
+                    className="text-[9px] text-white uppercase tracking-wider font-semibold"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     Lap Time
@@ -297,9 +297,9 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 </div>
               )}
               {meta?.position != null && (
-                <div className="flex flex-col gap-1 p-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                   <span
-                    className="text-[9px] text-white uppercase tracking-wider font-black"
+                    className="text-[9px] text-white uppercase tracking-wider font-semibold"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     Position
@@ -317,7 +317,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             {/* Lap metadata row */}
             {meta && (meta.compound || meta.sector1Time != null || meta.deleted != null) && (
               <div
-                className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-[#0c0c0e] text-xs"
+                className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.04] text-xs"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {meta.compound && (
@@ -328,14 +328,14 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                         compoundColors[meta.compound.toUpperCase()] || 'bg-zinc-500'
                       )}
                     ></span>
-                    <span className="text-white uppercase font-black">{meta.compound}</span>
+                    <span className="text-white uppercase font-semibold">{meta.compound}</span>
                     {meta.tyreLife != null && (
                       <span className="text-white ml-1">({meta.tyreLife} laps)</span>
                     )}
                     {meta.freshTyre != null && (
                       <span
                         className={cn(
-                          'text-[9px] font-black px-1 py-0.5 ml-1',
+                          'text-[9px] font-semibold px-1 py-0.5 ml-1',
                           meta.freshTyre
                             ? 'bg-green-900/60 text-green-400'
                             : 'bg-zinc-800 text-white'
@@ -355,7 +355,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector1Time != null && (
                       <span>
                         S1{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector1Time)}
                         </span>
                       </span>
@@ -363,7 +363,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector2Time != null && (
                       <span>
                         S2{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector2Time)}
                         </span>
                       </span>
@@ -371,7 +371,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector3Time != null && (
                       <span>
                         S3{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector3Time)}
                         </span>
                       </span>
@@ -399,7 +399,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     )}
                     {meta.speedST != null && (
                       <span>
-                        ST <span className="text-white font-black">{meta.speedST}</span>
+                        ST <span className="text-white font-semibold">{meta.speedST}</span>
                       </span>
                     )}
                   </div>
@@ -408,12 +408,12 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 {/* Badges */}
                 <div className="flex items-center gap-2 ml-auto">
                   {meta.isPersonalBest && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-purple-900/60 text-purple-300 rounded-sm uppercase tracking-wider">
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-purple-900/60 text-purple-300 rounded-sm uppercase tracking-wider">
                       PB
                     </span>
                   )}
                   {meta.deleted && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-red-900/60 text-red-400 rounded-sm uppercase tracking-wider">
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-red-900/60 text-red-400 rounded-sm uppercase tracking-wider">
                       DELETED{meta.deletedReason ? ` — ${meta.deletedReason}` : ''}
                     </span>
                   )}

@@ -73,7 +73,7 @@ export const DriverHeader: React.FC<DriverHeaderProps> = ({
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 {countryCode !== 'xx' && (
                   <img
-                    src={`https://flagcdn.com/h40/${countryCode}.png`}
+                    src={`https://flagcdn.com/${countryCode}.svg`}
                     alt={career.nationality}
                     className="h-4 w-auto rounded-sm opacity-80"
                   />

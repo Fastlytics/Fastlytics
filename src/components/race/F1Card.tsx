@@ -1,7 +1,6 @@
-// knip-ignore
-import React from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 
 interface F1CardProps {
   title: string;
@@ -17,27 +16,28 @@ interface F1CardProps {
 const F1Card = ({ title, value, team, subValue, className, style, imageUrl }: F1CardProps) => (
   <div
     className={cn(
-      'group relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] transition-colors hover:border-white/[0.1]',
+      CARD_CONTAINER,
+      'relative overflow-hidden transition-colors hover:border-white/[0.08]',
       className
     )}
     style={style}
   >
-    <div className={cn('absolute left-0 top-0 h-0.5 w-full', `bg-f1-${team}`)} />
-    <div className="relative z-10 flex items-center gap-5 p-6">
+    {/* Team color accent — thin top bar */}
+    <div className={cn('absolute inset-x-0 top-0 h-px', `bg-f1-${team}`)} />
+
+    <div className="flex items-center gap-5 p-5">
       {imageUrl && (
-        <Avatar className="size-20 shrink-0 rounded-xl border border-white/[0.08]">
+        <Avatar className="size-16 shrink-0 rounded-lg border border-white/[0.06]">
           <AvatarImage src={imageUrl} className="object-cover object-top" />
-          <AvatarFallback className="bg-[#1a1a1e] text-[14px] font-bold">
+          <AvatarFallback className="bg-white/[0.03] text-[13px] font-medium text-white/60">
             {String(value).substring(0, 2)}
           </AvatarFallback>
         </Avatar>
       )}
       <div className="min-w-0 flex-1">
-        <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-white/35">
-          {title}
-        </div>
-        <div className="truncate text-[20px] font-bold text-white">{value}</div>
-        {subValue && <div className="mt-1 text-[14px] font-medium text-red-400">{subValue}</div>}
+        <div className="mb-1 text-[12px] font-medium text-white/80">{title}</div>
+        <div className="truncate text-[18px] font-semibold text-white">{value}</div>
+        {subValue && <div className="mt-1 text-[13px] font-medium text-white/80">{subValue}</div>}
       </div>
     </div>
   </div>

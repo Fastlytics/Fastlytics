@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SessionReplay from '@/components/replay/SessionReplay';
 import { Button } from '@/components/ui/button';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeft01Icon } from 'hugeicons-react';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { SEO } from '@/components/layout/SEO';
 
@@ -51,7 +51,7 @@ const SessionReplayPage: React.FC = () => {
               className="text-white hover:bg-white/10 rounded-full"
               onClick={() => navigate(-1)}
             >
-              <ArrowLeftIcon className="size-6" />
+              <ArrowLeft01Icon className="size-6" />
             </Button>
           </div>
 

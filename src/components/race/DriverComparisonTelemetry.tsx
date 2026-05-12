@@ -124,7 +124,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="group relative h-[400px] w-full rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 animate-in fade-in slide-in-from-bottom-2 duration-200"
+      className="group relative h-[400px] w-full rounded-lg border border-white/[0.04] p-5"
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
@@ -212,7 +212,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl">
+                    <div className="rounded-lg border border-white/[0.04] bg-[#0a0a0a] p-3 shadow-xl">
                       <div
                         className="mb-2 border-b border-white/[0.06] pb-1.5 text-[11px] font-medium text-white"
                         style={{ fontFamily: "'Inter', sans-serif" }}

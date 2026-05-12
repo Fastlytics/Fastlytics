@@ -72,8 +72,9 @@ export const useRaceData = ({
   });
 
   // Only set default session if not already in params
+  const sessionParam = searchParams.get('session');
   useEffect(() => {
-    if (availableSessions.length > 0 && !searchParams.get('session')) {
+    if (availableSessions.length > 0 && !sessionParam) {
       let defaultSession = '';
       if (isTestingEvent) {
         defaultSession = 'Summary';

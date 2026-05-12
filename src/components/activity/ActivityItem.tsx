@@ -7,8 +7,8 @@ import {
   UserGroupIcon,
   FlashIcon,
   SecurityCheckIcon,
+  StarIcon,
 } from 'hugeicons-react';
-import { StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { getDriverImage as getDriverImageFromMapping } from '@/utils/imageMapping';
@@ -86,7 +86,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
           <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
             {countryCode ? (
               <img
-                src={`https://flagcdn.com/h40/${countryCode}.png`}
+                src={`https://flagcdn.com/${countryCode}.svg`}
                 alt={raceName}
                 className="size-full object-cover"
               />
@@ -119,7 +119,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
           <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
             {raceDetailsCode ? (
               <img
-                src={`https://flagcdn.com/h40/${raceDetailsCode}.png`}
+                src={`https://flagcdn.com/${raceDetailsCode}.svg`}
                 alt={raceDetailsName}
                 className="size-full object-cover"
               />
@@ -254,7 +254,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
           <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
             {countryCodeTab ? (
               <img
-                src={`https://flagcdn.com/h40/${countryCodeTab}.png`}
+                src={`https://flagcdn.com/${countryCodeTab}.svg`}
                 alt={raceNameTab}
                 className="size-full object-cover"
               />
@@ -292,7 +292,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
           <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden rounded shadow-sm">
             {countryCodeSession ? (
               <img
-                src={`https://flagcdn.com/h40/${countryCodeSession}.png`}
+                src={`https://flagcdn.com/${countryCodeSession}.svg`}
                 alt={raceNameSession}
                 className="size-full object-cover"
               />

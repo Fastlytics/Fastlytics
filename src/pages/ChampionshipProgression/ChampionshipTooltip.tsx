@@ -25,7 +25,7 @@ const ChampionshipTooltip = ({
       <div className="bg-black/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
         <div className="flex items-center gap-3 mb-3 pb-3 border-b border-zinc-800">
           <img
-            src={`https://flagcdn.com/h24/${getCountryCode(country)}.png`}
+            src={`https://flagcdn.com/${getCountryCode(country)}.svg`}
             alt="Country Flag"
             className="h-4 rounded-[2px]"
           />

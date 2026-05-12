@@ -1,8 +1,7 @@
 // knip-ignore
-import React, { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'react';
+import { useMemo, useEffect, useCallback, useRef, useReducer } from 'react';
 import { SEO } from '@/components/layout/SEO';
-import { useParams, useSearchParams } from 'react-router-dom';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import { useParams, useSearchParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import HistoricalAccessPrompt from '@/components/common/HistoricalAccessPrompt';
 import {
   fetchSpecificRaceResults,
@@ -20,49 +19,27 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { getCountryCode } from '@/utils/countryUtils';
 import { APIError } from '@/lib/api-client';
 import { RaceHeader } from '@/pages/Race/RaceHeader';
-import { ScheduleSidebar } from '@/pages/Race/ScheduleSidebar';
-import { TelemetryTabs } from '@/pages/Race/TelemetryTabs';
-import { OverviewTab } from '@/pages/Race/tabs/OverviewTab';
-import { StrategyTab } from '@/pages/Race/tabs/StrategyTab';
-import { PositionsTab } from '@/pages/Race/tabs/PositionsTab';
-import { LapTimesTab } from '@/pages/Race/tabs/LapTimesTab';
-import { DominanceTab } from '@/pages/Race/tabs/DominanceTab';
-import { TeamPaceTab } from '@/pages/Race/tabs/TeamPaceTab';
-import { TelemetryTab } from '@/pages/Race/tabs/TelemetryTab';
-import { ReplayTab } from '@/pages/Race/tabs/ReplayTab';
+import { RaceTabStrip } from '@/pages/Race/RaceTabStrip';
 import {
   parseRaceLapTime as parseLapTime,
   parseRaceTestingSessionAlias as parseTestingSessionAlias,
   resolveRaceSessionForAnalysis as resolveSessionForAnalysis,
 } from '@/pages/Race/race-utils';
-
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
+import type { RaceLayoutContext } from '@/pages/Race/race-layout-context';
 
 type RaceUIState = {
-  selectedLap: string | number;
-  activeSection: string;
-  lapAnalysisMode: 'history' | 'pace' | 'gap';
   testingWindow: 'full' | 'morning' | 'afternoon';
   now: Date;
   is24Hour: boolean;
 };
 
 type RaceUIAction =
-  | { type: 'setSelectedLap'; value: string | number }
-  | { type: 'setActiveSection'; value: string }
-  | { type: 'setLapAnalysisMode'; value: 'history' | 'pace' | 'gap' }
   | { type: 'setTestingWindow'; value: 'full' | 'morning' | 'afternoon' }
   | { type: 'tickNow' }
   | { type: 'toggle24Hour' };
 
 const raceUIReducer = (state: RaceUIState, action: RaceUIAction): RaceUIState => {
   switch (action.type) {
-    case 'setSelectedLap':
-      return { ...state, selectedLap: action.value };
-    case 'setActiveSection':
-      return { ...state, activeSection: action.value };
-    case 'setLapAnalysisMode':
-      return { ...state, lapAnalysisMode: action.value };
     case 'setTestingWindow':
       return { ...state, testingWindow: action.value };
     case 'tickNow':
@@ -74,27 +51,91 @@ const raceUIReducer = (state: RaceUIState, action: RaceUIAction): RaceUIState =>
   }
 };
 
+// Legacy ?tab= → sub-route mapping
+const LEGACY_TAB_MAP: Record<string, string> = {
+  overview: '/overview',
+  replay: '/replay',
+  strategy: '/strategy',
+  positions: '/lap-analysis?view=positions',
+  laptimes: '/lap-analysis',
+  dominance: '/head-to-head',
+  telemetry: '/telemetry',
+};
+
 const Race = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
-  const initialTab = searchParams.get('tab');
 
-  const { trackEvent, trackInteraction, trackSelection } = useAnalytics();
+  const { trackEvent } = useAnalytics();
 
   const [uiState, dispatchUI] = useReducer(raceUIReducer, {
-    selectedLap: 'fastest',
-    activeSection: initialTab || 'overview',
-    lapAnalysisMode: 'history',
     testingWindow: 'full',
     now: new Date(),
     is24Hour: true,
   });
-  const { selectedLap, activeSection, lapAnalysisMode, testingWindow, now, is24Hour } = uiState;
+  const { testingWindow, now } = uiState;
 
-  const setSelectedSession = (session: string) => {
+  // Legacy ?tab= one-shot redirect (Requirement 9)
+  const legacyRedirectDone = useRef(false);
+  useEffect(() => {
+    if (legacyRedirectDone.current) return;
+    legacyRedirectDone.current = true;
+
+    // Only act at the layout-level path — not inside a section
+    if (location.pathname !== `/race/${raceId}`) return;
+
+    const tabParam = searchParams.get('tab');
+    if (!tabParam || !tabParam.trim()) return;
+
+    const params = new URLSearchParams(searchParams);
+    params.delete('tab');
+
+    // Team pace → external redirect
+    if (tabParam === 'teampace') {
+      navigate(`/team-pace?race=${raceId}`, { replace: true });
+      return;
+    }
+
+    const target = LEGACY_TAB_MAP[tabParam];
+    if (!target) {
+      if (import.meta.env.DEV) {
+        console.warn(`[Race] Unknown legacy ?tab="${tabParam}". Redirecting to /overview.`);
+      }
+      navigate(
+        {
+          pathname: `/race/${raceId}/overview`,
+          search: params.toString() ? `?${params.toString()}` : '',
+        },
+        { replace: true }
+      );
+      return;
+    }
+
+    // Target may contain ?view=… — merge into params
+    const [targetPath, targetQuery] = target.split('?');
+    if (targetQuery) {
+      const targetParams = new URLSearchParams(targetQuery);
+      targetParams.forEach((value, key) => {
+        if (!params.has(key)) params.set(key, value);
+      });
+    }
+
+    navigate(
+      {
+        pathname: `/race/${raceId}${targetPath}`,
+        search: params.toString() ? `?${params.toString()}` : '',
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setSelectedSession = useCallback((session: string) => {
     setSearchParams(
       (prev) => {
         const newParams = new URLSearchParams(prev);
@@ -103,37 +144,15 @@ const Race = () => {
       },
       { replace: true }
     );
-    trackEvent('session_changed', { session_type: session, race_name: eventName, year: year });
-  };
-
-  const setShowAnalysis = (show: boolean) => {
-    setSearchParams((prev) => {
-      const newParams = new URLSearchParams(prev);
-      if (show) {
-        newParams.set('view', 'analysis');
-      } else {
-        newParams.delete('view');
-      }
-      return newParams;
-    });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => dispatchUI({ type: 'tickNow' }), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Circuit Comparison State
-  const [circuitDrivers, setCircuitDrivers] = useState<{
-    driver1: string;
-    driver2: string;
-    lap1: string | number;
-    lap2: string | number;
-    shouldLoadChart: boolean;
-  }>({ driver1: '', driver2: '', lap1: 'fastest', lap2: 'fastest', shouldLoadChart: false });
-
   // Parse ID
-
   const parsedRaceId = (() => {
     if (!raceId) return { year: null, eventSlug: null, eventName: 'Race' };
     const parts = raceId.split('-');
@@ -141,7 +160,6 @@ const Race = () => {
     if (isNaN(parsedYear)) return { year: null, eventSlug: raceId, eventName: 'Invalid Race ID' };
     const slug = parts.slice(1).join('-');
     const name = slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-
     return { year: parsedYear, eventSlug: slug, eventName: name };
   })();
   const year = parsedRaceId.year;
@@ -154,15 +172,11 @@ const Race = () => {
   }, [eventName]);
 
   const trackedEventRef = useRef<string | null>(null);
-
   useEffect(() => {
     if (year && eventName && eventName !== 'Invalid Race ID') {
       const eventKey = `${year}-${eventName}`;
       if (trackedEventRef.current !== eventKey) {
-        trackEvent('race_analysis_viewed', {
-          year,
-          race: eventName,
-        });
+        trackEvent('race_analysis_viewed', { year, race: eventName });
         trackedEventRef.current = eventKey;
       }
     }
@@ -189,15 +203,16 @@ const Race = () => {
       (!availableSessions || !availableSessions.some((s) => s.type === 'R')),
   });
 
-  const { data: sessionResults, isLoading: isLoadingResults } = useQuery<DetailedRaceResult[]>({
+  const { data: sessionResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['sessionResult', year, eventSlug, selectedSession],
     queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
     enabled: !!year && !!eventSlug && !!selectedSession && availableSessions.length > 0,
   });
 
-  // Only set default session if not already in params
+  // Set default session if not already in params
+  const sessionParam = searchParams.get('session');
   useEffect(() => {
-    if (availableSessions.length > 0 && !searchParams.get('session')) {
+    if (availableSessions.length > 0 && !sessionParam) {
       let defaultSession = '';
       if (isTestingEvent) {
         defaultSession = availableSessions[0].type;
@@ -206,8 +221,6 @@ const Race = () => {
       } else {
         defaultSession = availableSessions[availableSessions.length - 1].type;
       }
-
-      // Update params without pushing to history for initial load
       setSearchParams(
         (prev) => {
           const newParams = new URLSearchParams(prev);
@@ -217,44 +230,31 @@ const Race = () => {
         { replace: true }
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableSessions]);
+  }, [availableSessions, sessionParam, isTestingEvent, setSearchParams]);
 
-  // Derived Data
-  // Fetch aggregated data for "Summary" session in testing events
-  const { data: summaryResults, isLoading: isLoadingSummary } = useQuery<DetailedRaceResult[]>({
+  // Summary results for testing events
+  const { data: summaryResults } = useQuery<DetailedRaceResult[]>({
     queryKey: ['summaryResult', year, eventSlug],
     queryFn: async () => {
       if (!year || !eventSlug || availableSessions.length === 0) return [];
-
       const fetchingSessions = availableSessions.filter((s) => s.type !== 'Summary');
-
-      const allResultsPromises = fetchingSessions.map((s) =>
-        fetchSpecificRaceResults(year, eventSlug, s.type)
+      const allResultsArray = await Promise.all(
+        fetchingSessions.map((s) => fetchSpecificRaceResults(year, eventSlug, s.type))
       );
-
-      const allResultsArray = await Promise.all(allResultsPromises);
-
       const aggregatedMap: { [driverCode: string]: DetailedRaceResult } = {};
-
-      allResultsArray.forEach((sessionResults) => {
-        sessionResults.forEach((result) => {
+      allResultsArray.forEach((results) => {
+        results.forEach((result) => {
           if (!aggregatedMap[result.driverCode]) {
             aggregatedMap[result.driverCode] = {
               ...result,
               lapsCompleted: 0,
-              fastestLapTime: null, // We'll find min
+              fastestLapTime: null,
             };
           }
-
           const aggr = aggregatedMap[result.driverCode];
-
-          // Sum laps
           if (result.lapsCompleted) {
             aggr.lapsCompleted = (aggr.lapsCompleted || 0) + result.lapsCompleted;
           }
-
-          // Find fastest lap across sessions
           if (result.fastestLapTime) {
             const currentFastest = parseLapTime(aggr.fastestLapTime);
             const newTime = parseLapTime(result.fastestLapTime);
@@ -264,22 +264,20 @@ const Race = () => {
           }
         });
       });
-
       return Object.values(aggregatedMap);
     },
     enabled: isTestingEvent && selectedSession === 'Summary' && availableSessions.length > 0,
   });
 
   const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
-  const isLoadingEffectiveResults =
-    selectedSession === 'Summary' ? isLoadingSummary : isLoadingResults;
   const isHistoricalAccessLocked =
     availableSessionsError instanceof APIError && availableSessionsError.status === 402;
 
+  // Derived highlights
   const raceWinner = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? effectiveSessionResults?.find((r) => r.position === 1)
+        ? (effectiveSessionResults?.find((r) => r.position === 1) ?? null)
         : null,
     [effectiveSessionResults, selectedSession]
   );
@@ -287,25 +285,20 @@ const Race = () => {
   const poleSitter = useMemo(
     () =>
       selectedSession === 'R' || selectedSession === 'Sprint'
-        ? effectiveSessionResults?.find((r) => r.gridPosition === 1)
+        ? (effectiveSessionResults?.find((r) => r.gridPosition === 1) ?? null)
         : null,
     [effectiveSessionResults, selectedSession]
   );
+
   const fastestLapHolder = useMemo(() => {
     if ((selectedSession !== 'R' && selectedSession !== 'Sprint') || !effectiveSessionResults)
       return null;
-
     const validResults = effectiveSessionResults.filter(
       (r) => !['Disqualified', 'DSQ', 'EXC'].includes(r.status) && r.driverFastestLapTime
     );
-
     if (validResults.length === 0) return null;
-
     return validResults.reduce<DetailedRaceResult | null>((best, result) => {
-      if (!best) {
-        return result;
-      }
-
+      if (!best) return result;
       return parseLapTime(result.driverFastestLapTime) < parseLapTime(best.driverFastestLapTime)
         ? result
         : best;
@@ -326,8 +319,7 @@ const Race = () => {
       .slice(0, 3);
   }, [effectiveSessionResults, selectedSession]);
 
-  /* Testing Event identification logic moved up early in the component */
-
+  // Testing session derivations
   const testingSessionAlias = useMemo(
     () => parseTestingSessionAlias(selectedSession),
     [selectedSession]
@@ -335,7 +327,6 @@ const Race = () => {
   const isTestingSplitSession = isTestingEvent && !!testingSessionAlias;
   const analysisSession = useMemo(() => {
     const resolved = resolveSessionForAnalysis(selectedSession);
-    // "Summary" is not a real FastF1 session — map to first FP in available sessions
     if (resolved === 'Summary' && availableSessions.length > 0) {
       const firstFP = availableSessions.find((s) => s.type.startsWith('FP'));
       return firstFP?.type ?? 'FP1';
@@ -346,8 +337,7 @@ const Race = () => {
     isTestingEvent &&
     (selectedSession.startsWith('FP') || selectedSession === 'Summary' || !!testingSessionAlias);
 
-  // Derived testing window: forced to 'full' when conditions invalidate session splits.
-  const effectiveTestingWindow =
+  const effectiveTestingWindow: 'full' | 'morning' | 'afternoon' =
     !isTestingSession || isTestingSplitSession || selectedSession === 'Summary'
       ? 'full'
       : testingWindow;
@@ -357,9 +347,8 @@ const Race = () => {
       if (!isTestingSession || isTestingSplitSession) return result.fastestLapTime;
       if (effectiveTestingWindow === 'morning')
         return result.morningFastestLapTime ?? result.fastestLapTime;
-      if (effectiveTestingWindow === 'afternoon') {
+      if (effectiveTestingWindow === 'afternoon')
         return result.afternoonFastestLapTime ?? result.fastestLapTime;
-      }
       return result.fastestLapTime;
     },
     [isTestingSession, isTestingSplitSession, effectiveTestingWindow]
@@ -371,9 +360,8 @@ const Race = () => {
         return result.lapsCompleted ?? 0;
       if (effectiveTestingWindow === 'morning')
         return result.morningLapsCompleted ?? result.lapsCompleted ?? 0;
-      if (effectiveTestingWindow === 'afternoon') {
+      if (effectiveTestingWindow === 'afternoon')
         return result.afternoonLapsCompleted ?? result.lapsCompleted ?? 0;
-      }
       return result.lapsCompleted ?? 0;
     },
     [isTestingSession, isTestingSplitSession, effectiveTestingWindow, selectedSession]
@@ -382,43 +370,29 @@ const Race = () => {
   const testingInsights = useMemo(() => {
     if (!effectiveSessionResults || !isTestingSession) {
       return {
-        fastest: null as DetailedRaceResult | null,
-        mileage: null as DetailedRaceResult | null,
+        fastest: null,
+        mileage: null,
         totalLaps: 0,
         totalDistance: 0,
         averageLaps: 0,
         circuitLength: 5.0,
       };
     }
-
     const circuitLength = getCircuitLength(eventName);
-
     const fastest = effectiveSessionResults.reduce<DetailedRaceResult | null>((best, result) => {
       const lapTime = getSessionWindowLapTime(result);
-      if (!lapTime) {
-        return best;
-      }
-
-      if (!best) {
-        return result;
-      }
-
+      if (!lapTime) return best;
+      if (!best) return result;
       return parseLapTime(lapTime) < parseLapTime(getSessionWindowLapTime(best)) ? result : best;
     }, null);
-
     const mileage =
       effectiveSessionResults.toSorted(
         (a, b) => getSessionWindowLaps(b) - getSessionWindowLaps(a)
       )[0] ?? null;
-
-    const totalLaps = effectiveSessionResults.reduce(
-      (sum, result) => sum + getSessionWindowLaps(result),
-      0
-    );
+    const totalLaps = effectiveSessionResults.reduce((sum, r) => sum + getSessionWindowLaps(r), 0);
     const totalDistance = calculateDistance(totalLaps, circuitLength);
     const averageLaps =
       effectiveSessionResults.length > 0 ? totalLaps / effectiveSessionResults.length : 0;
-
     return { fastest, mileage, totalLaps, totalDistance, averageLaps, circuitLength };
   }, [
     effectiveSessionResults,
@@ -428,93 +402,21 @@ const Race = () => {
     eventName,
   ]);
 
-  const nextSession = useMemo(() => {
-    if (!sessionSchedule) return null;
-    return sessionSchedule.sessions.find((s) => new Date(s.date) > now);
-  }, [sessionSchedule, now]);
+  // Schedule-related derivations (for RaceIndex)
+  const hasRaceData = isTestingEvent
+    ? availableSessions.length > 0
+    : availableSessions.some((s) => s.type === 'R');
+  const shouldShowSchedule = !hasRaceData && !showAnalysis;
 
-  const countdown = useMemo(() => {
-    if (!nextSession) return null;
-    const diff = new Date(nextSession.date).getTime() - now.getTime();
-    if (diff <= 0) return null;
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-    return { days, hours, minutes, seconds };
-  }, [nextSession, now]);
-
-  const nextSessionDate = useMemo(
-    () => (nextSession ? { name: nextSession.name, date: new Date(nextSession.date) } : null),
-    [nextSession]
-  );
-
-  const scheduleHeroDate = useMemo(() => {
-    if (!sessionSchedule?.sessions.length) return 'Dates TBD';
-    const sortedDates = sessionSchedule.sessions
-      .map((session) => new Date(session.date))
-      .sort((a, b) => a.getTime() - b.getTime());
-    const anchorDate = nextSession
-      ? new Date(nextSession.date)
-      : sortedDates[sortedDates.length - 1];
-    return anchorDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  }, [nextSession, sessionSchedule]);
-
-  const scheduleHeroCountryCode = useMemo(() => {
-    if (!sessionSchedule) return undefined;
-    const code = getCountryCode(sessionSchedule.country || sessionSchedule.location);
-    return code !== 'xx' ? code : undefined;
-  }, [sessionSchedule]);
-
-  const handleCircuitDriversSelected = React.useCallback(
-    (drivers: {
-      driver1: string;
-      driver2: string;
-      lap1: string | number;
-      lap2: string | number;
-      shouldLoadChart: boolean;
-    }) => {
-      setCircuitDrivers(drivers);
-      if (drivers.shouldLoadChart) {
-        trackEvent('chart_interaction', {
-          chart: 'circuit_comparison',
-          action: 'compare_drivers',
-          driver1: drivers.driver1,
-          driver2: drivers.driver2,
-        });
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent is stable, intentionally excluded
-    []
-  );
-
-  const handleSectionChange = (section: string) => {
-    dispatchUI({ type: 'setActiveSection', value: section });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    trackEvent('tab_switched', {
-      tab: section,
-      context: 'race_analysis',
-      race_name: eventName,
-      year: year,
-    });
-  };
-
+  // Early returns
   if (!year || !eventSlug) return null;
 
   if (isLoadingSessions) {
     return (
-      <div
-        style={inter}
-        className="flex min-h-screen items-center justify-center bg-[#09090b] text-white"
-      >
+      <div className="flex min-h-[60vh] items-center justify-center text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-8 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-          <div className="text-[13px] text-white/35 animate-pulse">Loading session data…</div>
+          <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/60" />
+          <div className="text-[13px] text-white/60">Loading session data…</div>
         </div>
       </div>
     );
@@ -522,52 +424,71 @@ const Race = () => {
 
   if (isHistoricalAccessLocked) {
     return (
-      <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+      <div className="text-white">
         <SEO
           title={`${eventName} ${year}: weekend breakdown`}
           description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
           keywords={[
             'race analysis',
             'f1 telemetry',
-            'formula 1 telemetry data',
             'race results',
             'tire strategy',
             eventName,
             `${year} race weekend`,
           ]}
         />
-        <DashboardNavbar />
-        <main className="mx-auto max-w-6xl px-5 pb-20 pt-24 lg:px-8">
-          <HistoricalAccessPrompt year={year} eventName={eventName} />
-        </main>
+        <HistoricalAccessPrompt year={year} eventName={eventName} />
       </div>
     );
   }
 
-  const hasProcessedSessions = availableSessions.length > 0;
-  const hasRaceData = isTestingEvent
-    ? availableSessions.length > 0
-    : availableSessions.some((s) => s.type === 'R');
-  const shouldShowSchedule = !hasRaceData && !showAnalysis;
+  // Build the outlet context value
+  const layoutContext: RaceLayoutContext = {
+    year,
+    eventSlug,
+    eventName,
+    selectedSession,
+    setSelectedSession,
+    analysisSession,
+    availableSessions,
+    isTestingEvent,
+    isTestingSession,
+    isTestingSplitSession,
+    testingSessionAlias,
+    sessionResults,
+    summaryResults,
+    effectiveSessionResults,
+    sessionSchedule,
+    raceWinner,
+    poleSitter,
+    fastestLapHolder,
+    topPerformers,
+    testingInsights,
+    testingWindow,
+    setTestingWindow: (w: 'full' | 'morning' | 'afternoon') =>
+      dispatchUI({ type: 'setTestingWindow', value: w }),
+    effectiveTestingWindow,
+    getSessionWindowLapTime,
+    getSessionWindowLaps,
+    profile,
+  };
 
   return (
-    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+    <div className="text-white">
       <SEO
         title={`${eventName} ${year}: weekend breakdown`}
         description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
         keywords={[
           'race analysis',
           'f1 telemetry',
-          'formula 1 telemetry data',
           'race results',
           'tire strategy',
           eventName,
           `${year} race weekend`,
         ]}
       />
-      <DashboardNavbar />
 
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
+      <div className="space-y-5">
         {/* Header */}
         <RaceHeader
           year={year}
@@ -579,138 +500,19 @@ const Race = () => {
           setSelectedSession={setSelectedSession}
         />
 
-        {shouldShowSchedule ? (
-          <ScheduleSidebar
-            sessionSchedule={sessionSchedule}
-            scheduleHeroDate={scheduleHeroDate}
-            scheduleHeroCountryCode={scheduleHeroCountryCode}
-            nextSessionDate={nextSessionDate}
-            countdown={countdown}
-            is24Hour={is24Hour}
-            setIs24Hour={() => dispatchUI({ type: 'toggle24Hour' })}
-            trackInteraction={trackInteraction}
-            now={now}
-            availableSessions={availableSessions}
-            setSelectedSession={setSelectedSession}
-            setShowAnalysis={setShowAnalysis}
+        {/* Tab strip — hidden when showing schedule */}
+        {!shouldShowSchedule && (
+          <RaceTabStrip
+            baseHref={`/race/${raceId}`}
+            selectedSession={selectedSession}
+            isTestingSession={isTestingSession}
+            isTestingEvent={isTestingEvent}
           />
-        ) : (
-          <div className="flex flex-col gap-8 lg:flex-row">
-            <TelemetryTabs
-              activeSection={activeSection}
-              handleSectionChange={handleSectionChange}
-              selectedSession={selectedSession}
-              isTestingSession={isTestingSession}
-            />
-
-            {/* Main Content */}
-            <div className="min-w-0 flex-1 space-y-8">
-              {activeSection === 'overview' && year && (
-                <OverviewTab
-                  year={year}
-                  eventName={eventName}
-                  availableSessions={availableSessions}
-                  selectedSession={selectedSession}
-                  isTestingSession={isTestingSession}
-                  isTestingSplitSession={isTestingSplitSession}
-                  testingWindow={testingWindow}
-                  setTestingWindow={(w: string) =>
-                    dispatchUI({
-                      type: 'setTestingWindow',
-                      value: w as 'full' | 'morning' | 'afternoon',
-                    })
-                  }
-                  testingInsights={testingInsights}
-                  getSessionWindowLapTime={getSessionWindowLapTime}
-                  getSessionWindowLaps={getSessionWindowLaps}
-                  raceWinner={raceWinner}
-                  poleSitter={poleSitter}
-                  fastestLapHolder={fastestLapHolder}
-                  topPerformers={topPerformers}
-                  sessionResults={sessionResults}
-                  effectiveSessionResults={effectiveSessionResults}
-                  profile={profile}
-                />
-              )}
-
-              {activeSection === 'strategy' &&
-                (selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession) &&
-                year && (
-                  <StrategyTab
-                    year={year}
-                    eventName={eventName}
-                    analysisSession={analysisSession}
-                    favoriteDriver={profile?.favorite_driver}
-                  />
-                )}
-
-              {activeSection === 'positions' &&
-                (selectedSession === 'R' || selectedSession === 'Sprint') &&
-                year && (
-                  <PositionsTab
-                    year={year}
-                    eventName={eventName}
-                    analysisSession={analysisSession}
-                    favoriteDriver={profile?.favorite_driver}
-                  />
-                )}
-
-              {activeSection === 'laptimes' && year && (
-                <LapTimesTab
-                  year={year}
-                  eventName={eventName}
-                  analysisSession={analysisSession}
-                  sessionResults={sessionResults}
-                  favoriteDriver={profile?.favorite_driver}
-                  lapAnalysisMode={lapAnalysisMode}
-                  setLapAnalysisMode={(v: 'history' | 'pace' | 'gap') =>
-                    dispatchUI({ type: 'setLapAnalysisMode', value: v })
-                  }
-                />
-              )}
-
-              {activeSection === 'dominance' && year && (
-                <DominanceTab
-                  year={year}
-                  eventName={eventName}
-                  analysisSession={analysisSession}
-                  sessionResults={sessionResults}
-                  favoriteDriver={profile?.favorite_driver}
-                  circuitDrivers={circuitDrivers}
-                  onCircuitDriversSelected={handleCircuitDriversSelected}
-                />
-              )}
-
-              {activeSection === 'teampace' && year && (
-                <TeamPaceTab year={year} eventName={eventName} analysisSession={analysisSession} />
-              )}
-
-              {activeSection === 'telemetry' && year && (
-                <TelemetryTab
-                  year={year}
-                  eventName={eventName}
-                  analysisSession={analysisSession}
-                  selectedLap={selectedLap}
-                  sessionResults={sessionResults}
-                  favoriteDriver={profile?.favorite_driver}
-                />
-              )}
-
-              {activeSection === 'replay' && year && eventSlug && selectedSession && (
-                <ReplayTab
-                  year={year}
-                  eventSlug={eventSlug}
-                  analysisSession={analysisSession}
-                  isTestingSession={isTestingSession}
-                  isTestingSplitSession={isTestingSplitSession}
-                  testingSessionAlias={testingSessionAlias}
-                  effectiveTestingWindow={effectiveTestingWindow}
-                />
-              )}
-            </div>
-          </div>
         )}
-      </main>
+
+        {/* Section content via sub-routes */}
+        <Outlet context={layoutContext} />
+      </div>
     </div>
   );
 };

@@ -83,7 +83,7 @@ const RPMTooltip = ({
               RPM
             </span>
             <span
-              className="text-xl font-black text-white"
+              className="text-xl font-semibold text-white"
               style={{ color: color, fontFamily: "'Inter', sans-serif" }}
             >
               {Math.round(data.RPM)}

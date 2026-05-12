@@ -2,8 +2,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
 import { m } from 'motion/react';
-import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
-import { TrendingUp } from 'lucide-react';
+import {
+  ArrowLeft01Icon,
+  FilterHorizontalIcon,
+  AlertCircleIcon,
+  ChartIncreaseIcon,
+} from 'hugeicons-react';
 import {
   LineChart,
   Line,
@@ -16,7 +20,6 @@ import {
 } from '@/lib/recharts-lazy';
 import { useNavigate } from 'react-router-dom';
 
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/layout/SEO';
 import {
@@ -167,7 +170,6 @@ const ChampionshipProgression = () => {
         description={`Track the ${selectedYear} championship race with cumulative points, contender filters, and round-by-round momentum swings.`}
         keywords={['championship standings', 'title fight', 'f1 standings', 'points progression']}
       />
-      <DashboardNavbar />
 
       <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         {/* Header */}
@@ -184,7 +186,7 @@ const ChampionshipProgression = () => {
               </Button>
               <h1 className="text-3xl md:text-5xl font-semibold uppercase italic tracking-tighter flex items-center gap-3">
                 Championship <span className="text-red-600">Progression</span>
-                <TrendingUp className="size-8 text-zinc-600 md:h-10 md:w-10" />
+                <ChartIncreaseIcon className="size-8 text-zinc-600 md:h-10 md:w-10" />
               </h1>
             </div>
             <p className="text-zinc-500 font-mono text-sm uppercase tracking-widest ml-14">
@@ -338,7 +340,7 @@ const ChampionshipProgression = () => {
                       <g transform={`translate(${x},${y})`}>
                         <foreignObject x={-12} y={10} width={24} height={18}>
                           <img
-                            src={`https://flagcdn.com/h24/${getCountryCode(countryName)}.png`}
+                            src={`https://flagcdn.com/${getCountryCode(countryName)}.svg`}
                             alt={countryName}
                             className="size-full object-cover rounded-[2px] opacity-80 hover:opacity-100 transition-opacity"
                           />
