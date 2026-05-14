@@ -1434,6 +1434,7 @@ export interface DriverCareer {
   name: string;
   nationality: string;
   dateOfBirth: string;
+  wikipediaUrl?: string;
   careerSummary: DriverCareerSummary;
   seasons: DriverSeason[];
 }
@@ -1471,6 +1472,259 @@ export const fetchDriverCareer = async (slug: string): Promise<DriverCareer> => 
   return request<DriverCareer>(`/api/driver/${encodeURIComponent(slug)}/career`);
 };
 
+export interface DriverBio {
+  extract: string;
+  fullExtract: string;
+  description: string;
+  wikipediaUrl: string;
+  thumbnail?: string;
+  imageUrl?: string;
+  fetchedAt?: number;
+}
+
+export const fetchDriverBio = async (slug: string): Promise<DriverBio> => {
+  return request<DriverBio>(`/api/driver/${encodeURIComponent(slug)}/bio`);
+};
+
 export const fetchTeamCareer = async (slug: string): Promise<TeamCareer> => {
   return request<TeamCareer>(`/api/team/${encodeURIComponent(slug)}/career`);
+};
+
+// ---------------------------------------------------------------------------
+// Leaderboard / All-Time Stats
+// ---------------------------------------------------------------------------
+
+export interface LeaderboardDriver {
+  driver_id: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  total_wins?: number;
+  total_podiums?: number;
+  total_poles?: number;
+  total_races?: number;
+  total_points?: number;
+  championships?: number;
+}
+
+export interface StreakEntry {
+  driver_id: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  streak_length: number;
+  streak_start_year: number;
+  streak_end_year: number;
+}
+
+export const fetchDriverWinsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/wins?limit=${limit}`);
+
+export const fetchDriverPodiumsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/podiums?limit=${limit}`);
+
+export const fetchDriverPolesLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/poles?limit=${limit}`);
+
+export const fetchDriverPointsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/points?limit=${limit}`);
+
+export const fetchDriverChampionshipsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/championships?limit=${limit}`);
+
+export const fetchDriverWinStreaks = (limit = 10) =>
+  request<StreakEntry[]>(`/api/bios/leaderboard/drivers/win-streaks?limit=${limit}`);
+
+export const fetchDriverPodiumStreaks = (limit = 10) =>
+  request<StreakEntry[]>(`/api/bios/leaderboard/drivers/podium-streaks?limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// New driver leaderboards
+// ---------------------------------------------------------------------------
+
+export interface DriverStatEntry {
+  driver_id: string;
+  reference: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  value: number;
+}
+
+export const fetchDriverWinPctLeaderboard = (limit = 20, minRaces = 20) =>
+  request<DriverStatEntry[]>(
+    `/api/bios/leaderboard/drivers/win-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchDriverEntriesLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/entries?limit=${limit}`);
+
+export const fetchDriverDnfLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/dnfs?limit=${limit}`);
+
+export const fetchDriverFastestLapsLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/fastest-laps?limit=${limit}`);
+
+export const fetchDriverAvgFinishLeaderboard = (limit = 20, minRaces = 20) =>
+  request<DriverStatEntry[]>(
+    `/api/bios/leaderboard/drivers/average-finish?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchDriverSeasonsLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/seasons?limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// Team Leaderboards / All-Time Constructor Records
+// ---------------------------------------------------------------------------
+
+export interface LeaderboardTeam {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  total_wins?: number;
+  total_podiums?: number;
+  total_poles?: number;
+  total_races?: number;
+  total_points?: number;
+  championships?: number;
+  wcc_titles?: number;
+  total_seasons?: number;
+}
+
+export interface TeamStatEntry {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  value: number;
+}
+
+export interface TeamStreakEntry {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  streak_length: number;
+  streak_start_year: number;
+  streak_end_year: number;
+}
+
+export const fetchTeamWinsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/wins?limit=${limit}`);
+
+export const fetchTeamChampionshipsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/championships?limit=${limit}`);
+
+export const fetchTeamPodiumsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/podiums?limit=${limit}`);
+
+export const fetchTeamPolesLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/poles?limit=${limit}`);
+
+export const fetchTeamPointsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/points?limit=${limit}`);
+
+export const fetchTeamEntriesLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/entries?limit=${limit}`);
+
+export const fetchTeamSeasonsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/seasons?limit=${limit}`);
+
+export const fetchTeamWinPctLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/win-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamPodiumPctLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/podium-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamAvgFinishLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/average-finish?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamOneTwoLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/one-two-finishes?limit=${limit}`);
+
+export const fetchTeamDnfLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/dnfs?limit=${limit}`);
+
+export const fetchTeamFastestLapsLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/fastest-laps?limit=${limit}`);
+
+export const fetchTeamDriversFieldedLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/drivers-fielded?limit=${limit}`);
+
+export const fetchTeamWinStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/win-streaks?limit=${limit}`);
+
+export const fetchTeamPodiumStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/podium-streaks?limit=${limit}`);
+
+export const fetchTeamPointsStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/points-streaks?limit=${limit}`);
+
+export const fetchTeamPointsPerRaceLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/points-per-race?limit=${limit}&min_races=${minRaces}`
+  );
+
+// ---------------------------------------------------------------------------
+// Global Search (Cmd+K)
+// ---------------------------------------------------------------------------
+
+export interface SearchResultDriver {
+  id: string;
+  name: string;
+  code: string | null;
+  nationality: string | null;
+  imageUrl: string | null;
+  path: string;
+}
+
+export interface SearchResultTeam {
+  id: string;
+  name: string;
+  nationality: string | null;
+  path: string;
+}
+
+export interface SearchResultArticle {
+  id: string;
+  title: string;
+  source: string;
+  imageUrl: string | null;
+  path: string;
+}
+
+export interface GlobalSearchResults {
+  drivers: SearchResultDriver[];
+  teams: SearchResultTeam[];
+  articles: SearchResultArticle[];
+}
+
+export const fetchGlobalSearch = (query: string, limit = 10) =>
+  request<GlobalSearchResults>(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// Season Records (Supabase RPC — jolpica data)
+// ---------------------------------------------------------------------------
+
+export interface SeasonRecord {
+  label: string;
+  value: string;
+  unit?: string;
+  context?: string;
+  driverCode?: string;
+  tone?: 'default' | 'amber' | 'emerald' | 'red' | 'sky';
+}
+
+export const fetchSeasonRecords = async (year: number): Promise<SeasonRecord[]> => {
+  const { supabase } = await import('@/lib/supabase');
+  const { data, error } = await supabase.rpc('get_season_records', { p_year: year });
+  if (error) {
+    logger.error('Failed to fetch season records:', error);
+    return [];
+  }
+  return (data as SeasonRecord[]) ?? [];
 };

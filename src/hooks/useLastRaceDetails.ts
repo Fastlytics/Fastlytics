@@ -5,6 +5,7 @@ export interface LastRaceDetails {
   podium: {
     position: 1 | 2 | 3;
     driver: string;
+    driverCode: string;
     team: string;
     teamColor: string;
     gapToWinner?: string;
@@ -33,6 +34,36 @@ export function useLastRaceDetails(selectedYear: number, lastRaceEvent: string |
   });
 }
 
+function formatGapToWinner(time: string | null | undefined): string | undefined {
+  if (!time) return undefined;
+  // Already formatted (e.g. "+3.264" or "+1 Lap")
+  if (time.startsWith('+') && !time.includes(':')) return time;
+  if (time.includes('Lap')) return `+${time}`;
+
+  const parts = time.split(':');
+  if (parts.length === 2) {
+    const mins = parseInt(parts[0], 10);
+    const secs = parseFloat(parts[1]);
+    if (!isNaN(mins) && !isNaN(secs)) {
+      const decimalPlaces = parts[1].includes('.') ? parts[1].split('.')[1].length : 0;
+      const total = mins * 60 + secs;
+      return `+${total.toFixed(decimalPlaces)}`;
+    }
+  }
+  // h:mm:ss.sss format
+  if (parts.length === 3) {
+    const hours = parseInt(parts[0], 10);
+    const mins = parseInt(parts[1], 10);
+    const secs = parseFloat(parts[2]);
+    if (!isNaN(hours) && !isNaN(mins) && !isNaN(secs)) {
+      const decimalPlaces = parts[2].includes('.') ? parts[2].split('.')[1].length : 0;
+      const total = hours * 3600 + mins * 60 + secs;
+      return `+${total.toFixed(decimalPlaces)}`;
+    }
+  }
+  return `+${time}`;
+}
+
 export function computeLastRaceDetails(results: DetailedRaceResult[]): LastRaceDetails {
   // Drivers with a final position (finishers + classified lapped)
   const classified = results.filter((r) => r.position !== null && r.position !== undefined);
@@ -46,9 +77,10 @@ export function computeLastRaceDetails(results: DetailedRaceResult[]): LastRaceD
   const podium = top3.map((r, i) => ({
     position: (i + 1) as 1 | 2 | 3,
     driver: r.fullName,
+    driverCode: r.driverCode,
     team: r.team,
     teamColor: r.teamColor || 'gray',
-    gapToWinner: i === 0 ? undefined : (r.time ?? undefined),
+    gapToWinner: i === 0 ? undefined : formatGapToWinner(r.time),
     gridPosition: r.gridPosition ?? undefined,
     finalPosition: r.position ?? i + 1,
   }));

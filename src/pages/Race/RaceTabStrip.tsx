@@ -12,6 +12,7 @@ export interface RaceTabStripProps {
   selectedSession: string;
   isTestingSession: boolean;
   isTestingEvent: boolean;
+  isHistorical?: boolean;
 }
 
 export function RaceTabStrip({
@@ -19,6 +20,7 @@ export function RaceTabStrip({
   selectedSession,
   isTestingSession,
   isTestingEvent,
+  isHistorical = false,
 }: RaceTabStripProps) {
   const location = useLocation();
 
@@ -26,6 +28,7 @@ export function RaceTabStrip({
     selectedSession,
     isTestingSession,
     isTestingEvent,
+    isHistorical,
   };
 
   const visibleItems = RACE_TAB_ITEMS.filter((item) => sectionVisibleFor(item, ctx));

@@ -77,7 +77,7 @@ const PitStopLeaderboard: React.FC<PitStopLeaderboardProps> = ({ teamStats, isLo
                 key={team.team}
                 className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
               >
-                <span className="w-4 shrink-0 font-mono text-[13px] tabular-nums text-white">
+                <span className="w-4 shrink-0 font text-[13px] tabular-nums text-white">
                   {i + 1}
                 </span>
                 <span
@@ -90,12 +90,12 @@ const PitStopLeaderboard: React.FC<PitStopLeaderboardProps> = ({ teamStats, isLo
                   <div className="text-[11px] text-white/80">
                     {team.fastestStopDriver && team.fastestStopRace ? (
                       <span>
-                        <span className="font-mono tabular-nums">{team.fastestStopDriver}</span>
+                        <span className="font tabular-nums">{team.fastestStopDriver}</span>
                         {' · '}
                         {team.fastestStopRace}
                       </span>
                     ) : (
-                      <span className="font-mono tabular-nums">
+                      <span className="font tabular-nums">
                         {team.validStopCount} stop{team.validStopCount === 1 ? '' : 's'}
                       </span>
                     )}
@@ -104,14 +104,14 @@ const PitStopLeaderboard: React.FC<PitStopLeaderboardProps> = ({ teamStats, isLo
                 <div className="shrink-0 text-right">
                   <div
                     className={[
-                      'font-mono text-[14px] tabular-nums',
+                      'font text-[14px] tabular-nums',
                       isOverallFastest ? 'text-emerald-400' : 'text-white',
                     ].join(' ')}
                   >
                     {formatSeconds(team.fastestStopSeconds)}
                     <span className="ml-1 text-[11px] font-normal text-white/80">s</span>
                   </div>
-                  <div className="font-mono text-[11px] tabular-nums text-white/80">
+                  <div className="font text-[11px] tabular-nums text-white/80">
                     avg {formatSeconds(team.averageStopSeconds)}s
                   </div>
                 </div>

@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 import { SIDEBAR_NAV_SECTIONS } from '@/lib/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { SidebarLeft01Icon } from 'hugeicons-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AccountMenu } from '@/components/layout/AccountMenu';
 import { useNewsNotifications, useDiscussionNotifications } from '@/hooks/useNews';
@@ -35,22 +34,21 @@ export function isNavItemActive(
 }
 
 /**
- * Sidebar — Vercel/Linear-style thin navigation panel.
+ * Sidebar — Vercel/Linear-style thin navigation panel with Cloudflare-style
+ * hover-to-expand behavior.
+ *
+ * When collapsed:
+ * - Hovering over the sidebar temporarily expands it (overlay, no layout shift)
+ * - The logo becomes the expand button — on hover it morphs into a sidebar icon
+ * - Icons are larger (18px) for better visibility
  *
  * Structure (top → bottom):
- * - Logo
+ * - Logo (doubles as expand toggle when collapsed)
  * - Search trigger (Cmd+K)
- * - Sectioned nav (Main / Discover / You) with tiny uppercase section labels
+ * - Sectioned nav (Main / Discover / You)
  * - Spacer
- * - Bottom row: notifications + account (+ name chip when expanded)
- * - Collapse toggle
- *
- * Design:
- * - 200px width (48px collapsed)
- * - Pure black background
- * - 14px icons for nav, 13px text
- * - Active state: white text + 2px left accent
- * - Inactive text: white/80 minimum (never below that for readable copy)
+ * - Bottom row: account
+ * - Collapse toggle (expanded only)
  */
 const Sidebar = ({
   onSearchClick,
@@ -74,6 +72,17 @@ const Sidebar = ({
 
   const collapsed = controlledCollapsed ?? internalCollapsed;
 
+  // Hover-to-expand state (temporary expand without persisting)
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  // Whether the sidebar is visually expanded (either truly expanded or hover-expanded)
+  const visuallyExpanded = !collapsed || hoverExpanded;
+
+  // Logo hover state — when collapsed, logo morphs into expand icon on hover
+  const [logoHovered, setLogoHovered] = useState(false);
+
   const toggleCollapse = useCallback(() => {
     if (onToggleCollapse) {
       onToggleCollapse();
@@ -88,7 +97,31 @@ const Sidebar = ({
         return next;
       });
     }
+    // Clear hover expand when toggling
+    setHoverExpanded(false);
   }, [onToggleCollapse]);
+
+  // Handle hover-to-expand
+  const handleMouseEnter = useCallback(() => {
+    if (!collapsed) return;
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoverExpanded(true);
+    }, 200); // Small delay to avoid accidental triggers
+  }, [collapsed]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setHoverExpanded(false);
+    setLogoHovered(false);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
 
   // Keyboard shortcut: [ to toggle sidebar
   useEffect(() => {
@@ -104,7 +137,8 @@ const Sidebar = ({
     return () => document.removeEventListener('keydown', handler);
   }, [toggleCollapse]);
 
-  const sidebarWidth = collapsed ? 'w-[48px]' : 'w-[200px]';
+  // The actual rendered width depends on hover state
+  const sidebarWidth = collapsed ? (hoverExpanded ? 'w-[200px]' : 'w-[48px]') : 'w-[200px]';
 
   // Popover open state + trigger refs
   const [accountOpen, setAccountOpen] = useState(false);
@@ -122,30 +156,71 @@ const Sidebar = ({
     user?.email?.charAt(0)?.toUpperCase() ||
     'U';
 
+  // Whether to render content in expanded mode (true expanded OR hover expanded)
+  const showExpanded = visuallyExpanded;
+  // Whether we're in the "collapsed but hovering" overlay state
+  const isOverlay = collapsed && hoverExpanded;
+
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.04] bg-[#000] transition-[width] duration-200 ease-in-out lg:flex ${sidebarWidth}`}
+      ref={sidebarRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/[0.04] bg-[#000] transition-[width] duration-200 ease-in-out lg:flex ${sidebarWidth} ${
+        isOverlay ? 'shadow-2xl shadow-black/50' : ''
+      }`}
     >
-      {/* Logo + Collapse toggle (expanded only) */}
-      <div className={`flex h-12 items-center ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
-        <Link to="/dashboard" className="flex items-center">
-          <FastlyticsLogo size={16} showText={!collapsed} />
-        </Link>
-        {!collapsed && (
+      {/* Logo + Collapse toggle */}
+      <div className={`flex h-12 items-center ${!showExpanded ? 'justify-center px-0' : 'px-4'}`}>
+        {/* When collapsed (not hover-expanded): logo area becomes expand button */}
+        {collapsed && !hoverExpanded ? (
           <button
             type="button"
             onClick={toggleCollapse}
-            className="ml-auto rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/[0.04] hover:text-white"
-            title="Collapse sidebar"
-            aria-label="Collapse sidebar"
+            onMouseEnter={() => setLogoHovered(true)}
+            onMouseLeave={() => setLogoHovered(false)}
+            className="flex items-center justify-center rounded-md p-1.5 transition-all duration-150"
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
           >
-            <SidebarLeft01Icon size={14} className="shrink-0" />
+            <span
+              className={`transition-opacity duration-150 ${logoHovered ? 'opacity-0 absolute' : 'opacity-100'}`}
+            >
+              <FastlyticsLogo size={16} showText={false} />
+            </span>
+            <span
+              className={`transition-opacity duration-150 text-white/60 hover:text-white ${logoHovered ? 'opacity-100' : 'opacity-0 absolute'}`}
+            ></span>
           </button>
+        ) : (
+          <>
+            <Link to="/dashboard" className="flex items-center">
+              <FastlyticsLogo size={16} showText={true} />
+            </Link>
+            {!isOverlay && (
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className="ml-auto rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/[0.04] hover:text-white"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              ></button>
+            )}
+            {isOverlay && (
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className="ml-auto rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/[0.04] hover:text-white"
+                title="Pin sidebar open"
+                aria-label="Pin sidebar open"
+              ></button>
+            )}
+          </>
         )}
       </div>
 
-      {/* Search trigger — Linear-style subtle input */}
-      {!collapsed && (
+      {/* Search trigger */}
+      {showExpanded ? (
         <div className="px-3 pb-2">
           <button
             type="button"
@@ -170,19 +245,17 @@ const Sidebar = ({
             <kbd className="text-[10px] font-medium text-white/80">⌘K</kbd>
           </button>
         </div>
-      )}
-
-      {collapsed && (
+      ) : (
         <div className="flex justify-center pb-2">
           <button
             type="button"
             onClick={onSearchClick}
-            className="flex size-8 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/[0.04] hover:text-white"
+            className="flex size-9 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/[0.04] hover:text-white"
             aria-label="Search"
           >
             <svg
-              width="14"
-              height="14"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -199,18 +272,12 @@ const Sidebar = ({
 
       {/* Sectioned navigation */}
       <nav
-        className={`flex-1 overflow-y-auto ${collapsed ? 'px-1.5' : 'px-3'} pt-1`}
+        className={`flex-1 overflow-y-auto ${!showExpanded ? 'px-1.5' : 'px-3'} pt-1`}
         aria-label="Primary"
       >
         {SIDEBAR_NAV_SECTIONS.map((section, sectionIdx) => (
           <div key={section.label}>
-            {collapsed && sectionIdx > 0 && (
-              <div className="my-2 h-px bg-white/[0.04]" aria-hidden="true" />
-            )}
-
-            {!collapsed && sectionIdx > 0 && (
-              <div className="my-2 h-px bg-white/[0.04]" aria-hidden="true" />
-            )}
+            {sectionIdx > 0 && <div className="my-2 h-px bg-white/[0.04]" aria-hidden="true" />}
 
             <ul className="flex flex-col gap-0.8">
               {section.items.map((item) => {
@@ -220,7 +287,7 @@ const Sidebar = ({
                 const badge =
                   isNotifications && unreadNotificationCount > 0 ? unreadNotificationCount : null;
 
-                if (collapsed) {
+                if (!showExpanded) {
                   return (
                     <li key={item.path}>
                       <Link
@@ -232,7 +299,7 @@ const Sidebar = ({
                         }`}
                         title={item.label}
                       >
-                        <Icon size={14} className="shrink-0" />
+                        <Icon size={18} className="shrink-0" />
                         {active && (
                           <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-white" />
                         )}
@@ -250,7 +317,7 @@ const Sidebar = ({
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className={`relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[14px] font-medium transition-colors ${
+                      className={`relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[15px] font-medium transition-colors ${
                         active
                           ? 'text-white'
                           : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
@@ -259,7 +326,7 @@ const Sidebar = ({
                       {active && (
                         <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-white" />
                       )}
-                      <Icon size={15} className="shrink-0" />
+                      <Icon size={18} className="shrink-0" />
                       <span>{item.label}</span>
                       {badge && (
                         <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
@@ -275,14 +342,14 @@ const Sidebar = ({
         ))}
       </nav>
 
-      {/* Bottom section: notifications + account + collapse */}
+      {/* Bottom section: account + collapse */}
       <div
         className={`flex flex-col gap-1 border-t border-white/[0.04] py-2 ${
-          collapsed ? 'px-1.5' : 'px-3'
+          !showExpanded ? 'px-1.5' : 'px-3'
         }`}
       >
         {/* Free tier upgrade CTA (expanded only) */}
-        {!collapsed && user && tier === 'free' && (
+        {showExpanded && user && tier === 'free' && (
           <Link
             to="/account"
             className="mb-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
@@ -294,20 +361,9 @@ const Sidebar = ({
           </Link>
         )}
 
-        {/* Notifications + Account row */}
-        {collapsed ? (
+        {/* Account row */}
+        {!showExpanded ? (
           <div className="flex flex-col items-center gap-1">
-            {/* Collapse toggle (collapsed — sits above notifications) */}
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="flex size-9 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/[0.04] hover:text-white"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
-              <SidebarLeft01Icon size={14} className="shrink-0 rotate-180" />
-            </button>
-
             {/* Account (collapsed) */}
             <div className="relative">
               <button

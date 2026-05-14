@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { CARD_CONTAINER, CARD_LABEL, CARD_DATA_VALUE } from '@/lib/card-styles';
 import { PointsChange } from './PointsChange';
+import { getDriverSlug } from '@/lib/driverSlugs';
 
 interface DriverStandingsCardProps {
   driver: DriverStanding;
@@ -34,7 +35,7 @@ interface DriverStandingsCardProps {
  *   │  points   W · P · change    │          │
  *   └─────────────────────────────┴──────────┘
  *
- * The whole card is a <Link> to /drivers/<code>.
+ * The whole card is a <Link> to /drivers/<slug>.
  */
 export const DriverStandingsCard: React.FC<DriverStandingsCardProps> = ({
   driver,
@@ -57,7 +58,7 @@ export const DriverStandingsCard: React.FC<DriverStandingsCardProps> = ({
       transition={{ duration: 0.2, delay }}
     >
       <Link
-        to={`/drivers/${driver.code.toLowerCase()}`}
+        to={`/drivers/${getDriverSlug(driver.code, driver.name)}`}
         aria-label={`${driver.name} — P${driver.rank}, ${driver.points} points`}
         className={cn(
           CARD_CONTAINER,

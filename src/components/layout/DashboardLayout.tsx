@@ -8,7 +8,6 @@ import Sidebar from '@/components/layout/Sidebar';
 import { BreadcrumbBar } from '@/components/layout/BreadcrumbBar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import { resolveBreadcrumbs } from '@/lib/breadcrumbs';
-import { buildSearchIndex, STATIC_PAGES, SearchEntry } from '@/lib/command-palette';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 import { Drawer } from 'vaul';
 
@@ -169,22 +168,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // --- Build search index from TanStack Query cache ---
-  const searchEntries: SearchEntry[] = useMemo(() => {
-    const driversData = queryClient.getQueryData<DriverStanding[]>([
-      'driverStandings',
-      selectedYear,
-    ]);
-    const teamsData = queryClient.getQueryData<TeamStanding[]>(['teamStandings', selectedYear]);
-    const scheduleData = queryClient.getQueryData<ScheduleEvent[]>(['schedule', selectedYear]);
-
-    if (!driversData && !teamsData && !scheduleData) {
-      return STATIC_PAGES;
-    }
-
-    return buildSearchIndex(driversData ?? [], teamsData ?? [], scheduleData ?? [], selectedYear);
-  }, [queryClient, selectedYear]);
-
   // --- Breadcrumb resolution ---
   const breadcrumbs = useMemo(
     () => resolveBreadcrumbs(location.pathname, params as Record<string, string>),
@@ -276,7 +259,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         key={String(commandPaletteOpen)}
         open={commandPaletteOpen}
         onClose={handleClosePalette}
-        searchEntries={searchEntries}
       />
     </div>
   );

@@ -105,7 +105,7 @@ function ResultsTable({
               'Withdrew',
             ].includes(r.status);
             const laps = r.lapsCompleted ?? r.laps ?? null;
-            const headshotUrl = getDriverImage(r.driverCode, year);
+            const headshotUrl = getDriverImage(r.driverCode, year) || r.headshotUrl || '';
 
             // Format time
             let timeDisplay = '—';

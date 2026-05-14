@@ -85,11 +85,11 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                 transition={{ duration: 0.2, delay: i * 0.05 }}
                 className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
               >
-                <span className="w-4 shrink-0 font-mono text-[13px] tabular-nums text-white">
+                <span className="w-4 shrink-0 font text-[13px] tabular-nums text-white">
                   {i + 1}
                 </span>
 
-                <Avatar className="size-8 shrink-0 border border-white/[0.06]">
+                <Avatar className="h-15 w-15 shrink-0 border border-white/[0.06]">
                   <AvatarImage
                     src={getDriverImageForYear(driver.code)}
                     className="object-cover object-top"
@@ -114,7 +114,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
 
                 <div className="shrink-0 text-right">
                   <div className={CARD_DATA_VALUE}>{driver.points}</div>
-                  <div className="font-mono text-[11px] tabular-nums text-white/80">
+                  <div className="font text-[11px] tabular-nums text-white/80">
                     {getGap(driver.points, topDrivers[0].points)}
                   </div>
                 </div>
@@ -170,16 +170,16 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
                 transition={{ duration: 0.2, delay: i * 0.05 }}
                 className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
               >
-                <span className="w-4 shrink-0 font-mono text-[13px] tabular-nums text-white">
+                <span className="w-4 shrink-0 font text-[13px] tabular-nums text-white">
                   {i + 1}
                 </span>
 
-                <div className="flex size-8 shrink-0 items-center justify-center rounded border border-white/[0.06]">
+                <div>
                   {getTeamLogo(team.team) ? (
                     <img
                       src={getTeamLogo(team.team)!}
                       alt={team.team}
-                      className="size-6 object-contain"
+                      className="h-15 w-10 object-contain"
                     />
                   ) : (
                     <span className="text-[10px] font-medium text-white/80">
@@ -200,7 +200,7 @@ const ChampionshipWidget: React.FC<ChampionshipWidgetProps> = ({
 
                 <div className="shrink-0 text-right">
                   <div className={CARD_DATA_VALUE}>{team.points}</div>
-                  <div className="font-mono text-[11px] tabular-nums text-white/80">
+                  <div className="font text-[11px] tabular-nums text-white/80">
                     {getGap(team.points, topTeams[0].points)}
                   </div>
                 </div>
