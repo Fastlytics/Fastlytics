@@ -7,6 +7,7 @@ import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { CARD_CONTAINER, CARD_GAP } from '@/lib/card-styles';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 const CAL_SKELETON_IDS = Array.from({ length: 9 }, (_, i) => `cs-${i}`);
 
@@ -21,6 +22,10 @@ const Calendar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Count stats for the header subtitle
+  const completedCount = combinedRaceData.filter((r) => !r.isTesting && !r.isUpcoming).length;
+  const totalRaces = combinedRaceData.filter((r) => !r.isTesting).length;
+
   return (
     <>
       <SEO
@@ -29,15 +34,28 @@ const Calendar = () => {
         keywords={['f1 calendar', 'f1 schedule', 'race dates', `${selectedYear} season calendar`]}
       />
 
-      {/* Page title */}
-      <div className="mb-8">
-        <h1 className="text-[20px] font-medium tracking-[-0.01em] text-white">Race Calendar</h1>
-        <p className="mt-1 text-[12px] text-white/80">{selectedYear} Season</p>
-      </div>
+      <div className="space-y-6 text-white">
+        {/* Page header — matches dashboard style */}
+        <PageHeader
+          title="Race Calendar"
+          subtitle={
+            totalRaces > 0
+              ? `${completedCount} of ${totalRaces} rounds complete · ${selectedYear}`
+              : `${selectedYear} Season`
+          }
+          selectedYear={selectedYear}
+          badge={
+            nextSession
+              ? {
+                  label: `${nextSession.name} coming up`,
+                  tone: 'info' as const,
+                }
+              : null
+          }
+        />
 
-      {/* Next Race */}
-      {nextRace && (
-        <div className="mb-8">
+        {/* Next Race Hero */}
+        {nextRace && (
           <EventHeroCard
             title={nextRace.EventName}
             displayDate={nextRace.displayDate}
@@ -52,51 +70,53 @@ const Calendar = () => {
               )
             }
           />
-        </div>
-      )}
+        )}
 
-      {/* Race Grid */}
-      {isLoading ? (
-        <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 lg:grid-cols-3`}>
-          {CAL_SKELETON_IDS.map((id) => (
-            <div key={id} className={`h-40 animate-pulse ${CARD_CONTAINER}`} />
-          ))}
-        </div>
-      ) : error ? (
-        <div className={`${CARD_CONTAINER} px-5 py-12 text-center`}>
-          <p className="text-[13px] text-white/80">Could not load race data for {selectedYear}.</p>
-        </div>
-      ) : combinedRaceData.length > 0 ? (
-        <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 lg:grid-cols-3`}>
-          {combinedRaceData.map((race) => {
-            const isNextRace = nextRace?.EventName === race.EventName;
-            const status: 'finished' | 'upcoming' | 'next' | 'testing' = race.isTesting
-              ? 'testing'
-              : isNextRace
-                ? 'next'
-                : race.isUpcoming
-                  ? 'upcoming'
-                  : 'finished';
-            return (
-              <RaceCard
-                key={`${selectedYear}-${race.RoundNumber}-${race.EventName}`}
-                event={race}
-                result={race.result}
-                status={status}
-                isSprint={race.isSprint}
-                countryCode={race.countryCode}
-                displayLocation={race.displayLocation}
-                displayDate={race.displayDate}
-                selectedYear={selectedYear}
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <div className={`${CARD_CONTAINER} px-5 py-12 text-center`}>
-          <p className="text-[13px] text-white/80">No races found for {selectedYear}.</p>
-        </div>
-      )}
+        {/* Race Grid */}
+        {isLoading ? (
+          <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 xl:grid-cols-3`}>
+            {CAL_SKELETON_IDS.map((id) => (
+              <div key={id} className={`h-[280px] animate-pulse ${CARD_CONTAINER}`} />
+            ))}
+          </div>
+        ) : error ? (
+          <div className={`${CARD_CONTAINER} px-5 py-16 text-center`}>
+            <p className="text-[14px] text-white/60">
+              Could not load race data for {selectedYear}.
+            </p>
+          </div>
+        ) : combinedRaceData.length > 0 ? (
+          <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-2 xl:grid-cols-3`}>
+            {combinedRaceData.map((race) => {
+              const isNextRace = nextRace?.EventName === race.EventName;
+              const status: 'finished' | 'upcoming' | 'next' | 'testing' = race.isTesting
+                ? 'testing'
+                : isNextRace
+                  ? 'next'
+                  : race.isUpcoming
+                    ? 'upcoming'
+                    : 'finished';
+              return (
+                <RaceCard
+                  key={`${selectedYear}-${race.RoundNumber}-${race.EventName}`}
+                  event={race}
+                  result={race.result}
+                  status={status}
+                  isSprint={race.isSprint}
+                  countryCode={race.countryCode}
+                  displayLocation={race.displayLocation}
+                  displayDate={race.displayDate}
+                  selectedYear={selectedYear}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`${CARD_CONTAINER} px-5 py-16 text-center`}>
+            <p className="text-[14px] text-white/60">No races found for {selectedYear}.</p>
+          </div>
+        )}
+      </div>
     </>
   );
 };

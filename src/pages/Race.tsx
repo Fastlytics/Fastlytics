@@ -507,6 +507,7 @@ const Race = () => {
             selectedSession={selectedSession}
             isTestingSession={isTestingSession}
             isTestingEvent={isTestingEvent}
+            isHistorical={!!year && year < 2018}
           />
         )}
 

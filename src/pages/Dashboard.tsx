@@ -11,6 +11,7 @@ import {
   fetchSpecificRaceResults,
   fetchEventSessionSchedule,
   fetchPitStats,
+  fetchSeasonRecords,
   TeamStanding,
   DriverStanding,
   ScheduleEvent,
@@ -19,6 +20,7 @@ import {
   AvailableSession,
   DetailedRaceResult,
   PitStopTeamStat,
+  SeasonRecord,
   getCircuitLength,
   calculateDistance,
   formatDistance,
@@ -359,8 +361,6 @@ const Dashboard = () => {
 
   /* ── Computed dashboard-level stats ───────────────────────────── */
 
-  const leaderName = useMemo(() => driverStandings[0]?.name.split(' ').pop(), [driverStandings]);
-
   // Most recent race (by round number)
   const lastRace = useMemo(() => {
     if (raceResults.length === 0) return null;
@@ -384,52 +384,12 @@ const Dashboard = () => {
     staleTime: 1000 * 60 * 30, // 30 min
   });
 
-  // TODO: Replace season stats with real data once /api/season-records lands.
-  const seasonStats = useMemo(
-    () => [
-      {
-        label: 'Fastest avg speed',
-        value: '262.4',
-        unit: 'km/h',
-        context: 'Monza',
-        tone: 'sky' as const,
-      },
-      {
-        label: 'Longest stint',
-        value: '45',
-        unit: 'laps',
-        context: 'Silverstone',
-        tone: 'amber' as const,
-      },
-      {
-        label: 'Biggest grid gain',
-        value: '+14',
-        unit: 'places',
-        context: 'Baku',
-        tone: 'emerald' as const,
-      },
-      {
-        label: 'Most laps led',
-        value: `${driverStandings[0]?.points ?? 0}`,
-        unit: 'laps',
-        context: leaderName,
-        tone: 'amber' as const,
-      },
-      {
-        label: 'Most podiums',
-        value: `${driverStandings[0]?.podiums ?? 0}`,
-        context: leaderName,
-        tone: 'amber' as const,
-      },
-      {
-        label: 'Most wins',
-        value: `${driverStandings[0]?.wins ?? 0}`,
-        context: leaderName,
-        tone: 'emerald' as const,
-      },
-    ],
-    [driverStandings, leaderName]
-  );
+  // Season records from Supabase (jolpica data)
+  const { data: seasonStats = [], isLoading: isLoadingSeasonStats } = useQuery<SeasonRecord[]>({
+    queryKey: ['seasonRecords', selectedYear],
+    queryFn: () => fetchSeasonRecords(selectedYear),
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
 
   // Page header badge: show "LIVE NOW" if a session is in progress, else an info pill about next session.
   const headerBadge = useMemo(() => {
@@ -662,7 +622,7 @@ const Dashboard = () => {
         {/* 5. Pit stops + Season stats */}
         <div className="grid gap-5 lg:grid-cols-2">
           <PitStopLeaderboard teamStats={pitStats} isLoading={isLoadingPitStats} />
-          <SeasonStats stats={seasonStats} isLoading={isLoadingCore} />
+          <SeasonStats stats={seasonStats} year={selectedYear} isLoading={isLoadingSeasonStats} />
         </div>
 
         {/* 6. My Garage + Championship */}
@@ -778,7 +738,7 @@ const TestingCommandCenter = ({
       ].map((item) => (
         <div key={item.label} className="px-5 py-4">
           <div className={CARD_LABEL}>{item.label}</div>
-          <div className="mt-1 font-mono text-[20px] tabular-nums text-white">{item.value}</div>
+          <div className="mt-1 font text-[20px] tabular-nums text-white">{item.value}</div>
         </div>
       ))}
     </div>
@@ -803,7 +763,7 @@ const TestingCommandCenter = ({
             <div className="mt-1 text-[14px] font-medium text-white">
               {slot.result?.fullName || '—'}
             </div>
-            <div className="font-mono text-[13px] tabular-nums text-emerald-400">
+            <div className="font text-[13px] tabular-nums text-emerald-400">
               {slot.result?.[slot.timeKey] || '—'}
             </div>
           </div>
@@ -829,18 +789,16 @@ const TestingCommandCenter = ({
               key={driver.driverCode}
               className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
             >
-              <span className="w-4 shrink-0 font-mono text-[13px] tabular-nums text-white">
-                {i + 1}
-              </span>
+              <span className="w-4 shrink-0 font text-[13px] tabular-nums text-white">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-medium text-white">{driver.fullName}</div>
                 <div className="text-[12px] text-white/80">{driver.team}</div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="font-mono text-[13px] tabular-nums text-emerald-400">
+                <div className="font text-[13px] tabular-nums text-emerald-400">
                   {driver.fastestLapTime || '—'}
                 </div>
-                <div className="font-mono text-[11px] tabular-nums text-white/80">
+                <div className="font text-[11px] tabular-nums text-white/80">
                   {formatDistance(distance)} · {reliability}%
                 </div>
               </div>
@@ -923,7 +881,7 @@ const RecentEventsSection = ({
             className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
           >
             {/* Flag */}
-            <div className="h-6 w-9 shrink-0 overflow-hidden rounded border border-white/[0.06]">
+            <div className="h-12 w-18 shrink-0 overflow-hidden rounded border border-white/[0.06]">
               <img
                 src={`https://flagcdn.com/${getCountryCode(event.Country || event.Location)}.svg`}
                 alt={event.Country || event.Location}

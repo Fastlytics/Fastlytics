@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { News01Icon, AiBrain01Icon, LinkSquare01Icon, Message01Icon } from 'hugeicons-react';
+import { News01Icon, LinkSquare01Icon, Message01Icon } from 'hugeicons-react';
 import { useInfiniteNewsFeed } from '@/hooks/useNews';
 import { useAuth } from '@/contexts/AuthContext';
 import { NEWS_SOURCES, NEWS_TOPICS } from '@/lib/news-api';
@@ -116,10 +116,6 @@ export default function NewsPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               <h1 className="text-[22px] font-bold tracking-[-0.01em] text-white">News</h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/20 px-2 py-0.5 text-[10px] font-medium text-sky-400">
-                <AiBrain01Icon className="size-2.5" strokeWidth={2} />
-                AI-summarized
-              </span>
             </div>
             <p className="mt-0.5 text-[12px] text-white/60">
               Personalized F1 news from top sources

@@ -132,7 +132,7 @@ const WeatherIcon: React.FC<{
 
 const CountdownUnit: React.FC<{ value: number; label: string }> = ({ value, label }) => (
   <div className="flex flex-col items-center">
-    <span className="font-mono text-[22px] font-semibold tabular-nums leading-none text-white">
+    <span className="font text-[44px] font-bold tabular-nums leading-none text-white">
       {String(value).padStart(2, '0')}
     </span>
     <span className="mt-1.5 text-[9px] font-medium uppercase tracking-wider text-white/50">
@@ -195,9 +195,9 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
           Next race
         </span>
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[12px] tabular-nums text-white/80">{roundLabel}</span>
-          <span className="font-mono text-[12px] tabular-nums text-white/40">·</span>
-          <span className="font-mono text-[12px] tabular-nums text-white/80">
+          <span className="font text-[12px] tabular-nums text-white/80">{roundLabel}</span>
+          <span className="font text-[12px] tabular-nums text-white/40">·</span>
+          <span className="font text-[12px] tabular-nums text-white/80">
             {formatDate(nextRace.EventDate)}
           </span>
         </div>
@@ -210,7 +210,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
             <img
               src={`https://flagcdn.com/${countryCode}.svg`}
               alt={nextRace.Country || ''}
-              className="h-20 w-auto rounded-[2px] border border-white/[0.06]"
+              className="h-25 w-auto rounded-[2px] border border-white/[0.06]"
             />
           )}
           <div>
@@ -232,23 +232,17 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
               </span>
               <div className="flex items-start gap-1.5">
                 <CountdownUnit value={timeLeft.d} label="Days" />
-                <span className="mt-[-1px] font-mono text-[20px] font-semibold text-white/20">
-                  :
-                </span>
+                <span className="mt-[-1px] font text-[30px] font-semibold text-white/20">:</span>
                 <CountdownUnit value={timeLeft.h} label="Hrs" />
-                <span className="mt-[-1px] font-mono text-[20px] font-semibold text-white/20">
-                  :
-                </span>
+                <span className="mt-[-1px] font text-[30px] font-semibold text-white/20">:</span>
                 <CountdownUnit value={timeLeft.m} label="Min" />
-                <span className="mt-[-1px] font-mono text-[20px] font-semibold text-white/20">
-                  :
-                </span>
+                <span className="mt-[-1px] font text-[30px] font-semibold text-white/20">:</span>
                 <CountdownUnit value={timeLeft.s} label="Sec" />
               </div>
             </div>
           ) : (
             <div className="text-right">
-              <span className="font-mono text-[18px] font-semibold text-emerald-400">LIVE</span>
+              <span className="font text-[18px] font-semibold text-emerald-400">LIVE</span>
             </div>
           )}
         </div>
@@ -259,7 +253,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
         {/* Track length */}
         <div className="px-5 py-4">
           <div className={CARD_LABEL}>Track length</div>
-          <div className="mt-1 font-mono text-[14px] font-medium tabular-nums text-white">
+          <div className="mt-1 font text-[14px] font-medium tabular-nums text-white">
             {circuitLengthKm.toFixed(3)}
             <span className="ml-1 text-[12px] font-normal text-white/80">km</span>
           </div>
@@ -272,7 +266,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
             {lastYearPole?.driver ?? '—'}
           </div>
           {lastYearPole?.lapTime && (
-            <div className="truncate font-mono text-[12px] tabular-nums text-white/80">
+            <div className="truncate font text-[12px] tabular-nums text-white/80">
               {lastYearPole.lapTime}
             </div>
           )}
@@ -285,7 +279,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
             {lastYearWinner?.driver ?? '—'}
           </div>
           {lastYearWinner?.team && (
-            <div className="truncate font-mono text-[12px] tabular-nums text-white/80">
+            <div className="truncate font text-[12px] tabular-nums text-white/80">
               {lastYearWinner.team}
             </div>
           )}
@@ -304,7 +298,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
                   className={`size-3.5 shrink-0 ${weather.isWet ? 'text-sky-400' : 'text-white/80'}`}
                 />
                 <span
-                  className={`font-mono text-[14px] font-medium tabular-nums ${
+                  className={`font text-[14px] font-medium tabular-nums ${
                     weather.isWet ? 'text-sky-400' : 'text-white'
                   }`}
                 >
@@ -314,7 +308,7 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
               <div className="truncate text-[12px] text-white/80">
                 {weather.description}
                 {weather.precipitationProbability > 0 && (
-                  <span className="font-mono tabular-nums">
+                  <span className="font tabular-nums">
                     {' · '}
                     {weather.precipitationProbability}%
                   </span>

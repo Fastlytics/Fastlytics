@@ -1,3 +1,5 @@
+import { getDriverSlug } from '@/lib/driverSlugs';
+
 // Command palette search utilities
 // Provides search index building and filtering for the global command palette (Cmd+K)
 
@@ -45,11 +47,12 @@ export function buildSearchIndex(
   // Add driver entries
   if (drivers && drivers.length > 0) {
     for (const driver of drivers) {
+      const slug = getDriverSlug(driver.code, driver.name);
       entries.push({
         id: `driver-${driver.code}`,
         label: driver.name,
         category: 'Drivers',
-        path: `/drivers/${driver.code.toLowerCase()}`,
+        path: `/drivers/${slug}`,
         keywords: [driver.code, driver.team || ''].filter(Boolean),
       });
     }

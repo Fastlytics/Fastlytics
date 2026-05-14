@@ -1,83 +1,23 @@
 // knip-ignore
-import React, { useMemo, useState, useCallback, lazy, Suspense } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { m } from 'motion/react';
-import { fetchDriverCareer, DriverCareer } from '@/lib/api';
+import { m, AnimatePresence } from 'motion/react';
+import { fetchDriverCareer, fetchDriverBio, DriverCareer } from '@/lib/api';
 import { getDriverImage, getDriverImagesByCode } from '@/utils/imageMapping';
 import { getTeamColorClass } from '@/lib/standingsUtils';
-import { getNationalityCountryCode } from '@/utils/countryUtils';
 import { cn } from '@/lib/utils';
 import { useSeason } from '@/contexts/SeasonContext';
 import { SEO } from '@/components/layout/SEO';
-import { DriverHeader } from '@/pages/Driver/DriverHeader';
-import { DriverStatCard } from '@/pages/Driver/DriverStatCard';
-import {
-  ChartLineData01Icon,
-  UserGroupIcon,
-  Target01Icon,
-  Award01Icon,
-  Analytics01Icon,
-  Activity01Icon,
-  TradeUpIcon,
-  FlashIcon,
-  GitCompareIcon,
-  ChampionIcon,
-  DashboardSpeed01Icon,
-} from 'hugeicons-react';
-
-const TrajectoryChart = lazy(
-  () => import('@/components/career-analytics/placeholders/TrajectoryChart')
-);
-const TeammateComparison = lazy(
-  () => import('@/components/career-analytics/placeholders/TeammateComparison')
-);
-const WhatIfPoints = lazy(() => import('@/components/career-analytics/placeholders/WhatIfPoints'));
-const MilestonesTimeline = lazy(
-  () => import('@/components/career-analytics/placeholders/MilestonesTimeline')
-);
-const ConsistencyScore = lazy(
-  () => import('@/components/career-analytics/placeholders/ConsistencyScore')
-);
-const MovementMap = lazy(() => import('@/components/career-analytics/placeholders/MovementMap'));
-const EraRankings = lazy(() => import('@/components/career-analytics/placeholders/EraRankings'));
-const FormStreaks = lazy(() => import('@/components/career-analytics/placeholders/FormStreaks'));
-const CareerComparison = lazy(
-  () => import('@/components/career-analytics/placeholders/CareerComparison')
-);
-const PeakSeason = lazy(() => import('@/components/career-analytics/placeholders/PeakSeason'));
-const DrivingFingerprint = lazy(
-  () => import('@/components/career-analytics/placeholders/DrivingFingerprint')
-);
-
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
-
-const DRIVER_SKELETONS = Array.from({ length: 8 }, (_, i) => `ds-${i}`);
-
-const NAV_SECTIONS = [
-  { id: 'overview', label: 'Overview', icon: ChartLineData01Icon },
-  { id: 'trajectory', label: 'Trajectory', icon: Analytics01Icon },
-  { id: 'teammate', label: 'Teammate H2H', icon: UserGroupIcon },
-  { id: 'whatif', label: 'What-If Points', icon: Target01Icon },
-  { id: 'milestones', label: 'Milestones', icon: Award01Icon },
-  { id: 'consistency', label: 'Consistency', icon: TradeUpIcon },
-  { id: 'movement', label: 'Movement Map', icon: Activity01Icon },
-  { id: 'era-rankings', label: 'Era Rankings', icon: ChampionIcon },
-  { id: 'streaks', label: 'Form Streaks', icon: FlashIcon },
-  { id: 'comparison', label: 'Comparison', icon: GitCompareIcon },
-  { id: 'peak-season', label: 'Peak Season', icon: DashboardSpeed01Icon },
-  { id: 'fingerprint', label: 'Fingerprint', icon: Analytics01Icon },
-] as const;
-
-function SectionSkeleton() {
-  return <div className="h-[200px] animate-pulse rounded-xl bg-white/[0.04]" />;
-}
+import { CARD_CONTAINER } from '@/lib/card-styles';
+import { DriverHero } from '@/pages/Driver/DriverHero';
+import { DriverTabStrip } from '@/pages/Driver/DriverTabStrip';
 
 const DriverProfile = () => {
   const { slug } = useParams<{ slug: string }>();
   const { selectedYear } = useSeason();
   const [selectedImageYear, setSelectedImageYear] = useState<number | null>(null);
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
 
   const {
     data: career,
@@ -90,14 +30,26 @@ const DriverProfile = () => {
     enabled: !!slug,
   });
 
+  const { data: bio, isLoading: isBioLoading } = useQuery({
+    queryKey: ['driverBio', slug],
+    queryFn: () => fetchDriverBio(slug!),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
   const driverCode = career?.code || '';
-  const teamColor = career?.seasons[0]?.team ? getTeamColorClass(career.seasons[0].team) : 'gray';
-  const countryCode = getNationalityCountryCode(career?.nationality);
+
+  // Filter local images to only years the driver actually raced
+  // (prevents e.g. Michael Schumacher showing Mick's 2021/2022 images since both share "MSC")
+  const activeYears = useMemo(() => {
+    if (!career) return new Set<number>();
+    return new Set(career.seasons.map((s) => s.season));
+  }, [career]);
 
   const availableImages = useMemo(() => {
     if (!driverCode) return [];
-    return getDriverImagesByCode(driverCode);
-  }, [driverCode]);
+    return getDriverImagesByCode(driverCode).filter((img) => activeYears.has(img.year));
+  }, [driverCode, activeYears]);
 
   const currentImageUrl = useMemo(() => {
     if (selectedImageYear) return getDriverImage(driverCode, selectedImageYear);
@@ -105,420 +57,256 @@ const DriverProfile = () => {
     return latest?.url || getDriverImage(driverCode, selectedYear);
   }, [driverCode, selectedImageYear, availableImages, selectedYear]);
 
-  const summary = career?.careerSummary;
-  const rookieSeason = career?.seasons.length
-    ? career.seasons[career.seasons.length - 1]?.season
-    : null;
-
-  const handleSectionChange = useCallback((section: string) => {
-    setActiveSection(section);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
   }, []);
 
+  // Loading state
   if (isLoading) {
     return (
-      <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-          <div className="space-y-6">
-            <div className="h-8 w-48 animate-pulse rounded-lg bg-white/[0.04]" />
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="h-96 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]" />
-              <div className="space-y-4 lg:col-span-2">
-                <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
-                <div className="grid grid-cols-4 gap-3">
-                  {DRIVER_SKELETONS.map((id) => (
-                    <div key={id} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
+      <div className="space-y-5 text-white">
+        <div className={cn(CARD_CONTAINER, 'h-[400px] animate-pulse')} />
+        <div className="h-11 animate-pulse rounded-lg bg-white/[0.02]" />
+        <div className={cn(CARD_CONTAINER, 'h-[300px] animate-pulse')} />
       </div>
     );
   }
 
+  // Error state
   if (isError || !career) {
     return (
-      <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 pb-20 pt-24 lg:px-8">
-          <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-10 py-16 text-center">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
-              <span className="text-lg text-red-400">!</span>
-            </div>
-            <h3 className="text-[18px] font-semibold uppercase italic text-white">
-              Driver Not Found
-            </h3>
-            <p className="mt-1 text-[14px] text-white/40">
-              {(error as Error)?.message || `We couldn't find data for "${slug}".`}
-            </p>
+      <div className="flex min-h-[60vh] items-center justify-center text-white">
+        <m.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={cn(CARD_CONTAINER, 'px-12 py-16 text-center')}
+        >
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-400/20 bg-red-400/[0.05]">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="text-red-400"
+            >
+              <path
+                d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
-        </main>
+          <h3 className="text-[16px] font-semibold text-white">Driver Not Found</h3>
+          <p className="mt-1.5 max-w-xs text-[13px] leading-relaxed text-white/40">
+            {(error as Error)?.message ||
+              `No data available for "${slug}". Check the URL or try another driver.`}
+          </p>
+        </m.div>
       </div>
     );
   }
 
   return (
-    <div style={inter} className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+    <div className="text-white">
       <SEO
-        title={`${career.name}: profile`}
-        description={`Explore career stats, results, wins, podiums, and season history for ${career.name} on Fastlytics.`}
+        title={`${career.name} — Driver Profile`}
+        description={`Career stats, season history, and analytics for ${career.name}. ${career.careerSummary.wins} wins, ${career.careerSummary.podiums} podiums across ${career.careerSummary.seasons} seasons.`}
       />
 
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-        <DriverHeader
+      <div className="space-y-5">
+        {/* Hero */}
+        <DriverHero
           career={career}
-          teamColor={teamColor}
-          countryCode={countryCode}
+          bio={bio}
+          isBioLoading={isBioLoading}
           currentImageUrl={currentImageUrl}
+          fallbackImageUrl={slug ? `/api/driver/${encodeURIComponent(slug)}/image` : undefined}
           availableImages={availableImages}
           selectedImageYear={selectedImageYear}
           setSelectedImageYear={setSelectedImageYear}
         />
 
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Sidebar Navigation */}
-          <aside className="hidden w-56 shrink-0 lg:block">
-            <div className="sticky top-24 space-y-1.5">
-              {NAV_SECTIONS.map((section) => {
-                const Icon = section.icon;
-                const isActive = activeSection === section.id;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => handleSectionChange(section.id)}
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[13px] font-semibold transition-all',
-                      isActive
-                        ? 'bg-red-500/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)]'
-                        : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
-                    )}
-                  >
-                    <Icon className={cn('size-4', isActive ? 'text-red-400' : 'text-white/30')} />
-                    {section.label}
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
+        {/* Tab Strip — full width, matching Race.tsx */}
+        <DriverTabStrip activeTab={activeTab} onTabChange={handleTabChange} />
 
-          {/* Mobile Navigation */}
-          <div className="scrollbar-hide flex gap-1 overflow-x-auto pb-2 lg:hidden">
-            {NAV_SECTIONS.map((section) => {
-              const isActive = activeSection === section.id;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => handleSectionChange(section.id)}
-                  className={cn(
-                    'shrink-0 rounded-lg px-3 py-2 text-[12px] font-semibold transition-colors',
-                    isActive
-                      ? 'border border-red-500/20 bg-red-500/[0.08] text-white'
-                      : 'text-white/50 hover:text-white/80'
-                  )}
-                >
-                  {section.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Main Content */}
-          <div className="min-w-0 flex-1">
-            {activeSection === 'overview' && (
-              <OverviewSection
-                career={career}
-                teamColor={teamColor}
-                summary={summary}
-                rookieSeason={rookieSeason}
-                selectedYear={selectedYear}
-              />
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
+          <m.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'overview' && (
+              <OverviewSection career={career} selectedYear={selectedYear} />
             )}
-
-            {activeSection === 'trajectory' && (
-              <AnalyticsSection title="Career Trajectory">
-                <TrajectoryChart career={career} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'teammate' && (
-              <AnalyticsSection title="Teammate Head-to-Head">
-                <TeammateComparison slug={slug!} />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'whatif' && (
-              <AnalyticsSection title="What-If Points">
-                <WhatIfPoints slug={slug!} />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'milestones' && (
-              <AnalyticsSection title="Career Milestones">
-                <MilestonesTimeline slug={slug!} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'consistency' && (
-              <AnalyticsSection title="Consistency Score">
-                <ConsistencyScore career={career} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'movement' && (
-              <AnalyticsSection title="Team Movement Map">
-                <MovementMap career={career} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'era-rankings' && (
-              <AnalyticsSection title="Era-Adjusted Rankings">
-                <EraRankings career={career} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'streaks' && (
-              <AnalyticsSection title="Form Streaks">
-                <FormStreaks slug={slug!} />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'comparison' && (
-              <AnalyticsSection title="Career Comparison">
-                <CareerComparison entityType="driver" initialSlug={slug} />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'peak-season' && (
-              <AnalyticsSection title="Peak Season">
-                <PeakSeason slug={slug!} entityType="driver" />
-              </AnalyticsSection>
-            )}
-
-            {activeSection === 'fingerprint' && (
-              <AnalyticsSection title="Driving Fingerprint">
-                <DrivingFingerprint slug={slug!} />
-              </AnalyticsSection>
-            )}
-          </div>
-        </div>
-      </main>
+          </m.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
 
-function AnalyticsSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <m.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="space-y-6"
-    >
-      <div className="flex items-center gap-3">
-        <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">{title}</h2>
-        <div className="h-px flex-1 bg-white/[0.05]" />
-      </div>
-      <Suspense fallback={<SectionSkeleton />}>{children}</Suspense>
-    </m.div>
-  );
-}
-
-function OverviewSection({
-  career,
-  teamColor,
-  summary,
-  rookieSeason,
-  selectedYear,
-}: {
-  career: DriverCareer;
-  teamColor: string;
-  summary: DriverCareer['careerSummary'] | undefined;
-  rookieSeason: number | null;
-  selectedYear: number;
-}) {
-  const stats = [
-    { label: 'Seasons', value: summary?.seasons ?? 0 },
-    { label: 'Races', value: summary?.races ?? 0 },
-    { label: 'Wins', value: summary?.wins ?? 0 },
-    { label: 'Podiums', value: summary?.podiums ?? 0 },
-    { label: 'Poles', value: summary?.poles ?? 0 },
-    { label: 'Fastest Laps', value: summary?.fastestLaps ?? 0 },
-    { label: 'Points', value: summary?.points ?? 0 },
-    { label: 'DNFs', value: summary?.dnfs ?? 0 },
-  ];
+/* ─── Overview: Season-by-Season Table ─── */
+function OverviewSection({ career, selectedYear }: { career: DriverCareer; selectedYear: number }) {
+  const rookieSeason = career.seasons.length
+    ? career.seasons[career.seasons.length - 1]?.season
+    : null;
 
   return (
-    <div className="space-y-10">
-      {/* Career Stats */}
-      <section>
-        <div className="flex items-center gap-3">
-          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
-            Career Stats
-          </h2>
-          <div className="h-px flex-1 bg-white/[0.05]" />
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {stats.map((stat, i) => (
-            <DriverStatCard
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-              teamColor={teamColor}
-              delay={i * 0.05}
-            />
-          ))}
-        </div>
-      </section>
+    <div className="space-y-5">
+      {/* Season table */}
+      <div className={cn(CARD_CONTAINER, 'overflow-hidden')}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-white/[0.04]">
+                <th className="px-5 py-3.5 text-left text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Season
+                </th>
+                <th className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Team
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Races
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Wins
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Podiums
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Poles
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  FL
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  Points
+                </th>
+                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
+                  WDC
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {career.seasons.map((season, i) => {
+                const isCurrent = season.season === selectedYear;
+                const isChampion = season.position === 1;
+                const isRookie = season.season === rookieSeason;
 
-      {/* Season History */}
-      <section>
-        <div className="flex items-center gap-3">
-          <h2 className="text-[13px] font-medium uppercase tracking-wider text-white/40">
-            Season by Season
-          </h2>
-          <div className="h-px flex-1 bg-white/[0.05]" />
-        </div>
-
-        <div className="mt-6 overflow-hidden rounded-xl border border-white/[0.06]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#0c0c0e] text-[11px] font-bold uppercase tracking-wider text-white/30">
-                  <th className="px-4 py-3 text-left">Season</th>
-                  <th className="px-4 py-3 text-left">Team</th>
-                  <th className="px-4 py-3 text-center">Races</th>
-                  <th className="px-4 py-3 text-center">Wins</th>
-                  <th className="px-4 py-3 text-center">Podiums</th>
-                  <th className="px-4 py-3 text-center">Poles</th>
-                  <th className="px-4 py-3 text-center">FL</th>
-                  <th className="px-4 py-3 text-center">Points</th>
-                  <th className="px-4 py-3 text-center">WDC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {career.seasons.map((season, i) => {
-                  const isCurrent = season.season === selectedYear;
-                  const isChampion = season.position === 1;
-                  const isRookie = season.season === rookieSeason;
-
-                  return (
-                    <m.tr
-                      key={season.season}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: i * 0.025 }}
-                      className={cn(
-                        'border-b border-white/[0.04] transition-colors hover:bg-white/[0.02]',
-                        isCurrent && 'border-l-2 border-l-red-500 bg-red-500/[0.02]',
-                        isChampion &&
-                          !isCurrent &&
-                          'border-l-2 border-l-amber-500 bg-amber-500/[0.02]'
-                      )}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[15px] font-bold tabular-nums text-white">
-                            {season.season}
+                return (
+                  <m.tr
+                    key={season.season}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.15, delay: i * 0.02 }}
+                    className={cn(
+                      'group border-b border-white/[0.03] transition-colors hover:bg-white/[0.015]',
+                      isCurrent && 'bg-red-500/[0.02]',
+                      isChampion && !isCurrent && 'bg-amber-500/[0.015]'
+                    )}
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'inline-block size-1.5 rounded-full',
+                            `bg-f1-${getTeamColorClass(season.team)}`
+                          )}
+                        />
+                        <span className="font-semibold tabular-nums text-white">
+                          {season.season}
+                        </span>
+                        {isCurrent && (
+                          <span className="rounded border border-red-400/20 bg-red-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-red-400">
+                            Now
                           </span>
-                          {isCurrent && (
-                            <span className="rounded-full border border-red-500/20 bg-red-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-400">
-                              Current
-                            </span>
-                          )}
-                          {isRookie && (
-                            <span className="rounded-full border border-amber-500/20 bg-amber-500/[0.07] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                              Rookie
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn(
-                              'h-2.5 w-1 rounded-full',
-                              `bg-f1-${getTeamColorClass(season.team)}`
-                            )}
-                          />
-                          <span className="text-[14px] text-white/60">{season.team}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-[14px] font-medium tabular-nums text-white">
-                          {season.races}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={cn(
-                            'text-[14px] font-medium tabular-nums',
-                            season.wins > 0 ? 'text-white' : 'text-white/30'
-                          )}
-                        >
-                          {season.wins}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={cn(
-                            'text-[14px] font-medium tabular-nums',
-                            season.podiums > 0 ? 'text-white' : 'text-white/30'
-                          )}
-                        >
-                          {season.podiums}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={cn(
-                            'text-[14px] font-medium tabular-nums',
-                            season.poles > 0 ? 'text-white' : 'text-white/30'
-                          )}
-                        >
-                          {season.poles}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={cn(
-                            'text-[14px] font-medium tabular-nums',
-                            season.fastestLaps > 0 ? 'text-purple-400' : 'text-white/30'
-                          )}
-                        >
-                          {season.fastestLaps}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-[14px] font-bold tabular-nums text-white">
-                          {season.points}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {season.position ? (
-                          <span
-                            className={cn(
-                              'inline-flex size-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums',
-                              season.position === 1 && 'bg-amber-500/20 text-amber-400',
-                              season.position === 2 && 'bg-zinc-500/20 text-zinc-300',
-                              season.position === 3 && 'bg-orange-500/20 text-orange-400',
-                              season.position > 3 && 'bg-white/[0.04] text-white/40'
-                            )}
-                          >
-                            {season.position}
-                          </span>
-                        ) : (
-                          <span className="text-[12px] text-white/20">—</span>
                         )}
-                      </td>
-                    </m.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        {isRookie && !isCurrent && (
+                          <span className="rounded border border-emerald-400/20 bg-emerald-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-emerald-400">
+                            Rookie
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-white/60">{season.team}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="tabular-nums text-white/80">{season.races}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={cn(
+                          'tabular-nums',
+                          season.wins > 0 ? 'font-semibold text-white' : 'text-white/20'
+                        )}
+                      >
+                        {season.wins}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={cn(
+                          'tabular-nums',
+                          season.podiums > 0 ? 'text-white/80' : 'text-white/20'
+                        )}
+                      >
+                        {season.podiums}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={cn(
+                          'tabular-nums',
+                          season.poles > 0 ? 'text-white/80' : 'text-white/20'
+                        )}
+                      >
+                        {season.poles}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span
+                        className={cn(
+                          'tabular-nums',
+                          season.fastestLaps > 0 ? 'text-purple-400' : 'text-white/20'
+                        )}
+                      >
+                        {season.fastestLaps}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="font-semibold tabular-nums text-white">{season.points}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      {season.position ? (
+                        <span
+                          className={cn(
+                            'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
+                            season.position === 1 && 'bg-amber-400/15 text-amber-400',
+                            season.position === 2 && 'bg-white/[0.06] text-zinc-300',
+                            season.position === 3 && 'bg-orange-400/10 text-orange-400',
+                            season.position > 3 && 'text-white/30'
+                          )}
+                        >
+                          {season.position}
+                        </span>
+                      ) : (
+                        <span className="text-white/15">—</span>
+                      )}
+                    </td>
+                  </m.tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

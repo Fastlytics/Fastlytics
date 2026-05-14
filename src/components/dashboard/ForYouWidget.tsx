@@ -1,6 +1,5 @@
 import React from 'react';
 import { m } from 'motion/react';
-import { AiBrain01Icon, News01Icon } from 'hugeicons-react';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import { useNewsFeed } from '@/hooks/useNews';
 import { useNavigate } from 'react-router-dom';
@@ -47,13 +46,8 @@ const ForYouWidget: React.FC<ForYouWidgetProps> = ({ favoriteDriverName, favorit
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <News01Icon className="size-3.5 text-white/80" strokeWidth={1.6} />
           <span className={CARD_LABEL}>For you</span>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/20 px-2 py-0.5 text-[10px] font-medium text-sky-400">
-          <AiBrain01Icon className="size-2.5" strokeWidth={2} />
-          AI-powered
-        </span>
       </div>
 
       <p className="px-5 pb-2 text-[12px] text-white/50">{personaLine}</p>
@@ -79,7 +73,7 @@ const ForYouWidget: React.FC<ForYouWidgetProps> = ({ favoriteDriverName, favorit
               rel="noopener noreferrer"
               className="flex items-start gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
             >
-              <div className="size-10 shrink-0 overflow-hidden rounded border border-white/[0.06] bg-white/[0.02]">
+              <div className="h-12 w-18 shrink-0 overflow-hidden rounded border border-white/[0.06] bg-white/[0.02]">
                 {article.image_url ? (
                   <img
                     src={article.image_url}
@@ -88,9 +82,7 @@ const ForYouWidget: React.FC<ForYouWidgetProps> = ({ favoriteDriverName, favorit
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <News01Icon className="size-4 text-white/20" />
-                  </div>
+                  <div className="flex h-full w-full items-center justify-center"></div>
                 )}
               </div>
               <div className="min-w-0 flex-1">

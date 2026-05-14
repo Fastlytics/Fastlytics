@@ -85,21 +85,21 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
             {timeLeft ? (
               <div className="flex items-baseline gap-1">
-                <span className="font-mono text-[20px] tabular-nums text-white/90">
+                <span className="font text-[20px] tabular-nums text-white/90">
                   {timeLeft.d > 0 && `${timeLeft.d}d `}
                   {timeLeft.h.toString().padStart(2, '0')}
                 </span>
-                <span className="font-mono text-[20px] tabular-nums text-white/40">:</span>
-                <span className="font-mono text-[20px] tabular-nums text-white/90">
+                <span className="font text-[20px] tabular-nums text-white/40">:</span>
+                <span className="font text-[20px] tabular-nums text-white/90">
                   {timeLeft.m.toString().padStart(2, '0')}
                 </span>
-                <span className="font-mono text-[20px] tabular-nums text-white/40">:</span>
-                <span className="font-mono text-[20px] tabular-nums text-red-400">
+                <span className="font text-[20px] tabular-nums text-white/40">:</span>
+                <span className="font text-[20px] tabular-nums text-red-400">
                   {timeLeft.s.toString().padStart(2, '0')}
                 </span>
               </div>
             ) : (
-              <span className="font-mono text-[14px] font-medium text-emerald-400">Live now</span>
+              <span className="font text-[14px] font-medium text-emerald-400">Live now</span>
             )}
           </button>
         )}

@@ -36,13 +36,13 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   );
 
   if (isLoading) {
-    return <div className={`h-48 animate-pulse ${CARD_CONTAINER}`} />;
+    return <div className={`h-full animate-pulse ${CARD_CONTAINER}`} />;
   }
 
   // No favorites set
   if (!profile?.favorite_driver && !profile?.favorite_team) {
     return (
-      <div className={`${CARD_CONTAINER} p-5`}>
+      <div className={`h-full flex flex-col ${CARD_CONTAINER} p-5`}>
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <p className="text-[14px] font-medium text-white">Personalize your dashboard</p>
@@ -71,20 +71,20 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
   }
 
   return (
-    <div className={CARD_CONTAINER}>
+    <div className={`h-full flex flex-col ${CARD_CONTAINER}`}>
       <div className="px-5 pt-5 pb-3">
         <span className={CARD_LABEL}>My Garage</span>
       </div>
 
-      <div className="px-2 pb-3 space-y-0.5">
+      <div className="px-2 pb-3 flex-1 grid grid-cols-2 gap-0.5">
         {favoriteDriver && (
           <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
-            className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
+            className="flex flex-col items-center gap-1.5 rounded-md px-3 py-3 transition-colors hover:bg-white/[0.02]"
           >
-            <Avatar className="size-10 shrink-0 border border-white/[0.06]">
+            <Avatar className="mt-5 size-32 shrink-0 border border-white/[0.06]">
               <AvatarImage
                 src={getDriverImageForYear(favoriteDriver.code)}
                 className="object-cover object-top"
@@ -93,15 +93,13 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
                 {favoriteDriver.code}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium text-white">{favoriteDriver.name}</div>
-              <div className="text-[12px] text-white/80">{favoriteDriver.team}</div>
+            <div className="text-[14px] font-medium text-white text-center leading-tight">
+              {favoriteDriver.name}
             </div>
-            <div className="shrink-0 text-right">
-              <div className="font-mono text-[15px] tabular-nums text-white">
-                P{favoriteDriver.rank}
-              </div>
-              <div className="font-mono text-[12px] tabular-nums text-white/80">
+            <div className="text-[12px] text-white/80">{favoriteDriver.team}</div>
+            <div className="text-center">
+              <div className="font text-[15px] tabular-nums text-white">P{favoriteDriver.rank}</div>
+              <div className="font text-[12px] tabular-nums text-white/80">
                 {favoriteDriver.points} pts
               </div>
             </div>
@@ -116,29 +114,27 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
           >
             <Link
               to="/standings/teams"
-              className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
+              className="flex flex-col items-center gap-1.5 rounded-md px-3 py-3 transition-colors hover:bg-white/[0.02]"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded border border-white/[0.06]">
+              <div>
                 {getTeamLogo(favoriteTeam.team) ? (
                   <img
                     src={getTeamLogo(favoriteTeam.team)!}
                     alt={favoriteTeam.team}
-                    className="size-7 object-contain"
+                    className="h-40 w-22 object-contain"
                   />
                 ) : (
-                  <span className="text-[10px] font-medium text-white/80">
+                  <span className="text-[12px] font-medium text-white/80">
                     {favoriteTeam.team.substring(0, 2).toUpperCase()}
                   </span>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-medium text-white">{favoriteTeam.team}</div>
+              <div className="mt-2 -translate-y-2 text-[14px] font-medium text-white text-center leading-tight">
+                {favoriteTeam.team}
               </div>
-              <div className="shrink-0 text-right">
-                <div className="font-mono text-[15px] tabular-nums text-white">
-                  P{favoriteTeam.rank}
-                </div>
-                <div className="font-mono text-[12px] tabular-nums text-white/80">
+              <div className="text-center">
+                <div className="font text-[15px] tabular-nums text-white">P{favoriteTeam.rank}</div>
+                <div className="font text-[12px] tabular-nums text-white/80">
                   {favoriteTeam.points} pts
                 </div>
               </div>

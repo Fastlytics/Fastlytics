@@ -1,10 +1,13 @@
 import React from 'react';
 import { m } from 'motion/react';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { getDriverImage } from '@/utils/imageMapping';
+import { useSeason } from '@/contexts/SeasonContext';
 
 export interface PodiumDriverDetailed {
   position: 1 | 2 | 3;
   driver: string;
+  driverCode?: string;
   team: string;
   teamColor: string;
   gapToWinner?: string;
@@ -62,6 +65,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
   isLoading,
   onClick,
 }) => {
+  const { selectedYear } = useSeason();
   if (isLoading) {
     return <div className={`${CARD_CONTAINER} h-full animate-pulse`} />;
   }
@@ -99,13 +103,11 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
           {roundLabel && (
             <>
               <span className="text-white/30">·</span>
-              <span className="font-mono text-[11px] tabular-nums text-white/60">{roundLabel}</span>
+              <span className="font text-[11px] tabular-nums text-white/60">{roundLabel}</span>
             </>
           )}
           <span className="text-white/30">·</span>
-          <span className="font-mono text-[11px] tabular-nums text-white/60">
-            {formatDate(date)}
-          </span>
+          <span className="font text-[11px] tabular-nums text-white/60">{formatDate(date)}</span>
         </div>
 
         {/* Race name row */}
@@ -114,7 +116,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
             <img
               src={`https://flagcdn.com/${countryCode}.svg`}
               alt=""
-              className="h-4 w-auto shrink-0 rounded-[2px] border border-white/[0.06]"
+              className="h-6 w-auto shrink-0 rounded-[2px] border border-white/[0.06]"
             />
           )}
           <span className="truncate text-[15px] font-medium text-white">{raceName}</span>
@@ -127,11 +129,18 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
             className="h-8 w-0.5 shrink-0 rounded-full"
             style={{ backgroundColor: normalizeTeamColor(winner.teamColor) }}
           />
+          {winner.driverCode && getDriverImage(winner.driverCode, selectedYear) && (
+            <img
+              src={getDriverImage(winner.driverCode, selectedYear)}
+              alt={winner.driver}
+              className="h-14 w-14 shrink-0 rounded-full object-cover object-top border border-white/[0.08]"
+            />
+          )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-[14px] font-medium text-white">{winner.driver}</div>
             <div className="text-[12px] text-white/60">{winner.team}</div>
           </div>
-          <span className="shrink-0 font-mono text-[12px] tabular-nums text-amber-400">P1</span>
+          <span className="shrink-0 font text-[12px] tabular-nums text-amber-400">P1</span>
         </div>
 
         {/* Pole position — compact inline */}
@@ -141,7 +150,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
               Pole
             </span>
             <span className="truncate text-[13px] text-white/80">{pole.driver}</span>
-            <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-white/50">
+            <span className="ml-auto shrink-0 font text-[11px] tabular-nums text-white/50">
               {pole.lapTime}
             </span>
           </div>
@@ -159,15 +168,22 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
                 className="h-5 w-0.5 shrink-0 rounded-full opacity-60"
                 style={{ backgroundColor: normalizeTeamColor(entry.teamColor) }}
               />
+              {entry.driverCode && getDriverImage(entry.driverCode, selectedYear) && (
+                <img
+                  src={getDriverImage(entry.driverCode, selectedYear)}
+                  alt={entry.driver}
+                  className="h-10 w-10 shrink-0 rounded-full object-cover object-top border border-white/[0.08]"
+                />
+              )}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] text-white/90">{lastName(entry.driver)}</div>
                 {entry.gapToWinner && (
-                  <div className="font-mono text-[11px] tabular-nums text-white/50">
+                  <div className="font text-[11px] tabular-nums text-white/50">
                     {entry.gapToWinner}
                   </div>
                 )}
               </div>
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-white/50">
+              <span className="shrink-0 font text-[11px] tabular-nums text-white/50">
                 P{entry.position}
               </span>
             </div>
@@ -183,7 +199,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
                 <span className="truncate text-[12px] text-white/80">
                   {lastName(fastestLap.driver)}
                 </span>
-                <span className="font-mono text-[11px] tabular-nums text-emerald-400">
+                <span className="font text-[11px] tabular-nums text-emerald-400">
                   {fastestLap.lapTime}
                 </span>
               </div>
@@ -194,7 +210,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
                 <span className="truncate text-[12px] text-white/80">
                   {lastName(biggestGainer.driver)}
                 </span>
-                <span className="font-mono text-[11px] tabular-nums text-emerald-400">
+                <span className="font text-[11px] tabular-nums text-emerald-400">
                   +{gainerDelta}
                 </span>
               </div>
@@ -202,7 +218,7 @@ const LastRaceSummary: React.FC<LastRaceSummaryProps> = ({
             {typeof dnfCount === 'number' && dnfCount > 0 && (
               <div className="flex items-baseline gap-1.5">
                 <span className="text-[11px] text-white/50">DNF</span>
-                <span className="font-mono text-[11px] tabular-nums text-red-400">{dnfCount}</span>
+                <span className="font text-[11px] tabular-nums text-red-400">{dnfCount}</span>
               </div>
             )}
           </div>

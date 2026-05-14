@@ -17,6 +17,8 @@ export interface SectionVisibilityContext {
   selectedSession: string;
   isTestingSession: boolean;
   isTestingEvent: boolean;
+  /** True for pre-2018 races that only have basic stats from Supabase */
+  isHistorical: boolean;
 }
 
 /**
@@ -46,17 +48,37 @@ export interface RaceTabItem {
  */
 export const RACE_TAB_ITEMS: RaceTabItem[] = [
   { label: 'Overview', segment: 'overview', icon: ChampionIcon },
-  { label: 'Replay', segment: 'replay', icon: PlayCircle02Icon },
+  {
+    label: 'Replay',
+    segment: 'replay',
+    icon: PlayCircle02Icon,
+    showWhen: ({ isHistorical }) => !isHistorical,
+  },
   {
     label: 'Strategy',
     segment: 'strategy',
     icon: TireIcon,
-    showWhen: ({ selectedSession, isTestingSession }) =>
-      selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession === true,
+    showWhen: ({ selectedSession, isTestingSession, isHistorical }) =>
+      !isHistorical &&
+      (selectedSession === 'R' || selectedSession === 'Sprint' || isTestingSession === true),
   },
-  { label: 'Lap Analysis', segment: 'lap-analysis', icon: ChartLineData01Icon },
-  { label: 'Head to Head', segment: 'head-to-head', icon: GitCompareIcon },
-  { label: 'Telemetry', segment: 'telemetry', icon: Analytics01Icon },
+  {
+    label: 'Lap Analysis',
+    segment: 'lap-analysis',
+    icon: ChartLineData01Icon,
+  },
+  {
+    label: 'Head to Head',
+    segment: 'head-to-head',
+    icon: GitCompareIcon,
+    showWhen: ({ isHistorical }) => !isHistorical,
+  },
+  {
+    label: 'Telemetry',
+    segment: 'telemetry',
+    icon: Analytics01Icon,
+    showWhen: ({ isHistorical }) => !isHistorical,
+  },
 ];
 
 /**

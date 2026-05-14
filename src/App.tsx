@@ -29,6 +29,7 @@ import TeamProfile from './pages/TeamProfile';
 import CompareDrivers from './pages/CompareDrivers';
 import CompareTeams from './pages/CompareTeams';
 import Drivers from './pages/Drivers';
+import DriverLeaderboard from './pages/DriverLeaderboard';
 import Teams from './pages/Teams';
 import Watchlist from './pages/Watchlist';
 import News from './pages/News';
@@ -289,6 +290,14 @@ const App = () => (
                 element={
                   <DashboardLayout>
                     <Drivers />
+                  </DashboardLayout>
+                }
+              />
+              <Route
+                path="/drivers/leaderboard/:stat"
+                element={
+                  <DashboardLayout>
+                    <DriverLeaderboard />
                   </DashboardLayout>
                 }
               />
