@@ -20,6 +20,8 @@ export interface Profile {
   id: string;
   username: string | null;
   full_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   website: string | null;
   favorite_driver: string | null;

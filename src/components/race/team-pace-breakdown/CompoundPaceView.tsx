@@ -1,12 +1,5 @@
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from '@/lib/recharts-lazy';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from '@/lib/recharts-lazy';
+import { Cell } from '@/lib/recharts-cell';
 
 import { COMPOUND_COLORS, formatLapTime, getTeamColor } from './utils';
 

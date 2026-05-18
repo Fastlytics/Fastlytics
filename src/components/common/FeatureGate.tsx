@@ -26,7 +26,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
 }) => {
   const location = useLocation();
   const returnTo = location.pathname + location.search;
-  const authHref = `/auth?returnTo=${encodeURIComponent(returnTo)}`;
+  const authHref = `/login?returnTo=${encodeURIComponent(returnTo)}`;
 
   return (
     <div

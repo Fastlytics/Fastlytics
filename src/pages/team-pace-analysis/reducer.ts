@@ -14,11 +14,18 @@ type TeamPaceAnalysisAction =
   | { type: 'syncEvent'; eventKey: string; availableSessions: Record<string, unknown> };
 
 export const initialTeamPaceAnalysisState: TeamPaceAnalysisState = {
-  selectedYear: 2025,
+  selectedYear: new Date().getFullYear(),
   requestedEventSlug: null,
   selectedSession: 'R',
   syncedEventKey: null,
 };
+
+export const createInitialState = (year: number): TeamPaceAnalysisState => ({
+  selectedYear: year,
+  requestedEventSlug: null,
+  selectedSession: 'R',
+  syncedEventKey: null,
+});
 
 export const teamPaceAnalysisReducer = (
   state: TeamPaceAnalysisState,

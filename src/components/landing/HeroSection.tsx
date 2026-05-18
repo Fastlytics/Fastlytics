@@ -114,17 +114,25 @@ export default function HeroSection() {
     }
   }, [cacheKey]);
 
+  const loadedDurationRef = useRef(loadedDuration);
   useEffect(() => {
-    if (!chunk || chunk.time.length <= 1 || playbackEndTime <= playbackStartTime) return;
+    loadedDurationRef.current = loadedDuration;
+  });
+
+  const hasChunkData = Boolean(chunk && chunk.time.length > 1);
+
+  useEffect(() => {
+    if (!hasChunkData || playbackEndTime <= playbackStartTime) return;
 
     const intervalId = window.setInterval(() => {
       const baseTime = Math.max(playbackTimeRef.current, playbackStartTime);
       const next = baseTime + 1 / 25;
       const totalEnd = playbackEndTime;
-      const hasFullTail = loadedDuration >= totalEnd;
+      const currentLoadedDuration = loadedDurationRef.current;
+      const hasFullTail = currentLoadedDuration >= totalEnd;
       const playableEnd = hasFullTail
         ? totalEnd
-        : Math.max(playbackStartTime, Math.min(totalEnd, loadedDuration - 0.25));
+        : Math.max(playbackStartTime, Math.min(totalEnd, currentLoadedDuration - 0.25));
 
       const newTime =
         next >= totalEnd
@@ -136,7 +144,7 @@ export default function HeroSection() {
     }, 1000 / 25);
 
     return () => window.clearInterval(intervalId);
-  }, [chunk, loadedDuration, playbackEndTime, playbackStartTime]);
+  }, [hasChunkData, playbackEndTime, playbackStartTime]);
 
   const frameIndex = useMemo(() => {
     if (!chunk?.time?.length) return 0;
@@ -207,21 +215,6 @@ export default function HeroSection() {
 
   return (
     <section className="relative overflow-hidden pb-20 pt-32 lg:pb-32 lg:pt-40">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/4 top-0 size-[600px] -translate-x-1/2 rounded-full bg-red-500/[0.07] blur-[120px]" />
-        <div className="absolute right-1/4 top-20 size-[400px] rounded-full bg-orange-500/[0.05] blur-[100px]" />
-      </div>
-
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-          backgroundSize: '64px 64px',
-          maskImage: 'linear-gradient(to bottom, black 0%, transparent 70%)',
-        }}
-      />
-
       <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <m.h1
@@ -230,7 +223,7 @@ export default function HeroSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
           >
-            Race intelligence <span className="text-red-500">for every</span> Formula 1 session
+            You already know who won. <span className="text-white/40">Now find out why.</span>
           </m.h1>
 
           <m.p
@@ -239,8 +232,8 @@ export default function HeroSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/50"
           >
-            Telemetry, strategy, pace and championship context wired into one live race desk. See
-            what the pit wall sees.
+            Telemetry traces, tyre degradation curves, pit window math and sector splits — live,
+            synced, and readable without a data science degree.
           </m.p>
 
           <m.div
@@ -285,7 +278,6 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.45 }}
           className="relative mx-auto mt-16 max-w-7xl lg:mt-20"
         >
-          <div className="absolute -inset-6 rounded-2xl bg-gradient-to-b from-red-500/10 via-transparent to-transparent blur-2xl" />
           <div
             ref={compactHeroWindowRef}
             className={`relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_32px_120px_rgba(0,0,0,0.6)] ${
@@ -293,7 +285,7 @@ export default function HeroSection() {
             }`}
           >
             {isHeroLoading && (
-              <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-red-500/[0.03] via-transparent to-black/10" />
+              <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
             )}
             <HeroDashboard
               hero={hero || DEFAULT_HERO_VIEW}
@@ -308,7 +300,6 @@ export default function HeroSection() {
               onChromeAction={openExpandedHero}
             />
           </div>
-          <div className="absolute -bottom-20 left-1/2 h-40 w-3/4 -translate-x-1/2 rounded-full bg-gradient-to-t from-red-500/5 to-transparent blur-3xl" />
         </m.div>
 
         {hero && heroWindowAnimation && heroModalPhase !== 'closed' && (

@@ -22,10 +22,10 @@ export const CARD_DIVIDER = 'divide-white/[0.04]';
 export const CARD_ROW_PADDING = 'px-5 py-3.5';
 
 /** Monospace class for data values */
-export const CARD_DATA_VALUE = 'font-mono text-[13px] text-white tabular-nums';
+export const CARD_DATA_VALUE = 'font text-[13px] text-white tabular-nums';
 
 /** Muted label styling */
-export const CARD_LABEL = 'text-[12px] text-white/80 font-medium';
+export const CARD_LABEL = 'text-[15px] text-white font-semibold';
 
 /** Card header styling */
-export const CARD_HEADER = 'text-[13px] font-medium text-white';
+export const CARD_HEADER = 'text-[15px] font-semibold text-white';

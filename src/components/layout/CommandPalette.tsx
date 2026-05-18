@@ -234,27 +234,19 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         // Split query into individual words for multi-word search
         const words = trimmed.split(/\s+/).filter(Boolean);
 
-        // Build driver query: for multi-word queries, each word must match
-        // at least one name field (since names are split across forename/surname)
+        // Build driver query: uses RPC functions that sort by career achievements
+        // (championships > wins > podiums > points) so the most decorated drivers appear first
         let driversPromise;
         if (words.length > 1) {
-          let q = supabase
-            .from('f1_drivers')
-            .select('id, forename, surname, abbreviation, reference, nationality');
-          for (const word of words) {
-            const pat = `%${word}%`;
-            q = q.or(`forename.ilike.${pat},surname.ilike.${pat},reference.ilike.${pat}`);
-          }
-          driversPromise = q.limit(6);
+          driversPromise = supabase.rpc('search_drivers_by_achievement_multi', {
+            search_words: words,
+            result_limit: 6,
+          });
         } else {
-          const pat = `%${trimmed}%`;
-          driversPromise = supabase
-            .from('f1_drivers')
-            .select('id, forename, surname, abbreviation, reference, nationality')
-            .or(
-              `forename.ilike.${pat},surname.ilike.${pat},reference.ilike.${pat},abbreviation.ilike.${pat}`
-            )
-            .limit(6);
+          driversPromise = supabase.rpc('search_drivers_by_achievement', {
+            search_query: trimmed,
+            result_limit: 6,
+          });
         }
 
         // For teams: use per-word matching if multi-word, since .or() breaks on spaces
@@ -438,12 +430,13 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     el?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) onClose();
-    },
-    [onClose]
-  );
+  const handleBackdropClick = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const handlePanelClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   // Flat index map for keyboard nav
   const flatIndexMap = useMemo(() => {
@@ -464,7 +457,6 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       {open && (
         <motion.div
           className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh]"
-          onClick={handleBackdropClick}
           role="dialog"
           aria-modal="true"
           aria-label="Command palette"
@@ -476,6 +468,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={handleBackdropClick}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -484,7 +477,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
           {/* Panel */}
           <motion.div
-            className="relative w-full max-w-[620px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#1a1a1e]/95 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_60px_-10px_rgba(0,0,0,0.7),0_0_100px_-20px_rgba(220,38,38,0.06)] backdrop-blur-xl"
+            className="relative w-full max-w-[620px] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_60px_-10px_rgba(0,0,0,0.7),0_0_100px_-20px_rgba(220,38,38,0.06)] backdrop-blur-xl"
+            onClick={handlePanelClick}
             onKeyDown={handleKeyDown}
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -530,18 +524,18 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   if (val.trim().length < 2) setResults([]);
                 }}
                 placeholder="Search drivers, teams, articles..."
-                className="flex-1 bg-transparent text-[15px] font-light tracking-[-0.01em] text-white placeholder:text-white/25 outline-none"
+                className="flex-1 bg-transparent text-[15px] font-medium tracking-[-0.01em] text-white placeholder:text-white/25 outline-none"
                 aria-label="Search"
                 autoComplete="off"
                 spellCheck={false}
               />
-              <kbd className="hidden items-center gap-0.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] font-medium tracking-wide text-white/20 sm:flex">
+              <kbd className="hidden items-center gap-0.5 rounded-md border border-white/[0.04] bg-white/[0.03] px-2 py-1 text-[10px] font-medium tracking-wide text-white/20 sm:flex">
                 ESC
               </kbd>
             </div>
 
             {/* Divider */}
-            <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+            <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.04] to-transparent" />
 
             {/* Results */}
             <div
@@ -632,7 +626,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
                           {/* Flag, thumbnail, or category icon */}
                           <div
-                            className={`relative z-10 flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-white/[0.06] ${item._smart ? 'bg-red-500/[0.08] ring-red-500/[0.12]' : 'bg-white/[0.04]'}`}
+                            className={`relative z-10 flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-white/[0.04] ${item._smart ? 'bg-red-500/[0.08] ring-red-500/[0.12]' : 'bg-white/[0.04]'}`}
                           >
                             {item._smart?.countryCode ? (
                               <img
@@ -675,7 +669,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                           {isActive && (
                             <div className="relative z-10 flex items-center gap-1">
                               <span className="text-[10px] text-white/20">Open</span>
-                              <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.08] bg-white/[0.04] text-[10px] text-white/30">
+                              <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.04] bg-white/[0.04] text-[10px] text-white/30">
                                 ↵
                               </kbd>
                             </div>
@@ -717,17 +711,17 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
               <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
-                    <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.06] bg-white/[0.03] text-[10px] text-white/25">
+                    <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.04] bg-white/[0.03] text-[10px] text-white/25">
                       ↑
                     </kbd>
-                    <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.06] bg-white/[0.03] text-[10px] text-white/25">
+                    <kbd className="flex size-5 items-center justify-center rounded border border-white/[0.04] bg-white/[0.03] text-[10px] text-white/25">
                       ↓
                     </kbd>
                   </div>
                   <span className="text-[10px] text-white/15">Navigate</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <kbd className="flex h-5 items-center justify-center rounded border border-white/[0.06] bg-white/[0.03] px-1.5 text-[10px] text-white/25">
+                  <kbd className="flex h-5 items-center justify-center rounded border border-white/[0.04] bg-white/[0.03] px-1.5 text-[10px] text-white/25">
                     ↵
                   </kbd>
                   <span className="text-[10px] text-white/15">Open</span>

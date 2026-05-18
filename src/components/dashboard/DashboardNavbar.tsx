@@ -314,7 +314,7 @@ const DashboardNavbar = () => {
             )}
 
             {user ? (
-              <Link to="/account">
+              <Link to="/settings">
                 <Avatar className="size-9 border border-white/[0.1] transition-colors hover:border-white/30">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
                   <AvatarFallback className="bg-[#1a1a1e] text-[13px] font-semibold text-white">
@@ -325,13 +325,13 @@ const DashboardNavbar = () => {
             ) : (
               <>
                 <Link
-                  to="/auth"
+                  to="/login"
                   className="rounded-lg px-4 py-2.5 text-[15px] font-medium text-white/60 transition-colors hover:text-white"
                 >
                   Sign in
                 </Link>
                 <Link
-                  to="/auth"
+                  to="/signup"
                   className="rounded-lg bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition-all hover:bg-white/90"
                 >
                   Get started
@@ -393,7 +393,7 @@ const DashboardNavbar = () => {
                 </div>
                 <div className="mt-3 flex gap-2">
                   <Link
-                    to="/auth"
+                    to="/login"
                     className="flex-1 rounded-lg border border-white/10 py-3 text-center text-[15px] font-medium text-white"
                     onClick={() => setMobileOpen(false)}
                   >

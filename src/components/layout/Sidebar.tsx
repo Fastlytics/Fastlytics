@@ -10,7 +10,6 @@ import { useNewsNotifications, useDiscussionNotifications } from '@/hooks/useNew
 export interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onSearchClick: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -50,11 +49,7 @@ export function isNavItemActive(
  * - Bottom row: account
  * - Collapse toggle (expanded only)
  */
-const Sidebar = ({
-  onSearchClick,
-  collapsed: controlledCollapsed,
-  onToggleCollapse,
-}: SidebarProps) => {
+const Sidebar = ({ collapsed: controlledCollapsed, onToggleCollapse }: SidebarProps) => {
   const location = useLocation();
   const { user, isSubscribed, profile } = useAuth();
   const { data: unreadNews } = useNewsNotifications();
@@ -150,8 +145,13 @@ const Sidebar = ({
   };
 
   const tier = isSubscribed('ultra') ? 'ultra' : isSubscribed('pro') ? 'pro' : 'free';
-  const displayName = profile?.full_name?.trim() || user?.email?.split('@')[0] || 'Account';
+  const displayName =
+    profile?.first_name?.trim() ||
+    profile?.full_name?.trim()?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'Account';
   const avatarInitial =
+    profile?.first_name?.trim()?.charAt(0)?.toUpperCase() ||
     profile?.full_name?.trim()?.charAt(0)?.toUpperCase() ||
     user?.email?.charAt(0)?.toUpperCase() ||
     'U';
@@ -219,57 +219,6 @@ const Sidebar = ({
         )}
       </div>
 
-      {/* Search trigger */}
-      {showExpanded ? (
-        <div className="px-3 pb-2">
-          <button
-            type="button"
-            onClick={onSearchClick}
-            className="flex w-full items-center gap-2 rounded-md border border-white/[0.04] px-2.5 py-1.5 text-[12px] text-white/80 transition-colors hover:border-white/[0.08] hover:text-white"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <span className="flex-1 text-left">Search</span>
-            <kbd className="text-[10px] font-medium text-white/80">⌘K</kbd>
-          </button>
-        </div>
-      ) : (
-        <div className="flex justify-center pb-2">
-          <button
-            type="button"
-            onClick={onSearchClick}
-            className="flex size-9 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/[0.04] hover:text-white"
-            aria-label="Search"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          </button>
-        </div>
-      )}
-
       {/* Sectioned navigation */}
       <nav
         className={`flex-1 overflow-y-auto ${!showExpanded ? 'px-1.5' : 'px-3'} pt-1`}
@@ -280,168 +229,177 @@ const Sidebar = ({
             {sectionIdx > 0 && <div className="my-2 h-px bg-white/[0.04]" aria-hidden="true" />}
 
             <ul className="flex flex-col gap-0.8">
-              {section.items.map((item) => {
-                const active = isNavItemActive(location.pathname, item.path, item.matchPaths);
-                const Icon = item.icon;
-                const isNotifications = item.path === '/notifications';
-                const badge =
-                  isNotifications && unreadNotificationCount > 0 ? unreadNotificationCount : null;
+              {section.items
+                .filter((item) => {
+                  // Hide Notifications and Saved when not logged in
+                  if (!user && (item.path === '/notifications' || item.path === '/saved'))
+                    return false;
+                  return true;
+                })
+                .map((item) => {
+                  const active = isNavItemActive(location.pathname, item.path, item.matchPaths);
+                  const Icon = item.icon;
+                  const isNotifications = item.path === '/notifications';
+                  const badge =
+                    isNotifications && unreadNotificationCount > 0 ? unreadNotificationCount : null;
 
-                if (!showExpanded) {
+                  if (!showExpanded) {
+                    return (
+                      <li key={item.path}>
+                        <Link
+                          to={item.path}
+                          className={`relative flex size-9 items-center justify-center rounded-md transition-colors ${
+                            active
+                              ? 'text-white'
+                              : 'text-white/80 hover:bg-white/[0.04] hover:text-white'
+                          }`}
+                          title={item.label}
+                        >
+                          <Icon size={18} className="shrink-0" />
+                          {active && (
+                            <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-white" />
+                          )}
+                          {badge && (
+                            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">
+                              {badge > 9 ? '9+' : badge}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  }
+
                   return (
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        className={`relative flex size-9 items-center justify-center rounded-md transition-colors ${
+                        className={`relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[15px] font-medium transition-colors ${
                           active
                             ? 'text-white'
-                            : 'text-white/80 hover:bg-white/[0.04] hover:text-white'
+                            : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
                         }`}
-                        title={item.label}
                       >
-                        <Icon size={18} className="shrink-0" />
                         {active && (
                           <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-white" />
                         )}
+                        <Icon size={18} className="shrink-0" />
+                        <span>{item.label}</span>
                         {badge && (
-                          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">
+                          <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
                             {badge > 9 ? '9+' : badge}
                           </span>
                         )}
                       </Link>
                     </li>
                   );
-                }
-
-                return (
-                  <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      className={`relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[15px] font-medium transition-colors ${
-                        active
-                          ? 'text-white'
-                          : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
-                      }`}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-white" />
-                      )}
-                      <Icon size={18} className="shrink-0" />
-                      <span>{item.label}</span>
-                      {badge && (
-                        <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
-                          {badge > 9 ? '9+' : badge}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
+                })}
             </ul>
           </div>
         ))}
       </nav>
 
       {/* Bottom section: account + collapse */}
-      <div
-        className={`flex flex-col gap-1 border-t border-white/[0.04] py-2 ${
-          !showExpanded ? 'px-1.5' : 'px-3'
-        }`}
-      >
-        {/* Free tier upgrade CTA (expanded only) */}
-        {showExpanded && user && tier === 'free' && (
-          <Link
-            to="/account"
-            className="mb-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
-          >
-            <span className="rounded border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-amber-300">
-              FREE
-            </span>
-            <span>Upgrade</span>
-          </Link>
-        )}
+      {user && (
+        <div
+          className={`flex flex-col gap-1 border-t border-white/[0.04] py-2 ${
+            !showExpanded ? 'px-1.5' : 'px-3'
+          }`}
+        >
+          {/* Free tier upgrade CTA (expanded only) */}
+          {showExpanded && tier === 'free' && (
+            <Link
+              to="/settings"
+              className="mb-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
+            >
+              <span className="rounded border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-amber-300">
+                FREE
+              </span>
+              <span>Upgrade</span>
+            </Link>
+          )}
 
-        {/* Account row */}
-        {!showExpanded ? (
-          <div className="flex flex-col items-center gap-1">
-            {/* Account (collapsed) */}
-            <div className="relative">
-              <button
-                ref={accountTriggerRef}
-                type="button"
-                onClick={openAccount}
-                aria-label="Account menu"
-                aria-expanded={accountOpen}
-                className={`flex size-9 items-center justify-center rounded-md transition-colors ${
-                  accountOpen ? 'bg-white/[0.04]' : 'hover:bg-white/[0.04]'
-                }`}
-              >
-                <Avatar className="size-7 border border-white/[0.06]">
-                  <AvatarImage src={profile?.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
-                    {avatarInitial}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-              <AccountMenu
-                open={accountOpen}
-                onClose={() => setAccountOpen(false)}
-                triggerRef={accountTriggerRef}
-                collapsed
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1">
-            {/* Account trigger (expanded) */}
-            <div className="relative flex-1">
-              <button
-                ref={accountTriggerRef}
-                type="button"
-                onClick={openAccount}
-                aria-label="Account menu"
-                aria-expanded={accountOpen}
-                className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-[12px] text-white transition-colors ${
-                  accountOpen ? 'bg-white/[0.04]' : 'hover:bg-white/[0.04]'
-                }`}
-              >
-                <Avatar className="size-7 shrink-0 border border-white/[0.06]">
-                  <AvatarImage src={profile?.avatar_url ?? undefined} />
-                  <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
-                    {avatarInitial}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 flex-1 truncate text-left text-[12px] text-white">
-                  {displayName}
-                </span>
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  className={`shrink-0 text-white/80 transition-transform ${
-                    accountOpen ? 'rotate-180' : ''
+          {/* Account row */}
+          {!showExpanded ? (
+            <div className="flex flex-col items-center gap-1">
+              {/* Account (collapsed) */}
+              <div className="relative">
+                <button
+                  ref={accountTriggerRef}
+                  type="button"
+                  onClick={openAccount}
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
+                  className={`flex size-9 items-center justify-center rounded-md transition-colors ${
+                    accountOpen ? 'bg-white/[0.04]' : 'hover:bg-white/[0.04]'
                   }`}
-                  aria-hidden="true"
                 >
-                  <path
-                    d="M2 6l3-3 3 3"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-              <AccountMenu
-                open={accountOpen}
-                onClose={() => setAccountOpen(false)}
-                triggerRef={accountTriggerRef}
-              />
+                  <Avatar className="size-7 border border-white/[0.06]">
+                    <AvatarImage src={profile?.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
+                      {avatarInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+                <AccountMenu
+                  open={accountOpen}
+                  onClose={() => setAccountOpen(false)}
+                  triggerRef={accountTriggerRef}
+                  collapsed
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              {/* Account trigger (expanded) */}
+              <div className="relative flex-1">
+                <button
+                  ref={accountTriggerRef}
+                  type="button"
+                  onClick={openAccount}
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
+                  className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-[12px] text-white transition-colors ${
+                    accountOpen ? 'bg-white/[0.04]' : 'hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <Avatar className="size-7 shrink-0 border border-white/[0.06]">
+                    <AvatarImage src={profile?.avatar_url ?? undefined} />
+                    <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
+                      {avatarInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="min-w-0 flex-1 truncate text-left text-[12px] text-white">
+                    {displayName}
+                  </span>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    className={`shrink-0 text-white/80 transition-transform ${
+                      accountOpen ? 'rotate-180' : ''
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 6l3-3 3 3"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <AccountMenu
+                  open={accountOpen}
+                  onClose={() => setAccountOpen(false)}
+                  triggerRef={accountTriggerRef}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 };

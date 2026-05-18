@@ -2,8 +2,6 @@
 import React, { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { LapTimeDataPoint } from '@/lib/api';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
-import { InformationCircleIcon } from 'hugeicons-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,7 +18,6 @@ import {
   RacingWeatherBanner,
 } from '@/components/charts/RacingChartSections';
 
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
 const TOTAL_FUEL_KG = 110;
 const FUEL_PER_LAP_KG = 1.8;
 const SECONDS_PER_KG_PER_LAP = 0.03;
@@ -140,22 +137,12 @@ const RacingChart: React.FC<RacingChartProps> = ({
   const availableDriverCodes = availableDrivers?.map((driver) => driver.code) || [];
 
   const handleSelectAllDrivers = () => {
-    trackInteraction('select_all_drivers', {
-      chart: 'lap_time',
-      year,
-      event,
-      session,
-    });
+    trackInteraction('select_all_drivers', { chart: 'lap_time', year, event, session });
     setSelectedDrivers(availableDriverCodes);
   };
 
   const handleResetDrivers = () => {
-    trackInteraction('deselect_all_drivers', {
-      chart: 'lap_time',
-      year,
-      event,
-      session,
-    });
+    trackInteraction('deselect_all_drivers', { chart: 'lap_time', year, event, session });
     setSelectedDrivers(availableDriverCodes.slice(0, MIN_DRIVERS));
   };
 
@@ -177,105 +164,100 @@ const RacingChart: React.FC<RacingChartProps> = ({
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className={cn('space-y-6 relative', className)}
+      className={cn('space-y-5', className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-end">
-          <div className="flex items-center gap-3">
-            <ChartExportMenu
-              onExport={(format) =>
-                exportChart(format, {
-                  title: 'Lap Times',
-                  subtitle: fuelCorrectionEnabled
-                    ? 'Fuel-corrected lap times'
-                    : 'Raw lap times comparison',
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        {/* Fuel correction */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={fuelCorrectionEnabled}
+              onCheckedChange={(checked) => {
+                trackInteraction('fuel_correction_toggled', {
+                  enabled: checked,
+                  chart: 'lap_time',
                   year,
                   event,
                   session,
-                  drivers: driversToDisplay,
-                })
-              }
-              isExporting={isExporting}
+                });
+                setFuelCorrectionEnabled(checked);
+              }}
             />
-            {!staticData && availableDrivers && (
-              <DriverMultiSelect
-                availableDrivers={availableDriverCodes}
-                selectedDrivers={selectedDrivers}
-                driverNameMap={driverNameMap}
-                year={year}
-                favoriteDriver={favoriteDriver}
-                focusedDriver={focusedDriver}
-                minDrivers={MIN_DRIVERS}
-                onDriverToggle={toggleDriver}
-                onSelectAll={handleSelectAllDrivers}
-                onSelectNone={handleResetDrivers}
-                onDriverFocus={setFocusedDriver}
-                isOpen={isDriverPopoverOpen}
-                onOpenChange={setIsDriverPopoverOpen}
-                selectNoneLabel="Reset"
-                triggerLabel={
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white transition-all text-[11px] font-semibold uppercase tracking-wider w-fit">
-                    <span>
-                      {selectedDrivers.length === availableDriverCodes.length
-                        ? 'All Drivers'
-                        : `${selectedDrivers.length} / ${availableDriverCodes.length} Selected`}
-                    </span>
-                    <span className="size-3.5 opacity-50">↕</span>
-                  </button>
-                }
-              />
-            )}
+            <span className="text-[13px] font-medium text-white">Fuel correction</span>
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex items-center justify-center size-5 rounded-full border border-white/[0.08] text-[11px] text-white/60 hover:text-white/80 hover:border-white/[0.15] transition-colors">
+                ?
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-64 rounded-lg border border-white/[0.06] bg-[#0a0a0c] p-3 shadow-2xl"
+              align="start"
+            >
+              <p className="text-[13px] text-white/80 leading-relaxed">
+                Subtracts estimated fuel weight effect (0.03s/kg) from lap times. Total fuel:{' '}
+                {TOTAL_FUEL_KG}kg at ~{FUEL_PER_LAP_KG}kg/lap. Applied to first 60% of race only.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
-        <div className="flex items-center justify-end gap-2">
-          <span className="text-[11px] font-semibold text-white uppercase tracking-wider">
-            Fuel
-          </span>
-          <Switch
-            checked={fuelCorrectionEnabled}
-            onCheckedChange={(checked) => {
-              trackInteraction('fuel_correction_toggled', {
-                enabled: checked,
-                chart: 'lap_time',
+
+        {/* Right controls */}
+        <div className="flex items-center gap-2">
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: 'Lap Times',
+                subtitle: fuelCorrectionEnabled
+                  ? 'Fuel-corrected lap times'
+                  : 'Raw lap times comparison',
                 year,
                 event,
                 session,
-              });
-              setFuelCorrectionEnabled(checked);
-            }}
+                drivers: driversToDisplay,
+              })
+            }
+            isExporting={isExporting}
           />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="size-7 p-0 text-white hover:text-white hover:bg-white/[0.06]"
-              >
-                <InformationCircleIcon className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-80 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl"
-              style={inter}
-            >
-              <div className="space-y-2">
-                <div className="font-bold text-white uppercase text-[12px] tracking-wider">
-                  Fuel Correction
-                </div>
-                <div className="text-[12px] space-y-1 text-white">
-                  <p>Applies correction for fuel weight (0.03s per kg)</p>
-                  <p className="text-white">
-                    Total fuel: {TOTAL_FUEL_KG}kg, burns ~{FUEL_PER_LAP_KG}kg/lap
-                  </p>
-                  <p className="text-white">Applied to first 60% of laps only</p>
-                  <p className="text-white mt-2 italic">
-                    Formula: corrected = raw - (fuelLoad × 0.03)
-                  </p>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          {!staticData && availableDrivers && (
+            <DriverMultiSelect
+              availableDrivers={availableDriverCodes}
+              selectedDrivers={selectedDrivers}
+              driverNameMap={driverNameMap}
+              year={year}
+              favoriteDriver={favoriteDriver}
+              focusedDriver={focusedDriver}
+              minDrivers={MIN_DRIVERS}
+              onDriverToggle={toggleDriver}
+              onSelectAll={handleSelectAllDrivers}
+              onSelectNone={handleResetDrivers}
+              onDriverFocus={setFocusedDriver}
+              isOpen={isDriverPopoverOpen}
+              onOpenChange={setIsDriverPopoverOpen}
+              selectNoneLabel="Reset"
+              triggerLabel={
+                <button className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-transparent px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:border-white/[0.12] hover:text-white min-w-[160px] justify-between">
+                  <span>
+                    {selectedDrivers.length === availableDriverCodes.length
+                      ? 'All Drivers'
+                      : `${selectedDrivers.length} / ${availableDriverCodes.length} Drivers`}
+                  </span>
+                  <svg
+                    className="size-3 opacity-40"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M4 6l4 4 4-4" />
+                  </svg>
+                </button>
+              }
+            />
+          )}
         </div>
       </div>
 
@@ -362,8 +344,11 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
 
   if (status === 'loading') {
     return (
-      <div className="w-full h-[300px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
-        <LoadingSpinnerF1 />
+      <div className="flex h-[300px] w-full items-center justify-center rounded-lg border border-white/[0.04]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-4 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/50" />
+          <span className="text-[14px] text-white">Loading lap data</span>
+        </div>
       </div>
     );
   }
@@ -394,7 +379,7 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
   }
 
   return (
-    <>
+    <div className="space-y-5">
       <RacingLapTimeChart
         chartData={chartData}
         driversToDisplay={driversToDisplay}
@@ -411,14 +396,16 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
       <RacingFastestLapsTable
         fastestLaps={fastestLaps}
         driverLapDetails={driverLapDetails}
+        driverNameMap={driverNameMap}
         year={year}
       />
       <RacingDriverLapPanels
         driversToDisplay={driversToDisplay}
         driverLapDetails={driverLapDetails}
+        driverNameMap={driverNameMap}
         year={year}
       />
-    </>
+    </div>
   );
 };
 

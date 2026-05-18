@@ -1,39 +1,39 @@
 import React from 'react';
 import type { WeatherSummary } from '@/lib/api';
 
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
-
 interface WeatherBannerProps {
   weatherData: WeatherSummary | null;
 }
 
 export const RacingWeatherBanner: React.FC<WeatherBannerProps> = ({ weatherData }) => {
-  if (!weatherData) {
-    return null;
-  }
+  if (!weatherData) return null;
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-4 px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-[12px]"
-      style={inter}
-    >
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/80">
-        Conditions
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-lg border border-white/[0.04] px-4 py-2.5">
+      <span className="text-[12px] font-medium text-white/60">Conditions</span>
+      <span className="text-[13px] text-white">
+        Air{' '}
+        <span className="font-mono tabular-nums text-white">{weatherData.airTemp.toFixed(1)}°</span>
       </span>
-      <span>
-        Air <span className="text-white font-semibold">{weatherData.airTemp.toFixed(1)}°C</span>
+      <span className="text-[13px] text-white">
+        Track{' '}
+        <span className="font-mono tabular-nums text-white">
+          {weatherData.trackTemp.toFixed(1)}°
+        </span>
       </span>
-      <span>
-        Track <span className="text-white font-semibold">{weatherData.trackTemp.toFixed(1)}°C</span>
+      <span className="text-[13px] text-white">
+        Humidity{' '}
+        <span className="font-mono tabular-nums text-white">
+          {weatherData.humidity.toFixed(0)}%
+        </span>
       </span>
-      <span>
-        Hum <span className="text-white font-semibold">{weatherData.humidity.toFixed(0)}%</span>
-      </span>
-      <span>
+      <span className="text-[13px] text-white">
         Wind{' '}
-        <span className="text-white font-semibold">{weatherData.windSpeed.toFixed(1)} m/s</span>
+        <span className="font-mono tabular-nums text-white">
+          {weatherData.windSpeed.toFixed(1)} m/s
+        </span>
       </span>
-      {weatherData.rainfall && <span className="text-blue-400 font-semibold">Rain</span>}
+      {weatherData.rainfall && <span className="text-[13px] font-medium text-blue-400">Rain</span>}
     </div>
   );
 };

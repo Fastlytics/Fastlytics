@@ -1,4 +1,4 @@
-import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useRaceLayoutContext } from '@/pages/Race/race-layout-context';
 import { ScheduleSidebar } from '@/pages/Race/ScheduleSidebar';
 
@@ -10,6 +10,7 @@ import { ScheduleSidebar } from '@/pages/Race/ScheduleSidebar';
 export default function RaceIndex() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const { raceId } = useParams<{ raceId: string }>();
   const ctx = useRaceLayoutContext();
 
   const hasRaceData = ctx.isTestingEvent
@@ -32,7 +33,7 @@ export default function RaceIndex() {
       params.set('session', defaultSession);
       search = `?${params.toString()}`;
     }
-    return <Navigate to={{ pathname: 'overview', search }} replace />;
+    return <Navigate to={{ pathname: `/race/${raceId}/overview`, search }} replace />;
   }
 
   // Pre-race: render schedule sidebar

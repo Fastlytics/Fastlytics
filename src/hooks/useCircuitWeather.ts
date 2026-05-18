@@ -36,14 +36,97 @@ function mapWmoCode(code: number): { icon: CircuitWeather['icon']; description: 
 }
 
 /**
- * Find the hourly index closest to the given target time.
+ * Extract date/time parts in a specific IANA timezone.
  */
-function findClosestHourIndex(times: string[], target: Date): number {
-  const targetMs = target.getTime();
+function getTimeZoneParts(value: string | Date, timeZone: string) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return null;
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? null;
+
+  const year = getPart('year');
+  const month = getPart('month');
+  const day = getPart('day');
+  const hour = getPart('hour');
+  const minute = getPart('minute');
+
+  if (!year || !month || !day || !hour || !minute) return null;
+  return { year, month, day, hour, minute };
+}
+
+function fallbackDateString(value: string): string | null {
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?.[1] ?? null;
+}
+
+export function formatDateInTimeZone(value: string | Date, timeZone?: string): string | null {
+  if (timeZone) {
+    const parts = getTimeZoneParts(value, timeZone);
+    if (parts) return `${parts.year}-${parts.month}-${parts.day}`;
+  }
+
+  if (typeof value === 'string') return fallbackDateString(value);
+
+  return isNaN(value.getTime()) ? null : value.toISOString().split('T')[0];
+}
+
+export function formatDateTimeInTimeZone(value: string | Date, timeZone?: string): string | null {
+  if (timeZone) {
+    const parts = getTimeZoneParts(value, timeZone);
+    if (parts) return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+  }
+
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+    if (match) return match[1];
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return null;
+  return `${date.toISOString().split(':')[0]}:${date.toISOString().split(':')[1]}`;
+}
+
+function parseNaiveDateTime(value: string): number | null {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute, second = '0'] = match;
+  return Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  );
+}
+
+/**
+ * Find the hourly index closest to the given target time, using circuit-local wall-clock values.
+ */
+export function findClosestHourIndex(times: string[], targetLocalDateTime: string): number {
+  const targetMs = parseNaiveDateTime(targetLocalDateTime);
+  if (targetMs == null) return 0;
+
   let closest = 0;
   let minDiff = Infinity;
+
   for (let i = 0; i < times.length; i++) {
-    const diff = Math.abs(new Date(times[i]).getTime() - targetMs);
+    const timeMs = parseNaiveDateTime(times[i]);
+    if (timeMs == null) continue;
+
+    const diff = Math.abs(timeMs - targetMs);
     if (diff < minDiff) {
       minDiff = diff;
       closest = i;
@@ -70,19 +153,22 @@ export function useCircuitWeather(
   startTime?: string | null | undefined
 ) {
   return useQuery<CircuitWeather | null>({
-    queryKey: ['circuitWeather', lat, lng, startTime || eventDate],
+    queryKey: ['circuitWeather', lat, lng, eventDate, startTime, timezone],
     enabled: lat != null && lng != null && !!eventDate,
     staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       if (lat == null || lng == null || !eventDate) return null;
 
-      const date = new Date(eventDate);
+      const forecastSource = startTime || eventDate;
+      const date = new Date(forecastSource);
       if (isNaN(date.getTime())) return null;
 
       const daysFromNow = (date.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       if (daysFromNow < -1 || daysFromNow > 16) return null;
 
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateInTimeZone(forecastSource, timezone);
+      if (!dateStr) return null;
+
       const params = new URLSearchParams({
         latitude: lat.toString(),
         longitude: lng.toString(),
@@ -109,8 +195,10 @@ export function useCircuitWeather(
       let precipProb: number;
 
       if (useHourly && data?.hourly?.time?.length) {
-        const targetTime = new Date(startTime);
-        const idx = findClosestHourIndex(data.hourly.time, targetTime);
+        const targetLocalDateTime = formatDateTimeInTimeZone(startTime, timezone);
+        const idx = targetLocalDateTime
+          ? findClosestHourIndex(data.hourly.time, targetLocalDateTime)
+          : 0;
         code = data.hourly.weather_code?.[idx] ?? 0;
         temp = data.hourly.temperature_2m?.[idx] ?? 0;
         precipProb = data.hourly.precipitation_probability?.[idx] ?? 0;

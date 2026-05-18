@@ -118,14 +118,14 @@ const TeamStandings = () => {
         </div>
       ) : teamStandings && teamStandings.length > 0 ? (
         <div className="space-y-5">
-          {/* Hero row — P2 / P1 / P3 visual order on desktop */}
+          {/* Hero row — P1 / P2 / P3 in natural left-to-right order */}
           {heroTeams.length > 0 && (
             <div className={`grid grid-cols-1 ${CARD_GAP} md:grid-cols-3`}>
               {heroTeams.map((team, i) => (
                 <div
                   key={team.team}
                   className={
-                    team.rank === 1 ? 'md:order-2' : team.rank === 2 ? 'md:order-1' : 'md:order-3'
+                    team.rank === 1 ? 'md:order-1' : team.rank === 2 ? 'md:order-2' : 'md:order-3'
                   }
                 >
                   <TeamStandingsCard

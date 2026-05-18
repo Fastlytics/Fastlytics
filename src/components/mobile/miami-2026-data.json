@@ -1,0 +1,478 @@
+{
+  "circuit_svg_path": "M 426.5,368.8 L 459.4,348.1 L 502.5,321.1 L 532.7,303.1 L 562.6,287.1 L 586.9,274.5 L 608.5,260.9 L 616.4,247.6 L 612.3,234.5 L 606.2,227.6 L 597.3,219.0 L 583.6,200.0 L 580.4,171.9 L 572.0,142.2 L 553.4,123.1 L 528.2,110.8 L 504.2,105.2 L 475.3,105.2 L 445.1,113.1 L 419.7,126.7 L 393.1,143.6 L 369.4,158.7 L 344.0,174.8 L 313.3,191.5 L 284.7,200.2 L 260.3,198.5 L 235.9,186.7 L 199.0,175.7 L 175.5,183.7 L 157.2,197.7 L 126.2,214.2 L 102.6,213.3 L 75.8,202.5 L 58.8,186.1 L 50.0,159.4 L 52.4,145.2 L 61.2,133.3 L 77.0,128.4 L 95.5,127.6 L 114.2,127.0 L 142.3,123.3 L 173.0,117.3 L 199.5,113.0 L 237.0,113.5 L 276.4,115.1 L 305.6,115.5 L 344.7,116.0 L 393.7,109.5 L 427.5,97.8 L 483.6,80.8 L 522.1,74.5 L 575.2,74.9 L 626.6,83.4 L 657.9,93.0 L 690.4,104.0 L 730.4,117.6 L 769.2,132.6 L 801.3,146.8 L 835.9,163.4 L 864.3,178.6 L 887.8,195.3 L 896.7,212.4 L 891.7,223.1 L 882.6,231.2 L 869.9,242.8 L 864.1,253.5 L 863.7,265.5 L 868.7,277.2 L 878.7,285.8 L 891.2,289.0 L 909.2,289.4 L 929.9,295.7 L 942.0,308.1 L 947.3,317.8 L 950.0,330.0 L 942.4,338.1 L 939.0,347.3 L 943.6,365.2 L 948.6,379.4 L 949.5,386.6 L 942.4,395.1 L 935.6,398.2 L 925.9,400.5 L 911.6,401.6 L 881.8,402.5 L 853.4,403.4 L 828.0,404.1 L 792.9,405.0 L 768.7,405.5 L 718.2,406.6 L 689.9,407.2 L 641.6,408.7 L 601.3,410.1 L 565.1,411.4 L 498.2,413.7 L 450.6,415.4 L 397.4,416.7 L 353.1,417.5 L 305.8,418.4 L 261.7,419.6 L 230.8,422.4 L 202.1,425.3 L 177.9,426.1 L 162.7,422.1 L 157.0,414.1 L 160.0,402.7 L 166.6,395.6 L 177.6,388.3 L 191.9,379.7 L 212.2,369.0 L 240.8,369.2 L 271.3,383.0 L 296.9,394.1 L 342.6,399.5 L 389.2,388.4 L 419.7,373.1 Z",
+  "total_laps": 57,
+  "results": [
+    {
+      "pos": 1,
+      "code": "ANT",
+      "name": "Kimi Antonelli",
+      "number": 12,
+      "team": "Mercedes",
+      "color": "#27f4d2",
+      "gap": "WINNER"
+    },
+    {
+      "pos": 2,
+      "code": "NOR",
+      "name": "Lando Norris",
+      "number": 1,
+      "team": "McLaren",
+      "color": "#ff8000",
+      "gap": "+3.3s"
+    },
+    {
+      "pos": 3,
+      "code": "PIA",
+      "name": "Oscar Piastri",
+      "number": 81,
+      "team": "McLaren",
+      "color": "#ff8000",
+      "gap": "+27.1s"
+    },
+    {
+      "pos": 4,
+      "code": "RUS",
+      "name": "George Russell",
+      "number": 63,
+      "team": "Mercedes",
+      "color": "#27f4d2",
+      "gap": "+43.1s"
+    },
+    {
+      "pos": 5,
+      "code": "VER",
+      "name": "Max Verstappen",
+      "number": 3,
+      "team": "Red Bull Racing",
+      "color": "#0600ef",
+      "gap": "+48.9s"
+    },
+    {
+      "pos": 6,
+      "code": "HAM",
+      "name": "Lewis Hamilton",
+      "number": 44,
+      "team": "Ferrari",
+      "color": "#e80020",
+      "gap": "+53.8s"
+    },
+    {
+      "pos": 7,
+      "code": "COL",
+      "name": "Franco Colapinto",
+      "number": 43,
+      "team": "Alpine",
+      "color": "#ff87bc",
+      "gap": "+61.9s"
+    },
+    {
+      "pos": 8,
+      "code": "LEC",
+      "name": "Charles Leclerc",
+      "number": 16,
+      "team": "Ferrari",
+      "color": "#e80020",
+      "gap": "+64.2s"
+    },
+    {
+      "pos": 9,
+      "code": "SAI",
+      "name": "Carlos Sainz",
+      "number": 55,
+      "team": "Williams",
+      "color": "#00a0dd",
+      "gap": "+82.1s"
+    },
+    {
+      "pos": 10,
+      "code": "ALB",
+      "name": "Alexander Albon",
+      "number": 23,
+      "team": "Williams",
+      "color": "#00a0dd",
+      "gap": "+91.0s"
+    },
+    {
+      "pos": 11,
+      "code": "BEA",
+      "name": "Oliver Bearman",
+      "number": 87,
+      "team": "Haas F1 Team",
+      "color": "#b6babd",
+      "gap": "+6.4s"
+    },
+    {
+      "pos": 12,
+      "code": "BOR",
+      "name": "Gabriel Bortoleto",
+      "number": 5,
+      "team": "Audi",
+      "color": "#ff2d00",
+      "gap": "+9.4s"
+    },
+    {
+      "pos": 13,
+      "code": "OCO",
+      "name": "Esteban Ocon",
+      "number": 31,
+      "team": "Haas F1 Team",
+      "color": "#b6babd",
+      "gap": "+13.9s"
+    },
+    {
+      "pos": 14,
+      "code": "LIN",
+      "name": "Arvid Lindblad",
+      "number": 41,
+      "team": "Racing Bulls",
+      "color": "#fcd700",
+      "gap": "+44.8s"
+    },
+    {
+      "pos": 15,
+      "code": "ALO",
+      "name": "Fernando Alonso",
+      "number": 14,
+      "team": "Aston Martin",
+      "color": "#00665f",
+      "gap": "+75.0s"
+    },
+    {
+      "pos": 16,
+      "code": "PER",
+      "name": "Sergio Perez",
+      "number": 11,
+      "team": "Cadillac",
+      "color": "#444444",
+      "gap": "+77.5s"
+    },
+    {
+      "pos": 17,
+      "code": "STR",
+      "name": "Lance Stroll",
+      "number": 18,
+      "team": "Aston Martin",
+      "color": "#00665f",
+      "gap": "+82.6s"
+    },
+    {
+      "pos": 18,
+      "code": "BOT",
+      "name": "Valtteri Bottas",
+      "number": 77,
+      "team": "Cadillac",
+      "color": "#444444",
+      "gap": "+68.3s"
+    }
+  ],
+  "driver_stints": {
+    "ANT": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 26,
+        "laps": 26
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 27,
+        "end_lap": 57,
+        "laps": 31
+      }
+    ],
+    "NOR": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 27,
+        "laps": 27
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 28,
+        "end_lap": 57,
+        "laps": 30
+      }
+    ],
+    "PIA": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 28,
+        "laps": 28
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 29,
+        "end_lap": 57,
+        "laps": 29
+      }
+    ],
+    "RUS": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 20,
+        "laps": 20
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 21,
+        "end_lap": 57,
+        "laps": 37
+      }
+    ],
+    "VER": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 6,
+        "laps": 6
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 7,
+        "end_lap": 57,
+        "laps": 51
+      }
+    ],
+    "HAM": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 27,
+        "laps": 27
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 28,
+        "end_lap": 57,
+        "laps": 30
+      }
+    ],
+    "COL": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 31,
+        "laps": 31
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 32,
+        "end_lap": 57,
+        "laps": 26
+      }
+    ],
+    "LEC": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 21,
+        "laps": 21
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 22,
+        "end_lap": 57,
+        "laps": 36
+      }
+    ],
+    "SAI": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 28,
+        "laps": 28
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 29,
+        "end_lap": 57,
+        "laps": 29
+      }
+    ],
+    "ALB": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 27,
+        "laps": 27
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 28,
+        "end_lap": 57,
+        "laps": 30
+      }
+    ],
+    "BEA": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 26,
+        "laps": 26
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 27,
+        "end_lap": 56,
+        "laps": 30
+      }
+    ],
+    "BOR": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 32,
+        "laps": 32
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 33,
+        "end_lap": 56,
+        "laps": 24
+      }
+    ],
+    "OCO": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 31,
+        "laps": 31
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 32,
+        "end_lap": 56,
+        "laps": 25
+      }
+    ],
+    "LIN": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 28,
+        "laps": 28
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 29,
+        "end_lap": 56,
+        "laps": 28
+      }
+    ],
+    "ALO": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 41,
+        "laps": 41
+      },
+      {
+        "compound": "SOFT",
+        "start_lap": 42,
+        "end_lap": 56,
+        "laps": 15
+      }
+    ],
+    "PER": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 29,
+        "laps": 29
+      },
+      {
+        "compound": "HARD",
+        "start_lap": 30,
+        "end_lap": 56,
+        "laps": 27
+      }
+    ],
+    "STR": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 21,
+        "laps": 21
+      },
+      {
+        "compound": "SOFT",
+        "start_lap": 22,
+        "end_lap": 37,
+        "laps": 16
+      },
+      {
+        "compound": "SOFT",
+        "start_lap": 38,
+        "end_lap": 56,
+        "laps": 19
+      }
+    ],
+    "BOT": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 6,
+        "laps": 6
+      },
+      {
+        "compound": "SOFT",
+        "start_lap": 7,
+        "end_lap": 21,
+        "laps": 15
+      },
+      {
+        "compound": "MEDIUM",
+        "start_lap": 22,
+        "end_lap": 30,
+        "laps": 9
+      },
+      {
+        "compound": "MEDIUM",
+        "start_lap": 31,
+        "end_lap": 55,
+        "laps": 25
+      }
+    ],
+    "GAS": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 5,
+        "laps": 5
+      }
+    ],
+    "HAD": [
+      {
+        "compound": "HARD",
+        "start_lap": 1,
+        "end_lap": 5,
+        "laps": 5
+      }
+    ],
+    "HUL": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 1,
+        "laps": 1
+      },
+      {
+        "compound": "MEDIUM",
+        "start_lap": 2,
+        "end_lap": 7,
+        "laps": 6
+      }
+    ],
+    "LAW": [
+      {
+        "compound": "MEDIUM",
+        "start_lap": 1,
+        "end_lap": 6,
+        "laps": 6
+      }
+    ]
+  }
+}

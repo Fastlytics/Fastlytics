@@ -1,17 +1,23 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchLapTimes, LapTimesEnrichedResponse, EnrichedLapRecord } from '@/lib/api';
+import {
+  fetchLapTimes,
+  fetchSessionDrivers,
+  LapTimesEnrichedResponse,
+  EnrichedLapRecord,
+  SessionDriver,
+} from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { getDriverImage } from '@/utils/imageMapping';
-import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 import { cn } from '@/lib/utils';
 
-const COMPOUND_BG: Record<string, string> = {
-  SOFT: 'bg-red-600',
-  MEDIUM: 'bg-yellow-400',
-  HARD: 'bg-white',
-  INTERMEDIATE: 'bg-emerald-500',
-  WET: 'bg-blue-500',
+const COMPOUND_COLORS: Record<string, string> = {
+  SOFT: '#FF3333',
+  MEDIUM: '#FFC107',
+  HARD: '#EEEEEE',
+  INTERMEDIATE: '#4CAF50',
+  WET: '#2196F3',
 };
 
 const formatLapTime = (totalSeconds: number | null): string => {
@@ -64,6 +70,21 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   const driverLapDetails = enrichedResponse?.driverLapDetails;
   const weatherData = enrichedResponse?.weather;
 
+  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
+    queryKey: ['sessionDrivers', year, event, session],
+    queryFn: () => fetchSessionDrivers(year, event, session),
+    staleTime: Infinity,
+  });
+
+  const driverNameMap = useMemo(() => {
+    if (!sessionDrivers) return new Map<string, string>();
+    const map = new Map<string, string>();
+    sessionDrivers.forEach((d) => {
+      if (d.code && d.name) map.set(d.code, d.name);
+    });
+    return map;
+  }, [sessionDrivers]);
+
   const driverStints = useMemo(() => {
     if (!driverLapDetails) return {} as Record<string, StintInfo[]>;
     const result: Record<string, StintInfo[]> = {};
@@ -112,14 +133,13 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   if (isLoading) {
     return (
       <div className={CARD_CONTAINER}>
-        <div className="px-5 pt-5 pb-4">
-          <h3 className="text-[16px] font-semibold text-white">Race Performance</h3>
-          <p className="mt-0.5 text-[12px] text-white/80">Strategy and stint comparison</p>
+        <div className="border-b border-white/[0.04] px-5 py-4">
+          <h3 className="text-[14px] font-semibold text-white">Race Performance</h3>
         </div>
-        <div className="flex h-[200px] items-center justify-center border-t border-white/[0.04]">
+        <div className="flex h-[200px] items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="size-5 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/60" />
-            <span className="text-[12px] text-white/80">Loading performance data</span>
+            <div className="size-5 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/50" />
+            <span className="text-[14px] text-white">Loading performance data</span>
           </div>
         </div>
       </div>
@@ -131,44 +151,32 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
   return (
     <div className={CARD_CONTAINER}>
       {/* Header */}
-      <div className="px-5 pt-5 pb-4">
-        <h3 className="text-[16px] font-semibold text-white">Race Performance</h3>
-        <p className="mt-0.5 text-[12px] text-white/80">Strategy and stint comparison</p>
+      <div className="border-b border-white/[0.04] px-5 py-4">
+        <h3 className="text-[14px] font-semibold text-white">Race Performance</h3>
       </div>
 
       {/* Weather conditions */}
       {weatherData && (
-        <div className="grid grid-cols-2 divide-x divide-white/[0.04] border-y border-white/[0.04] lg:grid-cols-5">
-          <div className="px-5 py-3">
-            <div className={CARD_LABEL}>Air temp</div>
-            <div className="mt-1 text-[14px] font-semibold text-white">
-              {weatherData.airTemp.toFixed(1)}°C
-            </div>
-          </div>
-          <div className="px-5 py-3">
-            <div className={CARD_LABEL}>Track temp</div>
-            <div className="mt-1 text-[14px] font-semibold text-white">
-              {weatherData.trackTemp.toFixed(1)}°C
-            </div>
-          </div>
-          <div className="px-5 py-3">
-            <div className={CARD_LABEL}>Humidity</div>
-            <div className="mt-1 text-[14px] font-semibold text-white">
-              {weatherData.humidity.toFixed(0)}%
-            </div>
-          </div>
-          <div className="px-5 py-3">
-            <div className={CARD_LABEL}>Wind</div>
-            <div className="mt-1 text-[14px] font-semibold text-white">
-              {weatherData.windSpeed.toFixed(1)} m/s
-            </div>
-          </div>
-          <div className="px-5 py-3">
-            <div className={CARD_LABEL}>Conditions</div>
-            <div className="mt-1 text-[14px] font-semibold text-white">
-              {weatherData.rainfall ? <span className="text-blue-400">Wet</span> : 'Dry'}
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-white/[0.04] px-5 py-3">
+          <span className="text-[12px] font-medium text-white/60">Conditions</span>
+          <span className="text-[13px] text-white">
+            Air <span className="font-mono tabular-nums">{weatherData.airTemp.toFixed(1)}°C</span>
+          </span>
+          <span className="text-[13px] text-white">
+            Track{' '}
+            <span className="font-mono tabular-nums">{weatherData.trackTemp.toFixed(1)}°C</span>
+          </span>
+          <span className="text-[13px] text-white">
+            Humidity{' '}
+            <span className="font-mono tabular-nums">{weatherData.humidity.toFixed(0)}%</span>
+          </span>
+          <span className="text-[13px] text-white">
+            Wind{' '}
+            <span className="font-mono tabular-nums">{weatherData.windSpeed.toFixed(1)} m/s</span>
+          </span>
+          {weatherData.rainfall && (
+            <span className="text-[13px] font-medium text-blue-400">Rain</span>
+          )}
         </div>
       )}
 
@@ -186,11 +194,12 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                 <img
                   src={headshot}
                   alt=""
-                  className="size-8 shrink-0 rounded-full object-cover object-top"
-                  style={{ borderWidth: 2, borderColor: drvColor, borderStyle: 'solid' }}
+                  className="size-9 shrink-0 rounded-full border border-white/[0.06] object-cover object-top"
                 />
-                <span className="text-[14px] font-semibold text-white">{drv}</span>
-                <span className="text-[12px] text-white/80">{stints.length} stints</span>
+                <span className="text-[14px] font-semibold text-white">
+                  {driverNameMap.get(drv) || drv}
+                </span>
+                <span className="text-[13px] text-white/60">{stints.length} stints</span>
               </div>
 
               {/* Stint rows */}
@@ -203,10 +212,10 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                     <div className="flex items-center gap-3">
                       {/* Compound indicator */}
                       <div
-                        className={cn(
-                          'flex h-6 w-10 items-center justify-center rounded',
-                          COMPOUND_BG[stint.compound?.toUpperCase()] || 'bg-white/30'
-                        )}
+                        className="flex h-6 w-10 items-center justify-center rounded"
+                        style={{
+                          backgroundColor: COMPOUND_COLORS[stint.compound?.toUpperCase()] || '#666',
+                        }}
                       >
                         <span className="text-[10px] font-bold text-black">
                           {stint.compound?.[0] || '?'}
@@ -216,7 +225,7 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                         <div className="text-[13px] font-medium text-white">
                           Lap {stint.startLap}–{stint.endLap}
                         </div>
-                        <div className="text-[11px] text-white/80">{stint.lapCount} laps</div>
+                        <div className="text-[12px] text-white">{stint.lapCount} laps</div>
                       </div>
                     </div>
 
@@ -224,16 +233,19 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                       {/* Avg / Best times */}
                       <div className="hidden text-right sm:block">
                         {stint.avgTime != null && (
-                          <div className="text-[12px] text-white/80">
+                          <div className="text-[13px] text-white">
                             Avg{' '}
-                            <span className="font-medium text-white">
+                            <span className="font-mono tabular-nums font-medium text-white">
                               {formatLapTime(stint.avgTime)}
                             </span>
                           </div>
                         )}
                         {stint.bestTime != null && (
-                          <div className="text-[11px] text-white/80">
-                            Best <span className="text-white">{formatLapTime(stint.bestTime)}</span>
+                          <div className="text-[12px] text-white">
+                            Best{' '}
+                            <span className="font-mono tabular-nums text-white">
+                              {formatLapTime(stint.bestTime)}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -242,14 +254,14 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
                       <div className="text-right">
                         <div
                           className={cn(
-                            'text-[11px] font-medium',
+                            'text-[12px] font-medium',
                             stint.freshTyre ? 'text-emerald-400' : 'text-amber-400'
                           )}
                         >
                           {stint.freshTyre ? 'New' : 'Used'}
                         </div>
                         {stint.tyreLifeEnd != null && (
-                          <div className="text-[11px] text-white/80">Life {stint.tyreLifeEnd}</div>
+                          <div className="text-[12px] text-white">Life {stint.tyreLifeEnd}</div>
                         )}
                       </div>
                     </div>
@@ -264,36 +276,36 @@ const HeadToHeadEnriched: React.FC<HeadToHeadEnrichedProps> = ({
       {/* Deleted laps */}
       {deletedLaps.length > 0 && (
         <div className="border-t border-white/[0.04] px-5 py-4">
-          <div className="mb-3">
-            <span className={CARD_LABEL}>Deleted laps ({deletedLaps.length})</span>
+          <div className="mb-3 text-[13px] font-medium text-white">
+            Deleted laps ({deletedLaps.length})
           </div>
-          <div className="space-y-1">
+          <div className="divide-y divide-white/[0.03]">
             {deletedLaps.slice(0, 10).map((dl, i) => (
               <div
                 key={`${dl.driver}-${dl.lapNumber}-${i}`}
-                className="flex items-center gap-3 rounded-md px-2 py-1.5 text-[12px]"
+                className="flex items-center gap-3 py-2.5 text-[13px]"
               >
                 <span
-                  className="w-10 font-semibold"
+                  className="w-10 shrink-0 font-semibold"
                   style={{ color: driverColor(dl.driver, year) }}
                 >
                   {dl.driver}
                 </span>
-                <span className="text-white/80">Lap {dl.lapNumber}</span>
+                <span className="text-white">Lap {dl.lapNumber}</span>
                 {dl.lapTime != null && (
-                  <span className="text-white">{formatLapTime(dl.lapTime)}</span>
+                  <span className="font-mono tabular-nums text-white">
+                    {formatLapTime(dl.lapTime)}
+                  </span>
                 )}
                 {dl.deletedReason && (
-                  <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-400">
+                  <span className="ml-auto text-[12px] font-medium text-red-400">
                     {dl.deletedReason}
                   </span>
                 )}
               </div>
             ))}
             {deletedLaps.length > 10 && (
-              <span className="px-2 text-[11px] text-white/80">
-                +{deletedLaps.length - 10} more
-              </span>
+              <div className="py-2.5 text-[13px] text-white">+{deletedLaps.length - 10} more</div>
             )}
           </div>
         </div>

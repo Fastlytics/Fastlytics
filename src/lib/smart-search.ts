@@ -52,6 +52,198 @@ export function getSmartResultsTotalCount(query: string, raceIndex?: RaceIndexEn
   return total;
 }
 
+// Session type keywords mapped to the ?session= query parameter value
+const SESSION_TYPES: {
+  keywords: string[];
+  sessionParam: string;
+  label: string;
+}[] = [
+  {
+    keywords: ['sprint qualifying', 'sprint shootout', 'sprint quali', 'sprint qualy', 'sq'],
+    sessionParam: 'SQ',
+    label: 'Sprint Qualifying',
+  },
+  {
+    keywords: ['sprint race', 'sprint'],
+    sessionParam: 'Sprint',
+    label: 'Sprint',
+  },
+  {
+    keywords: ['qualifying 1', 'quali 1', 'qualy 1', 'q1'],
+    sessionParam: 'Q1',
+    label: 'Qualifying 1',
+  },
+  {
+    keywords: ['qualifying 2', 'quali 2', 'qualy 2', 'q2'],
+    sessionParam: 'Q2',
+    label: 'Qualifying 2',
+  },
+  {
+    keywords: ['qualifying 3', 'quali 3', 'qualy 3', 'q3'],
+    sessionParam: 'Q3',
+    label: 'Qualifying 3',
+  },
+  {
+    keywords: ['qualifying', 'quali', 'qualy'],
+    sessionParam: 'Q',
+    label: 'Qualifying',
+  },
+  {
+    keywords: ['practice 1', 'free practice 1', 'fp1'],
+    sessionParam: 'FP1',
+    label: 'Practice 1',
+  },
+  {
+    keywords: ['practice 2', 'free practice 2', 'fp2'],
+    sessionParam: 'FP2',
+    label: 'Practice 2',
+  },
+  {
+    keywords: ['practice 3', 'free practice 3', 'fp3'],
+    sessionParam: 'FP3',
+    label: 'Practice 3',
+  },
+];
+
+/**
+ * Detect a session type from the query (e.g., "sprint", "qualifying", "practice 1").
+ * Supports prefix matching — "spr" matches "sprint", "qual" matches "qualifying",
+ * "prac" matches "practice", "fp" matches "fp1/fp2/fp3".
+ * More specific keywords are checked first (e.g., "sprint qualifying" before "sprint").
+ */
+function detectSessionType(query: string): { sessionParam: string; label: string } | null {
+  const lower = query.toLowerCase();
+  const words = lower.split(/\s+/).filter(Boolean);
+
+  // 1. Exact/substring match — but prefer longer (more specific) matches first.
+  //    Sort all keyword matches by keyword length descending, pick the longest.
+  let bestMatch: { sessionParam: string; label: string; keywordLen: number } | null = null;
+
+  for (const session of SESSION_TYPES) {
+    for (const keyword of session.keywords) {
+      if (lower.includes(keyword)) {
+        if (!bestMatch || keyword.length > bestMatch.keywordLen) {
+          bestMatch = {
+            sessionParam: session.sessionParam,
+            label: session.label,
+            keywordLen: keyword.length,
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Before returning the exact match, check if multi-word prefix matching
+  //    yields a more specific result (e.g., "sprint qual" → "sprint qualifying")
+  const numberToken = words.find((w) => /^[1-3]$/.test(w));
+
+  for (const session of SESSION_TYPES) {
+    for (const keyword of session.keywords) {
+      if (!keyword.includes(' ')) continue;
+      const keywordParts = keyword.split(' ');
+      if (keywordParts.length === 2) {
+        for (let i = 0; i < words.length - 1; i++) {
+          const w1 = words[i];
+          const w2 = words[i + 1];
+          if (
+            w1.length >= 2 &&
+            w2.length >= 1 &&
+            keywordParts[0].startsWith(w1) &&
+            keywordParts[1].startsWith(w2)
+          ) {
+            // Multi-word prefix match is more specific — prefer it
+            if (!bestMatch || keyword.length > bestMatch.keywordLen) {
+              bestMatch = {
+                sessionParam: session.sessionParam,
+                label: session.label,
+                keywordLen: keyword.length,
+              };
+            }
+          }
+        }
+      }
+      // Also handle 3-word keywords like "free practice 1"
+      if (keywordParts.length === 3) {
+        for (let i = 0; i < words.length - 2; i++) {
+          const w1 = words[i];
+          const w2 = words[i + 1];
+          const w3 = words[i + 2];
+          if (
+            w1.length >= 2 &&
+            w2.length >= 2 &&
+            w3.length >= 1 &&
+            keywordParts[0].startsWith(w1) &&
+            keywordParts[1].startsWith(w2) &&
+            keywordParts[2].startsWith(w3)
+          ) {
+            if (!bestMatch || keyword.length > bestMatch.keywordLen) {
+              bestMatch = {
+                sessionParam: session.sessionParam,
+                label: session.label,
+                keywordLen: keyword.length,
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (bestMatch) {
+    return { sessionParam: bestMatch.sessionParam, label: bestMatch.label };
+  }
+
+  // 3. Single-word prefix matching (e.g., "spr" → sprint, "qual" → qualifying)
+  for (const word of words) {
+    if (word.length < 3) continue;
+    if (/^\d+$/.test(word)) continue; // skip pure numbers
+
+    for (const session of SESSION_TYPES) {
+      for (const keyword of session.keywords) {
+        if (keyword.includes(' ')) continue; // skip multi-word keywords for single-word prefix
+        if (keyword.length < 3) continue; // skip very short keywords like "sq" for prefix matching
+
+        if (keyword.startsWith(word)) {
+          // If this is a numbered keyword (fp1, q1, etc.), need exact match
+          const keywordNum = keyword.match(/(\d)$/);
+          if (keywordNum) {
+            if (word === keyword) {
+              return { sessionParam: session.sessionParam, label: session.label };
+            }
+            // Check if the number appears as a separate token
+            if (numberToken && numberToken === keywordNum[1]) {
+              const baseKeywords = session.keywords.filter((k) => k.includes(' '));
+              for (const bk of baseKeywords) {
+                const parts = bk.split(' ');
+                if (parts[1] === numberToken && parts[0].startsWith(word)) {
+                  return { sessionParam: session.sessionParam, label: session.label };
+                }
+              }
+            }
+          } else {
+            // Non-numbered keyword (e.g., "sprint", "qualifying")
+            if (numberToken) {
+              // Look for a numbered variant
+              const numberedKeyword = `${keyword} ${numberToken}`;
+              for (const otherSession of SESSION_TYPES) {
+                if (otherSession.keywords.includes(numberedKeyword)) {
+                  return {
+                    sessionParam: otherSession.sessionParam,
+                    label: otherSession.label,
+                  };
+                }
+              }
+            }
+            return { sessionParam: session.sessionParam, label: session.label };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 // Section intent keywords mapped to route segments and icons
 const SECTION_INTENTS: {
   keywords: string[];
@@ -219,6 +411,60 @@ function extractYear(query: string): number | null {
 }
 
 /**
+ * Extract an ordinal number from the query (e.g., "25th", "1st", "100th", "1000th").
+ * Returns the numeric value or null. Ignores values that look like years (1950-2029).
+ */
+function extractOrdinal(query: string): number | null {
+  const match = query.match(/\b(\d+)(?:st|nd|rd|th)\b/i);
+  if (!match) return null;
+  const num = parseInt(match[1], 10);
+  // Don't treat year-like numbers as ordinals
+  if (num >= 1950 && num <= 2029) return null;
+  return num;
+}
+
+/** Get the ordinal suffix for a number (1→"st", 2→"nd", 3→"rd", 4→"th", etc.) */
+function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+/**
+ * Resolve an ordinal race query against the race index.
+ * - "25th Hungarian Grand Prix" → finds the 25th occurrence of Hungarian GP
+ * - "1000th Grand Prix" → finds the 1000th F1 race overall
+ * Returns the matching year and race name, or null.
+ */
+function resolveOrdinalRace(
+  ordinal: number,
+  raceSlug: string | null,
+  raceIndex: RaceIndexEntry[]
+): { year: number; name: string } | null {
+  if (ordinal < 1 || !raceIndex || raceIndex.length === 0) return null;
+
+  if (raceSlug) {
+    // Nth occurrence of a specific race (e.g., "25th Hungarian GP")
+    const slugLower = raceSlug.toLowerCase();
+    const occurrences = raceIndex.filter((entry) => {
+      const entryWords = entry.name.toLowerCase().split(/\s+/);
+      return entryWords.some((word) => word === slugLower || word.startsWith(slugLower + '-'));
+    });
+    if (ordinal <= occurrences.length) {
+      return occurrences[ordinal - 1]; // 0-indexed
+    }
+    return null;
+  } else {
+    // Nth F1 race overall (e.g., "1000th Grand Prix")
+    if (ordinal <= raceIndex.length) {
+      const entry = raceIndex[ordinal - 1];
+      return entry;
+    }
+    return null;
+  }
+}
+
+/**
  * Detect section intent from the query using prefix matching.
  * "tele" matches "telemetry", "rep" matches "replay", etc.
  */
@@ -318,7 +564,28 @@ function matchRaceNames(queryTokens: string[]): { slug: string; countryCode: str
     'positions',
     'compare',
     'comparison',
+    // Session type noise words
+    'sprint',
+    'qualifying',
+    'quali',
+    'qualy',
+    'practice',
+    'free',
+    'fp1',
+    'fp2',
+    'fp3',
+    'q1',
+    'q2',
+    'q3',
+    'sq',
+    'shootout',
   ]);
+
+  // Also treat any word that is a prefix of a session keyword as noise
+  // (e.g., "spr" → prefix of "sprint", "qual" → prefix of "qualifying")
+  const SESSION_KEYWORD_BASES = ['sprint', 'qualifying', 'quali', 'qualy', 'practice', 'shootout'];
+  const isSessionPrefix = (word: string) =>
+    word.length >= 3 && SESSION_KEYWORD_BASES.some((kw) => kw.startsWith(word));
 
   const matches: { slug: string; countryCode: string }[] = [];
   const matchedSlugs = new Set<string>();
@@ -373,6 +640,7 @@ function matchRaceNames(queryTokens: string[]): { slug: string; countryCode: str
   for (const word of words) {
     if (word.length < 3) continue;
     if (raceNoiseWords.has(word)) continue;
+    if (isSessionPrefix(word)) continue;
     if (/^\d{4}$/.test(word)) continue; // skip years
 
     for (const race of RACE_ALIASES) {
@@ -482,6 +750,21 @@ function stripIntentWords(query: string): string {
     'positions',
     'compare',
     'comparison',
+    // Session type keywords
+    'sprint',
+    'qualifying',
+    'quali',
+    'qualy',
+    'practice',
+    'free',
+    'fp1',
+    'fp2',
+    'fp3',
+    'q1',
+    'q2',
+    'q3',
+    'sq',
+    'shootout',
   ];
 
   return query
@@ -530,9 +813,60 @@ export function parseSmartQuery(
 
   const results: SmartResult[] = [];
   const year = extractYear(trimmed);
+  const ordinal = extractOrdinal(trimmed);
   const sectionIntent = detectSectionIntent(trimmed);
+  const sessionType = detectSessionType(trimmed);
   const drivers = extractDrivers(trimmed);
   const raceMatches = matchRaceNames(trimmed.split(/\s+/));
+
+  // --- Ordinal race resolution (e.g., "25th Hungarian GP", "1000th Grand Prix") ---
+  if (ordinal && raceIndex && raceIndex.length > 0) {
+    // Determine if it's a specific race ordinal or overall F1 ordinal
+    const isOverallGP = raceMatches.length === 0 && /grand\s*prix|gp|race/i.test(trimmed);
+    const raceSlug = raceMatches.length > 0 ? raceMatches[0].slug : null;
+    const countryCode = raceMatches.length > 0 ? raceMatches[0].countryCode : undefined;
+
+    const resolved = resolveOrdinalRace(ordinal, raceSlug, raceIndex);
+    if (resolved) {
+      const resolvedSlug = buildRaceSlug(
+        resolved.year,
+        resolved.name.toLowerCase().replace(/\s+/g, '-')
+      );
+      const ordinalSuffix = getOrdinalSuffix(ordinal);
+      const label = raceSlug
+        ? `${ordinal}${ordinalSuffix} ${raceMatches[0].slug
+            .split('-')
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ')} Grand Prix`
+        : `${ordinal}${ordinalSuffix} Formula 1 Grand Prix`;
+
+      // Resolve country code: use matched race's code, or look up from the resolved race name
+      let resolvedCountryCode = countryCode;
+      if (!resolvedCountryCode) {
+        const resolvedNameLower = resolved.name.toLowerCase();
+        for (const race of RACE_ALIASES) {
+          for (const alias of race.aliases) {
+            if (resolvedNameLower.includes(alias)) {
+              resolvedCountryCode = race.countryCode;
+              break;
+            }
+          }
+          if (resolvedCountryCode) break;
+        }
+      }
+
+      results.push({
+        id: `smart-ordinal-${ordinal}-${raceSlug || 'overall'}`,
+        label: `${label} — ${resolved.year}`,
+        description: `${resolved.name}, ${resolved.year}`,
+        path: `/race/${resolvedSlug}`,
+        type: 'race',
+        icon: 'race',
+        confidence: 0.98,
+        countryCode: resolvedCountryCode || undefined,
+      });
+    }
+  }
 
   // Helper: validate a year+race combo against the index
   const raceExists = (checkYear: number, raceSlug: string): boolean => {
@@ -562,19 +896,23 @@ export function parseSmartQuery(
         .join(' ');
       const displayName = `${year} ${raceName} Grand Prix`;
 
+      // Build session query param suffix
+      const sessionSuffix = sessionType ? `?session=${sessionType.sessionParam}` : '';
+      const sessionLabel = sessionType ? ` (${sessionType.label})` : '';
+
       if (sectionIntent) {
-        let path = `/race/${raceSlug}/${sectionIntent.section}`;
+        let path = `/race/${raceSlug}/${sectionIntent.section}${sessionSuffix}`;
 
         if (sectionIntent.type === 'head-to-head' && drivers.length > 0) {
-          const params = new URLSearchParams();
+          const params = new URLSearchParams(sessionSuffix ? sessionSuffix.slice(1) : '');
           if (drivers[0]) params.set('driver1', drivers[0]);
           if (drivers[1]) params.set('driver2', drivers[1]);
-          path += `?${params.toString()}`;
+          path = `/race/${raceSlug}/${sectionIntent.section}?${params.toString()}`;
         }
 
         results.push({
-          id: `smart-${raceSlug}-${sectionIntent.section}`,
-          label: `${displayName} → ${sectionIntent.label}`,
+          id: `smart-${raceSlug}-${sectionIntent.section}${sessionType ? `-${sessionType.sessionParam}` : ''}`,
+          label: `${displayName}${sessionLabel} → ${sectionIntent.label}`,
           description:
             drivers.length > 0
               ? `${drivers.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(' vs ')}`
@@ -588,10 +926,14 @@ export function parseSmartQuery(
       }
 
       results.push({
-        id: `smart-${raceSlug}`,
-        label: displayName,
-        description: year >= 2018 ? 'Full analysis available' : 'Historical results',
-        path: `/race/${raceSlug}`,
+        id: `smart-${raceSlug}${sessionType ? `-${sessionType.sessionParam}` : ''}`,
+        label: `${displayName}${sessionLabel}`,
+        description: sessionType
+          ? `View ${sessionType.label} session`
+          : year >= 2018
+            ? 'Full analysis available'
+            : 'Historical results',
+        path: `/race/${raceSlug}${sessionSuffix}`,
         type: 'race',
         icon: 'race',
         confidence: sectionIntent ? 0.7 : 0.9,
@@ -603,6 +945,10 @@ export function parseSmartQuery(
         .split('-')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
+
+      // Build session query param suffix
+      const sessionSuffix = sessionType ? `?session=${sessionType.sessionParam}` : '';
+      const sessionLabel = sessionType ? ` (${sessionType.label})` : '';
 
       // Find all years this race exists in the index
       let matchingYears: number[];
@@ -630,17 +976,17 @@ export function parseSmartQuery(
         const raceSlug = buildRaceSlug(matchYear, raceMatch.slug);
 
         if (sectionIntent) {
-          let path = `/race/${raceSlug}/${sectionIntent.section}`;
+          let path = `/race/${raceSlug}/${sectionIntent.section}${sessionSuffix}`;
           if (sectionIntent.type === 'head-to-head' && drivers.length > 0) {
-            const params = new URLSearchParams();
+            const params = new URLSearchParams(sessionSuffix ? sessionSuffix.slice(1) : '');
             if (drivers[0]) params.set('driver1', drivers[0]);
             if (drivers[1]) params.set('driver2', drivers[1]);
-            path += `?${params.toString()}`;
+            path = `/race/${raceSlug}/${sectionIntent.section}?${params.toString()}`;
           }
 
           results.push({
-            id: `smart-${raceSlug}-${sectionIntent.section}`,
-            label: `${matchYear} ${raceName} Grand Prix → ${sectionIntent.label}`,
+            id: `smart-${raceSlug}-${sectionIntent.section}${sessionType ? `-${sessionType.sessionParam}` : ''}`,
+            label: `${matchYear} ${raceName} Grand Prix${sessionLabel} → ${sectionIntent.label}`,
             description: matchYear >= 2018 ? 'Full analysis' : 'Historical',
             path,
             type: sectionIntent.type,
@@ -651,10 +997,14 @@ export function parseSmartQuery(
         }
 
         results.push({
-          id: `smart-${raceSlug}`,
-          label: `${matchYear} ${raceName} Grand Prix`,
-          description: matchYear >= 2018 ? 'Full analysis available' : 'Historical results',
-          path: `/race/${raceSlug}`,
+          id: `smart-${raceSlug}${sessionType ? `-${sessionType.sessionParam}` : ''}`,
+          label: `${matchYear} ${raceName} Grand Prix${sessionLabel}`,
+          description: sessionType
+            ? `View ${sessionType.label} session`
+            : matchYear >= 2018
+              ? 'Full analysis available'
+              : 'Historical results',
+          path: `/race/${raceSlug}${sessionSuffix}`,
           type: 'race',
           icon: 'race',
           confidence: sectionIntent

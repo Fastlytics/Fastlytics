@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom';
 import { m } from 'motion/react';
 import type { TeamStanding } from '@/lib/api';
-import { getCarImage } from '@/utils/imageMapping';
 import { getTeamColorClass } from '@/lib/standingsUtils';
-import { getTeamLogo } from '@/lib/teamUtils';
+import { getTeamLogo, getTeamSlug } from '@/lib/teamUtils';
 import { cn } from '@/lib/utils';
 import { CARD_CONTAINER, CARD_LABEL, CARD_DATA_VALUE } from '@/lib/card-styles';
 import { PointsChange } from './PointsChange';
-
-const teamSlug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
 
 interface TeamStandingsCardProps {
   team: TeamStanding;
@@ -22,8 +19,8 @@ interface TeamStandingsCardProps {
 }
 
 /**
- * Horizontal team card — mirrors DriverStandingsCard but with a team logo
- * chip on the left and a car image in the right column.
+ * Horizontal team card — mirrors DriverStandingsCard with a team logo
+ * chip on the left and a larger team logo in the right column.
  *
  * Links to /teams/<slug>.
  */
@@ -39,7 +36,6 @@ export const TeamStandingsCard: React.FC<TeamStandingsCardProps> = ({
   const isHero = variant === 'hero';
   const isP1 = isHero && team.rank === 1;
   const logo = getTeamLogo(team.team);
-  const carImage = getCarImage(team.team, year);
 
   return (
     <m.div
@@ -48,7 +44,7 @@ export const TeamStandingsCard: React.FC<TeamStandingsCardProps> = ({
       transition={{ duration: 0.2, delay }}
     >
       <Link
-        to={`/teams/${teamSlug(team.team)}`}
+        to={`/teams/${getTeamSlug(team.team)}`}
         aria-label={`${team.team} — P${team.rank}, ${team.points} points`}
         className={cn(
           CARD_CONTAINER,
@@ -87,23 +83,8 @@ export const TeamStandingsCard: React.FC<TeamStandingsCardProps> = ({
               </div>
             </div>
 
-            {/* Middle: logo + team name */}
-            <div className="flex min-w-0 items-center gap-3">
-              {logo && (
-                <div
-                  className={cn(
-                    'flex shrink-0 items-center justify-center rounded border border-white/[0.06]',
-                    isHero ? 'size-10' : 'size-9'
-                  )}
-                >
-                  <img
-                    src={logo}
-                    alt=""
-                    aria-hidden
-                    className={cn('object-contain', isHero ? 'size-7' : 'size-6')}
-                  />
-                </div>
-              )}
+            {/* Middle: team name */}
+            <div className="min-w-0">
               <h3
                 className={cn(
                   'truncate font-medium tracking-[-0.01em] text-white',
@@ -136,10 +117,10 @@ export const TeamStandingsCard: React.FC<TeamStandingsCardProps> = ({
             </div>
           </div>
 
-          {/* Right: car image column */}
+          {/* Right: team logo column */}
           <div
             className={cn(
-              'relative shrink-0 border-l border-white/[0.04]',
+              'relative flex shrink-0 items-center justify-center border-l border-white/[0.04]',
               isHero ? 'w-[160px]' : 'w-[120px]'
             )}
           >
@@ -152,24 +133,20 @@ export const TeamStandingsCard: React.FC<TeamStandingsCardProps> = ({
               aria-hidden
             />
 
-            {carImage ? (
+            {logo ? (
               <img
-                src={carImage}
+                src={logo}
                 alt=""
                 aria-hidden
-                loading="eager"
                 className={cn(
-                  'absolute right-0 top-1/2 w-full max-w-none -translate-y-1/2 object-contain [mix-blend-mode:lighten]',
-                  'transition-transform duration-300 ease-out',
-                  'group-hover:translate-x-[-2px] group-hover:-translate-y-1/2'
+                  'object-contain transition-transform duration-300 ease-out group-hover:scale-105',
+                  isHero ? 'size-16' : 'size-12'
                 )}
               />
             ) : (
-              <div className="flex size-full items-center justify-center">
-                <span className="font-mono text-[14px] font-medium text-white/40">
-                  {team.team.substring(0, 3).toUpperCase()}
-                </span>
-              </div>
+              <span className="font-mono text-[14px] font-medium text-white/40">
+                {team.team.substring(0, 3).toUpperCase()}
+              </span>
             )}
           </div>
         </div>

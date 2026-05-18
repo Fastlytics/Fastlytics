@@ -7,9 +7,9 @@ import HeroSection from '@/components/landing/HeroSection';
 import {
   FeaturesSection,
   LandingFooter,
-  LogoBar,
   ProductSection,
   StatsSection,
+  TestimonialsMarquee,
 } from '@/components/landing/LandingSections';
 import { PricingSection } from '@/components/landing/PricingSection';
 
@@ -54,10 +54,10 @@ const Landing: React.FC = () => {
 
       <main>
         <HeroSection />
-        <LogoBar />
         <FeaturesSection />
         <ProductSection />
         <StatsSection />
+        <TestimonialsMarquee />
         <PricingSection />
       </main>
 

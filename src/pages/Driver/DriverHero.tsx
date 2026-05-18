@@ -16,6 +16,7 @@ interface DriverHeroProps {
   availableImages: { year: number; url: string }[];
   selectedImageYear: number | null;
   setSelectedImageYear: (year: number | null) => void;
+  isCurrentSeasonChampion?: boolean;
 }
 
 export function DriverHero({
@@ -27,6 +28,7 @@ export function DriverHero({
   availableImages,
   selectedImageYear,
   setSelectedImageYear,
+  isCurrentSeasonChampion = false,
 }: DriverHeroProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [failedFallback, setFailedFallback] = useState(false);
@@ -46,7 +48,8 @@ export function DriverHero({
     for (const s of career.seasons) {
       if (!s.team) continue;
       const existing = teamStats.get(s.team) || { championships: 0, wins: 0, points: 0 };
-      if (s.position === 1) existing.championships += 1;
+      if (s.position === 1 && (s.season < currentYear || isCurrentSeasonChampion))
+        existing.championships += 1;
       existing.wins += s.wins;
       existing.points += s.points;
       teamStats.set(s.team, existing);
@@ -69,13 +72,19 @@ export function DriverHero({
       }
     }
     return bestTeam;
-  }, [career.seasons, isActive]);
+  }, [career.seasons, isActive, currentYear, isCurrentSeasonChampion]);
 
   const teamColor = displayTeam ? getTeamColorClass(displayTeam) : 'gray';
   const countryCode = getNationalityCountryCode(career.nationality);
-  const isChampion = career.seasons.some((s) => s.position === 1);
+  // Past seasons: position === 1 means confirmed champion
+  // Current season: only if mathematically clinched (passed via prop)
+  const isChampion = career.seasons.some(
+    (s) => s.position === 1 && (s.season < currentYear || isCurrentSeasonChampion)
+  );
   const currentTeam = displayTeam;
-  const championships = career.seasons.filter((s) => s.position === 1).length;
+  const championships = career.seasons.filter(
+    (s) => s.position === 1 && (s.season < currentYear || isCurrentSeasonChampion)
+  ).length;
   const currentNumber = career.seasons[0]?.position;
 
   // The direct Wikimedia URL from the bio response
@@ -123,12 +132,12 @@ export function DriverHero({
   const age = useMemo(() => {
     if (!career.dateOfBirth) return null;
     const dob = new Date(career.dateOfBirth);
-    const now = new Date();
-    let a = now.getFullYear() - dob.getFullYear();
-    const m = now.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) a--;
+    const endDate = bio?.dateOfDeath ? new Date(bio.dateOfDeath) : new Date();
+    let a = endDate.getFullYear() - dob.getFullYear();
+    const m = endDate.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && endDate.getDate() < dob.getDate())) a--;
     return a;
-  }, [career.dateOfBirth]);
+  }, [career.dateOfBirth, bio]);
 
   const summary = career.careerSummary;
 
@@ -269,10 +278,10 @@ export function DriverHero({
                   />
                 )}
                 <span>{career.nationality}</span>
-                {age && (
+                {age !== null && (
                   <>
                     <span className="text-white/20">·</span>
-                    <span>{age} yrs</span>
+                    <span>{bio?.dateOfDeath ? `Died aged ${age}` : `${age} yrs`}</span>
                   </>
                 )}
                 {career.dateOfBirth && (
@@ -284,6 +293,16 @@ export function DriverHero({
                         day: 'numeric',
                         year: 'numeric',
                       })}
+                      {bio?.dateOfDeath && (
+                        <>
+                          {' – '}
+                          {new Date(bio.dateOfDeath).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </>
+                      )}
                     </span>
                   </>
                 )}
@@ -329,14 +348,15 @@ export function DriverHero({
                 <StatCell label="Points" value={summary.points} />
                 <StatCell label="DNFs" value={summary.dnfs} />
                 <StatCell
-                  label="Best WDC"
+                  label="Total Championships"
                   value={
-                    career.seasons.reduce(
-                      (best, s) => (s.position && (!best || s.position < best) ? s.position : best),
-                      null as number | null
-                    ) ?? '—'
+                    career.seasons.filter(
+                      (s) => s.position === 1 && (s.season < currentYear || isCurrentSeasonChampion)
+                    ).length || '—'
                   }
-                  accent={career.seasons.some((s) => s.position === 1)}
+                  accent={career.seasons.some(
+                    (s) => s.position === 1 && (s.season < currentYear || isCurrentSeasonChampion)
+                  )}
                 />
               </div>
             </div>

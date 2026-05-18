@@ -4,12 +4,12 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from '@/lib/recharts-lazy';
+import { Cell } from '@/lib/recharts-cell';
 
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import {
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import type { TeamPaceSession } from '@/lib/api';
 
 interface PaceGapSectionProps {
@@ -42,45 +43,44 @@ export const PaceGapSection = ({
   onExport,
   isExporting,
 }: PaceGapSectionProps) => (
-  <div
-    ref={chartRef}
-    className="h-[450px] w-full rounded-xl border border-zinc-800 bg-zinc-950 p-4 md:p-8"
-  >
-    <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <h3 className="flex items-center gap-2 text-xl font-semibold uppercase italic text-white">
-        Pace <span className="text-red-600">Gap</span>
+  <div ref={chartRef} className={`${CARD_CONTAINER} h-[420px]`}>
+    <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div>
+        <span className={CARD_LABEL}>Pace Gap</span>
+        <p className="mt-0.5 text-[11px] text-white/40">Gap to leader</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Select value={selectedSession} onValueChange={onSessionChange}>
+          <SelectTrigger className="h-7 w-[80px] border-white/[0.08] bg-transparent text-[11px] font-medium text-white/80">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-white/[0.08] bg-[#141414] text-white">
+            {availableSessions.map((session) => (
+              <SelectItem
+                key={session}
+                value={session}
+                className="cursor-pointer text-[12px] focus:bg-white/[0.04] focus:text-white"
+              >
+                {session}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <ChartExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
-      </h3>
-
-      <Select value={selectedSession} onValueChange={onSessionChange}>
-        <SelectTrigger className="h-8 w-[100px] border-zinc-700 bg-zinc-900 text-xs font-bold uppercase tracking-wider text-white">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="border-zinc-700 bg-zinc-900 text-white">
-          {availableSessions.map((session) => (
-            <SelectItem
-              key={session}
-              value={session}
-              className="cursor-pointer text-xs font-bold uppercase tracking-wider focus:bg-zinc-800 focus:text-white"
-            >
-              {session}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      </div>
     </div>
 
-    <div className="h-[350px] w-full">
+    <div className="h-[340px] w-full px-2 pb-4">
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
           <BarChart layout="vertical" data={data} margin={{ left: 20, right: 30 }}>
-            <CartesianGrid stroke="#333" horizontal={false} />
+            <CartesianGrid stroke="rgba(255,255,255,0.04)" horizontal={false} />
             <XAxis type="number" hide />
             <YAxis
               dataKey="teamName"
               type="category"
-              width={100}
-              tick={{ fill: '#999', fontSize: 12, fontWeight: 'bold' }}
+              width={90}
+              tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
@@ -91,27 +91,29 @@ export const PaceGapSection = ({
 
                 const tooltipData = payload[0].payload as TeamPaceSession & { gapToLeader: number };
                 return (
-                  <div className="rounded-xl border border-zinc-800 bg-black/95 p-4 shadow-2xl backdrop-blur-md">
-                    <p className="mb-1 font-bold text-white">{tooltipData.teamName}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase tracking-wider text-zinc-400">
-                        Median:
-                      </span>
-                      <span className="font-mono text-sm font-bold text-white">
-                        {tooltipData.medianTime.toFixed(3)}s
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase tracking-wider text-zinc-400">Gap:</span>
-                      <span className="font-mono text-sm font-bold text-red-500">
-                        +{tooltipData.gapToLeader.toFixed(3)}s
-                      </span>
+                  <div className="rounded-lg border border-white/[0.08] bg-[#0a0a0a]/95 p-3 shadow-xl backdrop-blur-md">
+                    <p className="mb-1.5 text-[13px] font-medium text-white">
+                      {tooltipData.teamName}
+                    </p>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[11px] text-white/50">Median</span>
+                        <span className="font text-[12px] tabular-nums text-white">
+                          {tooltipData.medianTime.toFixed(3)}s
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[11px] text-white/50">Gap</span>
+                        <span className="font text-[12px] tabular-nums text-red-400">
+                          +{tooltipData.gapToLeader.toFixed(3)}s
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
               }}
             />
-            <Bar dataKey="gapToLeader" radius={[0, 4, 4, 0]} barSize={24} animationDuration={1000}>
+            <Bar dataKey="gapToLeader" radius={[0, 3, 3, 0]} barSize={20} animationDuration={800}>
               {data.map((entry) => (
                 <Cell key={entry.teamName} fill={getTeamColor(entry.teamName)} />
               ))}
@@ -119,8 +121,8 @@ export const PaceGapSection = ({
           </BarChart>
         </ResponsiveContainer>
       ) : (
-        <div className="flex h-full items-center justify-center font-mono text-sm uppercase tracking-widest text-zinc-600">
-          No data available for {selectedSession}
+        <div className="flex h-full items-center justify-center">
+          <span className="text-[12px] text-white/40">No data available for {selectedSession}</span>
         </div>
       )}
     </div>

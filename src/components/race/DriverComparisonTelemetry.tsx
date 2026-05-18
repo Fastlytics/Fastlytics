@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   ReferenceLine,
 } from '@/lib/recharts-lazy';
 import { useQuery } from '@tanstack/react-query';
@@ -20,7 +19,6 @@ import {
   fetchTelemetrySpeed,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
@@ -35,6 +33,7 @@ interface TooltipPayloadEntry {
   name?: string;
   value?: number | string | null;
   color?: string;
+  dataKey?: string;
 }
 
 interface DriverComparisonTelemetryProps {
@@ -118,46 +117,42 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 
   if (!shouldLoadChart) return null;
 
+  const isLoading = isLoading1 || isLoading2;
+
   return (
     <div
       ref={(el) => {
         chartVisRef.current = el;
         exportRef.current = el;
       }}
-      className="group relative h-[400px] w-full rounded-lg border border-white/[0.04] p-5"
+      className="rounded-lg border border-white/[0.04]"
     >
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <div className="size-2 rounded-full" style={{ backgroundColor: color1 }} />
-            <span
-              className="text-[11px] font-semibold text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {driver1}
-            </span>
+          <h3 className="text-[14px] font-semibold text-white">{title}</h3>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <span
+                className="inline-block h-[2px] w-3 rounded-full"
+                style={{ backgroundColor: color1 }}
+              />
+              <span className="text-[14px] font-medium text-white">{driver1}</span>
+            </div>
+            <span className="text-[14px] text-white">vs</span>
+            <div className="flex items-center gap-1">
+              <span
+                className="inline-block h-[2px] w-3 rounded-full"
+                style={{ backgroundColor: color2 }}
+              />
+              <span className="text-[14px] font-medium text-white">{driver2}</span>
+            </div>
           </div>
-          <span className="text-[11px] text-white">vs</span>
-          <div className="flex items-center gap-1.5">
-            <div className="size-2 rounded-full" style={{ backgroundColor: color2 }} />
-            <span
-              className="text-[11px] font-semibold text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {driver2}
-            </span>
-          </div>
-          <div className="ml-2 h-4 w-px bg-white/[0.08]" />
-          <h3
-            className="text-[13px] font-semibold uppercase tracking-wide text-white"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {title}
-          </h3>
         </div>
         <div className="flex items-center gap-2">
-          {(isLoading1 || isLoading2) && <LoadingSpinnerF1 className="size-4" />}
+          {isLoading && (
+            <div className="size-3 animate-spin rounded-full border border-white/[0.06] border-t-white/50" />
+          )}
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -175,22 +170,29 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       </div>
 
       {/* Chart */}
-      <div className="h-[320px] w-full">
+      <div className="h-[300px] w-full p-3">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={combinedTelemetryData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            margin={{ top: 8, right: 8, left: -4, bottom: 4 }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+            <CartesianGrid
+              strokeDasharray="none"
+              vertical={false}
+              stroke="rgba(255,255,255,0.03)"
+            />
             <XAxis
               dataKey="Distance"
               type="number"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: 'rgba(255,255,255,0.4)',
-                fontSize: 11,
-                fontFamily: "'Inter', sans-serif",
+                fill: 'rgba(255,255,255,0.8)',
+                fontSize: 9,
+                fontWeight: 500,
+                fontFamily: 'Inter, sans-serif',
               }}
+              tickLine={false}
+              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
               ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
                 (t) => t <= (combinedTelemetryData[combinedTelemetryData.length - 1]?.Distance ?? 0)
               )}
@@ -198,12 +200,15 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               domain={['dataMin', 'dataMax']}
             />
             <YAxis
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: 'rgba(255,255,255,0.4)',
-                fontSize: 11,
-                fontFamily: "'Inter', sans-serif",
+                fill: 'rgba(255,255,255,0.8)',
+                fontSize: 9,
+                fontWeight: 500,
+                fontFamily: 'Inter, sans-serif',
               }}
+              tickLine={false}
+              axisLine={false}
               domain={props.domain}
               tickFormatter={props.yAxisFormatter}
               hide={!props.showYAxisTicks}
@@ -212,11 +217,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="rounded-lg border border-white/[0.04] bg-[#0a0a0a] p-3 shadow-xl">
-                      <div
-                        className="mb-2 border-b border-white/[0.06] pb-1.5 text-[11px] font-medium text-white"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
+                    <div className="rounded-lg border border-white/[0.06] bg-[#0a0a0c] p-2.5 shadow-2xl">
+                      <div className="mb-1.5 border-b border-white/[0.04] pb-1.5 font-mono text-[14px] tabular-nums text-white">
                         {Math.round(Number(label))}m
                       </div>
                       {payload.map((entry: TooltipPayloadEntry) => {
@@ -228,21 +230,15 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                         if (isGap) {
                           if (name === 'Gap' && typeof value === 'number') {
                             return (
-                              <div key={name || entry.dataKey} className="flex items-center gap-2">
-                                <div
+                              <div
+                                key={name || entry.dataKey}
+                                className="flex items-center gap-2 text-[15px]"
+                              >
+                                <span
                                   className="size-2 rounded-full"
                                   style={{ backgroundColor: color1 }}
                                 />
-                                <span
-                                  className="text-[12px] font-semibold text-white"
-                                  style={{ fontFamily: "'Inter', sans-serif" }}
-                                >
-                                  {driver1} vs {driver2}:
-                                </span>
-                                <span
-                                  className="text-[12px] text-white"
-                                  style={{ fontFamily: "'Inter', sans-serif" }}
-                                >
+                                <span className="text-white">
                                   {value > 0 ? '+' : ''}
                                   {value.toFixed(3)}s
                                 </span>
@@ -253,23 +249,18 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                         }
 
                         return (
-                          <div key={name || entry.dataKey} className="mb-1 flex items-center gap-2">
-                            <div
+                          <div
+                            key={name || entry.dataKey}
+                            className="flex items-center gap-2 text-[15px]"
+                          >
+                            <span
                               className="size-2 rounded-full"
                               style={{ backgroundColor: color }}
                             />
-                            <span
-                              className="text-[12px] font-semibold text-white"
-                              style={{ fontFamily: "'Inter', sans-serif" }}
-                            >
-                              {name}:
-                            </span>
-                            <span
-                              className="text-[12px] text-white"
-                              style={{ fontFamily: "'Inter', sans-serif" }}
-                            >
+                            <span className="text-white">{name}</span>
+                            <span className="ml-auto font-mono tabular-nums text-white">
                               {typeof value === 'number'
-                                ? value.toFixed(telemetryType === 'rpm' ? 0 : 2)
+                                ? value.toFixed(telemetryType === 'rpm' ? 0 : 1)
                                 : value}
                               {props.tooltipUnit}
                             </span>
@@ -281,19 +272,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                 }
                 return null;
               }}
-              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
-            />
-            <Legend
-              wrapperStyle={{
-                paddingTop: '10px',
-                fontFamily: "'Inter', sans-serif",
-                fontSize: '11px',
-              }}
+              cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
             />
 
             {telemetryType === 'gap' ? (
               <>
-                <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke="rgba(255,255,255,0.1)" strokeDasharray="4 4" />
                 <Line
                   type={props.type}
                   dataKey="Gap"
@@ -301,7 +285,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                   stroke={color1}
                   strokeWidth={2}
                   dot={false}
-                  activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: color1 } : false}
+                  activeDot={props.showActiveDot ? { r: 3, strokeWidth: 0, fill: color1 } : false}
                   connectNulls={true}
                 />
               </>
@@ -313,7 +297,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                   stroke={color1}
                   strokeWidth={2}
                   dot={false}
-                  activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: color1 } : false}
+                  activeDot={props.showActiveDot ? { r: 3, strokeWidth: 0, fill: color1 } : false}
                   connectNulls={true}
                 />
                 <Line
@@ -322,9 +306,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                   stroke={color2}
                   strokeWidth={2}
                   dot={false}
-                  activeDot={props.showActiveDot ? { r: 4, strokeWidth: 0, fill: color2 } : false}
+                  activeDot={props.showActiveDot ? { r: 3, strokeWidth: 0, fill: color2 } : false}
                   connectNulls={true}
-                  strokeOpacity={0.7}
+                  strokeOpacity={0.6}
                 />
               </>
             )}

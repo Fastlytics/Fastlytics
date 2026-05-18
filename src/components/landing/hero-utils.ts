@@ -189,7 +189,7 @@ type PreparedCompletedLap = {
 export type PreparedLandingReplayContext = {
   selected: LandingReplayAvailable;
   metadata: LandingReplayMetadata;
-  chunk: LandingReplayChunk;
+  chunk: Pick<LandingReplayChunk, 'time' | 'drivers' | 'selected_drivers'>;
   selectedDrivers: string[];
   trackPath: string;
   totalLaps: number;
@@ -439,7 +439,7 @@ export function buildHeroChartData(
 export function prepareLandingReplayContext(
   selected: LandingReplayAvailable,
   metadata: LandingReplayMetadata,
-  chunk: LandingReplayChunk
+  chunk: Pick<LandingReplayChunk, 'time' | 'drivers' | 'selected_drivers'>
 ): PreparedLandingReplayContext {
   const selectedDrivers = metadata.selected_drivers?.length
     ? metadata.selected_drivers

@@ -50,7 +50,7 @@ const FavoritesWidget: React.FC<FavoritesWidgetProps> = ({
               Select a favorite driver and team to unlock rivalry tracking and custom stats.
             </p>
             <Link
-              to="/account"
+              to="/settings"
               className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-red-400 transition-colors hover:text-red-300"
             >
               Set up preferences

@@ -4,7 +4,6 @@ import { m } from 'motion/react';
 import { useRaceLayoutContext } from '@/pages/Race/race-layout-context';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { SessionReplay } from '@/components/replay/SessionReplay';
-import { CARD_CONTAINER } from '@/lib/card-styles';
 
 export default function ReplaySection() {
   const ctx = useRaceLayoutContext();
@@ -25,7 +24,7 @@ export default function ReplaySection() {
       description="Real-time car positions and data overlays"
     >
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
-        <div className={`${CARD_CONTAINER} relative h-[80vh] overflow-hidden`}>
+        <div className="relative h-[85vh] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0c]">
           <Sentry.ErrorBoundary
             fallback={({ error, resetError }) => (
               <div className="flex h-full items-center justify-center">

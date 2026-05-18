@@ -777,6 +777,24 @@ export const fetchPitStats = async (year: number): Promise<PitStopTeamStat[]> =>
   return request<PitStopTeamStat[]>(`/api/openf1/pit-stats?${params.toString()}`);
 };
 
+export interface PitStopRecord {
+  year: number;
+  race: string;
+  race_country: string;
+  session_key: number;
+  driver_number: number;
+  driver_acronym: string;
+  team_name: string;
+  team_colour: string;
+  stop_duration: number;
+}
+
+/** Fetches individual pit stop records for a given year. */
+export const fetchPitStopsDetail = async (year: number): Promise<PitStopRecord[]> => {
+  const params = new URLSearchParams({ year: year.toString(), detail: 'true' });
+  return request<PitStopRecord[]>(`/api/openf1/pit-stats?${params.toString()}`);
+};
+
 /** Fetches race results summary (winners) for a given year. */
 export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
   const params = new URLSearchParams({ year: year.toString() });
@@ -1464,6 +1482,8 @@ export interface TeamCareer {
   constructorId: string;
   name: string;
   nationality: string;
+  wikipediaUrl?: string;
+  imageUrl?: string;
   careerSummary: TeamCareerSummary;
   seasons: TeamSeason[];
 }
@@ -1479,6 +1499,7 @@ export interface DriverBio {
   wikipediaUrl: string;
   thumbnail?: string;
   imageUrl?: string;
+  dateOfDeath?: string;
   fetchedAt?: number;
 }
 
@@ -1488,6 +1509,58 @@ export const fetchDriverBio = async (slug: string): Promise<DriverBio> => {
 
 export const fetchTeamCareer = async (slug: string): Promise<TeamCareer> => {
   return request<TeamCareer>(`/api/team/${encodeURIComponent(slug)}/career`);
+};
+
+export const fetchTeamBio = async (slug: string): Promise<DriverBio> => {
+  return request<DriverBio>(`/api/team/${encodeURIComponent(slug)}/bio`);
+};
+
+// ---------------------------------------------------------------------------
+// Championship Progression
+// ---------------------------------------------------------------------------
+
+export interface ChampionshipRound {
+  round: number;
+  event: string;
+  points: number;
+  position: number;
+  wins: number;
+}
+
+export interface ChampionshipRival {
+  id: string;
+  name: string;
+  code: string;
+  rounds: ChampionshipRound[];
+  finalPosition: number;
+  finalPoints: number;
+}
+
+export interface ChampionshipProgressionResponse {
+  season: number;
+  subject: { id: string; name: string; code: string };
+  rounds: ChampionshipRound[];
+  rivals: ChampionshipRival[];
+  finalPosition: number;
+  finalPoints: number;
+}
+
+export const fetchDriverChampionshipProgression = async (
+  slug: string,
+  season: number
+): Promise<ChampionshipProgressionResponse> => {
+  return request<ChampionshipProgressionResponse>(
+    `/api/driver/${encodeURIComponent(slug)}/championship?season=${season}`
+  );
+};
+
+export const fetchTeamChampionshipProgression = async (
+  slug: string,
+  season: number
+): Promise<ChampionshipProgressionResponse> => {
+  return request<ChampionshipProgressionResponse>(
+    `/api/team/${encodeURIComponent(slug)}/championship?season=${season}`
+  );
 };
 
 // ---------------------------------------------------------------------------
