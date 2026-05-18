@@ -41,7 +41,7 @@ const SpeedTooltip = ({
     const color = driverColor(selectedDriver, year);
 
     return (
-      <div className="rounded-lg border border-white/[0.04] p-4 shadow-2xl min-w-[200px]">
+      <div className="rounded-lg border border-white/[0.06] bg-[#0a0a0c] p-4 shadow-2xl min-w-[200px]">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
             <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
@@ -78,7 +78,7 @@ const SpeedTooltip = ({
 
           <div className="flex flex-col">
             <span
-              className="text-[9px] text-white uppercase tracking-wider"
+              className="text-[11px] text-white/60 font-medium"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Speed
@@ -176,15 +176,19 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             margin={{ top: 10, right: 10, left: -15, bottom: 5 }}
             className="chart-main-container"
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+            <CartesianGrid
+              strokeDasharray="none"
+              vertical={false}
+              stroke="rgba(255,255,255,0.03)"
+            />
             <XAxis
               type="number"
               dataKey="Distance"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: '#FFF',
-                fontSize: 13,
-                fontWeight: 900,
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
               }}
               ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
@@ -195,11 +199,11 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             />
             <YAxis
               dataKey="Speed"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: '#FFF',
-                fontSize: 13,
-                fontWeight: 900,
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
               }}
               domain={['auto', 'dataMax + 10']}
@@ -253,13 +257,13 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                 <span
-                  className="text-[9px] text-white uppercase tracking-wider font-semibold"
+                  className="text-[11px] text-white/60 font-medium"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Max Speed
                 </span>
                 <span
-                  className="text-lg font-bold text-white"
+                  className="text-[18px] font-semibold tabular-nums text-white"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   {Math.round(maxSpeed)} <span className="text-[10px] text-white">km/h</span>
@@ -267,13 +271,13 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               </div>
               <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                 <span
-                  className="text-[9px] text-white uppercase tracking-wider font-semibold"
+                  className="text-[11px] text-white/60 font-medium"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   Avg Speed
                 </span>
                 <span
-                  className="text-lg font-bold text-white"
+                  className="text-[18px] font-semibold tabular-nums text-white"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   {Math.round(avgSpeed)} <span className="text-[10px] text-white">km/h</span>
@@ -282,13 +286,13 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               {meta?.lapTime != null && (
                 <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                   <span
-                    className="text-[9px] text-white uppercase tracking-wider font-semibold"
+                    className="text-[11px] text-white/60 font-medium"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     Lap Time
                   </span>
                   <span
-                    className="text-lg font-bold text-white"
+                    className="text-[18px] font-semibold tabular-nums text-white"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     {Math.floor(meta.lapTime / 60)}:
@@ -299,13 +303,13 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
               {meta?.position != null && (
                 <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
                   <span
-                    className="text-[9px] text-white uppercase tracking-wider font-semibold"
+                    className="text-[11px] text-white/60 font-medium"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     Position
                   </span>
                   <span
-                    className="text-lg font-bold text-white"
+                    className="text-[18px] font-semibold tabular-nums text-white"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     P{meta.position}
@@ -328,7 +332,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                         compoundColors[meta.compound.toUpperCase()] || 'bg-zinc-500'
                       )}
                     ></span>
-                    <span className="text-white uppercase font-semibold">{meta.compound}</span>
+                    <span className="text-[12px] text-white font-semibold">{meta.compound}</span>
                     {meta.tyreLife != null && (
                       <span className="text-white ml-1">({meta.tyreLife} laps)</span>
                     )}

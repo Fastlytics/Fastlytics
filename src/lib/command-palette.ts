@@ -16,7 +16,8 @@ export const STATIC_PAGES: SearchEntry[] = [
   { id: 'page-calendar', label: 'Calendar', category: 'Pages', path: '/calendar' },
   { id: 'page-drivers', label: 'Driver Standings', category: 'Pages', path: '/standings/drivers' },
   { id: 'page-teams', label: 'Team Standings', category: 'Pages', path: '/standings/teams' },
-  { id: 'page-account', label: 'Account', category: 'Pages', path: '/account' },
+  { id: 'page-settings', label: 'Settings', category: 'Pages', path: '/settings' },
+  { id: 'page-saved', label: 'Saved', category: 'Pages', path: '/saved' },
   { id: 'page-team-pace', label: 'Team Pace Analysis', category: 'Pages', path: '/team-pace' },
   {
     id: 'page-compare-drivers',

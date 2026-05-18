@@ -55,7 +55,7 @@ export const SIDEBAR_NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'News', path: '/news', icon: NewsIcon },
       { label: 'Notifications', path: '/notifications', icon: Notification01Icon },
-      { label: 'Watchlist', path: '/watchlist', icon: Bookmark02Icon },
+      { label: 'Saved', path: '/saved', icon: Bookmark02Icon },
     ],
   },
 ];

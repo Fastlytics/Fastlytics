@@ -8,43 +8,31 @@ const FEATURES = [
     title: 'Track Dominance',
     description:
       'See which driver owns which sector. Sector-by-sector color overlays reveal where speed is gained and lost.',
-    accent: 'text-red-400',
-    accentBg: 'bg-red-500',
   },
   {
     title: 'Telemetry Overlay',
     description:
       'Speed, brake, throttle and gear traces for any driver and lap. Overlay up to four drivers at once.',
-    accent: 'text-orange-400',
-    accentBg: 'bg-orange-500',
   },
   {
     title: 'Tyre Strategy',
     description:
       'Stint timelines, degradation curves, compound life and pit window predictions as the race unfolds.',
-    accent: 'text-amber-400',
-    accentBg: 'bg-amber-500',
   },
   {
     title: 'Session Replay',
     description:
       'Scrub through any session with positions, race control events and commentary synced to the timeline.',
-    accent: 'text-emerald-400',
-    accentBg: 'bg-emerald-500',
   },
   {
     title: 'Driver Comparison',
     description:
       'Head-to-head lap deltas, sector splits and pace trends. Find the corner-by-corner advantage.',
-    accent: 'text-blue-400',
-    accentBg: 'bg-blue-500',
   },
   {
     title: 'Championship Context',
     description:
       'Standings progression, points scenarios and championship momentum across the full season arc.',
-    accent: 'text-violet-400',
-    accentBg: 'bg-violet-500',
   },
 ];
 
@@ -91,10 +79,22 @@ const SIGNAL_ROWS = [
   },
 ];
 
-const STATS = [
-  { number: '57', label: 'Laps mapped in real-time', suffix: '' },
-  { number: '3', label: 'Sector-level precision', suffix: 'sectors' },
-  { number: '4', label: 'Tyre compounds tracked', suffix: 'compounds' },
+const BROADCAST_VS_FASTLYTICS = [
+  {
+    broadcast: 'Verstappen sets fastest lap',
+    fastlytics:
+      '0.15s gained under braking into T9, lost 0.08s on exit T12. Net gain from tyre cliff on lap 34.',
+  },
+  {
+    broadcast: 'Hamilton pits',
+    fastlytics:
+      'Undercut window opened 2 laps ago. Medium compound has 0.12s/lap degradation advantage over hard.',
+  },
+  {
+    broadcast: 'Norris is catching Piastri',
+    fastlytics:
+      'Pace delta: \u22120.4s/lap in S1 but converging. Gap closes in 6 laps at current rate.',
+  },
 ];
 
 const FOOTER_GROUPS = [
@@ -143,27 +143,7 @@ const ITEM_VARIANTS = {
 } as const;
 
 export function LogoBar() {
-  return (
-    <section className="border-y border-white/[0.04] bg-[#09090b] py-8">
-      <div className="mx-auto max-w-6xl px-5 lg:px-8">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          {[
-            { value: '320+', label: 'KM/H telemetry traces' },
-            { value: '0.001s', label: 'Delta precision' },
-            { value: '20', label: 'Drivers tracked live' },
-            { value: '24', label: 'Races per season' },
-          ].map((item) => (
-            <div key={item.label} className="text-center">
-              <div className="text-2xl font-semibold tracking-[-0.02em] text-white">
-                {item.value}
-              </div>
-              <div className="mt-1 text-[12px] text-white/30">{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+  return null;
 }
 
 export function FeaturesSection() {
@@ -218,11 +198,9 @@ export function FeaturesSection() {
                 <span className="text-[13px] tabular-nums text-white/15">
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <div className={`hidden h-px w-8 sm:block ${feature.accentBg} opacity-40`} />
+                <div className="hidden h-px w-8 bg-white/10 sm:block" />
               </div>
-              <h3
-                className={`text-[18px] font-semibold tracking-[-0.01em] text-white transition-colors group-hover:${feature.accent} sm:text-[20px]`}
-              >
+              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-white sm:text-[20px]">
                 {feature.title}
               </h3>
               <p className="text-[14px] leading-relaxed text-white/35 transition-colors group-hover:text-white/50">
@@ -385,27 +363,32 @@ export function StatsSection() {
             transition={{ delay: 0.1 }}
             className="mt-4 text-[16px] leading-relaxed text-white/40"
           >
-            Follow the chain from raw timing to race decisions - pace drift, sector splits,
+            Follow the chain from raw timing to race decisions — pace drift, sector splits,
             degradation curves and pit-loss context in one interface.
           </m.p>
         </div>
-        <div className="mt-16 grid gap-4 sm:grid-cols-3">
-          {STATS.map((stat, index) => (
+        <div className="mt-16 space-y-4">
+          {BROADCAST_VS_FASTLYTICS.map((row, index) => (
             <m.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
+              key={row.broadcast}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.08 }}
-              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6 text-center"
+              className="grid gap-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 sm:grid-cols-2 sm:gap-8"
             >
-              <div className="text-4xl font-semibold tracking-[-0.02em] text-white">
-                {stat.number}
-                {stat.suffix && (
-                  <span className="ml-1 text-lg font-normal text-white/30">{stat.suffix}</span>
-                )}
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/20">
+                  Broadcast
+                </span>
+                <p className="mt-2 text-[15px] text-white/50">"{row.broadcast}"</p>
               </div>
-              <div className="mt-2 text-[13px] text-white/35">{stat.label}</div>
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/20">
+                  Fastlytics
+                </span>
+                <p className="mt-2 text-[15px] text-white/70">{row.fastlytics}</p>
+              </div>
             </m.div>
           ))}
         </div>
@@ -420,9 +403,6 @@ export function CTASection() {
       id="pricing"
       className="relative overflow-hidden border-t border-white/[0.04] py-24 lg:py-32"
     >
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute bottom-0 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-red-500/[0.06] blur-[120px]" />
-      </div>
       <div className="relative z-10 mx-auto max-w-6xl px-5 text-center lg:px-8">
         <m.h2
           initial={{ opacity: 0, y: 16 }}
@@ -472,13 +452,98 @@ export function CTASection() {
             </svg>
           </Link>
           <Link
-            to="/auth"
+            to="/login"
             className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-7 text-[14px] font-medium text-white/80 transition-all hover:border-white/20"
           >
             Sign in
           </Link>
         </m.div>
       </div>
+    </section>
+  );
+}
+
+const TESTIMONIALS_ROW_1 = [
+  {
+    quote:
+      'This is awesome. I\u2019m really enjoying looking through all the data and seeing how they compare.',
+    user: 'u/DataDrivenRacer',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Oh good lord this is beautiful! Well done, amazing work.',
+    user: 'u/apex_addict',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'This is amazing, I can\u2019t wait to dive deeper into it later!',
+    user: 'u/strat_nerd_42',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'The site is really clean! And awesome. This is really well thought out.',
+    user: 'u/velocity_check',
+    sub: 'r/F1Technical',
+  },
+];
+
+const TESTIMONIALS_ROW_2 = [
+  {
+    quote: 'Off topic but this is awesome job. I\u2019m an F1 fan and you did great job.',
+    user: 'u/opensrc_fan',
+    sub: 'r/opensource',
+  },
+  {
+    quote: 'It\u2019s some amazing work you\u2019ve put in.',
+    user: 'u/pitwall_lurker',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Finally a proper web app for F1 data. No more wrestling with Python notebooks.',
+    user: 'u/tyre_whisperer',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Been wanting something exactly like this for years. Incredible execution.',
+    user: 'u/braking_zone',
+    sub: 'r/F1Technical',
+  },
+];
+
+function MarqueeRow({
+  items,
+  reverse = false,
+}: {
+  items: typeof TESTIMONIALS_ROW_1;
+  reverse?: boolean;
+}) {
+  const doubled = [...items, ...items];
+  return (
+    <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+      <div
+        className={`flex w-max gap-4 ${reverse ? 'animate-[marquee-reverse_45s_linear_infinite]' : 'animate-[marquee_40s_linear_infinite]'}`}
+      >
+        {doubled.map((item, i) => (
+          <div
+            key={i}
+            className="flex w-[320px] shrink-0 flex-col gap-2 rounded-lg border border-white/[0.06] bg-[#0c0c0e] px-5 py-4"
+          >
+            <p className="text-[13px] leading-relaxed text-white/50">"{item.quote}"</p>
+            <span className="text-[11px] text-white/25">
+              {item.user} · {item.sub}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TestimonialsMarquee() {
+  return (
+    <section className="overflow-hidden border-y border-white/[0.04] py-8 space-y-4">
+      <MarqueeRow items={TESTIMONIALS_ROW_1} />
+      <MarqueeRow items={TESTIMONIALS_ROW_2} reverse />
     </section>
   );
 }

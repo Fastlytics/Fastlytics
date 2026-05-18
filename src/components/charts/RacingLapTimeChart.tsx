@@ -1,9 +1,7 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Brush,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -17,8 +15,6 @@ import { driverColor } from '@/lib/driverColor';
 import { getDriverImage } from '@/utils/imageMapping';
 import { getLineStylesForDriver, groupDriversByTeam } from '@/lib/teamUtils';
 import { COMPOUND_COLORS, formatLapTime } from './racingChartUtils';
-
-const inter = { fontFamily: "'Inter', sans-serif" } as const;
 
 interface RacingLapTimeChartProps {
   chartData: LapTimeDataPoint[];
@@ -48,9 +44,7 @@ export const RacingLapTimeChart: React.FC<RacingLapTimeChartProps> = ({
   const teamGroups = groupDriversByTeam(driversToDisplay, year);
 
   const renderTooltip = ({ active, payload, label }: CustomTooltipProps<LapTimeDataPoint>) => {
-    if (!active || !payload?.length) {
-      return null;
-    }
+    if (!active || !payload?.length) return null;
 
     const lapNumber = Number(label);
     const sortedPayload = payload.toSorted(
@@ -58,21 +52,15 @@ export const RacingLapTimeChart: React.FC<RacingLapTimeChartProps> = ({
     );
 
     return (
-      <div
-        className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-3 shadow-2xl max-w-[600px] z-50"
-        style={inter}
-      >
-        <div className="text-white font-bold uppercase tracking-wider border-b border-white/[0.06] pb-2 mb-2 text-[12px]">
+      <div className="rounded-lg border border-white/[0.06] bg-[#0a0a0c] p-3 shadow-2xl max-w-[550px]">
+        <div className="mb-2 border-b border-white/[0.04] pb-2 font-mono text-[13px] font-medium tabular-nums text-white">
           Lap {lapNumber}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {sortedPayload.map((entry) => {
             const driverCode = String(entry.name);
             const time = entry.value;
-
-            if (time === null || time === undefined) {
-              return null;
-            }
+            if (time === null || time === undefined) return null;
 
             const headshot = getDriverImage(driverCode, year);
             const fullName = driverNameMap.get(driverCode) || driverCode;
@@ -81,80 +69,40 @@ export const RacingLapTimeChart: React.FC<RacingLapTimeChartProps> = ({
             );
 
             return (
-              <div
-                key={driverCode}
-                className="border-b border-white/[0.04] pb-2 last:border-0 last:pb-0"
-              >
-                <div className="flex items-center gap-2">
-                  <Avatar className="size-6 shrink-0 border border-white/[0.08]">
-                    <AvatarImage src={headshot} className="object-cover object-top" />
-                    <AvatarFallback className="bg-[#1a1a1e] text-[8px] font-bold text-white">
-                      {driverCode[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-[12px] font-bold" style={{ color: entry.color }}>
-                    {formatLapTime(Number(time))}
+              <div key={driverCode} className="flex items-center gap-2">
+                <Avatar className="size-5 shrink-0 border border-white/[0.06]">
+                  <AvatarImage src={headshot} className="object-cover object-top" />
+                  <AvatarFallback className="bg-white/[0.03] text-[7px] font-medium text-white/40">
+                    {driverCode[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className="font-mono text-[13px] font-semibold tabular-nums"
+                  style={{ color: entry.color }}
+                >
+                  {formatLapTime(Number(time))}
+                </span>
+                <span className="text-[13px] text-white truncate">{fullName}</span>
+                {lapDetail?.compound && (
+                  <span
+                    className="text-[11px] font-semibold px-1 py-px rounded"
+                    style={{
+                      backgroundColor: `${COMPOUND_COLORS[lapDetail.compound] || '#666'}15`,
+                      color: COMPOUND_COLORS[lapDetail.compound] || '#666',
+                    }}
+                  >
+                    {lapDetail.compound[0]}
                   </span>
-                  <span className="text-[12px] font-semibold text-white/80">{fullName}</span>
-                  {lapDetail?.compound && (
-                    <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                      style={{
-                        backgroundColor: `${COMPOUND_COLORS[lapDetail.compound] || '#666'}22`,
-                        color: COMPOUND_COLORS[lapDetail.compound] || '#666',
-                      }}
-                    >
-                      {lapDetail.compound[0]}
-                    </span>
-                  )}
-                  {lapDetail?.tyreLife != null && (
-                    <span className="text-[10px] text-white font-medium">
-                      L{lapDetail.tyreLife}
-                    </span>
-                  )}
-                  {lapDetail?.position != null && (
-                    <span className="text-[10px] text-white font-medium">
-                      P{lapDetail.position}
-                    </span>
-                  )}
-                  {lapDetail?.deleted && (
-                    <span className="text-[10px] text-red-400 font-bold">DEL</span>
-                  )}
-                  {lapDetail?.isPersonalBest && (
-                    <span className="text-[10px] text-purple-400 font-bold">PB</span>
-                  )}
-                </div>
-                {lapDetail &&
-                  (lapDetail.sector1 != null ||
-                    lapDetail.sector2 != null ||
-                    lapDetail.sector3 != null) && (
-                    <div className="flex gap-3 mt-1 ml-8">
-                      {lapDetail.sector1 != null && (
-                        <span className="text-[10px] text-white">
-                          S1{' '}
-                          <span className="text-white/70 font-medium">
-                            {lapDetail.sector1.toFixed(3)}
-                          </span>
-                        </span>
-                      )}
-                      {lapDetail.sector2 != null && (
-                        <span className="text-[10px] text-white">
-                          S2{' '}
-                          <span className="text-white/70 font-medium">
-                            {lapDetail.sector2.toFixed(3)}
-                          </span>
-                        </span>
-                      )}
-                      {lapDetail.sector3 != null && (
-                        <span className="text-[10px] text-white">
-                          S3{' '}
-                          <span className="text-white/70 font-medium">
-                            {lapDetail.sector3.toFixed(3)}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  )}
+                )}
+                {lapDetail?.tyreLife != null && (
+                  <span className="text-[11px] text-white/60">L{lapDetail.tyreLife}</span>
+                )}
+                {lapDetail?.isPersonalBest && (
+                  <span className="text-[11px] text-purple-400 font-medium">PB</span>
+                )}
+                {lapDetail?.deleted && (
+                  <span className="text-[11px] text-red-400 font-medium">DEL</span>
+                )}
               </div>
             );
           })}
@@ -164,111 +112,121 @@ export const RacingLapTimeChart: React.FC<RacingLapTimeChartProps> = ({
   };
 
   return (
-    <ResponsiveContainer width="100%" height={500} className="export-chart-container mb-8">
-      <LineChart data={chartData} margin={{ top: 15, right: 10, left: -15, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
-        <XAxis
-          dataKey="LapNumber"
-          stroke="rgba(255,255,255,0.15)"
-          tick={{
-            fill: 'rgba(255,255,255,0.5)',
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: 'Inter, sans-serif',
-          }}
-          padding={{ left: 10, right: 10 }}
-        />
-        <YAxis
-          stroke="rgba(255,255,255,0.15)"
-          tick={{
-            fill: 'rgba(255,255,255,0.5)',
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: 'Inter, sans-serif',
-          }}
-          domain={['dataMin - 0.5', 'dataMax + 0.5']}
-          tickFormatter={formatLapTime}
-          allowDecimals
-          width={65}
-        />
-        <Tooltip
-          content={renderTooltip}
-          cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }}
-        />
-        <Legend
-          wrapperStyle={{
-            paddingTop: '20px',
-            paddingBottom: '10px',
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '11px',
-          }}
-          onClick={(entry: { value?: string } | undefined) => {
-            if (!entry?.value) {
-              return;
-            }
-
-            trackInteraction('legend_driver_focused', {
-              chart: 'lap_time',
-              year,
-              event,
-              session,
-            });
-            setFocusedDriver(focusedDriver === entry.value ? null : entry.value);
-          }}
-          onMouseEnter={(entry: { value?: string } | undefined) =>
-            entry?.value && setFocusedDriver(entry.value)
-          }
-          onMouseLeave={() => setFocusedDriver(null)}
-          formatter={(value: string, entry: { color?: string }) => {
-            const isFocused = focusedDriver === value;
-            const isDimmed = focusedDriver && focusedDriver !== value;
+    <div className="rounded-lg border border-white/[0.04] bg-white/[0.01] p-3">
+      <ResponsiveContainer width="100%" height={420} className="export-chart-container">
+        <LineChart data={chartData} margin={{ top: 12, right: 10, left: -12, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="none" vertical={false} stroke="rgba(255,255,255,0.03)" />
+          <XAxis
+            dataKey="LapNumber"
+            stroke="rgba(255,255,255,0.06)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 500,
+              fontFamily: 'Inter, sans-serif',
+            }}
+            tickLine={false}
+            axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+            padding={{ left: 8, right: 8 }}
+            label={{
+              value: 'Lap',
+              position: 'insideBottomRight',
+              offset: -4,
+              fill: 'rgba(255,255,255,0.4)',
+              fontSize: 10,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          />
+          <YAxis
+            stroke="rgba(255,255,255,0.06)"
+            tick={{
+              fill: 'rgba(255,255,255,0.5)',
+              fontSize: 11,
+              fontWeight: 500,
+              fontFamily: 'Inter, sans-serif',
+            }}
+            tickLine={false}
+            axisLine={false}
+            domain={['dataMin - 0.5', 'dataMax + 0.5']}
+            tickFormatter={formatLapTime}
+            allowDecimals
+            width={58}
+          />
+          <Tooltip
+            content={renderTooltip}
+            cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
+          />
+          {driversToDisplay.map((driverCode, index) => {
+            const color = driverColor(driverCode, year);
+            const teammates =
+              Object.values(teamGroups).find((drivers) => drivers.includes(driverCode)) || [];
+            const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
+            const isFocused = focusedDriver === driverCode;
+            const isDimmed = focusedDriver && !isFocused;
 
             return (
-              <span
-                style={{
-                  color: entry.color,
-                  opacity: isDimmed ? 0.3 : 1,
-                  fontWeight: isFocused ? 700 : 400,
+              <Line
+                key={driverCode}
+                type="monotone"
+                dataKey={driverCode}
+                stroke={color}
+                strokeWidth={isFocused ? 3 : lineStyle.strokeWidth}
+                strokeOpacity={isDimmed ? 0.08 : 1}
+                strokeDasharray={lineStyle.strokeDasharray}
+                dot={false}
+                activeDot={{
+                  r: 4,
+                  strokeWidth: 0,
+                  fill: color,
+                  onMouseEnter: () => setFocusedDriver(driverCode),
+                  onMouseLeave: () => setFocusedDriver(null),
                 }}
-              >
-                {value}
-              </span>
+                name={driverCode}
+                connectNulls
+              />
             );
-          }}
-        />
-        {driversToDisplay.map((driverCode, index) => {
+          })}
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* Inline legend */}
+      <div className="mt-3 flex flex-wrap justify-center gap-x-2.5 gap-y-1.5 border-t border-white/[0.04] pt-3">
+        {driversToDisplay.map((driverCode) => {
           const color = driverColor(driverCode, year);
-          const teammates =
-            Object.values(teamGroups).find((drivers) => drivers.includes(driverCode)) || [];
-          const lineStyle = getLineStylesForDriver(driverCode, teammates, index);
+          const isDimmed = focusedDriver && focusedDriver !== driverCode;
           const isFocused = focusedDriver === driverCode;
-          const isDimmed = focusedDriver && !isFocused;
 
           return (
-            <Line
+            <button
               key={driverCode}
-              type="monotone"
-              dataKey={driverCode}
-              stroke={color}
-              strokeWidth={isFocused ? 4 : lineStyle.strokeWidth}
-              strokeOpacity={isDimmed ? 0.1 : 1}
-              strokeDasharray={lineStyle.strokeDasharray}
-              dot={false}
-              activeDot={{ r: 4, strokeWidth: 0, fill: color }}
-              name={driverCode}
-              connectNulls
-            />
+              className="flex items-center gap-1.5 rounded px-1.5 py-0.5 transition-all"
+              style={{ opacity: isDimmed ? 0.2 : 1 }}
+              onMouseEnter={() => setFocusedDriver(driverCode)}
+              onMouseLeave={() => setFocusedDriver(null)}
+              onClick={() => {
+                trackInteraction('legend_driver_focused', {
+                  chart: 'lap_time',
+                  year,
+                  event,
+                  session,
+                });
+                setFocusedDriver(focusedDriver === driverCode ? null : driverCode);
+              }}
+            >
+              <span
+                className="inline-block h-[2px] w-3 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              <span
+                className="text-[11px] font-medium tabular-nums transition-colors"
+                style={{ color: isFocused ? color : 'rgba(255,255,255,0.8)' }}
+              >
+                {driverNameMap.get(driverCode) || driverCode}
+              </span>
+            </button>
           );
         })}
-        <Brush
-          dataKey="LapNumber"
-          height={24}
-          stroke="rgba(255,255,255,0.1)"
-          fill="rgba(255,255,255,0.03)"
-          tickFormatter={() => ''}
-          travellerWidth={8}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+      </div>
+    </div>
   );
 };

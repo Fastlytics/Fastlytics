@@ -8,10 +8,18 @@ import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
 import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 
 type LapAnalysisMode = 'positions' | 'history' | 'pace' | 'gap';
 
 const VALID_MODES: LapAnalysisMode[] = ['positions', 'history', 'pace', 'gap'];
+
+const MODE_DESCRIPTIONS: Record<LapAnalysisMode, string> = {
+  positions: 'Track how drivers move through the field lap by lap',
+  history: 'Compare lap time progression across drivers',
+  pace: 'Visualize pace distribution and consistency',
+  gap: 'Measure time gaps relative to the race leader',
+};
 
 export default function LapAnalysisSection() {
   const ctx = useRaceLayoutContext();
@@ -76,10 +84,18 @@ export default function LapAnalysisSection() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="space-y-5"
+        className={CARD_CONTAINER}
       >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+          <div>
+            <h3 className="text-[16px] font-semibold text-white">Lap Analysis</h3>
+            <p className="mt-0.5 text-[12px] text-white/80">{MODE_DESCRIPTIONS[activeMode]}</p>
+          </div>
+        </div>
+
         {/* Mode switcher */}
-        <div className="flex items-center gap-1 rounded-lg border border-white/[0.04] p-1 w-fit">
+        <div className="flex items-center gap-1 px-5 pt-0 pb-2">
           {modes
             .filter((m) => !m.raceOnly || isRaceOrSprint)
             .map((mode) => (
@@ -99,48 +115,53 @@ export default function LapAnalysisSection() {
         </div>
 
         {/* Content */}
-        {activeMode === 'positions' && isRaceOrSprint && (
-          <PositionsTabContent
-            year={ctx.year}
-            event={ctx.eventName}
-            session={ctx.analysisSession}
-            favoriteDriver={favoriteDriver}
-          />
-        )}
+        <div className="px-5 pb-5 pt-2">
+          {activeMode === 'positions' && isRaceOrSprint && (
+            <PositionsTabContent
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              favoriteDriver={favoriteDriver}
+              embedded
+            />
+          )}
 
-        {activeMode === 'history' && (
-          <RacingChart
-            year={ctx.year}
-            event={ctx.eventName}
-            session={ctx.analysisSession}
-            title="Lap Time Comparison"
-            autoLoad={true}
-            favoriteDriver={favoriteDriver || undefined}
-            rivalDriver={rivalDriverCode || undefined}
-          />
-        )}
+          {activeMode === 'history' && (
+            <RacingChart
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              title="Lap Time Comparison"
+              autoLoad={true}
+              favoriteDriver={favoriteDriver || undefined}
+              rivalDriver={rivalDriverCode || undefined}
+            />
+          )}
 
-        {activeMode === 'pace' && (
-          <PaceAnalysisChart
-            year={ctx.year}
-            event={ctx.eventName}
-            session={ctx.analysisSession}
-            initialDrivers={
-              favoriteDriver ? ([favoriteDriver, rivalDriverCode].filter(Boolean) as string[]) : []
-            }
-          />
-        )}
+          {activeMode === 'pace' && (
+            <PaceAnalysisChart
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              initialDrivers={
+                favoriteDriver
+                  ? ([favoriteDriver, rivalDriverCode].filter(Boolean) as string[])
+                  : []
+              }
+            />
+          )}
 
-        {activeMode === 'gap' && (
-          <GapToLeaderChart
-            year={ctx.year}
-            event={ctx.eventName}
-            session={ctx.analysisSession}
-            autoLoad={true}
-            favoriteDriver={favoriteDriver || undefined}
-            rivalDriver={rivalDriverCode || undefined}
-          />
-        )}
+          {activeMode === 'gap' && (
+            <GapToLeaderChart
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              autoLoad={true}
+              favoriteDriver={favoriteDriver || undefined}
+              rivalDriver={rivalDriverCode || undefined}
+            />
+          )}
+        </div>
       </m.div>
     </GatedRoute>
   );

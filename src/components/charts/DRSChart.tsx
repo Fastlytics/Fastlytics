@@ -126,15 +126,19 @@ const DRSChart: React.FC<DRSChartProps> = ({
             margin={{ top: 0, right: 10, left: -15, bottom: 5 }}
             className="chart-main-container"
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+            <CartesianGrid
+              strokeDasharray="none"
+              vertical={false}
+              stroke="rgba(255,255,255,0.03)"
+            />
             <XAxis
               type="number"
               dataKey="Distance"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: '#FFF',
-                fontSize: 13,
-                fontWeight: 900,
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
               }}
               ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
@@ -145,11 +149,11 @@ const DRSChart: React.FC<DRSChartProps> = ({
             />
             <YAxis
               dataKey="DRS"
-              stroke="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.06)"
               tick={{
-                fill: '#FFF',
-                fontSize: 13,
-                fontWeight: 900,
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
               }}
               tickFormatter={(value) => ''}

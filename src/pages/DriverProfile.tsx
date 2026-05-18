@@ -3,15 +3,29 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { m, AnimatePresence } from 'motion/react';
-import { fetchDriverCareer, fetchDriverBio, DriverCareer } from '@/lib/api';
+import {
+  fetchDriverCareer,
+  fetchDriverBio,
+  fetchDriverStandings,
+  fetchSchedule,
+  fetchRaceResults,
+  DriverCareer,
+  DriverStanding,
+  ScheduleEvent,
+  RaceResult,
+} from '@/lib/api';
+import { calculateRemainingPoints, getChampionshipStatus } from '@/lib/championship';
 import { getDriverImage, getDriverImagesByCode } from '@/utils/imageMapping';
 import { getTeamColorClass } from '@/lib/standingsUtils';
+import { isTestingEvent } from '@/lib/standingsUtils';
 import { cn } from '@/lib/utils';
 import { useSeason } from '@/contexts/SeasonContext';
 import { SEO } from '@/components/layout/SEO';
-import { CARD_CONTAINER } from '@/lib/card-styles';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import { DriverHero } from '@/pages/Driver/DriverHero';
 import { DriverTabStrip } from '@/pages/Driver/DriverTabStrip';
+import { DriverChampionshipSection } from '@/pages/Driver/DriverChampionshipSection';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 const DriverProfile = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -61,15 +75,55 @@ const DriverProfile = () => {
     setActiveTab(tab);
   }, []);
 
+  // --- Championship status for the current season ---
+  const currentYear = new Date().getFullYear();
+  const isActiveInCurrentSeason = career?.seasons[0]?.season === currentYear;
+
+  const { data: driverStandings } = useQuery<DriverStanding[]>({
+    queryKey: ['driverStandings', currentYear],
+    queryFn: () => fetchDriverStandings(currentYear),
+    enabled: !!career && isActiveInCurrentSeason,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const { data: schedule } = useQuery<ScheduleEvent[]>({
+    queryKey: ['schedule', currentYear],
+    queryFn: () => fetchSchedule(currentYear),
+    enabled: !!career && isActiveInCurrentSeason,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const [now] = useState(() => Date.now());
+  const hasCompletedRaces = useMemo(
+    () =>
+      (schedule ?? []).some(
+        (event) => !isTestingEvent(event) && new Date(event.EventDate).getTime() <= now
+      ),
+    [schedule, now]
+  );
+
+  const { data: raceResults } = useQuery<RaceResult[]>({
+    queryKey: ['raceResults', currentYear],
+    queryFn: () => fetchRaceResults(currentYear),
+    enabled: !!career && isActiveInCurrentSeason && hasCompletedRaces,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const isCurrentSeasonChampion = useMemo(() => {
+    if (!driverStandings || driverStandings.length < 2 || !schedule || !raceResults) return false;
+    const remainingPoints = calculateRemainingPoints(schedule, raceResults, 'driver', currentYear);
+    return (
+      getChampionshipStatus(
+        driverStandings[0].points,
+        driverStandings[1].points,
+        remainingPoints
+      ) === 'champion'
+    );
+  }, [driverStandings, schedule, raceResults, currentYear]);
+
   // Loading state
   if (isLoading) {
-    return (
-      <div className="space-y-5 text-white">
-        <div className={cn(CARD_CONTAINER, 'h-[400px] animate-pulse')} />
-        <div className="h-11 animate-pulse rounded-lg bg-white/[0.02]" />
-        <div className={cn(CARD_CONTAINER, 'h-[300px] animate-pulse')} />
-      </div>
-    );
+    return <PageLoader fullPage message="Loading driver profile…" />;
   }
 
   // Error state
@@ -126,6 +180,7 @@ const DriverProfile = () => {
           availableImages={availableImages}
           selectedImageYear={selectedImageYear}
           setSelectedImageYear={setSelectedImageYear}
+          isCurrentSeasonChampion={isCurrentSeasonChampion}
         />
 
         {/* Tab Strip — full width, matching Race.tsx */}
@@ -143,6 +198,9 @@ const DriverProfile = () => {
             {activeTab === 'overview' && (
               <OverviewSection career={career} selectedYear={selectedYear} />
             )}
+            {activeTab === 'championship' && (
+              <DriverChampionshipSection career={career} slug={slug!} />
+            )}
           </m.div>
         </AnimatePresence>
       </div>
@@ -159,152 +217,115 @@ function OverviewSection({ career, selectedYear }: { career: DriverCareer; selec
   return (
     <div className="space-y-5">
       {/* Season table */}
-      <div className={cn(CARD_CONTAINER, 'overflow-hidden')}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-white/[0.04]">
-                <th className="px-5 py-3.5 text-left text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Season
-                </th>
-                <th className="px-4 py-3.5 text-left text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Team
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Races
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Wins
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Podiums
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Poles
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  FL
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  Points
-                </th>
-                <th className="px-3 py-3.5 text-center text-[11px] font-medium uppercase tracking-wider text-white/30">
-                  WDC
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {career.seasons.map((season, i) => {
-                const isCurrent = season.season === selectedYear;
-                const isChampion = season.position === 1;
-                const isRookie = season.season === rookieSeason;
+      <div className={CARD_CONTAINER}>
+        <div className="px-5 pt-5 pb-3">
+          <span className={CARD_LABEL}>Career Overview</span>
+        </div>
+        <div className="border-t border-white/[0.04]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[13px]">
+              <thead>
+                <tr className="border-b border-white/[0.04]">
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Season</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Team</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Races</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Wins</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Podiums</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Poles</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">FL</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">Points</th>
+                  <th className="px-4 py-3 text-[12px] font-medium text-white/80">WDC</th>
+                </tr>
+              </thead>
+              <tbody>
+                {career.seasons.map((season, i) => {
+                  const isCurrent = season.season === selectedYear;
+                  const isChampion = season.position === 1;
+                  const isRookie = season.season === rookieSeason;
 
-                return (
-                  <m.tr
-                    key={season.season}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.15, delay: i * 0.02 }}
-                    className={cn(
-                      'group border-b border-white/[0.03] transition-colors hover:bg-white/[0.015]',
-                      isCurrent && 'bg-red-500/[0.02]',
-                      isChampion && !isCurrent && 'bg-amber-500/[0.015]'
-                    )}
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'inline-block size-1.5 rounded-full',
-                            `bg-f1-${getTeamColorClass(season.team)}`
+                  return (
+                    <tr
+                      key={season.season}
+                      className={cn(
+                        'border-b border-white/[0.02] transition-colors hover:bg-white/[0.02]',
+                        isCurrent && 'bg-white/[0.03]',
+                        isChampion && !isCurrent && 'bg-amber-500/[0.02]'
+                      )}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              'h-5 w-0.5 shrink-0 rounded-full',
+                              `bg-f1-${getTeamColorClass(season.team)}`
+                            )}
+                          />
+                          <span className="text-[13px] font-medium text-white">
+                            {season.season}
+                          </span>
+                          {isCurrent && (
+                            <span className="rounded border border-red-400/20 bg-red-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-red-400">
+                              Now
+                            </span>
                           )}
-                        />
-                        <span className="font-semibold tabular-nums text-white">
-                          {season.season}
-                        </span>
-                        {isCurrent && (
-                          <span className="rounded border border-red-400/20 bg-red-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-red-400">
-                            Now
-                          </span>
-                        )}
-                        {isRookie && !isCurrent && (
-                          <span className="rounded border border-emerald-400/20 bg-emerald-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-emerald-400">
-                            Rookie
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-white/60">{season.team}</span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span className="tabular-nums text-white/80">{season.races}</span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span
-                        className={cn(
-                          'tabular-nums',
-                          season.wins > 0 ? 'font-semibold text-white' : 'text-white/20'
-                        )}
-                      >
-                        {season.wins}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span
-                        className={cn(
-                          'tabular-nums',
-                          season.podiums > 0 ? 'text-white/80' : 'text-white/20'
-                        )}
-                      >
-                        {season.podiums}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span
-                        className={cn(
-                          'tabular-nums',
-                          season.poles > 0 ? 'text-white/80' : 'text-white/20'
-                        )}
-                      >
-                        {season.poles}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span
-                        className={cn(
-                          'tabular-nums',
-                          season.fastestLaps > 0 ? 'text-purple-400' : 'text-white/20'
-                        )}
-                      >
-                        {season.fastestLaps}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <span className="font-semibold tabular-nums text-white">{season.points}</span>
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      {season.position ? (
+                          {isRookie && !isCurrent && (
+                            <span className="rounded border border-emerald-400/20 bg-emerald-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-emerald-400">
+                              Rookie
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-white/80">{season.team}</td>
+                      <td className="px-4 py-3 text-[13px] text-white/80">{season.races}</td>
+                      <td className="px-4 py-3 text-[13px]">
                         <span
                           className={cn(
-                            'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums',
-                            season.position === 1 && 'bg-amber-400/15 text-amber-400',
-                            season.position === 2 && 'bg-white/[0.06] text-zinc-300',
-                            season.position === 3 && 'bg-orange-400/10 text-orange-400',
-                            season.position > 3 && 'text-white/30'
+                            season.wins > 0 ? 'font-semibold text-white' : 'text-white/80'
                           )}
                         >
-                          {season.position}
+                          {season.wins}
                         </span>
-                      ) : (
-                        <span className="text-white/15">—</span>
-                      )}
-                    </td>
-                  </m.tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-white/80">{season.podiums}</td>
+                      <td className="px-4 py-3 text-[13px] text-white/80">{season.poles}</td>
+                      <td className="px-4 py-3 text-[13px]">
+                        <span
+                          className={cn(
+                            season.fastestLaps > 0
+                              ? 'font-semibold text-purple-400'
+                              : 'text-white/80'
+                          )}
+                        >
+                          {season.fastestLaps}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] font-medium text-white">
+                        {season.points}
+                      </td>
+                      <td className="px-4 py-3 text-[13px]">
+                        {season.position ? (
+                          <span
+                            className={cn(
+                              'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-semibold',
+                              season.position === 1 && 'bg-amber-400/15 text-amber-400',
+                              season.position === 2 && 'bg-white/[0.06] text-zinc-300',
+                              season.position === 3 && 'bg-orange-400/10 text-orange-400',
+                              season.position > 3 && 'text-white/30'
+                            )}
+                          >
+                            {season.position}
+                          </span>
+                        ) : (
+                          <span className="text-white/30">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -155,11 +155,15 @@ export function AccountMenu({ open, onClose, triggerRef, collapsed = false }: Ac
           <div className="my-1 h-px bg-white/[0.06]" />
 
           {/* Main menu items */}
-          <MenuItem icon={UserIcon} label="Profile" onClick={() => handleNavigate('/account')} />
+          <MenuItem
+            icon={UserIcon}
+            label="Profile"
+            onClick={() => handleNavigate(`/profile/${profile?.username || user?.id}`)}
+          />
           <MenuItem
             icon={Settings02Icon}
             label="Settings"
-            onClick={() => handleNavigate('/account?section=security')}
+            onClick={() => handleNavigate('/settings')}
           />
           <MenuItem
             icon={Moon02Icon}

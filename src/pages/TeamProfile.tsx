@@ -1,25 +1,28 @@
 // knip-ignore
-import React from 'react';
-
-const TEAM_SKELETONS = Array.from({ length: 7 }, (_, i) => `ts-${i}`);
+import React, { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { m } from 'motion/react';
-import { fetchTeamCareer, TeamCareer } from '@/lib/api';
-import { getCarImage } from '@/utils/imageMapping';
+import { m, AnimatePresence } from 'motion/react';
+import { fetchTeamCareer, fetchTeamBio, TeamCareer } from '@/lib/api';
+import type { DriverBio } from '@/lib/api';
 import { getTeamColorClass } from '@/lib/standingsUtils';
 import { cn } from '@/lib/utils';
 import { useSeason } from '@/contexts/SeasonContext';
 import { SEO } from '@/components/layout/SEO';
-import {
-  StatBox,
-  ProfileSeasonRow,
-  SeasonHistoryTable,
-} from '@/components/standings/ProfileComponents';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { TeamHero } from '@/pages/Team/TeamHero';
+import { TeamTabStrip } from '@/pages/Team/TeamTabStrip';
+import { TeamChampionshipSection } from '@/pages/Team/TeamChampionshipSection';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 const TeamProfile = () => {
   const { slug } = useParams<{ slug: string }>();
   const { selectedYear } = useSeason();
+  const [activeTab, setActiveTab] = useState<string>('overview');
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+  }, []);
 
   const {
     data: career,
@@ -32,201 +35,207 @@ const TeamProfile = () => {
     enabled: !!slug,
   });
 
-  const teamColor = career?.name ? getTeamColorClass(career.name) : 'gray';
-  const carImage = career?.name ? getCarImage(career.name, selectedYear) : '';
-  const summary = career?.careerSummary;
+  const { data: bio, isLoading: isBioLoading } = useQuery<DriverBio>({
+    queryKey: ['teamBio', slug],
+    queryFn: () => fetchTeamBio(slug!),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
 
+  // Loading state
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-          <div className="space-y-6">
-            <div className="h-8 w-48 animate-pulse rounded-lg bg-white/[0.04]" />
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="h-64 animate-pulse rounded-xl border border-white/[0.06] bg-[#0c0c0e]" />
-              <div className="lg:col-span-2 space-y-4">
-                <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
-                <div className="grid grid-cols-4 gap-3">
-                  {TEAM_SKELETONS.map((id) => (
-                    <div key={id} className="h-20 animate-pulse rounded-xl bg-white/[0.04]" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
+    return <PageLoader fullPage message="Loading team profile…" />;
   }
 
+  // Error state
   if (isError || !career) {
     return (
-      <div className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
-        <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-5 pb-20 pt-24 lg:px-8">
-          <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] px-10 py-16 text-center">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/[0.07]">
-              <span className="text-lg text-red-400">!</span>
-            </div>
-            <h3 className="text-[18px] font-semibold uppercase italic text-white">
-              Team Not Found
-            </h3>
-            <p className="mt-1 text-[14px] text-white/40">
-              {(error as Error)?.message || `We couldn't find data for "${slug}".`}
-            </p>
+      <div className="flex min-h-[60vh] items-center justify-center text-white">
+        <m.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={cn(CARD_CONTAINER, 'px-12 py-16 text-center')}
+        >
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-red-400/20 bg-red-400/[0.05]">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="text-red-400"
+            >
+              <path
+                d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
-        </main>
+          <h3 className="text-[16px] font-semibold text-white">Team Not Found</h3>
+          <p className="mt-1.5 max-w-xs text-[13px] leading-relaxed text-white/40">
+            {(error as Error)?.message ||
+              `No data available for "${slug}". Check the URL or try another team.`}
+          </p>
+        </m.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
+    <div className="text-white">
       <SEO
-        title={`${career.name}: profile`}
-        description={`Explore team results, wins, podiums, and season history for ${career.name} on Fastlytics.`}
+        title={`${career.name} — Team Profile`}
+        description={`Career stats, season history, and analytics for ${career.name}. ${career.careerSummary.wins} wins, ${career.careerSummary.podiums} podiums across ${career.careerSummary.seasons} seasons.`}
       />
 
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-24 lg:px-8">
-        {/* Header */}
-        <div className="mb-10">
-          <m.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="mb-2 flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.07] px-3 py-1 text-[14px] font-bold text-red-400">
-                Team Profile
-              </span>
-            </div>
-            <h1 className="text-3xl font-semibold uppercase italic tracking-[-0.025em] text-white sm:text-4xl">
-              {career.name}
-            </h1>
-            <p className="mt-1 text-[15px] text-white/50">Career Statistics & Season History</p>
-          </m.div>
-          <div className="mt-8 h-px w-full bg-white/[0.05]" />
-        </div>
-
+      <div className="space-y-5">
         {/* Hero */}
-        <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-end">
+        <TeamHero
+          career={career}
+          bio={bio}
+          isBioLoading={isBioLoading}
+          fallbackImageUrl={slug ? `/api/team/${encodeURIComponent(slug)}/image` : undefined}
+        />
+
+        {/* Tab Strip */}
+        <TeamTabStrip activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {/* Tab Content */}
+        <AnimatePresence mode="wait">
           <m.div
-            initial={{ opacity: 0, y: 20 }}
+            key={activeTab}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="relative"
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
           >
-            <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
-              <div className={cn('absolute inset-0 opacity-10', `bg-f1-${teamColor}`)} />
-              <div className="relative flex items-center justify-center p-6">
-                <div className="relative h-44 w-full">
-                  {carImage ? (
-                    <img
-                      src={carImage}
-                      alt={career.name}
-                      className="size-full object-contain object-center drop-shadow-2xl"
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center">
-                      <span className="text-5xl font-black italic text-white/10">
-                        {career.name[0]}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            {activeTab === 'overview' && (
+              <TeamOverviewSection career={career} selectedYear={selectedYear} />
+            )}
+            {activeTab === 'championship' && (
+              <TeamChampionshipSection career={career} slug={slug!} />
+            )}
           </m.div>
-
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="mb-6 flex flex-wrap items-center gap-3">
-              <span className="text-[15px] font-medium text-white/60">{career.nationality}</span>
-              {summary?.constructorsChampionships ? (
-                <>
-                  <span className="text-white/20">·</span>
-                  <span className="rounded-full border border-amber-500/20 bg-amber-500/[0.07] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-400">
-                    {summary.constructorsChampionships}x Constructors' Champion
-                  </span>
-                </>
-              ) : null}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-              <StatBox label="Seasons" value={summary?.seasons ?? 0} delay={0} />
-              <StatBox label="Races" value={summary?.races ?? 0} delay={0.05} />
-              <StatBox label="Wins" value={summary?.wins ?? 0} delay={0.1} />
-              <StatBox label="Podiums" value={summary?.podiums ?? 0} delay={0.15} />
-              <StatBox label="Poles" value={summary?.poles ?? 0} delay={0.2} />
-              <StatBox label="Points" value={summary?.points ?? 0} delay={0.25} />
-              <StatBox
-                label="WCC Titles"
-                value={summary?.constructorsChampionships ?? 0}
-                delay={0.3}
-              />
-            </div>
-          </m.div>
-        </div>
-
-        {/* Season Table */}
-        <SeasonHistoryTable>
-          <thead>
-            <tr className="bg-[#0c0c0e] text-[11px] font-bold uppercase tracking-wider text-white/30">
-              <th className="py-3 px-4 text-left">Season</th>
-              <th className="py-3 px-4 text-center">Races</th>
-              <th className="py-3 px-4 text-center">Wins</th>
-              <th className="py-3 px-4 text-center">Podiums</th>
-              <th className="py-3 px-4 text-center">Poles</th>
-              <th className="py-3 px-4 text-center">Points</th>
-              <th className="py-3 px-4 text-center">Drivers</th>
-              <th className="py-3 px-4 text-center">WCC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {career.seasons.map((season, i) => (
-              <ProfileSeasonRow
-                key={season.season}
-                season={season}
-                index={i}
-                isCurrent={season.season === selectedYear}
-                isChampion={season.position === 1}
-                columns={[
-                  <span key="races" className="text-[14px] font-medium tabular-nums text-white">
-                    {season.races}
-                  </span>,
-                  <span key="wins" className="text-[14px] font-medium tabular-nums text-white">
-                    {season.wins}
-                  </span>,
-                  <span key="podiums" className="text-[14px] font-medium tabular-nums text-white">
-                    {season.podiums}
-                  </span>,
-                  <span key="poles" className="text-[14px] font-medium tabular-nums text-white">
-                    {season.poles}
-                  </span>,
-                  <span key="points" className="text-[14px] font-bold tabular-nums text-white">
-                    {season.points}
-                  </span>,
-                  <div key="drivers" className="flex flex-wrap gap-1 justify-center">
-                    {season.drivers.map((code) => (
-                      <span
-                        key={code}
-                        className="inline-block rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-bold tabular-nums uppercase tracking-wider text-white/50"
-                      >
-                        {code}
-                      </span>
-                    ))}
-                  </div>,
-                ]}
-              />
-            ))}
-          </tbody>
-        </SeasonHistoryTable>
-      </main>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
 
 export default TeamProfile;
+
+/* ─── Overview: Season History Table ─── */
+function TeamOverviewSection({
+  career,
+  selectedYear,
+}: {
+  career: TeamCareer;
+  selectedYear: number;
+}) {
+  return (
+    <div className={CARD_CONTAINER}>
+      <div className="px-5 pt-5 pb-3">
+        <span className={CARD_LABEL}>Season History</span>
+      </div>
+      <div className="border-t border-white/[0.04]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-white/[0.04]">
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Season</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Races</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Wins</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Podiums</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Poles</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Points</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Drivers</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">WCC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {career.seasons.map((season) => {
+                const isCurrent = season.season === selectedYear;
+                const isChampion = season.position === 1;
+
+                return (
+                  <tr
+                    key={season.season}
+                    className={cn(
+                      'border-b border-white/[0.02] transition-colors hover:bg-white/[0.02]',
+                      isCurrent && 'bg-white/[0.03]',
+                      isChampion && !isCurrent && 'bg-amber-500/[0.02]'
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'h-5 w-0.5 shrink-0 rounded-full',
+                            `bg-f1-${getTeamColorClass(career.name)}`
+                          )}
+                        />
+                        <span className="text-[13px] font-medium text-white">{season.season}</span>
+                        {isCurrent && (
+                          <span className="rounded border border-red-400/20 bg-red-400/[0.06] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-red-400">
+                            Now
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-white/80">{season.races}</td>
+                    <td className="px-4 py-3 text-[13px]">
+                      <span
+                        className={cn(
+                          season.wins > 0 ? 'font-semibold text-white' : 'text-white/80'
+                        )}
+                      >
+                        {season.wins}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-white/80">{season.podiums}</td>
+                    <td className="px-4 py-3 text-[13px] text-white/80">{season.poles}</td>
+                    <td className="px-4 py-3 text-[13px] font-medium text-white">
+                      {season.points}
+                    </td>
+                    <td className="px-4 py-3 text-[13px]">
+                      <div className="flex flex-wrap gap-1">
+                        {season.drivers.map((code) => (
+                          <span
+                            key={code}
+                            className="inline-block rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[11px] font-bold tabular-nums uppercase tracking-wider text-white/50"
+                          >
+                            {code}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-[13px]">
+                      {season.position ? (
+                        <span
+                          className={cn(
+                            'inline-flex size-6 items-center justify-center rounded-full text-[11px] font-semibold',
+                            season.position === 1 && 'bg-amber-400/15 text-amber-400',
+                            season.position === 2 && 'bg-white/[0.06] text-zinc-300',
+                            season.position === 3 && 'bg-orange-400/10 text-orange-400',
+                            season.position > 3 && 'text-white/30'
+                          )}
+                        >
+                          {season.position}
+                        </span>
+                      ) : (
+                        <span className="text-white/30">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

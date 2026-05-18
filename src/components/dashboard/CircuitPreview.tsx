@@ -9,9 +9,13 @@ import {
   CloudSnowIcon,
   CloudFastWindIcon,
 } from 'hugeicons-react';
-import { ScheduleEvent } from '@/lib/api';
+import { ScheduleEvent, DriverStanding, TeamStanding } from '@/lib/api';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import type { CircuitWeather } from '@/hooks/useCircuitWeather';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getDriverImage } from '@/utils/imageMapping';
+import { getTeamLogo } from '@/lib/teamUtils';
+import { useSeason } from '@/contexts/SeasonContext';
 
 interface LastYearData {
   driver: string;
@@ -41,6 +45,8 @@ interface CircuitPreviewProps {
   isLoadingWeather?: boolean;
   onClick?: () => void;
   isLoading?: boolean;
+  driverStandings?: DriverStanding[];
+  teamStandings?: TeamStanding[];
 }
 
 interface TimeLeft {
@@ -151,7 +157,10 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
   isLoadingWeather,
   onClick,
   isLoading,
+  driverStandings = [],
+  teamStandings = [],
 }) => {
+  const { selectedYear } = useSeason();
   const nextSession = nextRace ? getNextUpcomingSession(nextRace) : null;
   const targetDate = nextSession?.date ?? null;
   const timeLeft = useCountdown(targetDate);
@@ -161,16 +170,89 @@ const CircuitPreview: React.FC<CircuitPreviewProps> = ({
   }
 
   if (!nextRace) {
+    const wdcWinner = driverStandings.find((d) => d.rank === 1);
+    const wccWinner = teamStandings.find((t) => t.rank === 1);
+
     return (
-      <div className={`${CARD_CONTAINER} flex h-full flex-col items-start justify-between p-5`}>
-        <div>
-          <span className="text-[11px] font-medium uppercase tracking-wider text-white/80">
-            Next race
-          </span>
-          <h3 className="mt-1 text-[16px] font-medium text-white">Season complete</h3>
-          <p className="mt-1 text-[13px] text-white/80">
-            All scheduled rounds have finished — off-season until next year.
-          </p>
+      <div className={`${CARD_CONTAINER} flex h-full flex-col p-5`}>
+        <span className={CARD_LABEL}>Season complete</span>
+        <h3 className="mt-2 text-[18px] font-semibold text-white">Congratulations!</h3>
+
+        <div className="mt-4 flex-1 grid grid-cols-2 gap-0.5">
+          {/* WDC Winner */}
+          {wdcWinner && (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col items-center gap-1.5 rounded-md px-3 py-3"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                World Drivers' Champion
+              </span>
+              <Avatar className="mt-1 size-28 shrink-0 border border-white/[0.06]">
+                <AvatarImage
+                  src={getDriverImage(wdcWinner.code, selectedYear)}
+                  className="object-cover object-top"
+                />
+                <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
+                  {wdcWinner.code}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-[14px] font-medium text-white text-center leading-tight">
+                {wdcWinner.name}
+              </div>
+              <div className="text-[12px] text-white/80">{wdcWinner.team}</div>
+              <div className="text-center">
+                <div className="font text-[15px] tabular-nums text-white">
+                  {wdcWinner.points} pts
+                </div>
+                <div className="font text-[12px] tabular-nums text-white/80">
+                  {wdcWinner.wins} wins
+                </div>
+              </div>
+            </m.div>
+          )}
+
+          {/* WCC Winner */}
+          {wccWinner && (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
+              className="flex flex-col items-center gap-1.5 rounded-md px-3 py-3"
+            >
+              <span className="text-[10px] font-medium uppercase tracking-wider text-white/50">
+                World Constructors' Champion
+              </span>
+              <div className="mt-4">
+                {getTeamLogo(wccWinner.team) ? (
+                  <img
+                    src={getTeamLogo(wccWinner.team)!}
+                    alt={wccWinner.team}
+                    className="h-28 w-auto object-contain"
+                  />
+                ) : (
+                  <div className="flex size-28 items-center justify-center rounded-full bg-white/[0.04]">
+                    <span className="text-[16px] font-medium text-white/80">
+                      {wccWinner.team.substring(0, 3).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 text-[14px] font-medium text-white text-center leading-tight">
+                {wccWinner.team}
+              </div>
+              <div className="text-center">
+                <div className="font text-[15px] tabular-nums text-white">
+                  {wccWinner.points} pts
+                </div>
+                <div className="font text-[12px] tabular-nums text-white/80">
+                  {wccWinner.wins} wins
+                </div>
+              </div>
+            </m.div>
+          )}
         </div>
       </div>
     );

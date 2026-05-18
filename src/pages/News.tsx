@@ -5,11 +5,19 @@ import { News01Icon, LinkSquare01Icon, Message01Icon } from 'hugeicons-react';
 import { useInfiniteNewsFeed } from '@/hooks/useNews';
 import { useAuth } from '@/contexts/AuthContext';
 import { NEWS_SOURCES, NEWS_TOPICS } from '@/lib/news-api';
-import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 import { SEO } from '@/components/layout/SEO';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDriverStandings, fetchTeamStandings } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -107,7 +115,7 @@ export default function NewsPage() {
     <>
       <SEO
         title="News | Fastlytics"
-        description="AI-powered F1 news feed personalized to your favorite drivers and teams."
+        description="F1 news feed personalized to your favorite drivers and teams."
       />
 
       <div className="space-y-5 text-white">
@@ -124,80 +132,64 @@ export default function NewsPage() {
         </div>
 
         {/* Filters row */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Personalized toggle */}
           {hasFavorites && (
-            <button
-              type="button"
-              onClick={() => setShowPersonalized(!showPersonalized)}
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all ${
-                showPersonalized
-                  ? 'border-sky-400/30 bg-sky-400/10 text-sky-400'
-                  : 'border-white/[0.08] text-white/50 hover:border-white/[0.12] hover:text-white/70'
-              }`}
-            >
-              {showPersonalized ? `For ${favoriteDriver || favoriteTeam}` : 'All news'}
-            </button>
+            <label className="flex cursor-pointer select-none items-center gap-2.5">
+              <Switch
+                checked={showPersonalized}
+                onCheckedChange={setShowPersonalized}
+                className="data-[state=checked]:bg-sky-500/60 data-[state=unchecked]:bg-white/[0.08]"
+              />
+              <span
+                className={`text-[12px] font-medium leading-none ${showPersonalized ? 'text-white/80' : 'text-white/40'}`}
+              >
+                Personalized
+              </span>
+            </label>
           )}
 
-          <div className="h-4 w-px bg-white/[0.06]" />
+          {hasFavorites && <div className="h-4 w-px bg-white/[0.06]" />}
 
-          {/* Source filters */}
-          <button
-            type="button"
-            onClick={() => setActiveSource(undefined)}
-            className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all ${
-              !activeSource
-                ? 'border-white/20 bg-white/[0.06] text-white'
-                : 'border-white/[0.08] text-white/50 hover:border-white/[0.12] hover:text-white/70'
-            }`}
+          {/* Source dropdown */}
+          <Select
+            value={activeSource ?? 'all'}
+            onValueChange={(val) => setActiveSource(val === 'all' ? undefined : val)}
           >
-            All sources
-          </button>
-          {NEWS_SOURCES.map((source) => (
-            <button
-              key={source.id}
-              type="button"
-              onClick={() => setActiveSource(activeSource === source.id ? undefined : source.id)}
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all ${
-                activeSource === source.id
-                  ? 'border-white/20 bg-white/[0.06] text-white'
-                  : 'border-white/[0.08] text-white/50 hover:border-white/[0.12] hover:text-white/70'
-              }`}
-            >
-              {source.name}
-            </button>
-          ))}
-        </div>
+            <SelectTrigger className="h-8 w-[180px] rounded-lg border-white/[0.08] bg-white/[0.03] text-[12px] text-white/80 focus:ring-white/20">
+              <SelectValue placeholder="All sources" />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg border-white/[0.08] bg-[#111113]">
+              <SelectItem value="all" className="text-[12px] text-white/70">
+                All sources
+              </SelectItem>
+              {NEWS_SOURCES.map((source) => (
+                <SelectItem key={source.id} value={source.id} className="text-[12px] text-white/70">
+                  {source.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Topic filters */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`${CARD_LABEL} mr-1`}>Topics</span>
-          <button
-            type="button"
-            onClick={() => setActiveTopic(undefined)}
-            className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all ${
-              !activeTopic
-                ? 'border-white/20 bg-white/[0.06] text-white'
-                : 'border-white/[0.06] text-white/40 hover:text-white/60'
-            }`}
+          {/* Topic dropdown */}
+          <Select
+            value={activeTopic ?? 'all'}
+            onValueChange={(val) => setActiveTopic(val === 'all' ? undefined : val)}
           >
-            All
-          </button>
-          {NEWS_TOPICS.map((topic) => (
-            <button
-              key={topic.id}
-              type="button"
-              onClick={() => setActiveTopic(activeTopic === topic.id ? undefined : topic.id)}
-              className={`rounded-full border px-2.5 py-1 text-[10px] font-medium transition-all ${
-                activeTopic === topic.id
-                  ? 'border-white/20 bg-white/[0.06] text-white'
-                  : 'border-white/[0.06] text-white/40 hover:text-white/60'
-              }`}
-            >
-              {topic.emoji} {topic.label}
-            </button>
-          ))}
+            <SelectTrigger className="h-8 w-[180px] rounded-lg border-white/[0.08] bg-white/[0.03] text-[12px] text-white/80 focus:ring-white/20">
+              <SelectValue placeholder="All topics" />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg border-white/[0.08] bg-[#111113]">
+              <SelectItem value="all" className="text-[12px] text-white/70">
+                All topics
+              </SelectItem>
+              {NEWS_TOPICS.map((topic) => (
+                <SelectItem key={topic.id} value={topic.id} className="text-[12px] text-white/70">
+                  {topic.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Articles grid */}

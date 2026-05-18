@@ -70,6 +70,7 @@ const Race = () => {
   const location = useLocation();
   const selectedSession = searchParams.get('session') || '';
   const showAnalysis = searchParams.get('view') === 'analysis';
+  const raceBasePath = raceId ? `/race/${raceId}` : '';
 
   const { trackEvent } = useAnalytics();
 
@@ -208,29 +209,6 @@ const Race = () => {
     queryFn: () => fetchSpecificRaceResults(year!, eventSlug!, selectedSession),
     enabled: !!year && !!eventSlug && !!selectedSession && availableSessions.length > 0,
   });
-
-  // Set default session if not already in params
-  const sessionParam = searchParams.get('session');
-  useEffect(() => {
-    if (availableSessions.length > 0 && !sessionParam) {
-      let defaultSession = '';
-      if (isTestingEvent) {
-        defaultSession = availableSessions[0].type;
-      } else if (availableSessions.some((s) => s.type === 'R')) {
-        defaultSession = 'R';
-      } else {
-        defaultSession = availableSessions[availableSessions.length - 1].type;
-      }
-      setSearchParams(
-        (prev) => {
-          const newParams = new URLSearchParams(prev);
-          newParams.set('session', defaultSession);
-          return newParams;
-        },
-        { replace: true }
-      );
-    }
-  }, [availableSessions, sessionParam, isTestingEvent, setSearchParams]);
 
   // Summary results for testing events
   const { data: summaryResults } = useQuery<DetailedRaceResult[]>({
@@ -407,6 +385,39 @@ const Race = () => {
     ? availableSessions.length > 0
     : availableSessions.some((s) => s.type === 'R');
   const shouldShowSchedule = !hasRaceData && !showAnalysis;
+  const sessionParam = searchParams.get('session');
+  const isAtRaceIndexPath = location.pathname === raceBasePath;
+
+  // Set the default session when landing directly inside a concrete section.
+  // The index route handles the combined "choose session + redirect to /overview"
+  // flow to avoid competing replace navigations on cached revisits.
+  useEffect(() => {
+    if (!sessionParam && availableSessions.length > 0 && !(isAtRaceIndexPath && hasRaceData)) {
+      let defaultSession = '';
+      if (isTestingEvent) {
+        defaultSession = availableSessions[0].type;
+      } else if (availableSessions.some((s) => s.type === 'R')) {
+        defaultSession = 'R';
+      } else {
+        defaultSession = availableSessions[availableSessions.length - 1].type;
+      }
+      setSearchParams(
+        (prev) => {
+          const newParams = new URLSearchParams(prev);
+          newParams.set('session', defaultSession);
+          return newParams;
+        },
+        { replace: true }
+      );
+    }
+  }, [
+    availableSessions,
+    sessionParam,
+    isTestingEvent,
+    setSearchParams,
+    isAtRaceIndexPath,
+    hasRaceData,
+  ]);
 
   // Early returns
   if (!year || !eventSlug) return null;

@@ -120,6 +120,12 @@ function getChunkIndexForTime(manifest: ChunkManifest[], time: number) {
   const targetIndex = manifest.findIndex((chunk) => time >= chunk.start && time < chunk.end);
   if (targetIndex !== -1) return targetIndex;
   if (time < manifest[0].start) return 0;
+
+  // Handle inter-chunk gaps: find the first chunk whose start is > time,
+  // meaning we're in the gap just before it. Return that chunk index.
+  const nextIndex = manifest.findIndex((chunk) => chunk.start > time);
+  if (nextIndex > 0) return nextIndex;
+
   return manifest.length - 1;
 }
 
@@ -529,7 +535,8 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
       );
       const desiredSet = new Set(desiredChunkIds);
       const shouldResetFetches =
-        hardReset || [...fetchingSetRef.current].some((chunkId) => !desiredSet.has(chunkId));
+        hardReset ||
+        (!keepAllChunks && [...fetchingSetRef.current].some((chunkId) => !desiredSet.has(chunkId)));
 
       if (shouldResetFetches) {
         generationRef.current += 1;

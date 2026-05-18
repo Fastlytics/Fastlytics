@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
-import { useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import Sidebar from '@/components/layout/Sidebar';
+import { MobileNav } from '@/components/layout/MobileNav';
 import { BreadcrumbBar } from '@/components/layout/BreadcrumbBar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import { resolveBreadcrumbs } from '@/lib/breadcrumbs';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
-import { Drawer } from 'vaul';
 
 const CHECKOUT_CONFIRMATION_ATTEMPTS = 6;
 const CHECKOUT_CONFIRMATION_DELAY_MS = 2000;
@@ -198,31 +198,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar
         isOpen={mobileDrawerOpen}
         onClose={() => setMobileDrawerOpen(false)}
-        onSearchClick={handleSearchClick}
         collapsed={sidebarCollapsed}
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {/* Mobile Drawer */}
-      <Drawer.Root open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen} direction="left">
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-40 bg-black/70 lg:hidden" />
-          <Drawer.Content className="fixed inset-y-0 left-0 z-50 w-[200px] bg-[#000] lg:hidden">
-            <Sidebar
-              isOpen={mobileDrawerOpen}
-              onClose={() => setMobileDrawerOpen(false)}
-              onSearchClick={handleSearchClick}
-            />
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+      {/* Mobile Nav — self-contained hamburger menu for tablets/phones */}
+      <div className="lg:hidden">
+        <MobileNav open={mobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />
+      </div>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-white/[0.04] bg-[#0a0a0a]/95 px-4 backdrop-blur-sm lg:hidden">
+      <div className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-white/[0.04] bg-[#0a0a0a]/95 px-3 backdrop-blur-sm lg:hidden">
         <button
           type="button"
           onClick={() => setMobileDrawerOpen(true)}
-          className="flex size-8 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
           aria-label="Open menu"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -234,11 +224,63 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             />
           </svg>
         </button>
-        <nav aria-label="Breadcrumb" className="flex-1">
-          <span className="text-[12px] font-medium text-white/60">
-            {breadcrumbs[breadcrumbs.length - 1]?.label ?? 'Dashboard'}
-          </span>
+        <nav aria-label="Breadcrumb" className="flex-1 min-w-0">
+          <ol className="flex items-center gap-1">
+            {breadcrumbs.map((segment, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              return (
+                <li
+                  key={segment.label + (segment.path ?? '')}
+                  className="flex items-center gap-1 min-w-0"
+                >
+                  {index > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-[10px] text-white/40 select-none"
+                    >
+                      /
+                    </span>
+                  )}
+                  {isLast || !segment.path ? (
+                    <span
+                      aria-current="page"
+                      className="truncate text-[12px] font-medium text-white/60"
+                    >
+                      {segment.label}
+                    </span>
+                  ) : (
+                    <Link
+                      to={segment.path}
+                      className="truncate text-[12px] font-medium text-white/50 transition-colors hover:text-white/70"
+                    >
+                      {segment.label}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         </nav>
+        <button
+          type="button"
+          onClick={() => setCommandPaletteOpen(true)}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
+          aria-label="Search"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </button>
       </div>
 
       {/* Main content area */}
@@ -247,7 +289,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         {/* Top header bar with breadcrumbs + actions */}
         <div className="hidden lg:block">
-          <BreadcrumbBar segments={breadcrumbs} />
+          <BreadcrumbBar segments={breadcrumbs} onSearchClick={handleSearchClick} />
         </div>
 
         {/* Page content */}

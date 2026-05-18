@@ -2,13 +2,16 @@
 import { useEffect, useMemo, useReducer } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Activity01Icon, AlertCircleIcon } from 'hugeicons-react';
+import { AlertCircleIcon } from 'hugeicons-react';
 import { useSearchParams } from 'react-router-dom';
+import { m } from 'motion/react';
 
 import { SEO } from '@/components/layout/SEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import { fetchTeamPaceEvent, fetchTeamPaceSummary } from '@/lib/api';
+import { CARD_CONTAINER } from '@/lib/card-styles';
+import { useSeason } from '@/contexts/SeasonContext';
 
 import { PaceEvolutionSection } from './team-pace-analysis/PaceEvolutionSection';
 import { PaceGapSection } from './team-pace-analysis/PaceGapSection';
@@ -16,6 +19,7 @@ import { PeakVsConsistentSection } from './team-pace-analysis/PeakVsConsistentSe
 import {
   teamPaceAnalysisReducer,
   initialTeamPaceAnalysisState,
+  createInitialState,
 } from './team-pace-analysis/reducer';
 import { TeamPaceHeader } from './team-pace-analysis/TeamPaceHeader';
 import {
@@ -33,6 +37,7 @@ import {
 const TeamPaceAnalysis = () => {
   const { trackEvent, trackPageView } = useAnalytics();
   const [searchParams] = useSearchParams();
+  const { selectedYear: seasonYear } = useSeason();
   const {
     chartRef: evolutionRef,
     exportChart: exportEvolution,
@@ -48,13 +53,11 @@ const TeamPaceAnalysis = () => {
     exportChart: exportScatter,
     isExporting: isExportingScatter,
   } = useChartExport();
-  const [state, dispatch] = useReducer(teamPaceAnalysisReducer, initialTeamPaceAnalysisState);
+  const [state, dispatch] = useReducer(teamPaceAnalysisReducer, seasonYear, createInitialState);
 
-  // Accept ?race= query param from redirects (e.g. /race/:raceId/team-pace → /team-pace?race=slug)
   useEffect(() => {
     const raceParam = searchParams.get('race');
     if (raceParam) {
-      // Strip leading year prefix (e.g. "2026-australian-grand-prix" → "australian-grand-prix")
       const slug = raceParam.replace(/^\d{4}-/, '');
       dispatch({ type: 'eventChanged', eventSlug: slug });
     }
@@ -127,7 +130,7 @@ const TeamPaceAnalysis = () => {
     'Could not load Team Pace analysis.';
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 font-sans text-white selection:bg-red-600 selection:text-white">
+    <>
       <SEO
         title="Team Pace"
         description={`Compare team pace across the ${state.selectedYear} season with weekend evolution, session gaps, and consistency trends.`}
@@ -139,7 +142,7 @@ const TeamPaceAnalysis = () => {
         ]}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-grow px-4 pb-20 pt-32 sm:px-6 lg:px-8">
+      <div className="space-y-5 text-white">
         <TeamPaceHeader
           selectedYear={state.selectedYear}
           selectedEventSlug={selectedEventSlug}
@@ -159,26 +162,27 @@ const TeamPaceAnalysis = () => {
         />
 
         {isLoading ? (
-          <div className="relative flex h-[400px] w-full flex-col items-center justify-center overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/50">
-            <div
-              className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-zinc-800/10 to-transparent"
-              style={{ backgroundSize: '200% 100%' }}
-            />
-            <div className="z-10 mb-4 size-12 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
-            <p className="z-10 animate-pulse font-mono text-sm uppercase tracking-widest text-zinc-500">
-              Loading Pace Analysis…
-            </p>
+          <div className={`${CARD_CONTAINER} flex h-[400px] items-center justify-center`}>
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+              <span className="text-[12px] text-white/50">Loading pace analysis…</span>
+            </div>
           </div>
         ) : hasError ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05] py-24 text-center">
-            <AlertCircleIcon className="mb-4 size-12 text-red-400" />
-            <p className="font-mono text-xs uppercase tracking-widest text-red-300">
-              Team Pace data unavailable
-            </p>
-            <p className="mt-2 max-w-xl text-sm text-white/80">{errorMessage}</p>
+          <div
+            className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20 text-center`}
+          >
+            <AlertCircleIcon className="mb-3 size-10 text-white/20" />
+            <h3 className="text-[15px] font-medium text-white">Data unavailable</h3>
+            <p className="mt-1 max-w-md text-[13px] text-white/60">{errorMessage}</p>
           </div>
         ) : eventQuery.data ? (
-          <div className="space-y-6">
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-5"
+          >
             <PaceEvolutionSection
               chartRef={evolutionRef}
               data={evolutionData}
@@ -197,7 +201,7 @@ const TeamPaceAnalysis = () => {
               isExporting={isExportingEvolution}
             />
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               <PaceGapSection
                 chartRef={paceGapRef}
                 data={paceGapData}
@@ -239,17 +243,14 @@ const TeamPaceAnalysis = () => {
                 isExporting={isExportingScatter}
               />
             </div>
-          </div>
+          </m.div>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-zinc-800 bg-zinc-950 py-24">
-            <Activity01Icon className="mb-4 size-16 text-zinc-700" />
-            <p className="font-mono text-xs uppercase tracking-widest text-zinc-400">
-              Select an event to view analysis
-            </p>
+          <div className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20`}>
+            <p className="text-[13px] text-white/50">Select an event to view analysis</p>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </>
   );
 };
 

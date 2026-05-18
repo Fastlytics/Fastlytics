@@ -26,11 +26,16 @@ import {
 } from '@/lib/api';
 import { SEO } from '@/components/layout/SEO';
 import { CARD_CONTAINER } from '@/lib/card-styles';
+import { getTeamColorClass } from '@/lib/standingsUtils';
+import { getTeamSlug, teamDriverMap } from '@/lib/teamUtils';
+import { cn } from '@/lib/utils';
 import { getNationalityCountryCode } from '@/utils/countryUtils';
 
 const TOP_N = 10;
 
-const teamSlug = (name: string) => name.toLowerCase().replace(/\s+/g, '-');
+function teamSlug(name: string): string {
+  return getTeamSlug(name);
+}
 
 function Flag({ nationality }: { nationality: string | null }) {
   if (!nationality) return null;
@@ -53,6 +58,10 @@ function SeeAllLink({ to }: { to: string }) {
       <span className="text-white/30">→</span>
     </Link>
   );
+}
+
+function titleToSlug(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, '-');
 }
 
 // ---------------------------------------------------------------------------
@@ -100,7 +109,7 @@ function LeaderboardTable({
           {rows?.map((team, i) => (
             <Link
               key={`${team.constructor_id}-${i}`}
-              to={`/teams/${teamSlug(team.name)}`}
+              to={`/teams/${getTeamSlug(team.name)}`}
               className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-white/[0.02]"
             >
               <span className="w-5 shrink-0 text-right font-mono text-[12px] tabular-nums text-white/30">
@@ -126,7 +135,7 @@ function LeaderboardTable({
         </div>
       )}
 
-      <SeeAllLink to="/teams" />
+      <SeeAllLink to={`/teams/leaderboard/${titleToSlug(title)}`} />
     </m.div>
   );
 }
@@ -197,7 +206,7 @@ function StatTable({
         </div>
       )}
 
-      <SeeAllLink to="/teams" />
+      <SeeAllLink to={`/teams/leaderboard/${titleToSlug(title)}`} />
     </m.div>
   );
 }
@@ -270,7 +279,7 @@ function StreakTable({
         </div>
       )}
 
-      <SeeAllLink to="/teams" />
+      <SeeAllLink to={`/teams/leaderboard/${titleToSlug(title)}`} />
     </m.div>
   );
 }

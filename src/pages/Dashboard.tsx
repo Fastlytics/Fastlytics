@@ -77,7 +77,11 @@ const Dashboard = () => {
   const { trackEvent, trackPageView } = useAnalytics();
 
   const greeting = useMemo(() => {
-    const name = profile?.full_name?.trim() || user?.email?.split('@')[0] || '';
+    const name =
+      profile?.first_name?.trim() ||
+      profile?.full_name?.trim()?.split(' ')[0] ||
+      user?.email?.split('@')[0] ||
+      '';
     if (!name) return 'Dashboard';
 
     const hour = new Date().getHours();
@@ -579,6 +583,8 @@ const Dashboard = () => {
               weather={nextRaceWeather}
               isLoadingWeather={isLoadingWeather}
               isLoading={isLoadingSchedule}
+              driverStandings={driverStandings}
+              teamStandings={teamStandings}
               onClick={() => {
                 if (!nextRace) return;
                 trackEvent('widget_clicked', {
@@ -621,7 +627,11 @@ const Dashboard = () => {
 
         {/* 5. Pit stops + Season stats */}
         <div className="grid gap-5 lg:grid-cols-2">
-          <PitStopLeaderboard teamStats={pitStats} isLoading={isLoadingPitStats} />
+          <PitStopLeaderboard
+            teamStats={pitStats}
+            isLoading={isLoadingPitStats}
+            selectedYear={selectedYear}
+          />
           <SeasonStats stats={seasonStats} year={selectedYear} isLoading={isLoadingSeasonStats} />
         </div>
 

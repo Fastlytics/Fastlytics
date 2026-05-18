@@ -5,6 +5,7 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 
 export default function HeadToHeadSection() {
   const ctx = useRaceLayoutContext();
@@ -41,9 +42,9 @@ export default function HeadToHeadSection() {
   return (
     <GatedRoute featureName="Head to Head" description="Driver comparison with telemetry overlays">
       <m.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
         className="space-y-5"
       >
         {/* Circuit comparison — driver selector + track dominance */}

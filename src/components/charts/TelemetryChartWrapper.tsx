@@ -191,13 +191,13 @@ const TelemetryChartWrapper = <T,>({
       {/* Header */}
       <div className="flex flex-col gap-4 px-5 pt-5 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-[16px] font-semibold text-white">{title}</h3>
+          <h3 className="text-[14px] font-semibold text-white">{title}</h3>
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
                 title,
                 subtitle: selectedDriver
-                  ? `${selectedDriver} — ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
+                  ? `${selectedDriverObj?.name || selectedDriver} — ${selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}`
                   : undefined,
                 year,
                 event,
@@ -221,35 +221,37 @@ const TelemetryChartWrapper = <T,>({
             }}
             disabled={isLoadingDrivers || !availableDrivers}
           >
-            <SelectTrigger className="h-9 w-[180px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium text-white focus:ring-0 focus:border-white/[0.12]">
+            <SelectTrigger className="h-9 w-[200px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium text-white focus:ring-0 focus:border-white/[0.12]">
               <div className="flex items-center gap-2">
                 {selectedDriver && (
                   <>
-                    <div
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: currentColor }}
+                    <img
+                      src={getDriverImage(selectedDriver, year)}
+                      alt=""
+                      className="size-5 shrink-0 rounded-full border border-white/[0.06] object-cover object-top"
                     />
                     <span className="truncate">{selectedDriverObj?.name || selectedDriver}</span>
                   </>
                 )}
-                {!selectedDriver && <span className="text-white/80">Select driver</span>}
+                {!selectedDriver && <span className="text-white/60">Select driver</span>}
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl">
+            <SelectContent className="min-w-[240px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl">
               <SelectGroup>
-                <SelectLabel className="text-[11px] font-medium text-white/80">Driver</SelectLabel>
+                <SelectLabel className="text-[11px] font-medium text-white/60">Driver</SelectLabel>
                 {availableDrivers?.map((driver) => {
-                  const color = driverColor(driver.code, year);
+                  const driverHeadshot = getDriverImage(driver.code, year);
                   return (
                     <SelectItem
                       key={driver.code}
                       value={driver.code}
                       className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
                     >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="size-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: color }}
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={driverHeadshot}
+                          alt=""
+                          className="size-5 shrink-0 rounded-full border border-white/[0.06] object-cover object-top"
                         />
                         <span>{driver.name || driver.code}</span>
                       </div>
@@ -269,18 +271,26 @@ const TelemetryChartWrapper = <T,>({
             }}
             disabled={lapOptions.length <= 1}
           >
-            <SelectTrigger className="h-9 w-[100px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium text-white focus:ring-0 focus:border-white/[0.12]">
-              <span>{selectedLap === 'fastest' ? 'Fastest' : `Lap ${selectedLap}`}</span>
+            <SelectTrigger
+              className={cn(
+                'h-9 w-[140px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium focus:ring-0 focus:border-white/[0.12]',
+                selectedLap === 'fastest' ? 'text-purple-400' : 'text-white'
+              )}
+            >
+              <span>{selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}</span>
             </SelectTrigger>
-            <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl max-h-[200px]">
+            <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl max-h-[300px]">
               <SelectGroup>
                 {lapOptions.map((lapOpt) => (
                   <SelectItem
                     key={lapOpt.toString()}
                     value={lapOpt.toString()}
-                    className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
+                    className={cn(
+                      'text-[13px] font-medium focus:bg-white/[0.04] focus:text-white',
+                      lapOpt === 'fastest' ? 'text-purple-400' : ''
+                    )}
                   >
-                    {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
+                    {lapOpt === 'fastest' ? 'Fastest Lap' : `Lap ${lapOpt}`}
                   </SelectItem>
                 ))}
               </SelectGroup>

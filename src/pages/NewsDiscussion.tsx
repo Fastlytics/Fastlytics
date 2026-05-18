@@ -105,7 +105,7 @@ function CommentInput({
   if (!user) {
     return (
       <div className={`${CARD_CONTAINER} px-4 py-3 text-center text-[12px] text-white/50`}>
-        <Link to="/auth" className="text-sky-400 hover:underline">
+        <Link to="/login" className="text-sky-400 hover:underline">
           Sign in
         </Link>{' '}
         to join the discussion

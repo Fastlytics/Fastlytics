@@ -6,7 +6,10 @@ export interface DriverTab {
   label: string;
 }
 
-export const DRIVER_TABS: DriverTab[] = [{ id: 'overview', label: 'Overview' }];
+export const DRIVER_TABS: DriverTab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'championship', label: 'Championship' },
+];
 
 interface DriverTabStripProps {
   activeTab: string;

@@ -136,7 +136,7 @@ export function PricingCard({ tier, interval, index }: PricingCardProps) {
         </Link>
       ) : (
         <Link
-          to={`/auth?checkoutTier=${tier.id}&checkoutInterval=${interval}`}
+          to={`/signup?checkoutTier=${tier.id}&checkoutInterval=${interval}`}
           className={`flex h-11 w-full items-center justify-center rounded-lg text-[13px] font-semibold transition-all ${
             isHighlighted
               ? 'bg-red-600 text-white hover:bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.25)]'

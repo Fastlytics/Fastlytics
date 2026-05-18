@@ -74,7 +74,7 @@ export default function Notifications() {
         <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
           <Notification03Icon className="mb-3 size-8 text-white/20" />
           <div className="text-[14px] font-medium text-white/60">Sign in to see notifications</div>
-          <Link to="/auth" className="mt-2 text-[12px] text-sky-400 hover:underline">
+          <Link to="/login" className="mt-2 text-[12px] text-sky-400 hover:underline">
             Sign in
           </Link>
         </div>

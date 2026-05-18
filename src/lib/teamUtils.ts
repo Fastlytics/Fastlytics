@@ -217,3 +217,35 @@ export const getTeamLogo = (teamName: string | undefined): string | null => {
 
   return null;
 };
+
+/**
+ * Map a standings/display team name to its correct slug for profile URLs.
+ * Standings use Jolpica display names (e.g. "Red Bull Racing") but the
+ * backend resolves slugs against the Supabase `reference` field (e.g. "red-bull").
+ */
+export const getTeamSlug = (teamName: string | undefined): string => {
+  if (!teamName) return '';
+
+  const normalizedName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (normalizedName.includes('redbull')) return 'red-bull';
+  if (normalizedName.includes('ferrari')) return 'ferrari';
+  if (normalizedName.includes('mercedes')) return 'mercedes';
+  if (normalizedName.includes('mclaren')) return 'mclaren';
+  if (normalizedName.includes('astonmartin')) return 'aston-martin';
+  if (normalizedName.includes('alpine')) return 'alpine';
+  if (normalizedName.includes('williams')) return 'williams';
+  if (normalizedName.includes('haas')) return 'haas';
+  if (normalizedName.includes('audi')) return 'audi';
+  if (normalizedName.includes('cadillac')) return 'cadillac';
+  if (normalizedName.includes('sauber') || normalizedName.includes('kick')) return 'sauber';
+  if (
+    normalizedName.includes('racingbulls') ||
+    normalizedName.includes('rb') ||
+    normalizedName.includes('alphatauri') ||
+    normalizedName.includes('tororosso')
+  )
+    return 'racing-bulls';
+
+  return teamName.toLowerCase().replace(/\s+/g, '-');
+};

@@ -10,6 +10,7 @@ import UpgradeModal from '@/components/payments/UpgradeModal';
 
 export interface BreadcrumbBarProps {
   segments: BreadcrumbSegment[];
+  onSearchClick?: () => void;
 }
 
 /**
@@ -17,7 +18,7 @@ export interface BreadcrumbBarProps {
  * and season picker + user avatar on the right.
  * Height: 48px. Border-bottom barely visible.
  */
-export function BreadcrumbBar({ segments }: BreadcrumbBarProps) {
+export function BreadcrumbBar({ segments, onSearchClick }: BreadcrumbBarProps) {
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const { user, profile, isSubscribed } = useAuth();
   const [seasonOpen, setSeasonOpen] = useState(false);
@@ -55,12 +56,12 @@ export function BreadcrumbBar({ segments }: BreadcrumbBarProps) {
                   className="flex items-center gap-1.5"
                 >
                   {index > 0 && (
-                    <span aria-hidden="true" className="text-[12px] text-white/40 select-none">
+                    <span aria-hidden="true" className="text-[13px] text-white/40 select-none">
                       /
                     </span>
                   )}
                   {isLast || !segment.path ? (
-                    <span aria-current="page" className="text-[12px] font-medium text-white">
+                    <span aria-current="page" className="text-[15px] font-semibold text-white">
                       {segment.label}
                     </span>
                   ) : (
@@ -77,8 +78,35 @@ export function BreadcrumbBar({ segments }: BreadcrumbBarProps) {
           </ol>
         </nav>
 
-        {/* Right: Season picker + User avatar */}
-        <div className="flex items-center gap-3">
+        {/* Right: Search + Season picker + User avatar */}
+        <div className="flex items-center gap-2">
+          {/* Search trigger */}
+          {onSearchClick && (
+            <button
+              type="button"
+              onClick={onSearchClick}
+              className="flex w-full items-center gap-1.5 rounded-md border border-white/[0.04] px-4 py-1 text-[12px] font-medium text-white/80 transition-colors hover:border-white/[0.08] hover:text-white min-w-[190px]"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="shrink-0"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <span className="text-[14px] font-semibold">Search</span>
+              <span className="flex-1" />
+              <kbd className="text-[14px] font-semibold text-white">⌘K</kbd>
+            </button>
+          )}
+
           {/* Season picker */}
           <div ref={seasonRef} className="relative">
             <button
@@ -159,9 +187,9 @@ export function BreadcrumbBar({ segments }: BreadcrumbBarProps) {
             </AnimatePresence>
           </div>
 
-          {/* User avatar */}
-          {user && (
-            <Link to="/account">
+          {/* User avatar or Sign in */}
+          {user ? (
+            <Link to="/settings">
               <Avatar className="size-7 border border-white/[0.06] transition-colors hover:border-white/[0.12]">
                 <AvatarImage src={profile?.avatar_url ?? undefined} />
                 <AvatarFallback className="bg-white/[0.04] text-[10px] font-medium text-white/80">
@@ -170,6 +198,13 @@ export function BreadcrumbBar({ segments }: BreadcrumbBarProps) {
                     : (user.email?.charAt(0).toUpperCase() ?? 'U')}
                 </AvatarFallback>
               </Avatar>
+            </Link>
+          ) : (
+            <Link
+              to="/auth"
+              className="inline-flex shrink-0 items-center whitespace-nowrap rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90"
+            >
+              Sign in
             </Link>
           )}
         </div>

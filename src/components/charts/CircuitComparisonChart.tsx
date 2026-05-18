@@ -20,8 +20,6 @@ import {
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
-import { AlertCircleIcon } from 'hugeicons-react';
-import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { areTeammates } from '@/lib/teamUtils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDriverImage } from '@/utils/imageMapping';
@@ -63,32 +61,9 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
   session,
 }) => {
   const { trackSelection } = useAnalytics();
-  const headshot = getDriverImage(driverCode, year);
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2.5">
-        <div className="relative">
-          <Avatar className="size-8 shrink-0 border-2" style={{ borderColor: color }}>
-            <AvatarImage src={headshot} className="object-cover object-top" />
-            <AvatarFallback
-              className="bg-[#1a1a1e] text-[10px] font-bold text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {driverCode ? driverCode[0] : '?'}
-            </AvatarFallback>
-          </Avatar>
-          <div
-            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[#0c0c0e]"
-            style={{ backgroundColor: color }}
-          />
-        </div>
-        <span
-          className="text-[11px] font-semibold uppercase tracking-wider text-white"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {label}
-        </span>
-      </div>
+      <span className="text-[11px] font-medium text-white/60">{label}</span>
       <Select
         value={driverCode}
         onValueChange={(value) => {
@@ -102,35 +77,27 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
         }}
         disabled={isLoadingDrivers || !drivers}
       >
-        <SelectTrigger
-          className="h-10 w-[200px] rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] font-semibold text-white transition-colors hover:border-white/[0.12] focus:ring-0 focus:border-white/[0.15]"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
+        <SelectTrigger className="h-10 w-[220px] rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] font-semibold text-white transition-colors hover:border-white/[0.12] focus:ring-0 focus:border-white/[0.15]">
           <SelectValue placeholder="Select driver" />
         </SelectTrigger>
-        <SelectContent className="min-w-[220px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl">
+        <SelectContent className="min-w-[260px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl">
           <SelectGroup>
-            <SelectLabel
-              className="text-[11px] font-semibold uppercase tracking-wider text-white"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Drivers
-            </SelectLabel>
+            <SelectLabel className="text-[11px] font-medium text-white/60">Drivers</SelectLabel>
             {drivers?.map((driver) => {
               const isDisabled = otherDriver === driver.code;
-              const dColor = driverColor(driver.code, year);
+              const driverHeadshot = getDriverImage(driver.code, year);
               return (
                 <SelectItem
                   key={`${label}-${driver.code}`}
                   value={driver.code}
                   disabled={isDisabled}
                   className="text-[13px] text-white focus:bg-white/[0.06] focus:text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: dColor }}
+                    <img
+                      src={driverHeadshot}
+                      alt=""
+                      className="size-6 shrink-0 rounded-full border border-white/[0.06] object-cover object-top"
                     />
                     <span className="whitespace-nowrap font-medium">
                       {driver.name || driver.code}
@@ -155,29 +122,28 @@ const DriverSelector: React.FC<DriverSelectorProps> = ({
           }}
           disabled={isLoadingLaps || !driverCode || lapOptions.length <= 1}
         >
-          <SelectTrigger
-            className="h-10 w-[100px] rounded-lg border border-white/[0.06] bg-white/[0.02] text-[12px] text-white/70 transition-colors hover:border-white/[0.1] focus:ring-0 focus:border-white/[0.12]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[9px] font-medium uppercase tracking-wider text-white">
-                Lap
-              </span>
-              <span className="font-bold text-white">
-                {selectedLap === 'fastest' ? 'Fastest' : selectedLap}
-              </span>
-            </div>
+          <SelectTrigger className="h-10 w-[140px] rounded-lg border border-white/[0.06] bg-white/[0.02] text-[13px] text-white transition-colors hover:border-white/[0.1] focus:ring-0 focus:border-white/[0.12]">
+            <span
+              className={cn(
+                'font-medium',
+                selectedLap === 'fastest' ? 'text-purple-400' : 'text-white'
+              )}
+            >
+              {selectedLap === 'fastest' ? 'Fastest Lap' : `Lap ${selectedLap}`}
+            </span>
           </SelectTrigger>
-          <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl">
+          <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] shadow-xl max-h-[300px]">
             <SelectGroup>
               {lapOptions.map((lapOpt) => (
                 <SelectItem
                   key={`${label}-lap-${lapOpt}`}
                   value={String(lapOpt)}
-                  className="text-[12px] text-white focus:bg-white/[0.06] focus:text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className={cn(
+                    'text-[13px] focus:bg-white/[0.06] focus:text-white',
+                    lapOpt === 'fastest' ? 'text-purple-400' : 'text-white'
+                  )}
                 >
-                  {lapOpt === 'fastest' ? 'Fastest' : `Lap ${lapOpt}`}
+                  {lapOpt === 'fastest' ? 'Fastest Lap' : `Lap ${lapOpt}`}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -270,11 +236,21 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
   };
   const setSelectedDriver1 = (v: string) => {
     setUserSelectedDriver1(v);
-    notify(v, selectedDriver2, selectedLap1, selectedLap2);
+    // Use the new driver1 value with current driver2
+    const d2 =
+      userSelectedDriver2 !== null
+        ? userSelectedDriver2
+        : availableDrivers?.[1]?.code || initialDriver2 || '';
+    notify(v, d2, selectedLap1, selectedLap2);
   };
   const setSelectedDriver2 = (v: string) => {
     setUserSelectedDriver2(v);
-    notify(selectedDriver1, v, selectedLap1, selectedLap2);
+    // Use the new driver2 value with current driver1
+    const d1 =
+      userSelectedDriver1 !== null
+        ? userSelectedDriver1
+        : availableDrivers?.[0]?.code || initialDriver1 || '';
+    notify(d1, v, selectedLap1, selectedLap2);
   };
   const setLap1 = (v: string | number) => {
     setSelectedLap1(v);
@@ -288,7 +264,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     if (!isLoadingDrivers && selectedDriver1 && selectedDriver2) {
       notify(selectedDriver1, selectedDriver2, selectedLap1, selectedLap2);
     }
-  }, [isLoadingDrivers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingDrivers, selectedDriver1, selectedDriver2]);
 
   const shouldLoadChart = useMemo(
     () => !!(selectedDriver1 && selectedDriver2 && selectedDriver1 !== selectedDriver2),
@@ -400,21 +377,8 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
       }}
       className={cn('animate-in fade-in slide-in-from-bottom-2 duration-200', className)}
     >
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <p
-            className="text-[12px] font-semibold uppercase tracking-wider text-white/80"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Head to Head
-          </p>
-          <p
-            className="mt-0.5 text-[18px] font-bold uppercase italic text-white"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {title || 'Track Dominance'}
-          </p>
-        </div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[14px] font-semibold text-white">{title || 'Track Dominance'}</h2>
         <ChartExportMenu
           onExport={(format) =>
             exportChart(format, {
@@ -522,9 +486,7 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
   if (!shouldLoadChart) {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-white/[0.04]">
-        <p className="text-[13px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-          Select two different drivers to compare
-        </p>
+        <p className="text-[12px] text-white">Select two different drivers to compare</p>
       </div>
     );
   }
@@ -532,14 +494,9 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
   if (isLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center rounded-lg border border-white/[0.04]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-red-400" />
-          <p
-            className="text-[12px] text-white animate-pulse"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            Loading track data…
-          </p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="size-4 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/50" />
+          <p className="text-[12px] text-white">Loading track data</p>
         </div>
       </div>
     );
@@ -547,15 +504,9 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
 
   if (isError || !comparisonData) {
     return (
-      <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-red-500/20">
-        <AlertCircleIcon className="mb-3 size-9 text-red-400" />
-        <p
-          className="text-[14px] font-semibold text-red-400"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Error loading comparison data
-        </p>
-        <p className="mt-1 text-[12px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-white/[0.04]">
+        <p className="text-[12px] text-red-400">Error loading comparison data</p>
+        <p className="mt-1 text-[11px] text-white">
           {(error as Error)?.message || 'Could not fetch data.'}
         </p>
       </div>
@@ -571,39 +522,20 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
         ].map(({ code, color }) => (
           <div key={code} className="flex items-center gap-2">
             <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
-            <span
-              className="text-[12px] font-bold text-white/70"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {code}
-            </span>
+            <span className="text-[12px] font-bold text-white">{code}</span>
           </div>
         ))}
       </div>
 
       <div className="absolute right-4 top-4 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Lap {comparisonData.driver1LapNumber}
-          </span>
-          <span
-            className="text-[13px] font-bold text-white"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {comparisonData.driver1LapTime}
-          </span>
+          <span className="text-[11px] text-white">Lap {comparisonData.driver1LapNumber}</span>
+          <span className="text-[13px] font-bold text-white">{comparisonData.driver1LapTime}</span>
           <div className="size-2 rounded-full" style={{ backgroundColor: driver1Color }} />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
-            Lap {comparisonData.driver2LapNumber}
-          </span>
-          <span
-            className="text-[13px] font-bold text-white"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {comparisonData.driver2LapTime}
-          </span>
+          <span className="text-[11px] text-white">Lap {comparisonData.driver2LapNumber}</span>
+          <span className="text-[13px] font-bold text-white">{comparisonData.driver2LapTime}</span>
           <div className="size-2 rounded-full" style={{ backgroundColor: driver2Color }} />
         </div>
       </div>
@@ -662,18 +594,8 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
         >
           <div className="flex flex-col gap-3">
             <div>
-              <p
-                className="text-[10px] font-semibold uppercase tracking-wider text-white"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                Sector
-              </p>
-              <p
-                className="text-[14px] font-bold text-white"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                {hoveredSection.name}
-              </p>
+              <p className="text-[10px] font-medium text-white/60">Sector</p>
+              <p className="text-[14px] font-bold text-white">{hoveredSection.name}</p>
             </div>
 
             <div className="h-px w-full bg-white/[0.06]" />
@@ -701,25 +623,12 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
                       {code[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <span
-                    className="text-[12px] font-bold text-white/70"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {code}
-                  </span>
+                  <span className="text-[12px] font-bold text-white">{code}</span>
                 </div>
                 {speed && (
                   <div className="flex flex-col items-end">
-                    <span
-                      className="text-[9px] font-medium uppercase tracking-wider text-white"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      Avg Speed
-                    </span>
-                    <span
-                      className="text-[12px] font-semibold text-white"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
+                    <span className="text-[9px] font-medium text-white/60">Avg Speed</span>
+                    <span className="text-[12px] font-semibold text-white">
                       {Math.round(speed)} km/h
                     </span>
                   </div>
@@ -738,26 +647,15 @@ const CircuitContent: React.FC<CircuitContentProps> = ({
                       backgroundColor: hoveredSection.advantage > 0 ? driver1Color : driver2Color,
                     }}
                   />
-                  <span
-                    className="text-[12px] font-bold text-white"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
+                  <span className="text-[12px] font-bold text-white">
                     {hoveredSection.advantage > 0 ? selectedDriver1 : selectedDriver2}
                   </span>
-                  <span
-                    className="text-[12px] font-bold text-red-400"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
+                  <span className="text-[12px] font-bold text-red-400">
                     -{Math.abs(hoveredSection.advantage).toFixed(3)}s
                   </span>
                 </>
               ) : (
-                <span
-                  className="text-[12px] text-white"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Equal pace
-                </span>
+                <span className="text-[12px] text-white">Equal pace</span>
               )}
             </div>
           </div>

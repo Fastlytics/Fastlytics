@@ -3,6 +3,7 @@ import { m } from 'motion/react';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import { useNewsFeed } from '@/hooks/useNews';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ForYouWidgetProps {
   favoriteDriverName?: string;
@@ -24,6 +25,7 @@ function timeAgo(dateStr: string): string {
 
 const ForYouWidget: React.FC<ForYouWidgetProps> = ({ favoriteDriverName, favoriteTeamName }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const hasFavorites = Boolean(favoriteDriverName || favoriteTeamName);
 
   const { data: articles, isLoading } = useNewsFeed(
@@ -46,11 +48,11 @@ const ForYouWidget: React.FC<ForYouWidgetProps> = ({ favoriteDriverName, favorit
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <span className={CARD_LABEL}>For you</span>
+          <span className={CARD_LABEL}>{user ? 'For you' : 'News'}</span>
         </div>
       </div>
 
-      <p className="px-5 pb-2 text-[12px] text-white/50">{personaLine}</p>
+      <p className="px-5 pb-2 text-[12px] text-white/80">{personaLine}</p>
 
       {/* Articles */}
       <div className="flex-1 px-2">

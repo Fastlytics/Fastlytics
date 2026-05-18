@@ -9,7 +9,8 @@ export const BREADCRUMB_MAP: Record<string, string> = {
   '/standings/drivers': 'Driver Standings',
   '/standings/teams': 'Team Standings',
   '/standings/progression': 'Championship Progression',
-  '/account': 'Account',
+  '/settings': 'Settings',
+  '/saved': 'Saved',
   '/team-pace': 'Team Pace Analysis',
   '/compare/drivers': 'Compare Drivers',
   '/compare/teams': 'Compare Teams',
@@ -39,9 +40,9 @@ export function formatSlugToLabel(slug: string): string {
   // Remove leading year prefix (e.g. "2025-")
   const withoutYear = slug.replace(/^\d{4}-/, '');
 
-  // Split on hyphens, capitalize each word, join with spaces
+  // Split on hyphens or underscores, capitalize each word, join with spaces
   return withoutYear
-    .split('-')
+    .split(/[-_]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
@@ -101,7 +102,9 @@ export function resolveBreadcrumbs(
     '/compare',
     '/replay',
     '/calendar',
-    '/account',
+    '/settings',
+    '/saved',
+    '/profile',
     '/team-pace',
     '/dashboard',
   ];

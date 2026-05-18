@@ -1,6 +1,7 @@
 // knip-ignore
 import React, { useMemo, useState } from 'react';
 import { m } from 'motion/react';
+import { Link } from 'react-router-dom';
 import LandingNavbar from '@/components/layout/LandingNavbar';
 import { LandingFooter } from '@/components/landing/LandingSections';
 import { BillingToggle } from '@/components/payments/BillingToggle';
@@ -54,11 +55,7 @@ interface FeatureRow {
 const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'Current season data', free: true, pro: true },
   { feature: 'Historical seasons', free: false, pro: true },
-  {
-    feature: 'Telemetry (speed, brake, throttle, gear, RPM, DRS)',
-    free: true,
-    pro: true,
-  },
+  { feature: 'Telemetry (speed, brake, throttle, gear, RPM, DRS)', free: true, pro: true },
   { feature: 'Session replay', free: '5 minutes', pro: 'Unlimited' },
   { feature: 'Driver & team standings', free: true, pro: true },
   { feature: 'Race calendar', free: true, pro: true },
@@ -70,6 +67,9 @@ const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'Pace distribution box plots', free: true, pro: true },
   { feature: 'Championship progression', free: true, pro: true },
   { feature: 'Team pace analysis', free: true, pro: true },
+  { feature: 'News feed & discussions', free: true, pro: true },
+  { feature: 'Saved charts & folders', free: true, pro: true },
+  { feature: 'Public profile & comments', free: true, pro: true },
 ];
 
 const CheckCell = () => <Tick01Icon className="size-4 text-emerald-400" />;
@@ -122,7 +122,7 @@ const Pricing = () => {
     >
       <SEO
         title="Pricing — Fastlytics"
-        description="Choose your Fastlytics plan. Free for full platform access, Pro for historical data and unlimited replay. Ultra with AI insights coming soon."
+        description="Choose your Fastlytics plan. Free for full platform access, Pro for historical data and unlimited replay."
         keywords={[
           'f1 analytics pricing',
           'formula 1 data subscription',
@@ -132,76 +132,96 @@ const Pricing = () => {
 
       <LandingNavbar />
 
-      <main className="pt-52 pb-20">
-        <section className="px-5 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            {checkoutMessage && (
-              <m.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mx-auto mb-8 max-w-2xl rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 text-center text-[14px] text-amber-300"
-              >
-                {checkoutMessage}
-              </m.div>
-            )}
-            <div className="mx-auto max-w-2xl text-center">
-              <m.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
-              >
-                Choose your race plan
-              </m.h1>
-              <m.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.6 }}
-                className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40"
-              >
-                Start free with full platform access. Upgrade to Pro for historical archives and
-                unlimited session replay
-              </m.p>
-              <m.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="mt-8"
-              >
-                <BillingToggle interval={interval} onChange={setInterval} />
-              </m.div>
-            </div>
+      <main className="pt-28 pb-20 px-5 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          {/* Header */}
+          <m.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
+              Pricing
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+              Choose your race plan
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/40">
+              Start free with full platform access. Upgrade to Pro for historical archives and
+              unlimited session replay.
+            </p>
+          </m.div>
 
-            <div className="mt-12 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto">
-              {tiers.map((tier, i) => (
-                <PricingCard key={tier.id} tier={tier} interval={interval} index={i} />
-              ))}
-            </div>
-          </div>
-        </section>
+          {/* Checkout status message */}
+          {checkoutMessage && (
+            <m.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 text-center text-[14px] text-amber-300"
+            >
+              {checkoutMessage}
+            </m.div>
+          )}
 
-        <section className="mt-20 px-5 lg:px-8">
-          <div className="mx-auto max-w-6xl">
-            <m.h2
+          {/* Billing toggle */}
+          <m.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mt-8 flex justify-center"
+          >
+            <BillingToggle interval={interval} onChange={setInterval} />
+          </m.div>
+
+          {/* Pricing cards */}
+          <m.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mt-10 grid gap-5 lg:grid-cols-2 max-w-4xl mx-auto"
+          >
+            {tiers.map((tier, i) => (
+              <PricingCard key={tier.id} tier={tier} interval={interval} index={i} />
+            ))}
+          </m.div>
+
+          <m.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 text-center text-[12px] text-white/20"
+          >
+            All prices in USD. Cancel anytime from your account settings.
+          </m.p>
+
+          {/* Feature comparison */}
+          <section className="mt-20">
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl font-semibold tracking-[-0.01em] text-white text-center"
+              className="text-center mb-8"
             >
-              Full feature comparison
-            </m.h2>
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-red-400">
+                Compare
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.01em] text-white">
+                Full feature comparison
+              </h2>
+            </m.div>
 
             <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="mt-8 overflow-hidden rounded-xl border border-white/[0.06]"
+              className="overflow-hidden rounded-xl border border-white/[0.06]"
             >
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/[0.06] bg-white/[0.01]">
+                    <tr className="border-b border-white/[0.06] bg-white/[0.02]">
                       <th className="px-6 py-4 text-left text-[13px] font-semibold text-white/60">
                         Feature
                       </th>
@@ -238,26 +258,25 @@ const Pricing = () => {
                 </table>
               </div>
             </m.div>
-          </div>
-        </section>
+          </section>
 
-        <section className="mt-20 px-5 lg:px-8">
-          <div className="mx-auto max-w-6xl">
+          {/* FAQ section */}
+          <section className="mt-20">
             <m.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8 text-center"
+              className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-8"
             >
-              <h3 className="text-lg font-semibold tracking-[-0.01em] text-white">
-                Frequently asked questions
+              <h3 className="text-lg font-semibold tracking-[-0.01em] text-white text-center">
+                Common questions
               </h3>
               <div className="mt-6 grid gap-6 text-left sm:grid-cols-2">
                 <div>
                   <h4 className="text-[13px] font-semibold text-white/80">Can I cancel anytime?</h4>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">
-                    Yes. You can cancel your subscription at any time from your account settings.
-                    Your access continues until the end of the billing period.
+                    Yes. Cancel from your account settings. Access continues until the end of your
+                    billing period. No refund for remaining time after the 7-day window.
                   </p>
                 </div>
                 <div>
@@ -265,15 +284,15 @@ const Pricing = () => {
                     What payment methods do you accept?
                   </h4>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">
-                    We accept all major credit and debit cards, Apple Pay, and Google Pay via Dodo
-                    Payments.
+                    All major credit and debit cards, Apple Pay, and Google Pay via Dodo Payments.
+                    We don't store your card details.
                   </p>
                 </div>
                 <div>
                   <h4 className="text-[13px] font-semibold text-white/80">Can I switch plans?</h4>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">
-                    Yes. Upgrade or downgrade anytime from your account. Upgrades take effect
-                    immediately; downgrades apply at the end of your billing cycle.
+                    Yes. Upgrade or downgrade anytime. Upgrades take effect immediately; downgrades
+                    apply at the end of your billing cycle.
                   </p>
                 </div>
                 <div>
@@ -281,14 +300,22 @@ const Pricing = () => {
                     Is there a free trial?
                   </h4>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-white/40">
-                    The Free tier gives you full platform access to the current season with 5
-                    minutes of session replay. No credit card required.
+                    The Free tier is the trial — full platform access for the current season with no
+                    time limit and no credit card required.
                   </p>
                 </div>
               </div>
+              <div className="mt-6 text-center">
+                <Link
+                  to="/faq"
+                  className="text-[13px] text-white/40 hover:text-white/60 transition-colors underline underline-offset-2"
+                >
+                  View all frequently asked questions
+                </Link>
+              </div>
             </m.div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
 
       <LandingFooter />

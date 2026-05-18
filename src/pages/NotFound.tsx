@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircleIcon, ArrowLeft01Icon } from 'hugeicons-react';
 import LandingNavbar from '@/components/layout/LandingNavbar';
-import { LandingFooter } from '@/components/landing/LandingSections';
 import { SEO } from '@/components/layout/SEO';
 
 const INTER_STYLE = { fontFamily: "'Inter', sans-serif" } as const;
@@ -61,7 +60,9 @@ const NotFound = () => {
         </div>
       </div>
 
-      <LandingFooter />
+      <footer className="py-6 text-center text-xs text-white/30">
+        © {new Date().getFullYear()} Fastlytics
+      </footer>
     </div>
   );
 };

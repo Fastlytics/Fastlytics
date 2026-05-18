@@ -16,6 +16,7 @@ const TEAM_COLORS: Record<string, string> = {
   alpine: '#0093CC',
   williams: '#64C4FF',
   haas: '#B6BABD',
+  haasf1team: '#B6BABD',
   alfaromeo: '#C92D4B',
   kicksauber: '#52E252',
   sauber: '#52E252',
