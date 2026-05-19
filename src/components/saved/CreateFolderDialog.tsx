@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { resolveUploadUrl } from '@/lib/upload-url';
 
 interface CreateFolderDialogProps {
   open: boolean;
@@ -56,7 +57,7 @@ export function CreateFolderDialog({ open, onClose, onSuccess }: CreateFolderDia
 
         if (uploadResp.ok) {
           const result = await uploadResp.json();
-          coverImageUrl = result.url;
+          coverImageUrl = resolveUploadUrl(result.url);
 
           // 3. Update the folder with the cover image URL
           await supabase

@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ProfilePictureUpload } from '@/components/profile/ProfilePictureUpload';
+import { resolveUploadUrl } from '@/lib/upload-url';
 
 // --- Types ---
 
@@ -77,7 +78,14 @@ const Profile = () => {
         .eq('username', username!)
         .maybeSingle();
 
-      if (data) return { ...data, bio: null, created_at: '' } as PublicProfile;
+      if (data) {
+        return {
+          ...data,
+          avatar_url: resolveUploadUrl(data.avatar_url),
+          bio: null,
+          created_at: '',
+        } as PublicProfile;
+      }
 
       // Fallback: try by ID
       const { data: byId } = await supabase
@@ -86,7 +94,14 @@ const Profile = () => {
         .eq('id', username!)
         .maybeSingle();
 
-      if (byId) return { ...byId, bio: null, created_at: '' } as PublicProfile;
+      if (byId) {
+        return {
+          ...byId,
+          avatar_url: resolveUploadUrl(byId.avatar_url),
+          bio: null,
+          created_at: '',
+        } as PublicProfile;
+      }
       return null;
     },
     enabled: !!username,
