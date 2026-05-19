@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo } from 'react';
 import type { CustomTooltipProps } from '@/types';
 import {
@@ -8,7 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { fetchTelemetrySpeed, SpeedDataPoint, SpeedTraceResponse, LapMeta } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
@@ -27,6 +28,120 @@ interface SpeedTraceChartProps {
   lap?: string | number;
 }
 
+const SpeedTooltip = ({
+  active,
+  payload,
+  label,
+  selectedDriver,
+  year,
+}: CustomTooltipProps<SpeedDataPoint> & { selectedDriver?: string; year?: number }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const headshot = getDriverImage(selectedDriver, year);
+    const color = driverColor(selectedDriver, year);
+
+    return (
+      <div className="rounded-lg border border-white/[0.06] bg-[#0a0a0c] p-4 shadow-2xl min-w-[200px]">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2 mb-1">
+            <div className="size-8 rounded-full bg-[#1a1a1e] overflow-hidden border border-white/[0.08] shrink-0">
+              {headshot ? (
+                <img
+                  src={headshot}
+                  alt={selectedDriver}
+                  className="size-full object-cover object-top"
+                />
+              ) : (
+                <div
+                  className="size-full flex items-center justify-center text-[10px] text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {selectedDriver?.[0]}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span
+                className="text-xs font-semibold text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {selectedDriver}
+              </span>
+              <span
+                className="text-[10px] text-white"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                DIST: {Math.round(label)}m
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <span
+              className="text-[11px] text-white/60 font-medium"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Speed
+            </span>
+            <span
+              className="text-xl font-semibold text-white"
+              style={{ color: color, fontFamily: "'Inter', sans-serif" }}
+            >
+              {Math.round(data.Speed)} <span className="text-xs text-white">km/h</span>
+            </span>
+          </div>
+
+          {/* Extra telemetry channels */}
+          <div
+            className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-white border-t border-white/[0.06] pt-2 mt-1"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            {data.Throttle != null && (
+              <>
+                <span>Throttle</span>
+                <span className="text-right text-white">{Math.round(data.Throttle)}%</span>
+              </>
+            )}
+            {data.Brake != null && (
+              <>
+                <span>Brake</span>
+                <span
+                  className={cn(
+                    'text-right font-semibold',
+                    data.Brake > 0 ? 'text-red-400' : 'text-white'
+                  )}
+                >
+                  {data.Brake > 0 ? 'ON' : 'OFF'}
+                </span>
+              </>
+            )}
+            {data.nGear != null && (
+              <>
+                <span>Gear</span>
+                <span className="text-right text-white">{data.nGear}</span>
+              </>
+            )}
+            {data.DRS != null && (
+              <>
+                <span>DRS</span>
+                <span
+                  className={cn(
+                    'text-right font-semibold',
+                    data.DRS >= 10 ? 'text-green-400' : 'text-white'
+                  )}
+                >
+                  {data.DRS >= 10 ? 'OPEN' : 'CLOSED'}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   className,
   delay = 0,
@@ -37,100 +152,6 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
-  // Custom Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-    selectedDriver,
-  }: CustomTooltipProps<SpeedDataPoint> & { selectedDriver?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const headshot = getDriverImage(selectedDriver, year);
-      const color = driverColor(selectedDriver, year);
-
-      return (
-        <div className="bg-black border border-gray-700 p-4 shadow-xl min-w-[200px]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={selectedDriver}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">
-                    {selectedDriver[0]}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
-                <span className="text-[10px] text-gray-500 font-mono">
-                  DIST: {Math.round(label)}m
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
-                Speed
-              </span>
-              <span className="text-xl font-black text-white font-mono" style={{ color: color }}>
-                {Math.round(data.Speed)} <span className="text-xs text-gray-500">km/h</span>
-              </span>
-            </div>
-
-            {/* Extra telemetry channels */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-mono text-gray-400 border-t border-gray-700 pt-2 mt-1">
-              {data.Throttle != null && (
-                <>
-                  <span>Throttle</span>
-                  <span className="text-right text-white">{Math.round(data.Throttle)}%</span>
-                </>
-              )}
-              {data.Brake != null && (
-                <>
-                  <span>Brake</span>
-                  <span
-                    className={cn(
-                      'text-right font-black',
-                      data.Brake > 0 ? 'text-red-400' : 'text-gray-600'
-                    )}
-                  >
-                    {data.Brake > 0 ? 'ON' : 'OFF'}
-                  </span>
-                </>
-              )}
-              {data.nGear != null && (
-                <>
-                  <span>Gear</span>
-                  <span className="text-right text-white">{data.nGear}</span>
-                </>
-              )}
-              {data.DRS != null && (
-                <>
-                  <span>DRS</span>
-                  <span
-                    className={cn(
-                      'text-right font-black',
-                      data.DRS >= 10 ? 'text-green-400' : 'text-gray-600'
-                    )}
-                  >
-                    {data.DRS >= 10 ? 'OPEN' : 'CLOSED'}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <TelemetryChartWrapper<SpeedTraceResponse>
       className={className}
@@ -155,12 +176,21 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             margin={{ top: 10, right: 10, left: -15, bottom: 5 }}
             className="chart-main-container"
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <CartesianGrid
+              strokeDasharray="none"
+              vertical={false}
+              stroke="rgba(255,255,255,0.03)"
+            />
             <XAxis
               type="number"
               dataKey="Distance"
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.06)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
+              }}
               ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
                 (t) => t <= (data.trace[data.trace.length - 1]?.Distance ?? 0)
               )}
@@ -169,15 +199,20 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
             />
             <YAxis
               dataKey="Speed"
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.06)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
+              }}
               domain={['auto', 'dataMax + 10']}
               tickFormatter={(value) => `${value}`}
               width={40}
             />
             <Tooltip
-              content={<CustomTooltip selectedDriver={selectedDriver} />}
-              cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }}
+              content={<SpeedTooltip selectedDriver={selectedDriver} year={year} />}
+              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeDasharray: '4 4' }}
             />
             <Line
               type="monotone"
@@ -217,68 +252,97 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
         };
 
         return (
-          <div className="space-y-4 border-t border-gray-700 pt-4">
+          <div className="space-y-4 border-t border-white/[0.06] pt-4">
             {/* Speed stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
+              <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
+                <span
+                  className="text-[11px] text-white/60 font-medium"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   Max Speed
                 </span>
-                <span className="text-lg font-black text-white font-mono">
-                  {Math.round(maxSpeed)} <span className="text-[10px] text-gray-500">km/h</span>
+                <span
+                  className="text-[18px] font-semibold tabular-nums text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {Math.round(maxSpeed)} <span className="text-[10px] text-white">km/h</span>
                 </span>
               </div>
-              <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
+              <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
+                <span
+                  className="text-[11px] text-white/60 font-medium"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   Avg Speed
                 </span>
-                <span className="text-lg font-black text-white font-mono">
-                  {Math.round(avgSpeed)} <span className="text-[10px] text-gray-500">km/h</span>
+                <span
+                  className="text-[18px] font-semibold tabular-nums text-white"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {Math.round(avgSpeed)} <span className="text-[10px] text-white">km/h</span>
                 </span>
               </div>
               {meta?.lapTime != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
+                  <span
+                    className="text-[11px] text-white/60 font-medium"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     Lap Time
                   </span>
-                  <span className="text-lg font-black text-white font-mono">
+                  <span
+                    className="text-[18px] font-semibold tabular-nums text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     {Math.floor(meta.lapTime / 60)}:
                     {(meta.lapTime % 60).toFixed(3).padStart(6, '0')}
                   </span>
                 </div>
               )}
               {meta?.position != null && (
-                <div className="flex flex-col gap-1 p-3 bg-black border border-gray-700">
-                  <span className="text-[9px] text-gray-400 uppercase font-mono tracking-wider font-black">
+                <div className="flex flex-col gap-1 p-3 rounded-lg border border-white/[0.04]">
+                  <span
+                    className="text-[11px] text-white/60 font-medium"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     Position
                   </span>
-                  <span className="text-lg font-black text-white font-mono">P{meta.position}</span>
+                  <span
+                    className="text-[18px] font-semibold tabular-nums text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    P{meta.position}
+                  </span>
                 </div>
               )}
             </div>
 
             {/* Lap metadata row */}
             {meta && (meta.compound || meta.sector1Time != null || meta.deleted != null) && (
-              <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 bg-black border border-gray-700 text-xs font-mono">
+              <div
+                className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.04] text-xs"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
                 {meta.compound && (
                   <div className="flex items-center gap-1.5">
                     <span
                       className={cn(
-                        'w-2.5 h-2.5 rounded-full',
-                        compoundColors[meta.compound.toUpperCase()] || 'bg-gray-500'
+                        'size-2.5 rounded-full',
+                        compoundColors[meta.compound.toUpperCase()] || 'bg-zinc-500'
                       )}
                     ></span>
-                    <span className="text-gray-400 uppercase font-black">{meta.compound}</span>
+                    <span className="text-[12px] text-white font-semibold">{meta.compound}</span>
                     {meta.tyreLife != null && (
-                      <span className="text-gray-600 ml-1">({meta.tyreLife} laps)</span>
+                      <span className="text-white ml-1">({meta.tyreLife} laps)</span>
                     )}
                     {meta.freshTyre != null && (
                       <span
                         className={cn(
-                          'text-[9px] font-black px-1 py-0.5 ml-1',
+                          'text-[9px] font-semibold px-1 py-0.5 ml-1',
                           meta.freshTyre
                             ? 'bg-green-900/60 text-green-400'
-                            : 'bg-gray-800 text-gray-500'
+                            : 'bg-zinc-800 text-white'
                         )}
                       >
                         {meta.freshTyre ? 'NEW' : 'USED'}
@@ -291,11 +355,11 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 {(meta.sector1Time != null ||
                   meta.sector2Time != null ||
                   meta.sector3Time != null) && (
-                  <div className="flex items-center gap-3 border-l border-gray-700 pl-3 text-gray-400">
+                  <div className="flex items-center gap-3 border-l border-white/[0.06] pl-3 text-white">
                     {meta.sector1Time != null && (
                       <span>
                         S1{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector1Time)}
                         </span>
                       </span>
@@ -303,7 +367,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector2Time != null && (
                       <span>
                         S2{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector2Time)}
                         </span>
                       </span>
@@ -311,7 +375,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     {meta.sector3Time != null && (
                       <span>
                         S3{' '}
-                        <span className="text-white font-black">
+                        <span className="text-white font-semibold">
                           {formatSectorTime(meta.sector3Time)}
                         </span>
                       </span>
@@ -321,7 +385,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
 
                 {/* Speed traps */}
                 {(meta.speedI1 != null || meta.speedFL != null || meta.speedST != null) && (
-                  <div className="flex items-center gap-3 border-l border-gray-700 pl-3 text-gray-400">
+                  <div className="flex items-center gap-3 border-l border-white/[0.06] pl-3 text-white">
                     {meta.speedI1 != null && (
                       <span>
                         I1 <span className="text-white">{meta.speedI1}</span>
@@ -339,7 +403,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                     )}
                     {meta.speedST != null && (
                       <span>
-                        ST <span className="text-white font-black">{meta.speedST}</span>
+                        ST <span className="text-white font-semibold">{meta.speedST}</span>
                       </span>
                     )}
                   </div>
@@ -348,12 +412,12 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 {/* Badges */}
                 <div className="flex items-center gap-2 ml-auto">
                   {meta.isPersonalBest && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-purple-900/60 text-purple-300 rounded-sm uppercase tracking-wider">
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-purple-900/60 text-purple-300 rounded-sm uppercase tracking-wider">
                       PB
                     </span>
                   )}
                   {meta.deleted && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-red-900/60 text-red-400 rounded-sm uppercase tracking-wider">
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-red-900/60 text-red-400 rounded-sm uppercase tracking-wider">
                       DELETED{meta.deletedReason ? ` — ${meta.deletedReason}` : ''}
                     </span>
                   )}

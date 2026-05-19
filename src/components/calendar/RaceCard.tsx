@@ -1,208 +1,172 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Flag01Icon,
-  Calendar01Icon,
-  FlashIcon,
-  Location01Icon,
-  ChampionIcon,
-  UserGroupIcon,
-  Clock01Icon,
-} from 'hugeicons-react';
+import { FlashIcon } from 'hugeicons-react';
 import { ScheduleEvent, RaceResult } from '@/lib/api';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 
 interface RaceCardProps {
   event: ScheduleEvent;
   result?: RaceResult;
-  isUpcoming: boolean;
-  isTesting?: boolean;
+  status: 'finished' | 'upcoming' | 'next' | 'testing';
   isSprint: boolean;
   countryCode?: string;
   displayLocation?: string;
   displayDate: string;
   selectedYear: number;
-  nextSession?: { name: string; date: Date };
 }
+
+const StatusBadge = ({ status }: { status: RaceCardProps['status'] }) => {
+  const config = {
+    finished: { dot: 'bg-emerald-400', label: 'Finished', text: 'text-emerald-400' },
+    next: { dot: 'bg-amber-400', label: 'Next', text: 'text-amber-400' },
+    upcoming: { dot: 'bg-white/20', label: 'Upcoming', text: 'text-white/50' },
+    testing: { dot: 'bg-white/15', label: 'Testing', text: 'text-white/50' },
+  }[status];
+
+  return (
+    <span className={`flex items-center gap-1.5 text-[11px] font-medium ${config.text}`}>
+      <span className={`inline-block size-1.5 rounded-full ${config.dot}`} />
+      {config.label}
+    </span>
+  );
+};
+
+const PodiumRow = ({
+  position,
+  driver,
+  teamColor,
+  team,
+}: {
+  position: number;
+  driver: string;
+  teamColor: string;
+  team: string;
+}) => {
+  const medals = ['🥇', '🥈', '🥉'];
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <span className="w-5 text-center text-[13px]">{medals[position - 1]}</span>
+      <span className="flex-1 text-[13px] font-medium text-white/85">{driver}</span>
+      <div
+        className="size-2 rounded-full"
+        style={{ backgroundColor: `var(--color-f1-${teamColor})` }}
+        title={team}
+      />
+    </div>
+  );
+};
 
 const RaceCard: React.FC<RaceCardProps> = ({
   event,
   result,
-  isUpcoming,
-  isTesting = false,
+  status,
   isSprint,
   countryCode,
   displayLocation,
   displayDate,
   selectedYear,
-  nextSession,
 }) => {
   const navigate = useNavigate();
+  const isTesting = status === 'testing';
+  const isFinished = status === 'finished';
+  const isNext = status === 'next';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
+    <m.div
+      initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      onClick={() => {
-        navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`);
-      }}
-      className={`group cursor-pointer h-full flex flex-col relative overflow-hidden bg-black border-2 transition-colors duration-300 ${
-        isTesting
-          ? 'border-blue-600/60 hover:border-blue-500'
-          : 'border-gray-800 hover:border-red-600'
-      } ${!isUpcoming && !result && !isTesting ? 'opacity-50 hover:opacity-100' : ''}`}
+      transition={{ duration: 0.25 }}
+      onClick={() =>
+        navigate(`/race/${selectedYear}-${event.EventName.toLowerCase().replace(/\s+/g, '-')}`)
+      }
+      className={`${CARD_CONTAINER} cursor-pointer p-5 transition-all hover:border-white/[0.1] ${
+        isNext ? 'border-white/[0.08]' : ''
+      } ${isSprint && !isTesting ? 'border-l-[3px] border-l-violet-500/25' : ''} ${
+        status === 'upcoming' ? 'opacity-55 hover:opacity-75' : ''
+      }`}
     >
-      {/* Status Badge - Moved to Bottom Right */}
-      <div
-        className={`absolute bottom-0 right-0 px-3 py-1 text-xs font-bold uppercase tracking-wider z-10 ${
-          isTesting
-            ? 'bg-blue-600 text-white'
-            : isUpcoming
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-800 text-gray-400'
-        }`}
-      >
-        {isTesting ? 'Testing' : isUpcoming ? 'Upcoming' : 'Finished'}
-      </div>
-
-      <div className="p-6 flex-grow flex flex-col relative z-0">
-        {/* Header: Flag & Round */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-16 h-10 bg-gray-900 border border-gray-700 flex items-center justify-center overflow-hidden">
-              {countryCode && (
-                <img
-                  src={`https://flagcdn.com/h40/${countryCode}.png`}
-                  alt={event.Country || event.Location}
-                  className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                />
-              )}
-            </div>
-            {/* Sprint Text Indicator */}
-            {isSprint && !isTesting && (
-              <span className="text-yellow-500 font-bold uppercase tracking-wider text-xs flex items-center gap-1">
-                <FlashIcon className="w-3 h-3" /> Sprint
+      {/* Top section: round + flag + status */}
+      <div className="mb-3 flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          {/* Round number */}
+          {!isTesting && (
+            <div className="flex size-10 items-center justify-center rounded-md bg-white/[0.04]">
+              <span className="font-mono text-[15px] font-semibold text-white/90">
+                {String(event.RoundNumber).padStart(2, '0')}
               </span>
-            )}
-          </div>
-          <div className="text-right">
-            {isTesting ? (
-              <div className="text-xs font-sans text-blue-300 uppercase">Pre-Season</div>
-            ) : (
-              <>
-                <div className="text-xs font-sans text-gray-500 uppercase">Round</div>
-                <div className="text-xl font-black text-white leading-none">
-                  {event.RoundNumber}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Event Name */}
-        <h3
-          className={`font-black text-2xl uppercase italic tracking-tighter text-white mb-4 transition-colors leading-none ${
-            isTesting ? 'group-hover:text-blue-400' : 'group-hover:text-red-500'
-          }`}
-        >
-          {event.EventName}
-        </h3>
-
-        {/* Location & Date */}
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Location01Icon className={`w-4 h-4 ${isTesting ? 'text-blue-400' : 'text-red-600'}`} />
-            <span className="font-sans uppercase tracking-wide">
-              {displayLocation || event.Location || event.Country || 'Testing Venue'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Calendar01Icon className={`w-4 h-4 ${isTesting ? 'text-blue-400' : 'text-red-600'}`} />
-            <span className="font-sans uppercase tracking-wide">{displayDate}</span>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-gray-800 w-full mb-6" />
-
-        {/* Content: Results or Schedule */}
-        <div className="mt-auto pb-6">
-          {isTesting ? (
-            <div className="flex items-center gap-2 text-xs text-blue-300 font-sans uppercase">
-              <Flag01Icon className="w-3 h-3" />
-              <span>Testing Session Data</span>
-            </div>
-          ) : isUpcoming ? (
-            // Upcoming: Simplified Display (No Times)
-            <div className="flex items-center gap-2 text-xs text-blue-400 font-sans uppercase">
-              <Clock01Icon className="w-3 h-3" />
-              <span>Upcoming Event</span>
-            </div>
-          ) : result?.podium ? (
-            // Finished with Podium Data
-            <div className="space-y-2">
-              {result.podium.slice(0, 3).map((p) => (
-                <div
-                  key={p.position}
-                  className="flex items-center justify-between text-sm group/podium"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`font-sans font-black w-4 text-center ${
-                        p.position === 1
-                          ? 'text-yellow-500'
-                          : p.position === 2
-                            ? 'text-gray-300'
-                            : 'text-amber-700'
-                      }`}
-                    >
-                      {p.position}
-                    </span>
-                    <span className="font-bold text-gray-300 group-hover/podium:text-white transition-colors uppercase tracking-tight">
-                      {p.driver}
-                    </span>
-                  </div>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: `var(--color-f1-${p.teamColor})` }}
-                    title={p.team}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : result ? (
-            // Finished with only Winner Data (Fallback)
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ChampionIcon className="w-4 h-4 text-yellow-500" />
-                <span className="font-bold text-white uppercase tracking-tight">
-                  {result.driver}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 font-sans">
-                <UserGroupIcon className="w-3 h-3" />
-                <span className="uppercase">{result.team}</span>
-              </div>
-            </div>
-          ) : (
-            // Finished but no data
-            <div className="text-center py-2">
-              <span className="text-gray-600 font-sans text-xs uppercase">Results Pending</span>
             </div>
           )}
+          {isTesting && (
+            <div className="flex size-10 items-center justify-center rounded-md bg-white/[0.04]">
+              <span className="text-[10px] font-medium text-white/60">TST</span>
+            </div>
+          )}
+
+          {/* Flag */}
+          {countryCode ? (
+            <img
+              src={`https://flagcdn.com/${countryCode}.svg`}
+              alt={event.Country || event.Location}
+              className="h-8 w-auto rounded-[3px] shadow-sm"
+            />
+          ) : (
+            <div className="h-8 w-12 rounded-[3px] bg-white/[0.04]" />
+          )}
         </div>
+
+        <StatusBadge status={status} />
       </div>
 
-      {/* Hover Effect Bar */}
-      <div
-        className={`h-1 w-0 group-hover:w-full transition-all duration-300 absolute bottom-0 left-0 z-20 ${
-          isTesting ? 'bg-blue-500' : 'bg-red-600'
-        }`}
-      />
-    </motion.div>
+      {/* Event name */}
+      <h3 className="mb-1 text-[15px] font-medium leading-snug text-white">{event.EventName}</h3>
+
+      {/* Location + Date + Sprint row */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[12px] text-white/65">
+        <span>{displayLocation || event.Location}</span>
+        <span className="text-white/40">·</span>
+        <span className="font-mono text-white/70">{displayDate}</span>
+        {isSprint && !isTesting && (
+          <>
+            <span className="text-white/40">·</span>
+            <span className="flex items-center gap-1 rounded bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-300">
+              Sprint
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Podium for finished races */}
+      {isFinished && result?.podium && result.podium.length > 0 && (
+        <div className="mt-4 border-t border-white/[0.05] pt-3.5">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
+            Podium
+          </p>
+          <div className="space-y-0.5">
+            {result.podium.slice(0, 3).map((p) => (
+              <PodiumRow
+                key={p.position}
+                position={p.position}
+                driver={p.driver}
+                teamColor={p.teamColor}
+                team={p.team}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Winner only fallback */}
+      {isFinished && result && !result.podium && (
+        <div className="mt-4 border-t border-white/[0.05] pt-3.5">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">
+            Winner
+          </p>
+          <p className="text-[13px] font-medium text-white/85">{result.driver}</p>
+        </div>
+      )}
+    </m.div>
   );
 };
 
-export { RaceCard };
 export default RaceCard;

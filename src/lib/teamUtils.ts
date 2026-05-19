@@ -1,3 +1,4 @@
+// knip-ignore
 // Team mapping to identify teammates
 export const teamDriverMap: { [year: string]: { [team: string]: string[] } } = {
   '2026': {
@@ -111,16 +112,15 @@ export const areTeammates = (driver1: string, driver2: string, year: number): bo
 
   // Use current year mapping if the specific year isn't defined
   const yearMapping = teamDriverMap[yearStr] || teamDriverMap['2024'];
+  const driverToTeam = new Map<string, string>();
 
-  // Check if both drivers are in the same team
-  for (const team in yearMapping) {
-    const drivers = yearMapping[team];
-    if (drivers.includes(driver1) && drivers.includes(driver2)) {
-      return true;
+  for (const [team, drivers] of Object.entries(yearMapping)) {
+    for (const driver of drivers) {
+      driverToTeam.set(driver, team);
     }
   }
 
-  return false;
+  return driverToTeam.get(driver1) === driverToTeam.get(driver2);
 };
 
 /**
@@ -162,20 +162,25 @@ export const groupDriversByTeam = (
 ): { [team: string]: string[] } => {
   const yearStr = year.toString();
   const yearMapping = teamDriverMap[yearStr] || teamDriverMap['2024'];
-
   const teamGroups: { [team: string]: string[] } = {};
+  const driverToTeam = new Map<string, string>();
 
-  // First pass: add drivers to their teams
-  drivers.forEach((driver) => {
-    for (const team in yearMapping) {
-      if (yearMapping[team].includes(driver)) {
-        if (!teamGroups[team]) {
-          teamGroups[team] = [];
-        }
-        teamGroups[team].push(driver);
-        break;
-      }
+  for (const [team, teamDrivers] of Object.entries(yearMapping)) {
+    for (const driver of teamDrivers) {
+      driverToTeam.set(driver, team);
     }
+  }
+
+  drivers.forEach((driver) => {
+    const team = driverToTeam.get(driver);
+    if (!team) {
+      return;
+    }
+
+    if (!teamGroups[team]) {
+      teamGroups[team] = [];
+    }
+    teamGroups[team].push(driver);
   });
 
   return teamGroups;
@@ -211,4 +216,36 @@ export const getTeamLogo = (teamName: string | undefined): string | null => {
     return '/logos/racing-bulls.svg';
 
   return null;
+};
+
+/**
+ * Map a standings/display team name to its correct slug for profile URLs.
+ * Standings use Jolpica display names (e.g. "Red Bull Racing") but the
+ * backend resolves slugs against the Supabase `reference` field (e.g. "red-bull").
+ */
+export const getTeamSlug = (teamName: string | undefined): string => {
+  if (!teamName) return '';
+
+  const normalizedName = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (normalizedName.includes('redbull')) return 'red-bull';
+  if (normalizedName.includes('ferrari')) return 'ferrari';
+  if (normalizedName.includes('mercedes')) return 'mercedes';
+  if (normalizedName.includes('mclaren')) return 'mclaren';
+  if (normalizedName.includes('astonmartin')) return 'aston-martin';
+  if (normalizedName.includes('alpine')) return 'alpine';
+  if (normalizedName.includes('williams')) return 'williams';
+  if (normalizedName.includes('haas')) return 'haas';
+  if (normalizedName.includes('audi')) return 'audi';
+  if (normalizedName.includes('cadillac')) return 'cadillac';
+  if (normalizedName.includes('sauber') || normalizedName.includes('kick')) return 'sauber';
+  if (
+    normalizedName.includes('racingbulls') ||
+    normalizedName.includes('rb') ||
+    normalizedName.includes('alphatauri') ||
+    normalizedName.includes('tororosso')
+  )
+    return 'racing-bulls';
+
+  return teamName.toLowerCase().replace(/\s+/g, '-');
 };

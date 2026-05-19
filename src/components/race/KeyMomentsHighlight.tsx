@@ -1,3 +1,4 @@
+// knip-ignore
 import React from 'react';
 import { LapPositionDataPoint } from '@/lib/api';
 import { ArrowDown01Icon, ArrowUp01Icon, FlashIcon } from 'hugeicons-react';
@@ -66,69 +67,61 @@ const KeyMomentsHighlight: React.FC<KeyMomentsHighlightProps> = ({ lapData }) =>
   }
 
   return (
-    <div className="bg-black border border-gray-700 p-6 mt-4">
-      <div className="flex items-center gap-2 mb-4 border-b border-gray-700 pb-2">
-        <FlashIcon className="w-5 h-5 text-red-600" />
+    <div className="rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-6">
+      <div className="mb-4 flex items-center gap-2 border-b border-white/[0.06] pb-3">
+        <FlashIcon className="size-4 text-red-400" />
         <div>
-          <h3 className="text-lg font-black uppercase tracking-wider text-white">Key Moments</h3>
-          <p className="text-xs text-gray-400 font-mono uppercase">
-            Largest single-lap position changes.
-          </p>
+          <h3 className="text-[14px] font-semibold text-white">Key Moments</h3>
+          <p className="text-[11px] text-white">Largest single-lap position changes.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {biggestGain.change > 1 ? (
-          <div className="bg-black border border-green-900/50 p-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-2 opacity-10">
-              <ArrowUp01Icon className="w-16 h-16 text-green-500" />
+          <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
+            <div className="absolute right-3 top-3 text-emerald-500/[0.08]">
+              <ArrowUp01Icon className="size-14" />
             </div>
-            <p className="font-black uppercase tracking-wider text-green-500 flex items-center gap-2 mb-2">
-              <ArrowUp01Icon className="w-4 h-4" /> Biggest Gain
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+              <ArrowUp01Icon className="size-3.5" /> Biggest Gain
             </p>
-            <div className="text-2xl font-black text-white mb-1">
-              {biggestGain.driver} <span className="text-green-500">+{biggestGain.change}</span>
+            <div className="mb-1 text-[20px] font-bold text-white">
+              {biggestGain.driver} <span className="text-emerald-400">+{biggestGain.change}</span>
             </div>
-            <p className="text-xs text-gray-500 font-mono uppercase">
-              P{biggestGain.from} <span className="text-gray-700">→</span> P{biggestGain.to} • Lap{' '}
-              {biggestGain.lap}
+            <p className="text-[12px] text-white">
+              P{biggestGain.from} → P{biggestGain.to} · Lap {biggestGain.lap}
             </p>
           </div>
         ) : (
-          <div className="bg-black border border-gray-700 p-4 opacity-50">
-            <p className="font-black uppercase tracking-wider text-gray-500 flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white">
               No Significant Gains
             </p>
-            <p className="text-xs text-gray-600 font-mono">
-              No driver gained {'>'}1 position in a lap.
-            </p>
+            <p className="text-[11px] text-white">No driver gained {'>'}1 position in a lap.</p>
           </div>
         )}
 
         {biggestLoss.change < -1 ? (
-          <div className="bg-black border border-red-900/50 p-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-2 opacity-10">
-              <ArrowDown01Icon className="w-16 h-16 text-red-500" />
+          <div className="relative overflow-hidden rounded-xl border border-red-500/20 bg-red-500/[0.04] p-5">
+            <div className="absolute right-3 top-3 text-red-500/[0.08]">
+              <ArrowDown01Icon className="size-14" />
             </div>
-            <p className="font-black uppercase tracking-wider text-red-500 flex items-center gap-2 mb-2">
-              <ArrowDown01Icon className="w-4 h-4" /> Biggest Loss
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-400">
+              <ArrowDown01Icon className="size-3.5" /> Biggest Loss
             </p>
-            <div className="text-2xl font-black text-white mb-1">
-              {biggestLoss.driver} <span className="text-red-500">{biggestLoss.change}</span>
+            <div className="mb-1 text-[20px] font-bold text-white">
+              {biggestLoss.driver} <span className="text-red-400">{biggestLoss.change}</span>
             </div>
-            <p className="text-xs text-gray-500 font-mono uppercase">
-              P{biggestLoss.from} <span className="text-gray-700">→</span> P{biggestLoss.to} • Lap{' '}
-              {biggestLoss.lap}
+            <p className="text-[12px] text-white">
+              P{biggestLoss.from} → P{biggestLoss.to} · Lap {biggestLoss.lap}
             </p>
           </div>
         ) : (
-          <div className="bg-black border border-gray-700 p-4 opacity-50">
-            <p className="font-black uppercase tracking-wider text-gray-500 flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-white">
               No Significant Losses
             </p>
-            <p className="text-xs text-gray-600 font-mono">
-              No driver lost {'>'}1 position in a lap.
-            </p>
+            <p className="text-[11px] text-white">No driver lost {'>'}1 position in a lap.</p>
           </div>
         )}
       </div>

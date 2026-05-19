@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQueries, UseQueryOptions } from '@tanstack/react-query';
+import { m } from 'motion/react';
 import {
   fetchLapPositions,
   fetchSpecificRaceResults,
@@ -9,19 +10,15 @@ import {
   SessionIncident,
 } from '@/lib/api';
 import PositionChart from '@/components/charts/PositionChart';
-import { AlertCircleIcon, Menu01Icon, Analytics01Icon, ChartLineData01Icon } from 'hugeicons-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import PositionsSummaryTable from './PositionsSummaryTable';
-import KeyMomentsHighlight from './KeyMomentsHighlight';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
-import { useAnalytics } from '@/hooks/useAnalytics';
+import { CARD_CONTAINER } from '@/lib/card-styles';
 
 interface PositionsTabContentProps {
   year: number;
   event: string;
   session: string;
   favoriteDriver?: string | null;
+  /** When true, skips the card wrapper (used when embedded inside another card) */
+  embedded?: boolean;
 }
 
 type PositionQueryKey = [string, number, string, string];
@@ -31,10 +28,8 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
   event,
   session,
   favoriteDriver,
+  embedded = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('overview');
-  const { trackInteraction } = useAnalytics();
-
   const queries: Readonly<
     [
       UseQueryOptions<LapPositionDataPoint[], Error, LapPositionDataPoint[], PositionQueryKey>,
@@ -80,87 +75,75 @@ const PositionsTabContent: React.FC<PositionsTabContentProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-gray-700 border-t-red-600 rounded-full animate-spin"></div>
-          <div className="text-gray-500 font-mono text-xs animate-pulse uppercase">
-            Loading Position Data...
+      <m.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={embedded ? undefined : CARD_CONTAINER}
+      >
+        {!embedded && (
+          <div className="border-b border-white/[0.04] px-5 py-3.5">
+            <h2 className="text-[15px] font-semibold text-white">Position Changes</h2>
+          </div>
+        )}
+        <div className="flex h-[500px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-4 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/50" />
+            <span className="text-[14px] text-white">Loading position data</span>
           </div>
         </div>
-      </div>
+      </m.div>
     );
   }
 
   if (isError || !lapPositionsData || !sessionResultsData) {
     return (
-      <div className="bg-black border border-gray-700 p-6 h-[500px] flex items-center justify-center">
-        <div className="text-center text-red-500">
-          <AlertCircleIcon className="w-10 h-10 mx-auto mb-3" />
-          <p className="font-black uppercase tracking-wider text-lg">Error Loading Data</p>
-          <p className="text-xs text-gray-500 mt-2 font-mono">
-            {combinedError?.message || 'Could not fetch position data.'}
-          </p>
+      <m.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={embedded ? undefined : CARD_CONTAINER}
+      >
+        {!embedded && (
+          <div className="border-b border-white/[0.04] px-5 py-3.5">
+            <h2 className="text-[15px] font-semibold text-white">Position Changes</h2>
+          </div>
+        )}
+        <div className="flex h-[400px] items-center justify-center">
+          <div className="text-center">
+            <p className="text-[15px] text-red-400">Error loading data</p>
+            <p className="mt-1 text-[14px] text-white">
+              {combinedError?.message || 'Could not fetch position data.'}
+            </p>
+          </div>
         </div>
-      </div>
+      </m.div>
     );
   }
 
   return (
-    <div className="bg-black p-0 h-[600px] flex flex-col">
-      <Tabs
-        defaultValue="overview"
-        className="w-full h-full flex flex-col"
-        onValueChange={(value) => {
-          trackInteraction('positions_subtab_changed', { tab: value });
-          setActiveTab(value);
-        }}
-        value={activeTab}
-      >
-        <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mb-6 shrink-0">
-          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2">
-            <TabsTrigger
-              value="overview"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              <ChartLineData01Icon className="w-3 h-3 mr-2" />
-              Chart
-            </TabsTrigger>
-            <TabsTrigger
-              value="analysis"
-              className="data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-700 data-[state=active]:border-white text-xs font-black uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              <Menu01Icon className="w-3 h-3 mr-2" />
-              Analysis
-            </TabsTrigger>
-          </TabsList>
+    <m.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={embedded ? undefined : CARD_CONTAINER}
+    >
+      {!embedded && (
+        <div className="border-b border-white/[0.04] px-5 py-3.5">
+          <h2 className="text-[15px] font-semibold text-white">Position Changes</h2>
         </div>
-
-        <div className="flex-1 min-h-0 relative">
-          <TabsContent
-            value="overview"
-            className="h-full mt-0 animate-in fade-in zoom-in-95 duration-300"
-          >
-            <PositionChart
-              lapData={lapPositionsData}
-              incidents={incidentsData}
-              sessionResults={sessionResultsData}
-              year={year}
-              favoriteDriver={favoriteDriver}
-            />
-          </TabsContent>
-
-          <TabsContent
-            value="analysis"
-            className="h-full mt-0 overflow-y-auto pr-2 animate-in fade-in zoom-in-95 duration-300 space-y-6"
-          >
-            <KeyMomentsHighlight lapData={lapPositionsData} />
-            <PositionsSummaryTable sessionResults={sessionResultsData} year={year} />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
+      )}
+      <div className={embedded ? undefined : 'p-5'}>
+        <PositionChart
+          lapData={lapPositionsData}
+          incidents={incidentsData}
+          sessionResults={sessionResultsData}
+          year={year}
+          favoriteDriver={favoriteDriver}
+        />
+      </div>
+    </m.div>
   );
 };
 
-export { PositionsTabContent };
 export default PositionsTabContent;

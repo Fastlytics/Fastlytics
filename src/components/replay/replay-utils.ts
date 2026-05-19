@@ -26,6 +26,8 @@ export interface DriverFrameState {
   bestLap?: CompletedLapInfo;
   isGhost?: boolean;
   color?: string;
+  gap?: string | null;
+  interval?: string | null;
 }
 
 export interface CompletedLapInfo {
@@ -419,12 +421,18 @@ export const getAllLapNumbers = (drivers: Record<string, { lap: number[] }>): nu
   return [...lapSet].sort((a, b) => a - b);
 };
 
-// ─── Driver Score (for leaderboard sorting) ──────────────────────────────────
+// ─── Gap Sorting ─────────────────────────────────────────────────────────────
 
-/** Calculates a composite score for race position sorting: Lap * 1M + trackIndex */
-export const getDriverScore = (d: DriverFrameState | null | undefined): number => {
-  if (!d) return -1;
-  return d.lap * 1000000 + (d.track_index || 0);
+/** Converts a gap-to-leader string into a sortable number.
+ *  Leader (LAP X) = 0, +N.NNN = N.NNN, lapped (1L, 2L...) = 9000+N, missing = Infinity */
+export const getGapSortKey = (gap: string | null | undefined): number => {
+  if (!gap) return Infinity;
+  if (gap.startsWith('LAP')) return 0;
+  const lapped = gap.match(/^(\d+)\s*L$/);
+  if (lapped) return 9000 + parseInt(lapped[1], 10);
+  const numeric = parseFloat(gap.replace(/^\+/, ''));
+  if (!isNaN(numeric)) return numeric;
+  return Infinity;
 };
 
 // ─── Message Config ──────────────────────────────────────────────────────────

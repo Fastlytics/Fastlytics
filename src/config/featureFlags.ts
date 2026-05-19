@@ -1,5 +1,5 @@
 export const oauthFlags = {
-    enableGoogle: true,
-    enableGithub: false,
-    enableDiscord: true,
+  enableGoogle: true,
+  enableGithub: false,
+  enableDiscord: true,
 };

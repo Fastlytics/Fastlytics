@@ -1,117 +1,340 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { m } from 'motion/react';
 import { Link } from 'react-router-dom';
+import HeroDashboard from './HeroDashboard';
+import { ChartType, HeroWindowBounds } from './hero-types';
+import {
+  DEFAULT_HERO_VIEW,
+  buildLandingHeroView,
+  findNearestLandingFrameIndex,
+  getExpandedHeroBounds,
+  pickLandingReplayKey,
+  prepareLandingReplayContext,
+} from './hero-utils';
+import { useLandingHeroSource } from './useLandingHeroSource';
 
-const HeroSection = () => {
-  return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-      {/* Background Grid */}
-      <div
-        className="absolute inset-0 z-0 opacity-20"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-        }}
-      ></div>
+const HERO_DRIVER_CODE_KEY = 'hero-driver-code-v1';
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Moving Lines */}
-        <motion.div
-          className="absolute top-1/4 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50"
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-        />
-        <motion.div
-          className="absolute bottom-1/3 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'linear', delay: 1 }}
-        />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-        <div className="flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full hidden md:flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:border-red-600/50 transition-colors cursor-default"
-            >
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-              </span>
-              <p className="font-mono text-sm text-gray-300">
-                <span className="text-white font-bold">Fastlytics 2.0</span>{' '}
-                <span className="mx-1 text-gray-600">|</span> New features &{' '}
-                <span className="text-red-500">BOOSTED</span> performance!
-              </p>
-            </motion.div>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase italic tracking-tighter leading-none mb-6 relative">
-              <span className="relative z-10">Race</span>{' '}
-              <span
-                className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-800 relative z-10"
-                style={{ WebkitTextStroke: '2px red' }}
-              >
-                Data
-              </span>
-              <br />
-              <span className="text-white relative z-10">Unleashed</span>
-              {/* Glitch Effect Layers */}
-              <motion.span
-                className="absolute top-0 left-1 text-red-600 opacity-50 mix-blend-screen z-0"
-                animate={{ x: [-2, 2, -2], opacity: [0.5, 0.8, 0.5] }}
-                transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3 }}
-              >
-                Race Data
-                <br />
-                Unleashed
-              </motion.span>
-            </h1>
-          </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="text-xl md:text-2xl text-gray-400 font-mono max-w-3xl mb-12 border-l-4 border-red-600 pl-6 text-left md:text-center md:border-l-0 md:pl-0"
-          >
-            Explore F1 data for free. Sign in to unlock advanced telemetry analysis.
-            <span className="text-red-500 font-bold">Deep</span> insights.
-            <span className="text-red-500 font-bold">Available</span> for members.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="flex flex-col md:flex-row gap-6"
-          >
-            <Link to="/dashboard">
-              <button className="bg-red-600 text-white text-lg font-bold uppercase tracking-widest py-4 px-10 border-2 border-red-600 hover:bg-transparent hover:text-red-600 transition-all duration-300 skew-x-[-10deg] shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:shadow-[0_0_40px_rgba(220,38,38,0.7)]">
-                <span className="block skew-x-[10deg]">Start Analysis</span>
-              </button>
-            </Link>
-            <a href="#features">
-              <button className="bg-transparent text-white text-lg font-bold uppercase tracking-widest py-4 px-10 border-2 border-white hover:bg-white hover:text-black transition-all duration-300 skew-x-[-10deg]">
-                <span className="block skew-x-[10deg]">Explore Features</span>
-              </button>
-            </a>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Decorative Elements */}
-      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent z-20"></div>
-    </section>
-  );
+type HeroState = {
+  playbackTime: number;
+  chartType: ChartType;
+  heroModalPhase: 'closed' | 'open' | 'closing';
+  userSelectedDriverCode: string | null;
+  heroWindowAnimation: { origin: HeroWindowBounds; target: HeroWindowBounds } | null;
 };
 
-export { HeroSection };
-export default HeroSection;
+type HeroAction =
+  | { type: 'setPlaybackTime'; value: HeroState['playbackTime'] }
+  | { type: 'setChartType'; value: ChartType }
+  | { type: 'openHero'; origin: HeroWindowBounds; target: HeroWindowBounds }
+  | { type: 'closeHero' }
+  | { type: 'finishClosing' }
+  | { type: 'setUserSelectedDriverCode'; value: string | null }
+  | { type: 'resetForNewCache' };
+
+const heroReducer = (state: HeroState, action: HeroAction): HeroState => {
+  switch (action.type) {
+    case 'setPlaybackTime':
+      return { ...state, playbackTime: action.value };
+    case 'setChartType':
+      return { ...state, chartType: action.value };
+    case 'openHero':
+      return {
+        ...state,
+        heroModalPhase: 'open',
+        heroWindowAnimation: { origin: action.origin, target: action.target },
+      };
+    case 'closeHero':
+      return { ...state, heroModalPhase: state.heroModalPhase === 'closed' ? 'closed' : 'closing' };
+    case 'finishClosing':
+      return { ...state, heroModalPhase: 'closed' };
+    case 'setUserSelectedDriverCode':
+      return { ...state, userSelectedDriverCode: action.value };
+    case 'resetForNewCache':
+      return { ...state, playbackTime: 0, chartType: 'speed', userSelectedDriverCode: null };
+    default:
+      return state;
+  }
+};
+
+export default function HeroSection() {
+  const [heroState, dispatch] = useReducer(heroReducer, {
+    playbackTime: 0,
+    chartType: 'speed',
+    heroModalPhase: 'closed',
+    userSelectedDriverCode: null,
+    heroWindowAnimation: null,
+  });
+  const { playbackTime, chartType, heroModalPhase, userSelectedDriverCode, heroWindowAnimation } =
+    heroState;
+  const {
+    selectedCache,
+    metadata,
+    chunk,
+    loadedDuration,
+    playbackStartTime,
+    playbackEndTime,
+    canSelectDifferentCache,
+    selectDifferentCache,
+  } = useLandingHeroSource(playbackTime);
+  const cacheKey = selectedCache ? pickLandingReplayKey(selectedCache) : '';
+  const cacheKeyRef = useRef(cacheKey);
+  const playbackTimeRef = useRef(playbackTime);
+  useEffect(() => {
+    playbackTimeRef.current = playbackTime;
+  });
+  const compactHeroWindowRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<number | null>(null);
+  const isHeroExpanded = heroModalPhase !== 'closed';
+  const isHeroClosing = heroModalPhase === 'closing';
+  const leaderCode = metadata?.selected_drivers?.[0] || chunk?.selected_drivers?.[0] || null;
+
+  const derivedDriverCode = useMemo(() => {
+    if (!leaderCode) return null;
+    const availableDrivers = metadata?.selected_drivers || chunk?.selected_drivers || [];
+    const storedDriverCode =
+      typeof window === 'undefined' ? null : sessionStorage.getItem(HERO_DRIVER_CODE_KEY);
+    if (storedDriverCode && availableDrivers.includes(storedDriverCode)) return storedDriverCode;
+    return leaderCode;
+  }, [leaderCode, metadata?.selected_drivers, chunk?.selected_drivers]);
+
+  const selectedDriverCode = userSelectedDriverCode || derivedDriverCode;
+
+  const handleSelectDriver = useCallback((value: string) => {
+    dispatch({ type: 'setUserSelectedDriverCode', value });
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(HERO_DRIVER_CODE_KEY, value);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cacheKeyRef.current !== cacheKey) {
+      cacheKeyRef.current = cacheKey;
+      dispatch({ type: 'resetForNewCache' });
+    }
+  }, [cacheKey]);
+
+  const loadedDurationRef = useRef(loadedDuration);
+  useEffect(() => {
+    loadedDurationRef.current = loadedDuration;
+  });
+
+  const hasChunkData = Boolean(chunk && chunk.time.length > 1);
+
+  useEffect(() => {
+    if (!hasChunkData || playbackEndTime <= playbackStartTime) return;
+
+    const intervalId = window.setInterval(() => {
+      const baseTime = Math.max(playbackTimeRef.current, playbackStartTime);
+      const next = baseTime + 1 / 25;
+      const totalEnd = playbackEndTime;
+      const currentLoadedDuration = loadedDurationRef.current;
+      const hasFullTail = currentLoadedDuration >= totalEnd;
+      const playableEnd = hasFullTail
+        ? totalEnd
+        : Math.max(playbackStartTime, Math.min(totalEnd, currentLoadedDuration - 0.25));
+
+      const newTime =
+        next >= totalEnd
+          ? playbackStartTime
+          : !hasFullTail && next >= playableEnd
+            ? playableEnd
+            : next;
+      dispatch({ type: 'setPlaybackTime', value: newTime });
+    }, 1000 / 25);
+
+    return () => window.clearInterval(intervalId);
+  }, [hasChunkData, playbackEndTime, playbackStartTime]);
+
+  const frameIndex = useMemo(() => {
+    if (!chunk?.time?.length) return 0;
+    return findNearestLandingFrameIndex(playbackTime, chunk.time);
+  }, [chunk, playbackTime]);
+
+  const closeExpandedHero = useCallback(() => {
+    dispatch({ type: 'closeHero' });
+    closeTimeoutRef.current = window.setTimeout(() => {
+      dispatch({ type: 'finishClosing' });
+      closeTimeoutRef.current = null;
+    }, 420);
+  }, []);
+
+  const closeExpandedHeroRef = useRef(closeExpandedHero);
+  useEffect(() => {
+    closeExpandedHeroRef.current = closeExpandedHero;
+  }, [closeExpandedHero]);
+
+  useEffect(() => {
+    if (!isHeroExpanded) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeExpandedHeroRef.current();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isHeroExpanded]);
+
+  const preparedReplay = useMemo(() => {
+    if (!selectedCache || !metadata || !chunk) return null;
+    return prepareLandingReplayContext(selectedCache, metadata, chunk);
+  }, [selectedCache, metadata, chunk]);
+
+  const hero = useMemo(() => {
+    if (!preparedReplay || !selectedDriverCode) return null;
+    try {
+      return buildLandingHeroView(preparedReplay, selectedDriverCode, frameIndex, chartType);
+    } catch {
+      return null;
+    }
+  }, [preparedReplay, selectedDriverCode, frameIndex, chartType]);
+
+  const openExpandedHero = () => {
+    const target = getExpandedHeroBounds();
+    const rect = compactHeroWindowRef.current?.getBoundingClientRect();
+    const origin = rect
+      ? {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          borderRadius: 12,
+        }
+      : target;
+
+    dispatch({ type: 'openHero', origin, target });
+  };
+
+  const isHeroLoading = !hero;
+
+  return (
+    <section className="relative overflow-hidden pb-20 pt-32 lg:pb-32 lg:pt-40">
+      <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <m.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
+          >
+            You already know who won. <span className="text-white/40">Now find out why.</span>
+          </m.h1>
+
+          <m.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/50"
+          >
+            Telemetry traces, tyre degradation curves, pit window math and sector splits — live,
+            synced, and readable without a data science degree.
+          </m.p>
+
+          <m.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+          >
+            <Link
+              to="/dashboard"
+              className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-white px-6 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.15)]"
+            >
+              Open race desk
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                className="transition-transform group-hover:translate-x-0.5"
+              >
+                <path
+                  d="M1 7h12M8 2l5 5-5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+            <a
+              href="#features"
+              className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-6 text-[14px] font-medium text-white/80 transition-all hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              See features
+            </a>
+          </m.div>
+        </div>
+
+        <m.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.45 }}
+          className="relative mx-auto mt-16 max-w-7xl lg:mt-20"
+        >
+          <div
+            ref={compactHeroWindowRef}
+            className={`relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-[0_32px_120px_rgba(0,0,0,0.6)] ${
+              isHeroExpanded ? 'pointer-events-none opacity-0' : ''
+            }`}
+          >
+            {isHeroLoading && (
+              <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
+            )}
+            <HeroDashboard
+              hero={hero || DEFAULT_HERO_VIEW}
+              variant="compact"
+              isLoading={isHeroLoading}
+              chartType={chartType}
+              setChartType={(value: ChartType) => dispatch({ type: 'setChartType', value })}
+              selectedDriverCode={selectedDriverCode}
+              canSelectDifferentCache={canSelectDifferentCache}
+              selectDifferentCache={selectDifferentCache}
+              setUserSelectedDriverCode={handleSelectDriver}
+              onChromeAction={openExpandedHero}
+            />
+          </div>
+        </m.div>
+
+        {hero && heroWindowAnimation && heroModalPhase !== 'closed' && (
+          <>
+            <m.div
+              key="hero-expanded-backdrop"
+              className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isHeroClosing ? 0 : 1 }}
+              transition={{ duration: isHeroClosing ? 0.22 : 0.42 }}
+              onMouseDown={closeExpandedHero}
+            />
+            <m.div
+              key="hero-expanded-window"
+              className="fixed z-[80] flex flex-col overflow-hidden border border-white/[0.10] bg-[#0c0c0e] shadow-[0_40px_180px_rgba(0,0,0,0.75)]"
+              initial={heroWindowAnimation.origin}
+              animate={isHeroClosing ? heroWindowAnimation.origin : heroWindowAnimation.target}
+              transition={{ type: 'spring', stiffness: 180, damping: 24, mass: 0.95 }}
+            >
+              <HeroDashboard
+                hero={hero}
+                variant={isHeroClosing ? 'compact' : 'expanded'}
+                isLoading={false}
+                chartType={chartType}
+                setChartType={(value: ChartType) => dispatch({ type: 'setChartType', value })}
+                selectedDriverCode={selectedDriverCode}
+                canSelectDifferentCache={canSelectDifferentCache}
+                selectDifferentCache={selectDifferentCache}
+                setUserSelectedDriverCode={handleSelectDriver}
+                onChromeAction={closeExpandedHero}
+              />
+            </m.div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
