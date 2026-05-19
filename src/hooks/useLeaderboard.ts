@@ -71,19 +71,36 @@ export function useLeaderboard(
   }, [activeDrivers, data, getSortedOrder]);
 
   // For non-race sessions: sort by best lap time (official timing)
+  // Only recompute when a new lap has actually been completed (not every frame)
+  const relevantLapCount = useMemo(() => {
+    if (isRace || !data?.completed_laps) return 0;
+    // Binary search or linear scan for count of laps completed by currentTime
+    const laps = data.completed_laps;
+    let count = laps.length;
+    for (let i = laps.length - 1; i >= 0; i--) {
+      if (laps[i].timestamp <= currentTime) {
+        count = i + 1;
+        break;
+      }
+      count = i;
+    }
+    return count;
+  }, [data, currentTime, isRace]);
+
   const timingStandings = useMemo(() => {
     if (isRace || !data?.completed_laps) return null;
 
-    const lapsSoFar = data.completed_laps.filter((l) => l.timestamp <= currentTime);
-    const bestLaps: Record<string, (typeof data.completed_laps)[0]> = {};
-    for (const lap of lapsSoFar) {
+    const completedLaps = data.completed_laps;
+    const bestLaps: Record<string, (typeof completedLaps)[0]> = {};
+    for (let i = 0; i < relevantLapCount; i++) {
+      const lap = completedLaps[i];
       if (!bestLaps[lap.driver] || lap.seconds < bestLaps[lap.driver].seconds) {
         bestLaps[lap.driver] = lap;
       }
     }
 
     const allDrivers = Object.keys(data.drivers || {});
-    const sorted = allDrivers.sort((a, b) => {
+    const sorted = [...allDrivers].sort((a, b) => {
       const lapA = bestLaps[a];
       const lapB = bestLaps[b];
       if (lapA && lapB) return lapA.seconds - lapB.seconds;
@@ -93,7 +110,7 @@ export function useLeaderboard(
     });
 
     return { sorted, bestLaps };
-  }, [data, currentTime, isRace]);
+  }, [data, relevantLapCount, isRace]);
 
   const leaderboard = useMemo((): LeaderboardItem[] => {
     if (!data) return [];

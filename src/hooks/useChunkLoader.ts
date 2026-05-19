@@ -240,12 +240,23 @@ function mergeBufferedChunks<TMeta extends ChunkLoaderMetadata>(
     .filter((id) => chunkIds.includes(id) && chunksMap.has(id));
   if (sortedIds.length === 0) return null;
 
-  const timeParts: number[][] = [];
+  // Compute total length upfront to use TypedArray-like pre-allocation for number arrays
+  let totalLength = 0;
+  for (const id of sortedIds) {
+    totalLength += chunksMap.get(id)!.time.length;
+  }
+
+  const mergedTime = new Array<number>(totalLength);
   const driverParts: Record<string, Partial<ReplayDriverData>[]> = {};
+  let offset = 0;
 
   for (const id of sortedIds) {
     const chunk = chunksMap.get(id)!;
-    timeParts.push(chunk.time);
+    const timeArr = chunk.time;
+    for (let i = 0; i < timeArr.length; i++) {
+      mergedTime[offset + i] = timeArr[i];
+    }
+    offset += timeArr.length;
     for (const [code, driverData] of Object.entries(chunk.drivers)) {
       if (!driverParts[code]) driverParts[code] = [];
       driverParts[code].push(driverData);
@@ -261,18 +272,54 @@ function mergeBufferedChunks<TMeta extends ChunkLoaderMetadata>(
   for (const code of driverCodes) {
     const parts = driverParts[code] || [];
     mergedDrivers[code] = {
-      x: ([] as number[]).concat(...parts.map((part) => part.x || [])),
-      y: ([] as number[]).concat(...parts.map((part) => part.y || [])),
-      dist: ([] as number[]).concat(...parts.map((part) => part.dist || [])),
-      rel_dist: ([] as number[]).concat(...parts.map((part) => part.rel_dist || [])),
-      speed: ([] as number[]).concat(...parts.map((part) => part.speed || [])),
-      gear: ([] as number[]).concat(...parts.map((part) => part.gear || [])),
-      drs: ([] as number[]).concat(...parts.map((part) => part.drs || [])),
-      rpm: ([] as number[]).concat(...parts.map((part) => part.rpm || [])),
-      lap: ([] as number[]).concat(...parts.map((part) => part.lap || [])),
-      tyre: ([] as number[]).concat(...parts.map((part) => part.tyre || [])),
-      throttle: ([] as number[]).concat(...parts.map((part) => part.throttle || [])),
-      brake: ([] as number[]).concat(...parts.map((part) => part.brake || [])),
+      x: concatNumberArrays(
+        parts.map((p) => p.x),
+        totalLength
+      ),
+      y: concatNumberArrays(
+        parts.map((p) => p.y),
+        totalLength
+      ),
+      dist: concatNumberArrays(
+        parts.map((p) => p.dist),
+        totalLength
+      ),
+      rel_dist: concatNumberArrays(
+        parts.map((p) => p.rel_dist),
+        totalLength
+      ),
+      speed: concatNumberArrays(
+        parts.map((p) => p.speed),
+        totalLength
+      ),
+      gear: concatNumberArrays(
+        parts.map((p) => p.gear),
+        totalLength
+      ),
+      drs: concatNumberArrays(
+        parts.map((p) => p.drs),
+        totalLength
+      ),
+      rpm: concatNumberArrays(
+        parts.map((p) => p.rpm),
+        totalLength
+      ),
+      lap: concatNumberArrays(
+        parts.map((p) => p.lap),
+        totalLength
+      ),
+      tyre: concatNumberArrays(
+        parts.map((p) => p.tyre),
+        totalLength
+      ),
+      throttle: concatNumberArrays(
+        parts.map((p) => p.throttle),
+        totalLength
+      ),
+      brake: concatNumberArrays(
+        parts.map((p) => p.brake),
+        totalLength
+      ),
       gap: ([] as (string | null)[]).concat(...parts.map((part) => part.gap || [])),
       interval: ([] as (string | null)[]).concat(...parts.map((part) => part.interval || [])),
     };
@@ -280,7 +327,203 @@ function mergeBufferedChunks<TMeta extends ChunkLoaderMetadata>(
 
   return {
     ...meta,
-    time: ([] as number[]).concat(...timeParts),
+    time: mergedTime,
+    drivers: mergedDrivers,
+  };
+}
+
+/** Pre-allocate and fill a single array from multiple source arrays (avoids repeated .concat() allocations) */
+function concatNumberArrays(sources: (number[] | undefined)[], _hintLength?: number): number[] {
+  let total = 0;
+  for (const src of sources) {
+    if (src) total += src.length;
+  }
+  const result = new Array<number>(total);
+  let offset = 0;
+  for (const src of sources) {
+    if (!src) continue;
+    for (let i = 0; i < src.length; i++) {
+      result[offset + i] = src[i];
+    }
+    offset += src.length;
+  }
+  return result;
+}
+
+/**
+ * Incrementally appends new chunks to already-merged data.
+ * Much faster than full re-merge: only copies the new chunk's arrays (one chunk = ~15K frames)
+ * instead of re-copying all existing data (potentially 150K+ frames).
+ */
+function appendChunksToMerged<TMeta extends ChunkLoaderMetadata>(
+  existing: ChunkReplayData<TMeta>,
+  meta: TMeta,
+  manifest: ChunkManifest[],
+  newChunkIds: number[],
+  chunksMap: Map<number, LoadedChunk>
+): ChunkReplayData<TMeta> {
+  // Sort new chunks by manifest order
+  const orderedNewIds = manifest
+    .map((m) => m.id)
+    .filter((id) => newChunkIds.includes(id) && chunksMap.has(id));
+
+  if (orderedNewIds.length === 0) return existing;
+
+  // Collect new chunk data
+  let newTimeLength = 0;
+  const newDriverParts: Record<string, Partial<ReplayDriverData>[]> = {};
+
+  for (const id of orderedNewIds) {
+    const chunk = chunksMap.get(id)!;
+    newTimeLength += chunk.time.length;
+    for (const [code, driverData] of Object.entries(chunk.drivers)) {
+      if (!newDriverParts[code]) newDriverParts[code] = [];
+      newDriverParts[code].push(driverData);
+    }
+  }
+
+  // Append time array
+  const existingTime = existing.time;
+  const mergedTime = new Array<number>(existingTime.length + newTimeLength);
+  for (let i = 0; i < existingTime.length; i++) {
+    mergedTime[i] = existingTime[i];
+  }
+  let offset = existingTime.length;
+  for (const id of orderedNewIds) {
+    const chunk = chunksMap.get(id)!;
+    for (let i = 0; i < chunk.time.length; i++) {
+      mergedTime[offset + i] = chunk.time[i];
+    }
+    offset += chunk.time.length;
+  }
+
+  // Append driver arrays
+  const mergedDrivers: Record<string, ReplayDriverData> = {};
+  const allCodes = new Set([
+    ...Object.keys(existing.drivers),
+    ...Object.keys(meta.driver_colors || {}),
+    ...Object.keys(newDriverParts),
+  ]);
+
+  for (const code of allCodes) {
+    const existingDriver = existing.drivers[code];
+    const newParts = newDriverParts[code] || [];
+
+    if (!existingDriver && newParts.length === 0) continue;
+
+    if (newParts.length === 0 && existingDriver) {
+      // No new data for this driver, reuse existing
+      mergedDrivers[code] = existingDriver;
+      continue;
+    }
+
+    const appendNum = (existing: number[], newSources: (number[] | undefined)[]): number[] => {
+      let newLen = 0;
+      for (const s of newSources) {
+        if (s) newLen += s.length;
+      }
+      const result = new Array<number>(existing.length + newLen);
+      for (let i = 0; i < existing.length; i++) result[i] = existing[i];
+      let off = existing.length;
+      for (const s of newSources) {
+        if (!s) continue;
+        for (let i = 0; i < s.length; i++) result[off + i] = s[i];
+        off += s.length;
+      }
+      return result;
+    };
+
+    const appendStr = (
+      existing: (string | null)[],
+      newSources: ((string | null)[] | undefined)[]
+    ): (string | null)[] => {
+      const parts: (string | null)[][] = [existing];
+      for (const s of newSources) {
+        if (s) parts.push(s);
+      }
+      return ([] as (string | null)[]).concat(...parts);
+    };
+
+    const base = existingDriver || {
+      x: [],
+      y: [],
+      dist: [],
+      rel_dist: [],
+      speed: [],
+      gear: [],
+      drs: [],
+      rpm: [],
+      lap: [],
+      tyre: [],
+      throttle: [],
+      brake: [],
+      gap: [],
+      interval: [],
+    };
+
+    mergedDrivers[code] = {
+      x: appendNum(
+        base.x,
+        newParts.map((p) => p.x)
+      ),
+      y: appendNum(
+        base.y,
+        newParts.map((p) => p.y)
+      ),
+      dist: appendNum(
+        base.dist,
+        newParts.map((p) => p.dist)
+      ),
+      rel_dist: appendNum(
+        base.rel_dist,
+        newParts.map((p) => p.rel_dist)
+      ),
+      speed: appendNum(
+        base.speed,
+        newParts.map((p) => p.speed)
+      ),
+      gear: appendNum(
+        base.gear,
+        newParts.map((p) => p.gear)
+      ),
+      drs: appendNum(
+        base.drs,
+        newParts.map((p) => p.drs)
+      ),
+      rpm: appendNum(
+        base.rpm,
+        newParts.map((p) => p.rpm)
+      ),
+      lap: appendNum(
+        base.lap,
+        newParts.map((p) => p.lap)
+      ),
+      tyre: appendNum(
+        base.tyre,
+        newParts.map((p) => p.tyre)
+      ),
+      throttle: appendNum(
+        base.throttle,
+        newParts.map((p) => p.throttle)
+      ),
+      brake: appendNum(
+        base.brake,
+        newParts.map((p) => p.brake)
+      ),
+      gap: appendStr(
+        base.gap,
+        newParts.map((p) => p.gap)
+      ),
+      interval: appendStr(
+        base.interval,
+        newParts.map((p) => p.interval)
+      ),
+    };
+  }
+
+  return {
+    ...meta,
+    time: mergedTime,
     drivers: mergedDrivers,
   };
 }
@@ -348,7 +591,10 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const bufferBehindChunks = options?.bufferBehindChunks ?? DEFAULT_BUFFER_BEHIND_CHUNKS;
   const bufferHeadroomSeconds = options?.bufferHeadroomSeconds ?? DEFAULT_BUFFER_HEADROOM_SECONDS;
 
-  const updateStateFromBuffer = useCallback(() => {
+  const mergeScheduledRef = useRef(false);
+  const doMergeRef = useRef<() => void>();
+
+  const doMergeAndSetState = useCallback(() => {
     const meta = metadataRef.current;
     const manifest = meta?.chunk_manifest || [];
     const mergedChunkIds = [...chunksMapRef.current.keys()].sort((a, b) => a - b);
@@ -360,9 +606,27 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
     if (mergeKey === lastMergedKeyRef.current && lastMergedDataRef.current) {
       replayData = lastMergedDataRef.current;
     } else {
-      replayData = meta
-        ? mergeBufferedChunks(meta, manifest, mergedChunkIds, chunksMapRef.current)
-        : null;
+      // Check if the new key is just the old key + appended chunks (common during playback)
+      const oldKey = lastMergedKeyRef.current;
+      const isAppendOnly = oldKey.length > 0 && mergeKey.startsWith(oldKey + ',');
+
+      if (isAppendOnly && lastMergedDataRef.current) {
+        // Incremental merge: only append the new chunk(s) to existing merged data
+        const oldIds = oldKey.split(',').map(Number);
+        const newIds = mergedChunkIds.filter((id) => !oldIds.includes(id));
+        replayData = appendChunksToMerged(
+          lastMergedDataRef.current,
+          meta!,
+          manifest,
+          newIds,
+          chunksMapRef.current
+        );
+      } else {
+        // Full rebuild (seek, eviction, or first load)
+        replayData = meta
+          ? mergeBufferedChunks(meta, manifest, mergedChunkIds, chunksMapRef.current)
+          : null;
+      }
       lastMergedKeyRef.current = mergeKey;
       lastMergedDataRef.current = replayData;
     }
@@ -389,6 +653,20 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
       loadedDuration,
     });
   }, [bufferHeadroomSeconds]);
+
+  useEffect(() => {
+    doMergeRef.current = doMergeAndSetState;
+  }, [doMergeAndSetState]);
+
+  const updateStateFromBuffer = useCallback(() => {
+    // Debounce: coalesce multiple rapid calls into a single merge on the next microtask
+    if (mergeScheduledRef.current) return;
+    mergeScheduledRef.current = true;
+    queueMicrotask(() => {
+      mergeScheduledRef.current = false;
+      doMergeRef.current?.();
+    });
+  }, []);
 
   const scheduleNextChunk = useCallback(() => {
     if (fetchingSetRef.current.size > 0) return;

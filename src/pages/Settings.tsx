@@ -13,6 +13,10 @@ import {
   Tick02Icon,
   Cancel01Icon,
   PencilEdit02Icon,
+  ApiIcon,
+  Copy01Icon,
+  Delete02Icon,
+  PlusSignIcon,
 } from 'hugeicons-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -36,6 +40,7 @@ type SettingsSection =
   | 'appearance'
   | 'security'
   | 'subscription'
+  | 'api-keys'
   | 'danger';
 
 type RaceLandingTab = 'overview' | 'strategy' | 'lap-analysis' | 'head-to-head' | 'telemetry';
@@ -93,6 +98,7 @@ const NAV_ITEMS: { key: SettingsSection; label: string; icon: typeof UserIcon }[
   { key: 'appearance', label: 'Appearance', icon: PaintBoardIcon },
   { key: 'security', label: 'Security', icon: SecurityCheckIcon },
   { key: 'subscription', label: 'Subscription', icon: CreditCardIcon },
+  { key: 'api-keys', label: 'API Keys', icon: ApiIcon },
   { key: 'danger', label: 'Danger Zone', icon: AlertDiamondIcon },
 ];
 
@@ -550,6 +556,9 @@ const Settings = () => {
                   onOpenPortal={handleOpenPortal}
                   onUpgrade={() => setUpgradeOpen(true)}
                 />
+              )}
+              {activeSection === 'api-keys' && (
+                <ApiKeysPanel subscription={subscription} isSubscribed={isSubscribed} />
               )}
               {activeSection === 'danger' && (
                 <DangerPanel
@@ -1468,6 +1477,273 @@ function SubscriptionPanel({
         </div>
       )}
     </>
+  );
+}
+
+// ─── API Keys Panel ──────────────────────────────────────────────────────────────
+
+interface ApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked: boolean;
+}
+
+interface UsageLogEntry {
+  tool_name: string;
+  created_at: string;
+}
+
+function ApiKeysPanel({
+  subscription,
+  isSubscribed,
+}: {
+  subscription: { plan?: string } | null;
+  isSubscribed: boolean;
+}) {
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+  const [usage, setUsage] = useState<{ count: number; recent: UsageLogEntry[] }>({
+    count: 0,
+    recent: [],
+  });
+  const { trackEvent } = useAnalytics();
+
+  const tier = subscription?.plan || (isSubscribed ? 'pro' : 'free');
+  const limit = tier === 'pro' ? 3000 : 300;
+
+  const loadKeys = async () => {
+    const { data } = await supabase
+      .from('mcp_api_keys')
+      .select('id, name, key_prefix, created_at, last_used_at, revoked')
+      .order('created_at', { ascending: false });
+    if (data) setKeys(data as ApiKey[]);
+  };
+
+  const loadUsage = async () => {
+    const firstOfMonth = new Date();
+    firstOfMonth.setUTCDate(1);
+    firstOfMonth.setUTCHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from('mcp_usage_log')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstOfMonth.toISOString());
+
+    const { data: recent } = await supabase
+      .from('mcp_usage_log')
+      .select('tool_name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    setUsage({
+      count: count ?? 0,
+      recent: (recent as UsageLogEntry[]) ?? [],
+    });
+  };
+
+  useEffect(() => {
+    async function init() {
+      await Promise.all([loadKeys(), loadUsage()]);
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  async function generateKey(): Promise<{ raw: string; hash: string; prefix: string }> {
+    const raw = 'fl_mcp_' + crypto.randomUUID().replace(/-/g, '');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    const hash = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return { raw, hash, prefix: raw.slice(0, 15) };
+  }
+
+  async function handleCreateKey(e: FormEvent) {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    setCreating(true);
+    try {
+      const { raw, hash, prefix } = await generateKey();
+      const { error } = await supabase.from('mcp_api_keys').insert({
+        name: newKeyName.trim(),
+        key_hash: hash,
+        key_prefix: prefix,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setNewKeyValue(raw);
+      setNewKeyName('');
+      await loadKeys();
+      trackEvent('api_key_created');
+    } catch {
+      toast.error('Failed to create key');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRevokeKey(id: string) {
+    const { error } = await supabase.from('mcp_api_keys').update({ revoked: true }).eq('id', id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Key revoked');
+    await loadKeys();
+    trackEvent('api_key_revoked');
+  }
+
+  async function copyToClipboard(text: string) {
+    await navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-8 w-48 rounded bg-white/5" />
+        <div className="h-24 rounded bg-white/5" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Key creation */}
+      <div>
+        <h2 className="mb-4 text-sm font-semibold text-white/90">Create API Key</h2>
+        <form onSubmit={handleCreateKey} className="flex gap-2">
+          <Input
+            value={newKeyName}
+            onChange={(e) => setNewKeyName(e.target.value)}
+            placeholder="Key name (e.g. My Laptop)"
+            className="flex-1"
+            disabled={creating}
+          />
+          <button
+            type="submit"
+            disabled={creating || !newKeyName.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/20 px-3 py-2 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 disabled:opacity-50"
+          >
+            <PlusSignIcon className="size-3.5" />
+            Generate
+          </button>
+        </form>
+
+        {newKeyValue && (
+          <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+            <p className="mb-2 text-xs font-medium text-emerald-400">
+              Key created — copy it now. You won't see it again.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-black/30 px-3 py-1.5 text-xs font-mono text-white/80 break-all">
+                {newKeyValue}
+              </code>
+              <button
+                onClick={() => copyToClipboard(newKeyValue)}
+                className="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+              >
+                <Copy01Icon className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Existing keys */}
+      <div>
+        <h2 className="mb-4 text-sm font-semibold text-white/90">Your Keys</h2>
+        {keys.length === 0 ? (
+          <p className="text-xs text-white/40">No API keys yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {keys.map((key) => (
+              <div
+                key={key.id}
+                className={cn(
+                  'flex items-center justify-between rounded-md border px-3 py-2.5 transition-colors',
+                  key.revoked ? 'border-red-500/20 bg-red-500/5' : 'border-white/10 bg-white/[0.03]'
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-white/80">{key.name}</span>
+                    {key.revoked && (
+                      <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] text-red-400">
+                        Revoked
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-3 text-[11px] text-white/40">
+                    <code className="font-mono">{key.key_prefix}...</code>
+                    <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
+                    {key.last_used_at && (
+                      <span>Last used {new Date(key.last_used_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+                {!key.revoked && (
+                  <button
+                    onClick={() => handleRevokeKey(key.id)}
+                    className="ml-2 shrink-0 rounded p-1 text-white/30 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                  >
+                    <Delete02Icon className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Monthly usage */}
+      <div>
+        <h2 className="mb-4 text-sm font-semibold text-white/90">Monthly Usage</h2>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-emerald-500/60 transition-all"
+              style={{ width: `${Math.min((usage.count / limit) * 100, 100)}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono text-white/60 tabular-nums">
+            {usage.count.toLocaleString()} / {limit.toLocaleString()}
+          </span>
+        </div>
+        <p className="text-[11px] text-white/40">
+          {tier === 'free'
+            ? `Free tier: ${limit.toLocaleString()} calls/month. Upgrade to Pro for ${(limit * 10).toLocaleString()}.`
+            : `Pro tier: ${limit.toLocaleString()} calls/month.`}
+        </p>
+
+        {usage.recent.length > 0 && (
+          <div className="mt-4">
+            <h3 className="mb-2 text-xs font-medium text-white/60">Recent calls</h3>
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {usage.recent.map((entry, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded bg-white/[0.03] px-2.5 py-1.5 text-[11px]"
+                >
+                  <code className="font-mono text-white/50">{entry.tool_name}</code>
+                  <span className="text-white/30">
+                    {new Date(entry.created_at).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

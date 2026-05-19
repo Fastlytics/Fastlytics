@@ -49,6 +49,7 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
 
   return (
     <div
+      data-track-transform
       className="w-full h-full origin-top-left will-change-transform"
       style={{
         transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
@@ -223,4 +224,4 @@ const TrackCanvas: React.FC<TrackCanvasProps> = ({
   );
 };
 
-export default TrackCanvas;
+export default React.memo(TrackCanvas);
