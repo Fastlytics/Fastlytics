@@ -558,7 +558,11 @@ const Settings = () => {
                 />
               )}
               {activeSection === 'api-keys' && (
-                <ApiKeysPanel subscription={subscription} isSubscribed={isSubscribed} />
+                <ApiKeysPanel
+                  userId={user?.id}
+                  subscription={subscription}
+                  isSubscribed={isSubscribed}
+                />
               )}
               {activeSection === 'danger' && (
                 <DangerPanel
@@ -1497,9 +1501,11 @@ interface UsageLogEntry {
 }
 
 function ApiKeysPanel({
+  userId,
   subscription,
   isSubscribed,
 }: {
+  userId: string | null | undefined;
   subscription: { plan?: string } | null;
   isSubscribed: boolean;
 }) {
@@ -1567,10 +1573,15 @@ function ApiKeysPanel({
   async function handleCreateKey(e: FormEvent) {
     e.preventDefault();
     if (!newKeyName.trim()) return;
+    if (!userId) {
+      toast.error('You must be signed in to create an API key');
+      return;
+    }
     setCreating(true);
     try {
       const { raw, hash, prefix } = await generateKey();
       const { error } = await supabase.from('mcp_api_keys').insert({
+        user_id: userId,
         name: newKeyName.trim(),
         key_hash: hash,
         key_prefix: prefix,
