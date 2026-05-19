@@ -24,6 +24,7 @@ const DEFAULT_TIERS: PricingTier[] = [
       'Pace distribution & race progression',
       'Current season only',
       '5 minutes of session replay',
+      '300 MCP API calls/month',
     ],
     cta: 'Get started',
   },
@@ -38,6 +39,7 @@ const DEFAULT_TIERS: PricingTier[] = [
       'Everything in Free, plus:',
       'All season archives (historical data)',
       'Unlimited session replay',
+      '3,000 MCP API calls/month',
       'Support a solo dev who is a uni student',
     ],
     cta: 'Subscribe to Pro',
@@ -70,6 +72,7 @@ const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'News feed & discussions', free: true, pro: true },
   { feature: 'Saved charts & folders', free: true, pro: true },
   { feature: 'Public profile & comments', free: true, pro: true },
+  { feature: 'MCP API calls /month', free: '300', pro: '3,000' },
 ];
 
 const CheckCell = () => <Tick01Icon className="size-4 text-emerald-400" />;
