@@ -33,6 +33,7 @@ const PRO_FEATURES = [
   'Driver and team profiles',
   'Championship progression',
   'Team pace analysis',
+  '3,000 MCP API calls/month',
 ];
 
 function buildReturnUrl(path: string, status: 'cancelled' | 'failed') {
