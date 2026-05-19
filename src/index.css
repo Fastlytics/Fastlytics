@@ -1,151 +1,5 @@
 @import 'tailwindcss';
 
-/* Geist Font Faces - Local */
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Black.woff2') format('woff2');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/geist-font/Geist/webfonts/Geist-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-/* Geist Mono Font Faces - Local */
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Black.woff2') format('woff2');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('/fonts/geist-font/GeistMono/webfonts/GeistMono-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
 @theme {
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -178,17 +32,17 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Custom fonts - Geist */
-  --font-sans: 'Geist', sans-serif;
-  --font-mono: 'Geist Mono', monospace;
+  /* Custom fonts - Inter */
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Inter', sans-serif;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-pulse-glow: pulse-glow 2s infinite;
-  --animate-telemetry-in: telemetry-in 0.6s ease-out forwards;
-  --animate-slide-in-right: slide-in-right 0.5s ease-out forwards;
-  --animate-slide-in-left: slide-in-left 0.5s ease-out forwards;
-  --animate-fade-in: fade-in 0.5s ease-out forwards;
+  --animate-telemetry-in: telemetry-in 0.3s ease-out forwards;
+  --animate-slide-in-right: slide-in-right 0.25s ease-out forwards;
+  --animate-slide-in-left: slide-in-left 0.25s ease-out forwards;
+  --animate-fade-in: fade-in 0.2s ease-out forwards;
   --animate-loading-track: loading-track 2s ease-in-out forwards;
   --animate-float: float 4s ease-in-out infinite;
   --animate-pulse-glow-red: pulse-glow-red 2s ease-in-out infinite;
@@ -311,6 +165,57 @@
       stroke-dashoffset: 0;
     }
   }
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+  @keyframes logo-breathe {
+    0%,
+    100% {
+      opacity: 0.85;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+  }
+  @keyframes boot-progress {
+    0% {
+      transform: scaleX(0) translateX(0);
+    }
+    50% {
+      transform: scaleX(0.6) translateX(0);
+    }
+    100% {
+      transform: scaleX(0) translateX(100%);
+    }
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes marquee-reverse {
+    0% {
+      transform: translateX(-50%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
 
   /* F1 team colors */
   --color-f1-ferrari: #ff2800;
@@ -391,12 +296,14 @@
   }
 
   html {
-    font-family: 'Geist', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Geist', sans-serif;
+    font-family: 'Inter', sans-serif;
+    font-weight: 450;
+    font-optical-sizing: auto;
     background-image:
       linear-gradient(to bottom, rgba(10, 10, 10, 0.97), rgba(10, 10, 10, 0.97)),
       var(--tw-gradient-stops);
@@ -407,7 +314,7 @@
   kbd,
   samp,
   pre {
-    font-family: 'Geist Mono', monospace;
+    font-family: 'Inter', sans-serif;
   }
 
   input,
@@ -611,6 +518,44 @@
   @apply bg-primary/10 px-3 py-1 rounded-full text-xs border border-primary/20;
 }
 
+/* Landing redesign utilities */
+.race-display {
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.race-micro {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.race-pixel {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0;
+}
+
+.race-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.race-scanline {
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px,
+    transparent 7px
+  );
+}
+
 /* Footer styles */
 .footer {
   @apply bg-card/80 border-t border-border/50 mt-auto;
@@ -798,4 +743,16 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Reduced motion: disable animations for users who prefer reduced motion (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

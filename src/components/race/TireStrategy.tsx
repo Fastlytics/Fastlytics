@@ -8,14 +8,13 @@ import {
   fetchSpecificRaceResults,
   DetailedRaceResult,
 } from '@/lib/api';
-import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircleIcon, Menu01Icon, Analytics01Icon } from 'hugeicons-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import StintAnalysisTable from './StintAnalysisTable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { getDriverImage } from '@/utils/imageMapping';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 
 interface TireStrategyProps {
   className?: string;
@@ -30,14 +29,16 @@ const tireCompoundColors: { [key: string]: string } = {
   SOFT: 'bg-red-600',
   MEDIUM: 'bg-yellow-400',
   HARD: 'bg-white',
-  INTERMEDIATE: 'bg-green-500',
+  INTERMEDIATE: 'bg-emerald-500',
   WET: 'bg-blue-500',
-  UNKNOWN: 'bg-gray-500',
+  UNKNOWN: 'bg-white/30',
 };
 
 const getTireColorClass = (compound: string): string => {
   return tireCompoundColors[compound?.toUpperCase()] || tireCompoundColors.UNKNOWN;
 };
+
+const STRATEGY_SKELETONS = Array.from({ length: 8 }, (_, i) => `ss-${i}`);
 
 const TireStrategy: React.FC<TireStrategyProps> = ({
   className,
@@ -47,7 +48,11 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
   session,
   favoriteDriver,
 }) => {
-  const [focusedDriver, setFocusedDriver] = React.useState<string | null>(null);
+  const [focusedDriver, setFocusedDriver] = React.useReducer(
+    (_: string | null, v: string | null) => v,
+    null
+  );
+  const [activeView, setActiveView] = React.useState<'overview' | 'detail'>('overview');
   const { trackInteraction } = useAnalytics();
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
@@ -64,6 +69,17 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     retry: 1,
     enabled: !!year && !!event && !!session,
   });
+
+  const driverNameMap = useMemo(() => {
+    if (!raceResults) return new Map<string, string>();
+    const nameMap = new Map<string, string>();
+    raceResults.forEach((result) => {
+      if (result.driverCode && result.fullName) {
+        nameMap.set(result.driverCode, result.fullName);
+      }
+    });
+    return nameMap;
+  }, [raceResults]);
 
   const driverPositionMap = useMemo(() => {
     if (!raceResults) return new Map<string, number>();
@@ -89,12 +105,11 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     retry: 1,
     enabled: !!year && !!event && !!session,
     select: (rawData) => {
-      // Handle both new TireStrategyResponse format and old DriverStrategy[] format
       const data: DriverStrategy[] = Array.isArray(rawData)
         ? rawData
         : ((rawData as unknown as TireStrategyResponse).stints ?? []);
       if (!data) return [];
-      return [...data].sort((a, b) => {
+      return data.toSorted((a, b) => {
         const posA = driverPositionMap.get(a.driver);
         const posB = driverPositionMap.get(b.driver);
         if (posA !== undefined && posB !== undefined) return posA - posB;
@@ -110,185 +125,39 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     return Math.max(...strategyData.flatMap((d) => d.stints.map((s) => s.endLap)), 1);
   }, [strategyData]);
 
-  const renderStrategyOverview = () => {
-    if (isLoadingStrategy) {
-      return (
-        <div className="space-y-4 pt-4 animate-pulse">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="w-16 h-8 bg-gray-800 rounded-sm" />
-              <div className="flex-1 h-8 bg-gray-800 rounded-sm" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-    if (isErrorStrategy) {
-      return (
-        <div className="w-full min-h-[200px] bg-red-900/10 border border-red-600/50 flex flex-col items-center justify-center text-red-500 p-4 mt-4">
-          <AlertCircleIcon className="w-8 h-8 mb-2" />
-          <p className="font-bold uppercase tracking-wider">Error loading strategy</p>
-          <p className="text-xs text-red-400 mt-1 font-mono">
-            {(errorStrategy as Error)?.message || 'Could not fetch data.'}
-          </p>
-        </div>
-      );
-    }
-    if (!strategyData || strategyData.length === 0) {
-      return (
-        <div className="w-full min-h-[200px] bg-black border border-gray-700 flex items-center justify-center text-gray-500 p-4 mt-4 font-mono uppercase tracking-widest">
-          No tire strategy data found
-        </div>
-      );
-    }
-
-    return (
-      <TooltipProvider delayDuration={0}>
-        <div className="pt-6">
-          {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 mb-8 border-b border-gray-800 pb-6">
-            {Object.entries(tireCompoundColors).map(
-              ([compound, colorClass]) =>
-                compound !== 'UNKNOWN' && (
-                  <div key={compound} className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        'w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]',
-                        colorClass
-                      )}
-                    ></span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                      {compound}
-                    </span>
-                  </div>
-                )
-            )}
-          </div>
-
-          {/* Chart */}
-          <div className="space-y-4 relative">
-            {/* Grid Lines */}
-            <div className="absolute inset-0 flex pointer-events-none ml-20">
-              {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
-                <div
-                  key={tick}
-                  className="h-full border-l border-gray-800/30 absolute"
-                  style={{ left: `${tick * 100}%` }}
-                >
-                  <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-mono text-gray-600">
-                    L{Math.round(tick * maxLaps)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {strategyData.map((driverData) => {
-              const isRaceSession = session === 'R' || session === 'Sprint';
-              const position = isRaceSession ? driverPositionMap.get(driverData.driver) : undefined;
-              const positionText =
-                position !== undefined && isFinite(position) ? `P${position}` : '';
-
-              return (
-                <div
-                  key={driverData.driver}
-                  className={cn(
-                    'flex items-center gap-4 group relative z-10 transition-all duration-300 cursor-pointer p-2 rounded-lg',
-                    focusedDriver && focusedDriver !== driverData.driver
-                      ? 'opacity-20'
-                      : 'opacity-100',
-                    favoriteDriver &&
-                      (driverData.driver === favoriteDriver ||
-                        driverData.driver.includes(favoriteDriver)) &&
-                      !focusedDriver
-                      ? 'bg-red-900/20 border border-red-600/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]'
-                      : 'hover:bg-gray-900/50'
-                  )}
-                  onClick={() => toggleDriverFocus(driverData.driver)}
-                >
-                  <div className="w-16 flex flex-col items-end shrink-0">
-                    <span
-                      className={cn(
-                        'text-sm font-black font-mono transition-colors',
-                        focusedDriver === driverData.driver
-                          ? 'text-red-500'
-                          : 'text-white group-hover:text-red-500'
-                      )}
-                    >
-                      {driverData.driver}
-                    </span>
-                    {positionText && (
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        {positionText}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex-grow h-8 bg-gray-900/50 relative flex rounded-sm overflow-hidden ring-1 ring-gray-800 group-hover:ring-gray-600 transition-all">
-                    {driverData.stints.map((stint, index) => {
-                      const widthPercentage = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
-                      const leftOffsetPercentage = ((stint.startLap - 1) / maxLaps) * 100;
-                      const bgColorClass = getTireColorClass(stint.compound);
-                      const isNew =
-                        stint.compound === 'SOFT' ||
-                        stint.compound === 'MEDIUM' ||
-                        stint.compound === 'HARD'; // Simplified logic, ideally backend provides 'isNew'
-
-                      return (
-                        <Tooltip key={index}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={cn(
-                                'h-full absolute transition-all hover:brightness-110 hover:z-20 border-r border-black/40 cursor-help',
-                                bgColorClass
-                              )}
-                              style={{
-                                left: `${leftOffsetPercentage}%`,
-                                width: `${widthPercentage}%`,
-                              }}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            className="bg-black/90 backdrop-blur-xl border border-gray-700 text-white p-3 rounded-none shadow-2xl"
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-2">
-                                <span className={cn('w-2 h-2 rounded-full', bgColorClass)}></span>
-                                <span className="font-bold uppercase tracking-wider text-sm">
-                                  {stint.compound}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-mono text-gray-300">
-                                <span>Laps:</span>
-                                <span className="text-white text-right">
-                                  {stint.startLap} - {stint.endLap}
-                                </span>
-                                <span>Duration:</span>
-                                <span className="text-white text-right">{stint.lapCount} laps</span>
-                              </div>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </TooltipProvider>
+  // Compute summary stats
+  const summaryStats = useMemo(() => {
+    if (!strategyData || strategyData.length === 0) return null;
+    const totalStops = strategyData.reduce((sum, d) => sum + Math.max(0, d.stints.length - 1), 0);
+    const avgStops = totalStops / strategyData.length;
+    const compoundUsage: Record<string, number> = {};
+    strategyData.forEach((d) =>
+      d.stints.forEach((s) => {
+        const c = s.compound?.toUpperCase() || 'UNKNOWN';
+        compoundUsage[c] = (compoundUsage[c] || 0) + 1;
+      })
     );
+    const mostUsedCompound = Object.entries(compoundUsage).sort((a, b) => b[1] - a[1])[0];
+    return { totalStops, avgStops, compoundUsage, mostUsedCompound };
+  }, [strategyData]);
+
+  const getDriverFullName = (code: string): string => {
+    return driverNameMap.get(code) || code;
   };
 
   return (
     <div
       ref={exportRef}
-      className={cn('bg-black p-0', className)}
+      className={cn(CARD_CONTAINER, className)}
       style={{ animationDelay: `${delay * 100}ms` } as React.CSSProperties}
     >
-      <Tabs defaultValue="overview" className="w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-4">
+        <div>
+          <h3 className="text-[16px] font-semibold text-white">Tire Strategy</h3>
+          <p className="mt-0.5 text-[12px] text-white/80">Compound usage and stint breakdown</p>
+        </div>
+        <div className="flex items-center gap-2">
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {
@@ -301,38 +170,307 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             }
             isExporting={isExporting}
           />
-          <TabsList className="bg-transparent p-0 h-auto rounded-none gap-2 w-full sm:w-auto">
-            <TabsTrigger
-              value="overview"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="analysis"
-              className="flex-1 sm:flex-none data-[state=active]:bg-white data-[state=active]:text-black text-gray-500 border border-gray-800 data-[state=active]:border-white text-xs font-bold uppercase tracking-wider py-2 px-6 rounded-none transition-all hover:text-white hover:border-gray-600"
-            >
-              Stint Detail
-            </TabsTrigger>
-          </TabsList>
         </div>
+      </div>
 
-        <TabsContent
-          value="overview"
-          className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500"
+      {/* Summary stats row */}
+      {summaryStats && (
+        <div className="grid grid-cols-2 divide-x divide-white/[0.04] border-y border-white/[0.04] lg:grid-cols-4">
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Total pit stops</div>
+            <div className="mt-1 text-[18px] font-semibold tabular-nums text-white">
+              {summaryStats.totalStops}
+            </div>
+          </div>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Avg stops</div>
+            <div className="mt-1 text-[18px] font-semibold tabular-nums text-white">
+              {summaryStats.avgStops.toFixed(1)}
+            </div>
+          </div>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Most used</div>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={cn(
+                  'size-2.5 rounded-full',
+                  getTireColorClass(summaryStats.mostUsedCompound?.[0] || '')
+                )}
+              />
+              <span className="text-[14px] font-semibold text-white">
+                {summaryStats.mostUsedCompound?.[0] || '—'}
+              </span>
+              <span className="text-[12px] text-white/80">
+                ({summaryStats.mostUsedCompound?.[1]} stints)
+              </span>
+            </div>
+          </div>
+          <div className="px-5 py-3">
+            <div className={CARD_LABEL}>Race distance</div>
+            <div className="mt-1 text-[18px] font-semibold tabular-nums text-white">
+              {maxLaps} <span className="text-[12px] text-white/80">laps</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View toggle */}
+      <div className="flex items-center gap-1 px-5 pt-4 pb-2">
+        <button
+          onClick={() => setActiveView('overview')}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors',
+            activeView === 'overview'
+              ? 'bg-white/[0.06] text-white'
+              : 'text-white/80 hover:text-white'
+          )}
         >
-          {renderStrategyOverview()}
-        </TabsContent>
-        <TabsContent
-          value="analysis"
-          className="mt-0 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveView('detail')}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors',
+            activeView === 'detail'
+              ? 'bg-white/[0.06] text-white'
+              : 'text-white/80 hover:text-white'
+          )}
         >
-          <StintAnalysisTable year={year} event={event} session={session} />
-        </TabsContent>
-      </Tabs>
+          Stint Detail
+        </button>
+      </div>
+
+      {/* Content */}
+      {activeView === 'overview' ? (
+        <StrategyOverview
+          isLoadingStrategy={isLoadingStrategy}
+          isErrorStrategy={isErrorStrategy}
+          errorStrategy={errorStrategy}
+          strategyData={strategyData}
+          maxLaps={maxLaps}
+          driverPositionMap={driverPositionMap}
+          favoriteDriver={favoriteDriver}
+          focusedDriver={focusedDriver}
+          toggleDriverFocus={toggleDriverFocus}
+          getDriverFullName={getDriverFullName}
+          year={year}
+        />
+      ) : (
+        <div className="px-5 pb-5">
+          <StintAnalysisTable
+            year={year}
+            event={event}
+            session={session}
+            driverNameMap={driverNameMap}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
 export { TireStrategy };
+
+/* ─── Strategy Overview ─── */
+
+interface StrategyOverviewProps {
+  isLoadingStrategy: boolean;
+  isErrorStrategy: boolean;
+  errorStrategy: Error | null;
+  strategyData: DriverStrategy[] | undefined;
+  maxLaps: number;
+  driverPositionMap: Map<string, number>;
+  favoriteDriver?: string | null;
+  focusedDriver: string | null;
+  toggleDriverFocus: (driver: string) => void;
+  getDriverFullName: (code: string) => string;
+  year: number;
+}
+
+const StrategyOverview: React.FC<StrategyOverviewProps> = ({
+  isLoadingStrategy,
+  isErrorStrategy,
+  errorStrategy,
+  strategyData,
+  maxLaps,
+  driverPositionMap,
+  favoriteDriver,
+  focusedDriver,
+  toggleDriverFocus,
+  getDriverFullName,
+  year,
+}) => {
+  if (isLoadingStrategy) {
+    return (
+      <div className="space-y-2 px-5 pb-5 pt-2">
+        {STRATEGY_SKELETONS.map((id) => (
+          <div key={id} className="flex items-center gap-4 py-2">
+            <div className="h-4 w-24 animate-pulse rounded bg-white/[0.04]" />
+            <div className="h-8 flex-1 animate-pulse rounded bg-white/[0.04]" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (isErrorStrategy) {
+    return (
+      <div className="px-5 pb-5 pt-2">
+        <div className="flex min-h-[200px] items-center justify-center rounded-lg border border-red-500/20 px-6 py-8 text-center">
+          <div>
+            <p className="text-[14px] font-medium text-red-400">Error loading strategy</p>
+            <p className="mt-1 text-[12px] text-white/80">
+              {(errorStrategy as Error)?.message || 'Could not fetch data.'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!strategyData || strategyData.length === 0) {
+    return (
+      <div className="px-5 pb-5 pt-2">
+        <div className="flex min-h-[200px] items-center justify-center text-[13px] text-white/80">
+          No tire strategy data found
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div className="px-5 pb-5 pt-2">
+        {/* Compound legend */}
+        <div className="mb-4 flex flex-wrap items-center gap-4 border-b border-white/[0.04] pb-4">
+          {Object.entries(tireCompoundColors).map(
+            ([compound, colorClass]) =>
+              compound !== 'UNKNOWN' && (
+                <div key={compound} className="flex items-center gap-1.5">
+                  <span className={cn('size-2.5 rounded-full', colorClass)} />
+                  <span className="text-[12px] font-medium text-white">{compound}</span>
+                </div>
+              )
+          )}
+        </div>
+
+        {/* Lap markers */}
+        <div className="mb-2 flex items-center">
+          <div className="w-[140px] shrink-0" />
+          <div className="relative flex-1">
+            <div className="flex justify-between text-[11px] text-white/80">
+              <span>L1</span>
+              <span>L{Math.round(maxLaps * 0.25)}</span>
+              <span>L{Math.round(maxLaps * 0.5)}</span>
+              <span>L{Math.round(maxLaps * 0.75)}</span>
+              <span>L{maxLaps}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Driver rows */}
+        <div className="space-y-1">
+          {strategyData.map((driverData) => {
+            const position = driverPositionMap.get(driverData.driver);
+            const isFav =
+              favoriteDriver &&
+              (driverData.driver === favoriteDriver || driverData.driver.includes(favoriteDriver));
+            const fullName = getDriverFullName(driverData.driver);
+            const headshot = getDriverImage(driverData.driver, year);
+
+            return (
+              <div
+                key={driverData.driver}
+                role="button"
+                tabIndex={0}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-2 py-2 transition-all cursor-pointer',
+                  focusedDriver && focusedDriver !== driverData.driver
+                    ? 'opacity-20'
+                    : 'opacity-100',
+                  isFav && !focusedDriver ? 'bg-red-500/[0.04]' : 'hover:bg-white/[0.02]'
+                )}
+                onClick={() => toggleDriverFocus(driverData.driver)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleDriverFocus(driverData.driver);
+                  }
+                }}
+              >
+                {/* Driver info */}
+                <div className="flex w-[128px] shrink-0 items-center gap-2.5">
+                  <img
+                    src={headshot}
+                    alt=""
+                    className="size-8 shrink-0 rounded-full border border-white/[0.06] object-cover object-top"
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium text-white">{fullName}</div>
+                    <div className="text-[11px] text-white/80">
+                      {position !== undefined ? `P${position}` : '—'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stint bars */}
+                <div className="relative flex h-8 flex-1 overflow-hidden rounded-md border border-white/[0.04]">
+                  {driverData.stints.map((stint) => {
+                    const widthPct = ((stint.endLap - stint.startLap + 1) / maxLaps) * 100;
+                    const leftPct = ((stint.startLap - 1) / maxLaps) * 100;
+                    const bgColor = getTireColorClass(stint.compound);
+
+                    return (
+                      <Tooltip key={`${stint.startLap}-${stint.endLap}`}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              'absolute h-full transition-all hover:brightness-110 border-r border-black/30',
+                              bgColor
+                            )}
+                            style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                          >
+                            {widthPct > 8 && (
+                              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-black/80">
+                                {stint.lapCount}
+                              </span>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] p-3 text-white shadow-xl"
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className={cn('size-2.5 rounded-full', bgColor)} />
+                              <span className="text-[12px] font-semibold text-white">
+                                {stint.compound}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+                              <span className="text-white/80">Laps</span>
+                              <span className="text-right font-medium text-white">
+                                {stint.startLap}–{stint.endLap}
+                              </span>
+                              <span className="text-white/80">Duration</span>
+                              <span className="text-right font-medium text-white">
+                                {stint.lapCount} laps
+                              </span>
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+};
+
 export default TireStrategy;

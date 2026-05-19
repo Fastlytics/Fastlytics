@@ -1,3 +1,4 @@
+// knip-ignore
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Gauge } from 'lucide-react';
@@ -13,9 +14,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="animate-spin">
-          <Gauge className="h-10 w-10 text-red-600" />
+          <Gauge className="size-10 text-red-600" />
         </div>
       </div>
     );
@@ -23,7 +24,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     const returnTo = location.pathname + location.search;
-    return <Navigate to={`/auth?returnTo=${encodeURIComponent(returnTo)}`} replace />;
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
   // Check if onboarding is complete

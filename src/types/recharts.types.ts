@@ -1,3 +1,4 @@
+// knip-ignore
 export type ChartPayloadEntry<TData> = {
   name?: string;
   value?: TData;

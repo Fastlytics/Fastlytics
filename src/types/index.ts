@@ -1,3 +1,4 @@
+// knip-ignore
 export type { CustomTooltipProps, CustomLegendProps, ChartPayloadEntry } from './recharts.types';
 export type {
   ChunkManifest,

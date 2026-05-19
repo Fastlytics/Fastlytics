@@ -8,6 +8,7 @@
 
 # Testing
 /coverage
+/private-tests/
 
 # Vite / Build Output
 /dist
@@ -20,11 +21,10 @@
 /backend-api/site/
 /.vite
 *.local
+react-doctor-logs
 
 # Cloudflare Workers
-workers/.wrangler/
-workers/dist/
-workers/node_modules
+workers-old (deprecated)
 
 # TypeScript
 *.tsbuildinfo
@@ -93,19 +93,51 @@ CAR_HARDWARE_SPECS.md
 SECURITY_AUDIT_REPORT.md
 FIX_PLAN.sh
 
-.sisyphus
-.pytest_cache/
-.ruff_cache/
 docs
 reports
 projects
 .kilo
 .opencode
-.gitignore
 ios
-.roo
 .prettier*
 openspec
 .agent
 AGENTS.md
 dependency-audit-report-2026-04-24.md
+mcp
+mcp-server
+skills
+.fallow
+.agent
+.agent/workflows/
+.sisyphus
+.pytest_cache/
+.ruff_cache/
+.gitignore
+bun.lockb
+stylelint.config.mjs
+skills-lock.json
+knip.json
+.deepsec
+workers-v2 (new and updated)
+wireguard
+SPLIT_PLAN.md
+doctor_report.txt
+.gitignore
+.gitignore
+extract.py
+.commandcode/taste/taste.md
+scripts/generate-logo-png.js
+.kiro
+TELEMETRY_BULK_FETCH_PLAN.md
+TELEMETRY_BULK_SETUP.md
+TELEMETRY_SUMMARY.md
+testimonials/emilia_romagna_grand_prix_max_verstappen_was_the.json
+testimonials/i_built_a_really_cool_website_to_visualize_all.json
+testimonials/i_built_an_f1_telemetry_tool_that_goes_beyond.json
+testimonials/i_made_a_really_cool_website_to_visualize_the_raw.json
+testimonials/introducing_fastlytics_an_opensource_f1_telemetry.json
+testimonials/it_could_actually_be_ferraris_year_2026.json
+testimonials/monaco_gp_fp1_leclerc_seems_to_brake_later_even.json
+testimonials/norris_vs_verstappen_q3_speed_trace_comparison.json
+testimonials/someone_forked_my_open_source_project_removed_the.json

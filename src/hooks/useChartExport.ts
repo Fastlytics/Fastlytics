@@ -19,8 +19,7 @@ export interface ChartExportData {
 }
 
 const PNG_SCALE = 4;
-const FONT = 'Geist, system-ui, -apple-system, sans-serif';
-const MONO = 'Geist Mono, monospace';
+const FONT = 'Inter, system-ui, -apple-system, sans-serif';
 
 /** Map 3-letter driver codes to last names. */
 const DRIVER_LAST_NAMES: Record<string, string> = {
@@ -318,11 +317,11 @@ function buildBrandedSvg(
   <rect width="${totalW}" height="${totalH}" fill="#000000"/>
 
   <!-- Context: year / event / session -->
-  ${contextLine ? `<text x="${padding}" y="${contextY}" fill="#6b7280" font-family="${MONO}" font-size="12" font-weight="700" letter-spacing="2">${escapeXml(contextLine)}</text>` : ''}
+  ${contextLine ? `<text x="${padding}" y="${contextY}" fill="#6b7280" font-family="${FONT}" font-size="12" font-weight="700" letter-spacing="2">${escapeXml(contextLine)}</text>` : ''}
 
   <!-- Chart title -->
   <text x="${padding}" y="${titleY}" fill="#ffffff" font-family="${FONT}" font-size="28" font-weight="900" font-style="italic">${escapeXml(meta.title.toUpperCase())}</text>
-  ${meta.subtitle ? `<text x="${padding}" y="${titleY + 20}" fill="#9ca3af" font-family="${MONO}" font-size="11">${escapeXml(meta.subtitle)}</text>` : ''}
+  ${meta.subtitle ? `<text x="${padding}" y="${titleY + 20}" fill="#9ca3af" font-family="${FONT}" font-size="11">${escapeXml(meta.subtitle)}</text>` : ''}
 
   <!-- Red accent -->
   <rect y="${headerH}" width="${totalW}" height="${accentH}" fill="#dc2626"/>
@@ -339,8 +338,8 @@ function buildBrandedSvg(
   <line x1="${padding}" y1="${footerY}" x2="${totalW - padding}" y2="${footerY}" stroke="#1f2937" stroke-width="1"/>
   <text x="${padding}" y="${footerY + 26}" font-family="${FONT}" font-size="14" font-weight="900" font-style="italic" fill="#ffffff">FASTLYTICS</text>
   <text x="${padding + 100}" y="${footerY + 26}" font-family="${FONT}" font-size="14" font-weight="900" fill="#dc2626">//</text>
-  <text x="${padding + 120}" y="${footerY + 26}" font-family="${MONO}" font-size="10" fill="#6b7280">fastlytics.app</text>
-  <text x="${totalW - padding}" y="${footerY + 26}" text-anchor="end" font-family="${MONO}" font-size="9" fill="#4b5563">${escapeXml(dateStr)}</text>
+  <text x="${padding + 120}" y="${footerY + 26}" font-family="${FONT}" font-size="10" fill="#6b7280">fastlytics.app</text>
+  <text x="${totalW - padding}" y="${footerY + 26}" text-anchor="end" font-family="${FONT}" font-size="9" fill="#4b5563">${escapeXml(dateStr)}</text>
 </svg>`;
 }
 
@@ -519,7 +518,7 @@ async function exportHtmlAsPng(container: HTMLDivElement, meta: ChartExportMeta)
 
   // Context line
   if (contextLine) {
-    ctx.font = `700 12px ${MONO}`;
+    ctx.font = `700 12px ${FONT}`;
     ctx.fillStyle = '#6b7280';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(contextLine, padding, 30);
@@ -532,7 +531,7 @@ async function exportHtmlAsPng(container: HTMLDivElement, meta: ChartExportMeta)
 
   // Subtitle
   if (meta.subtitle) {
-    ctx.font = `400 11px ${MONO}`;
+    ctx.font = `400 11px ${FONT}`;
     ctx.fillStyle = '#9ca3af';
     ctx.fillText(meta.subtitle, padding, contextLine ? 80 : 56);
   }
@@ -562,7 +561,7 @@ async function exportHtmlAsPng(container: HTMLDivElement, meta: ChartExportMeta)
   ctx.fillText('FASTLYTICS', padding, footerY + 26);
   ctx.fillStyle = '#dc2626';
   ctx.fillText('//', padding + 100, footerY + 26);
-  ctx.font = `400 10px ${MONO}`;
+  ctx.font = `400 10px ${FONT}`;
   ctx.fillStyle = '#6b7280';
   ctx.fillText('fastlytics.app', padding + 120, footerY + 26);
 
@@ -571,7 +570,7 @@ async function exportHtmlAsPng(container: HTMLDivElement, meta: ChartExportMeta)
     month: 'short',
     year: 'numeric',
   });
-  ctx.font = `400 9px ${MONO}`;
+  ctx.font = `400 9px ${FONT}`;
   ctx.fillStyle = '#4b5563';
   ctx.textAlign = 'right';
   ctx.fillText(dateStr, totalW - padding, footerY + 26);

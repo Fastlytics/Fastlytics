@@ -1,0 +1,598 @@
+// knip-ignore
+import { Link } from 'react-router-dom';
+import { m, stagger } from 'motion/react';
+import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
+
+const FEATURES = [
+  {
+    title: 'Track Dominance',
+    description:
+      'See which driver owns which sector. Sector-by-sector color overlays reveal where speed is gained and lost.',
+  },
+  {
+    title: 'Telemetry Overlay',
+    description:
+      'Speed, brake, throttle and gear traces for any driver and lap. Overlay up to four drivers at once.',
+  },
+  {
+    title: 'Tyre Strategy',
+    description:
+      'Stint timelines, degradation curves, compound life and pit window predictions as the race unfolds.',
+  },
+  {
+    title: 'Session Replay',
+    description:
+      'Scrub through any session with positions, race control events and commentary synced to the timeline.',
+  },
+  {
+    title: 'Driver Comparison',
+    description:
+      'Head-to-head lap deltas, sector splits and pace trends. Find the corner-by-corner advantage.',
+  },
+  {
+    title: 'Championship Context',
+    description:
+      'Standings progression, points scenarios and championship momentum across the full season arc.',
+  },
+];
+
+const PRODUCT_BULLETS = [
+  {
+    label: 'Synced context',
+    desc: 'Every view shares the same lap, session and driver state',
+  },
+  {
+    label: 'Delta precision',
+    desc: '0.001s timing from sector splits to gap evolution',
+  },
+  {
+    label: 'Pit window alerts',
+    desc: 'Undercut and overcut probability as the race develops',
+  },
+  { label: 'Free to start', desc: 'Full platform access on the current season' },
+];
+
+const SIGNAL_ROWS = [
+  {
+    label: 'Lap delta',
+    value: '-0.358s',
+    note: 'Gaining through S1 braking',
+    color: 'text-emerald-400',
+  },
+  {
+    label: 'Tyre drop',
+    value: '+0.086s/lap',
+    note: 'Medium crossing target cliff',
+    color: 'text-amber-400',
+  },
+  {
+    label: 'Pit window',
+    value: 'Lap 23-25',
+    note: 'Undercut probability rising',
+    color: 'text-red-400',
+  },
+  {
+    label: 'Track bias',
+    value: 'S1/S3',
+    note: 'Strong under braking and exit',
+    color: 'text-blue-400',
+  },
+];
+
+const BROADCAST_VS_FASTLYTICS = [
+  {
+    broadcast: 'Verstappen sets fastest lap',
+    fastlytics:
+      '0.15s gained under braking into T9, lost 0.08s on exit T12. Net gain from tyre cliff on lap 34.',
+  },
+  {
+    broadcast: 'Hamilton pits',
+    fastlytics:
+      'Undercut window opened 2 laps ago. Medium compound has 0.12s/lap degradation advantage over hard.',
+  },
+  {
+    broadcast: 'Norris is catching Piastri',
+    fastlytics:
+      'Pace delta: \u22120.4s/lap in S1 but converging. Gap closes in 6 laps at current rate.',
+  },
+];
+
+const FOOTER_GROUPS = [
+  {
+    title: 'Platform',
+    links: [
+      { label: 'Race Desk', href: '/dashboard' },
+      { label: 'Calendar', href: '/calendar' },
+      { label: 'Driver Standings', href: '/standings/drivers' },
+      { label: 'Team Standings', href: '/standings/teams' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', href: '/about' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'FAQ', href: '/faq' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'Press Kit', href: '/press-kit' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacy', href: '/privacy-policy' },
+      { label: 'Terms', href: '/terms-of-service' },
+      { label: 'Refunds', href: '/refund-policy' },
+    ],
+  },
+];
+
+const CONTAINER_VARIANTS = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      delayChildren: stagger(0.12),
+    },
+  },
+};
+
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, x: -16 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+} as const;
+
+export function LogoBar() {
+  return null;
+}
+
+export function FeaturesSection() {
+  return (
+    <section id="features" className="relative py-24 lg:py-32">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+        <div className="grid items-end gap-6 lg:grid-cols-[1fr_1fr]">
+          <div>
+            <m.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-[13px] font-semibold uppercase tracking-widest text-red-400"
+            >
+              Features
+            </m.p>
+            <m.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
+            >
+              Everything the broadcast doesn't show you
+            </m.h2>
+          </div>
+          <m.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-[16px] leading-relaxed text-white/40 lg:text-right"
+          >
+            Every module answers a racing question: who is gaining, where, why, and what happens
+            next.
+          </m.p>
+        </div>
+        <div className="mt-12 h-px w-full bg-white/[0.06]" />
+        <m.div
+          variants={CONTAINER_VARIANTS}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+        >
+          {FEATURES.map((feature, index) => (
+            <m.div
+              key={feature.title}
+              variants={ITEM_VARIANTS}
+              className="group grid items-center gap-4 border-b border-white/[0.04] py-6 sm:grid-cols-[auto_1fr_1.2fr] sm:gap-8 lg:py-8"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-[13px] tabular-nums text-white/15">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div className="hidden h-px w-8 bg-white/10 sm:block" />
+              </div>
+              <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-white sm:text-[20px]">
+                {feature.title}
+              </h3>
+              <p className="text-[14px] leading-relaxed text-white/35 transition-colors group-hover:text-white/50">
+                {feature.description}
+              </p>
+            </m.div>
+          ))}
+        </m.div>
+      </div>
+    </section>
+  );
+}
+
+export function ProductSection() {
+  return (
+    <section id="product" className="relative border-y border-white/[0.04] py-24 lg:py-32">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <m.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-[13px] font-semibold uppercase tracking-widest text-red-400"
+            >
+              Race Desk
+            </m.p>
+            <m.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
+            >
+              Built like a pit wall, not a startup dashboard
+            </m.h2>
+            <m.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="mt-4 text-[16px] leading-relaxed text-white/40"
+            >
+              Timing, telemetry, tyre life and race context connected into one operational surface.
+              Switch modules without losing the lap, driver or session you're analyzing.
+            </m.p>
+
+            <m.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 space-y-4"
+            >
+              {PRODUCT_BULLETS.map((item) => (
+                <div key={item.label} className="flex gap-3">
+                  <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2 5l2.5 2.5L8 3"
+                        stroke="#22c55e"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[14px] font-medium text-white">{item.label}</div>
+                    <div className="text-[13px] text-white/35">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </m.div>
+
+            <m.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="mt-8"
+            >
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 text-[14px] font-semibold text-white transition-colors hover:text-red-400"
+              >
+                Try it now
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M1 7h12M8 2l5 5-5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+            </m.div>
+          </div>
+
+          <m.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative"
+          >
+            <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
+              <div className="border-b border-white/[0.06] px-4 py-3">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/25">
+                  Signal Board
+                </span>
+              </div>
+              <div className="divide-y divide-white/[0.04] p-4">
+                {SIGNAL_ROWS.map((row, index) => (
+                  <m.div
+                    key={row.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + index * 0.08 }}
+                    className="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <span className="w-20 shrink-0 text-[12px] text-white/30">{row.label}</span>
+                    <span
+                      className={`w-24 shrink-0 text-[16px] font-semibold tabular-nums ${row.color}`}
+                    >
+                      {row.value}
+                    </span>
+                    <span className="text-[12px] text-white/25">{row.note}</span>
+                  </m.div>
+                ))}
+              </div>
+            </div>
+          </m.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function StatsSection() {
+  return (
+    <section className="py-24 lg:py-32">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <m.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl"
+          >
+            The broadcast shows the result.{' '}
+            <span className="text-white/40">We show the cause.</span>
+          </m.h2>
+          <m.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="mt-4 text-[16px] leading-relaxed text-white/40"
+          >
+            Follow the chain from raw timing to race decisions — pace drift, sector splits,
+            degradation curves and pit-loss context in one interface.
+          </m.p>
+        </div>
+        <div className="mt-16 space-y-4">
+          {BROADCAST_VS_FASTLYTICS.map((row, index) => (
+            <m.div
+              key={row.broadcast}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+              className="grid gap-4 rounded-xl border border-white/[0.06] bg-[#0c0c0e] p-5 sm:grid-cols-2 sm:gap-8"
+            >
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/20">
+                  Broadcast
+                </span>
+                <p className="mt-2 text-[15px] text-white/50">"{row.broadcast}"</p>
+              </div>
+              <div>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/20">
+                  Fastlytics
+                </span>
+                <p className="mt-2 text-[15px] text-white/70">{row.fastlytics}</p>
+              </div>
+            </m.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function CTASection() {
+  return (
+    <section
+      id="pricing"
+      className="relative overflow-hidden border-t border-white/[0.04] py-24 lg:py-32"
+    >
+      <div className="relative z-10 mx-auto max-w-6xl px-5 text-center lg:px-8">
+        <m.h2
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-3xl font-semibold tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl"
+        >
+          Open the race desk before the next session
+        </m.h2>
+        <m.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-white/40"
+        >
+          Start free with full platform access. Upgrade to Pro for historical season data and
+          unlimited session replay.
+        </m.p>
+
+        <m.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+        >
+          <Link
+            to="/dashboard"
+            className="group inline-flex h-12 items-center gap-2 rounded-xl bg-white px-7 text-[14px] font-semibold text-black transition-all hover:shadow-[0_0_50px_rgba(255,255,255,0.12)]"
+          >
+            Get started - it's free
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              className="transition-transform group-hover:translate-x-0.5"
+            >
+              <path
+                d="M1 7h12M8 2l5 5-5 5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+          <Link
+            to="/login"
+            className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-7 text-[14px] font-medium text-white/80 transition-all hover:border-white/20"
+          >
+            Sign in
+          </Link>
+        </m.div>
+      </div>
+    </section>
+  );
+}
+
+const TESTIMONIALS_ROW_1 = [
+  {
+    quote:
+      'This is awesome. I\u2019m really enjoying looking through all the data and seeing how they compare.',
+    user: 'u/DataDrivenRacer',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Oh good lord this is beautiful! Well done, amazing work.',
+    user: 'u/apex_addict',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'This is amazing, I can\u2019t wait to dive deeper into it later!',
+    user: 'u/strat_nerd_42',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'The site is really clean! And awesome. This is really well thought out.',
+    user: 'u/velocity_check',
+    sub: 'r/F1Technical',
+  },
+];
+
+const TESTIMONIALS_ROW_2 = [
+  {
+    quote: 'Off topic but this is awesome job. I\u2019m an F1 fan and you did great job.',
+    user: 'u/opensrc_fan',
+    sub: 'r/opensource',
+  },
+  {
+    quote: 'It\u2019s some amazing work you\u2019ve put in.',
+    user: 'u/pitwall_lurker',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Finally a proper web app for F1 data. No more wrestling with Python notebooks.',
+    user: 'u/tyre_whisperer',
+    sub: 'r/F1Technical',
+  },
+  {
+    quote: 'Been wanting something exactly like this for years. Incredible execution.',
+    user: 'u/braking_zone',
+    sub: 'r/F1Technical',
+  },
+];
+
+function MarqueeRow({
+  items,
+  reverse = false,
+}: {
+  items: typeof TESTIMONIALS_ROW_1;
+  reverse?: boolean;
+}) {
+  const doubled = [...items, ...items];
+  return (
+    <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+      <div
+        className={`flex w-max gap-4 ${reverse ? 'animate-[marquee-reverse_45s_linear_infinite]' : 'animate-[marquee_40s_linear_infinite]'}`}
+      >
+        {doubled.map((item, i) => (
+          <div
+            key={i}
+            className="flex w-[320px] shrink-0 flex-col gap-2 rounded-lg border border-white/[0.06] bg-[#0c0c0e] px-5 py-4"
+          >
+            <p className="text-[13px] leading-relaxed text-white/50">"{item.quote}"</p>
+            <span className="text-[11px] text-white/25">
+              {item.user} · {item.sub}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function TestimonialsMarquee() {
+  return (
+    <section className="overflow-hidden border-y border-white/[0.04] py-8 space-y-4">
+      <MarqueeRow items={TESTIMONIALS_ROW_1} />
+      <MarqueeRow items={TESTIMONIALS_ROW_2} reverse />
+    </section>
+  );
+}
+
+export function LandingFooter() {
+  return (
+    <footer className="border-t border-white/[0.04] bg-[#09090b] py-12">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div>
+            <Link to="/" className="flex items-center gap-2.5">
+              <FastlyticsLogo size={28} />
+            </Link>
+            <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-white/35">
+              Formula 1 analytics - telemetry, race strategy, session replay and championship
+              context.
+            </p>
+            <p className="mt-4 text-[11px] text-white/20">
+              Not affiliated with Formula One World Championship Limited.
+            </p>
+          </div>
+          {FOOTER_GROUPS.map((group) => (
+            <div key={group.title}>
+              <h4 className="text-[12px] font-semibold uppercase tracking-wider text-white/30">
+                {group.title}
+              </h4>
+              <ul className="mt-4 space-y-2.5">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      to={link.href}
+                      className="text-[13px] text-white/40 transition-colors hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.04] pt-6 sm:flex-row">
+          <p suppressHydrationWarning className="text-[12px] text-white/20">
+            &copy; {new Date().getFullYear()} Fastlytics. All rights reserved.
+          </p>
+          <p className="text-[12px] text-white/20">Built for race weekends.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}

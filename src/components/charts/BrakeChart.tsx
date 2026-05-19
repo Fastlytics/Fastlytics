@@ -1,5 +1,5 @@
+// knip-ignore
 import React from 'react';
-import type { CustomTooltipProps } from '@/types';
 import {
   LineChart,
   Line,
@@ -8,12 +8,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 import { fetchTelemetryBrake, BrakeDataPoint } from '@/lib/api';
 import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
-import { getDriverImage } from '@/utils/imageMapping';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
+import { DriverChartTooltip } from './shared/DriverChartTooltip';
 
 interface BrakeChartProps {
   className?: string;
@@ -36,58 +36,6 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
-  // Custom Tooltip
-  const CustomTooltip = ({
-    active,
-    payload,
-    label,
-    selectedDriver,
-  }: CustomTooltipProps<BrakeDataPoint> & { selectedDriver?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const headshot = getDriverImage(selectedDriver, year);
-      const color = driverColor(selectedDriver, year);
-
-      return (
-        <div className="bg-black border border-gray-700 p-4 shadow-xl min-w-[200px]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 border-b border-gray-700 pb-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-gray-700 shrink-0">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={selectedDriver}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-500 font-mono">
-                    {selectedDriver[0]}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-black text-gray-300 font-mono">{selectedDriver}</span>
-                <span className="text-[10px] text-gray-500 font-mono">
-                  DIST: {Math.round(label)}m
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
-                Brake
-              </span>
-              <span className="text-xl font-black text-white font-mono" style={{ color: color }}>
-                {Math.round(data.Brake)} <span className="text-xs text-gray-500">%</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <TelemetryChartWrapper<BrakeDataPoint[]>
       className={className}
@@ -101,19 +49,28 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       queryKey={(driver, lapVal) => ['brakeTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryBrake(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
-      renderChart={(data, color, selectedDriver) => (
+      renderChart={(data, _color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart
             data={data}
             margin={{ top: 0, right: 10, left: -15, bottom: 5 }}
             className="chart-main-container"
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+            <CartesianGrid
+              strokeDasharray="none"
+              vertical={false}
+              stroke="rgba(255,255,255,0.03)"
+            />
             <XAxis
               type="number"
               dataKey="Distance"
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.06)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
+              }}
               ticks={Array.from({ length: 8 }, (_, i) => (i + 1) * 1000).filter(
                 (t) => t <= (data[data.length - 1]?.Distance ?? 0)
               )}
@@ -122,15 +79,28 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
             />
             <YAxis
               dataKey="Brake"
-              stroke="#666"
-              tick={{ fill: '#FFF', fontSize: 13, fontWeight: 900, fontFamily: 'Geist Mono' }}
+              stroke="rgba(255,255,255,0.06)"
+              tick={{
+                fill: 'rgba(255,255,255,0.5)',
+                fontSize: 11,
+                fontWeight: 500,
+                fontFamily: "'Inter', sans-serif",
+              }}
               tickFormatter={(value) => `${value}%`}
               domain={[0, 100]}
               width={40}
             />
             <Tooltip
-              content={<CustomTooltip selectedDriver={selectedDriver} />}
-              cursor={{ stroke: '#666', strokeWidth: 1, strokeDasharray: '4 4' }}
+              content={
+                <DriverChartTooltip
+                  selectedDriver={selectedDriver}
+                  year={year}
+                  valueKey="Brake"
+                  unit="%"
+                  title="Brake"
+                />
+              }
+              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeDasharray: '4 4' }}
             />
             <Line
               type="monotone"
@@ -152,21 +122,26 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       )}
       renderStats={(data) => {
         const brakes = data.map((d) => d.Brake);
-        const avgBrake = brakes.reduce((a, b) => a + b, 0) / brakes.length;
         const hardBraking = brakes.filter((b) => b >= 80).length;
         const hardBrakingPercentage = (hardBraking / brakes.length) * 100;
 
         return (
-          <div className="border-t border-gray-700 pt-4">
-            <div className="flex flex-col gap-2 p-3 bg-black border border-gray-700">
+          <div className="border-t border-white/[0.06] pt-4">
+            <div className="flex flex-col gap-2 p-3 rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-gray-500 uppercase font-mono tracking-wider">
+                  <span
+                    className="text-[9px] text-white uppercase tracking-wider"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     Hard Braking
                   </span>
-                  <span className="text-lg font-black text-white font-mono">
+                  <span
+                    className="text-lg font-bold text-white"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
                     {Math.round(hardBrakingPercentage)}{' '}
-                    <span className="text-[10px] text-gray-500">%</span>
+                    <span className="text-[10px] text-white">%</span>
                   </span>
                 </div>
               </div>

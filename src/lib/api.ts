@@ -1,3 +1,4 @@
+// knip-ignore
 import { request } from './api-client';
 import { logger } from './logger';
 import { getDriverImage } from '@/utils/imageMapping';
@@ -528,19 +529,89 @@ export const fetchSessionDrivers = async (
   return request<SessionDriver[]>(`/api/session/drivers?${params.toString()}`);
 };
 
-/** Fetches enriched lap time comparison data for multiple drivers. */
+const MAX_DRIVERS_PER_REQUEST = 20;
+
+/** Fetches enriched lap time comparison data for multiple drivers.
+ *  Batches requests when driver count exceeds the API limit.
+ */
 export const fetchLapTimes = async (
   year: number,
   event: string,
   session: string,
   drivers: string[]
 ): Promise<LapTimesEnrichedResponse> => {
+  const makeRequest = (batch: string[]) => {
+    const params = new URLSearchParams();
+    params.append('year', year.toString());
+    params.append('event', event);
+    params.append('session', session);
+    batch.forEach((driver) => params.append('drivers', driver));
+    return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
+  };
+
+  if (drivers.length <= MAX_DRIVERS_PER_REQUEST) {
+    return makeRequest(drivers);
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < drivers.length; i += MAX_DRIVERS_PER_REQUEST) {
+    batches.push(drivers.slice(i, i + MAX_DRIVERS_PER_REQUEST));
+  }
+
+  const responses = await Promise.all(batches.map(makeRequest));
+
+  // Merge lapComparison by LapNumber
+  const lapMap = new Map<number, LapTimeDataPoint>();
+  responses.forEach((res) => {
+    res.lapComparison.forEach((point) => {
+      const existing = lapMap.get(point.LapNumber);
+      if (existing) {
+        Object.assign(existing, point);
+      } else {
+        lapMap.set(point.LapNumber, { ...point });
+      }
+    });
+  });
+
+  const mergedLapComparison = Array.from(lapMap.values()).sort((a, b) => a.LapNumber - b.LapNumber);
+
+  // Merge driverLapDetails
+  const mergedDriverLapDetails: Record<string, EnrichedLapRecord[]> = {};
+  responses.forEach((res) => {
+    Object.entries(res.driverLapDetails).forEach(([driver, records]) => {
+      mergedDriverLapDetails[driver] = records;
+    });
+  });
+
+  // Weather should be identical across batches; take first non-null
+  const mergedWeather = responses.find((r) => r.weather)?.weather ?? null;
+
+  return {
+    lapComparison: mergedLapComparison,
+    driverLapDetails: mergedDriverLapDetails,
+    weather: mergedWeather,
+  };
+};
+
+export interface LapGapsResponse {
+  lapGaps: LapTimeDataPoint[];
+  usesOfficialTiming: boolean;
+}
+
+/** Fetches official lap-by-lap gap-to-leader data from FastF1 timing API. */
+export const fetchLapGaps = async (
+  year: number,
+  event: string,
+  session: string,
+  drivers: string[]
+): Promise<LapGapsResponse> => {
   const params = new URLSearchParams();
   params.append('year', year.toString());
   params.append('event', event);
   params.append('session', session);
+  // Gap data is lightweight (one number per lap per driver), so allow all drivers
   drivers.forEach((driver) => params.append('drivers', driver));
-  return request<LapTimesEnrichedResponse>(`/api/laptimes?${params.toString()}`);
+  return request<LapGapsResponse>(`/api/laptimes/gaps?${params.toString()}`);
 };
 
 /** Fetches speed telemetry data for a specific lap. */
@@ -689,6 +760,41 @@ export const fetchTeamStandings = async (year: number): Promise<TeamStanding[]> 
   return request<TeamStanding[]>(`/api/standings/teams?${params.toString()}`);
 };
 
+/** Pit stop team stats from OpenF1 */
+export interface PitStopTeamStat {
+  team: string;
+  teamColor: string;
+  fastestStopSeconds: number | null;
+  averageStopSeconds: number | null;
+  validStopCount: number;
+  fastestStopDriver: string;
+  fastestStopRace: string;
+}
+
+/** Fetches aggregated pit stop stats by team for a given year (from OpenF1). */
+export const fetchPitStats = async (year: number): Promise<PitStopTeamStat[]> => {
+  const params = new URLSearchParams({ year: year.toString() });
+  return request<PitStopTeamStat[]>(`/api/openf1/pit-stats?${params.toString()}`);
+};
+
+export interface PitStopRecord {
+  year: number;
+  race: string;
+  race_country: string;
+  session_key: number;
+  driver_number: number;
+  driver_acronym: string;
+  team_name: string;
+  team_colour: string;
+  stop_duration: number;
+}
+
+/** Fetches individual pit stop records for a given year. */
+export const fetchPitStopsDetail = async (year: number): Promise<PitStopRecord[]> => {
+  const params = new URLSearchParams({ year: year.toString(), detail: 'true' });
+  return request<PitStopRecord[]>(`/api/openf1/pit-stats?${params.toString()}`);
+};
+
 /** Fetches race results summary (winners) for a given year. */
 export const fetchRaceResults = async (year: number): Promise<RaceResult[]> => {
   const params = new URLSearchParams({ year: year.toString() });
@@ -797,11 +903,10 @@ export const getCircuitLength = (eventName?: string, location?: string): number 
     return CIRCUIT_LENGTHS[normalizedLocation];
   }
 
-  for (const [key, length] of Object.entries(CIRCUIT_LENGTHS)) {
-    if (normalizedEventName.includes(key) || normalizedLocation.includes(key)) {
-      return length;
-    }
-  }
+  const circuitKey = Object.keys(CIRCUIT_LENGTHS).find(
+    (key) => normalizedEventName.includes(key) || normalizedLocation.includes(key)
+  );
+  if (circuitKey) return CIRCUIT_LENGTHS[circuitKey];
 
   return 5.0;
 };
@@ -1066,6 +1171,8 @@ export interface ReplayDriverData {
   tyre: number[];
   throttle: number[];
   brake: number[];
+  gap?: (string | null)[];
+  interval?: (string | null)[];
 }
 
 export interface ReplayDriversMap {
@@ -1075,6 +1182,7 @@ export interface ReplayDriversMap {
 export interface SessionReplayData {
   time: number[]; // Shared timeline
   drivers: ReplayDriversMap;
+  total_laps?: number;
   driver_colors: { [code: string]: string };
   driver_grid_positions: Record<string, number>;
   driver_info?: Record<
@@ -1201,12 +1309,71 @@ export interface ReplayChunk {
   drivers: ReplayDriversMap;
 }
 
+export interface LandingReplayAvailable {
+  year: number;
+  event: string;
+  session: string;
+  selected_drivers: string[];
+  source_window: {
+    start: number;
+    end: number;
+    duration: number;
+  };
+  chunk: {
+    id: number;
+    start: number;
+    end: number;
+    count: number;
+    drivers: number;
+  };
+}
+
+export interface LandingReplayMetadata {
+  session_info: SessionReplayData['session_info'];
+  circuit_layout: string;
+  circuit_metadata?: SessionReplayData['circuit_metadata'];
+  sector_boundaries?: SessionReplayData['sector_boundaries'];
+  fastest_sectors?: SessionReplayData['fastest_sectors'];
+  driver_colors: SessionReplayData['driver_colors'];
+  driver_grid_positions: SessionReplayData['driver_grid_positions'];
+  driver_info?: SessionReplayData['driver_info'];
+  session_results?: SessionReplayData['session_results'];
+  pit_intervals?: SessionReplayData['pit_intervals'];
+  driver_end_times?: SessionReplayData['driver_end_times'];
+  driver_stints?: SessionReplayData['driver_stints'];
+  track_statuses: SessionReplayData['track_statuses'];
+  race_control_messages: SessionReplayData['race_control_messages'];
+  weather?: SessionReplayData['weather'];
+  completed_laps?: SessionReplayData['completed_laps'];
+  selected_drivers: string[];
+  source_chunk_id: number;
+  source_window: {
+    start: number;
+    end: number;
+    duration: number;
+  };
+  total_laps?: number;
+  source_total_duration: number;
+  chunk_manifest?: {
+    id: number;
+    start: number;
+    end: number;
+    count: number;
+    drivers: number;
+  }[];
+}
+
+export interface LandingReplayChunk extends ReplayChunk {
+  selected_drivers: string[];
+}
+
 /** Fetches a session replay chunk. */
 export const fetchSessionReplayChunk = async (
   year: number,
   event: string,
   session: string,
-  chunkId: number
+  chunkId: number,
+  signal?: AbortSignal
 ): Promise<ReplayChunk> => {
   const params = new URLSearchParams({
     year: year.toString(),
@@ -1214,5 +1381,423 @@ export const fetchSessionReplayChunk = async (
     session,
     chunk_id: chunkId.toString(),
   });
-  return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`);
+  return request<ReplayChunk>(`/api/replay/chunk?${params.toString()}`, { signal });
+};
+
+export const fetchAvailableLandingReplays = async (
+  year?: number
+): Promise<LandingReplayAvailable[]> => {
+  const params = new URLSearchParams();
+  if (typeof year === 'number') params.set('year', year.toString());
+  const query = params.toString();
+  return request<LandingReplayAvailable[]>(
+    `/api/landing-replay/available${query ? `?${query}` : ''}`
+  );
+};
+
+export const fetchLandingReplayMetadata = async (
+  year: number,
+  event: string,
+  session: string
+): Promise<LandingReplayMetadata> => {
+  const params = new URLSearchParams({ year: year.toString(), event, session });
+  return request<LandingReplayMetadata>(`/api/landing-replay/metadata?${params.toString()}`);
+};
+
+export const fetchLandingReplayChunk = async (
+  year: number,
+  event: string,
+  session: string,
+  chunkId = 1,
+  signal?: AbortSignal
+): Promise<LandingReplayChunk> => {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    event,
+    session,
+    chunk_id: chunkId.toString(),
+  });
+  return request<LandingReplayChunk>(`/api/landing-replay/chunk?${params.toString()}`, { signal });
+};
+
+// --- Bio Pages ---
+
+export interface DriverCareerSummary {
+  seasons: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  fastestLaps: number;
+  points: number;
+  dnfs: number;
+}
+
+export interface DriverSeason {
+  season: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  fastestLaps: number;
+  points: number;
+  dnfs: number;
+  team: string;
+  position?: number | null;
+}
+
+export interface DriverCareer {
+  driverId: string;
+  code: string;
+  name: string;
+  nationality: string;
+  dateOfBirth: string;
+  wikipediaUrl?: string;
+  careerSummary: DriverCareerSummary;
+  seasons: DriverSeason[];
+}
+
+export interface TeamCareerSummary {
+  seasons: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  points: number;
+  constructorsChampionships: number;
+}
+
+export interface TeamSeason {
+  season: number;
+  races: number;
+  wins: number;
+  podiums: number;
+  poles: number;
+  points: number;
+  drivers: string[];
+  position?: number | null;
+}
+
+export interface TeamCareer {
+  constructorId: string;
+  name: string;
+  nationality: string;
+  wikipediaUrl?: string;
+  imageUrl?: string;
+  careerSummary: TeamCareerSummary;
+  seasons: TeamSeason[];
+}
+
+export const fetchDriverCareer = async (slug: string): Promise<DriverCareer> => {
+  return request<DriverCareer>(`/api/driver/${encodeURIComponent(slug)}/career`);
+};
+
+export interface DriverBio {
+  extract: string;
+  fullExtract: string;
+  description: string;
+  wikipediaUrl: string;
+  thumbnail?: string;
+  imageUrl?: string;
+  dateOfDeath?: string;
+  fetchedAt?: number;
+}
+
+export const fetchDriverBio = async (slug: string): Promise<DriverBio> => {
+  return request<DriverBio>(`/api/driver/${encodeURIComponent(slug)}/bio`);
+};
+
+export const fetchTeamCareer = async (slug: string): Promise<TeamCareer> => {
+  return request<TeamCareer>(`/api/team/${encodeURIComponent(slug)}/career`);
+};
+
+export const fetchTeamBio = async (slug: string): Promise<DriverBio> => {
+  return request<DriverBio>(`/api/team/${encodeURIComponent(slug)}/bio`);
+};
+
+// ---------------------------------------------------------------------------
+// Championship Progression
+// ---------------------------------------------------------------------------
+
+export interface ChampionshipRound {
+  round: number;
+  event: string;
+  points: number;
+  position: number;
+  wins: number;
+}
+
+export interface ChampionshipRival {
+  id: string;
+  name: string;
+  code: string;
+  rounds: ChampionshipRound[];
+  finalPosition: number;
+  finalPoints: number;
+}
+
+export interface ChampionshipProgressionResponse {
+  season: number;
+  subject: { id: string; name: string; code: string };
+  rounds: ChampionshipRound[];
+  rivals: ChampionshipRival[];
+  finalPosition: number;
+  finalPoints: number;
+}
+
+export const fetchDriverChampionshipProgression = async (
+  slug: string,
+  season: number
+): Promise<ChampionshipProgressionResponse> => {
+  return request<ChampionshipProgressionResponse>(
+    `/api/driver/${encodeURIComponent(slug)}/championship?season=${season}`
+  );
+};
+
+export const fetchTeamChampionshipProgression = async (
+  slug: string,
+  season: number
+): Promise<ChampionshipProgressionResponse> => {
+  return request<ChampionshipProgressionResponse>(
+    `/api/team/${encodeURIComponent(slug)}/championship?season=${season}`
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Leaderboard / All-Time Stats
+// ---------------------------------------------------------------------------
+
+export interface LeaderboardDriver {
+  driver_id: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  total_wins?: number;
+  total_podiums?: number;
+  total_poles?: number;
+  total_races?: number;
+  total_points?: number;
+  championships?: number;
+}
+
+export interface StreakEntry {
+  driver_id: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  streak_length: number;
+  streak_start_year: number;
+  streak_end_year: number;
+}
+
+export const fetchDriverWinsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/wins?limit=${limit}`);
+
+export const fetchDriverPodiumsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/podiums?limit=${limit}`);
+
+export const fetchDriverPolesLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/poles?limit=${limit}`);
+
+export const fetchDriverPointsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/points?limit=${limit}`);
+
+export const fetchDriverChampionshipsLeaderboard = (limit = 20) =>
+  request<LeaderboardDriver[]>(`/api/bios/leaderboard/drivers/championships?limit=${limit}`);
+
+export const fetchDriverWinStreaks = (limit = 10) =>
+  request<StreakEntry[]>(`/api/bios/leaderboard/drivers/win-streaks?limit=${limit}`);
+
+export const fetchDriverPodiumStreaks = (limit = 10) =>
+  request<StreakEntry[]>(`/api/bios/leaderboard/drivers/podium-streaks?limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// New driver leaderboards
+// ---------------------------------------------------------------------------
+
+export interface DriverStatEntry {
+  driver_id: string;
+  reference: string;
+  code: string | null;
+  name: string;
+  nationality: string;
+  value: number;
+}
+
+export const fetchDriverWinPctLeaderboard = (limit = 20, minRaces = 20) =>
+  request<DriverStatEntry[]>(
+    `/api/bios/leaderboard/drivers/win-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchDriverEntriesLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/entries?limit=${limit}`);
+
+export const fetchDriverDnfLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/dnfs?limit=${limit}`);
+
+export const fetchDriverFastestLapsLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/fastest-laps?limit=${limit}`);
+
+export const fetchDriverAvgFinishLeaderboard = (limit = 20, minRaces = 20) =>
+  request<DriverStatEntry[]>(
+    `/api/bios/leaderboard/drivers/average-finish?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchDriverSeasonsLeaderboard = (limit = 20) =>
+  request<DriverStatEntry[]>(`/api/bios/leaderboard/drivers/seasons?limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// Team Leaderboards / All-Time Constructor Records
+// ---------------------------------------------------------------------------
+
+export interface LeaderboardTeam {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  total_wins?: number;
+  total_podiums?: number;
+  total_poles?: number;
+  total_races?: number;
+  total_points?: number;
+  championships?: number;
+  wcc_titles?: number;
+  total_seasons?: number;
+}
+
+export interface TeamStatEntry {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  value: number;
+}
+
+export interface TeamStreakEntry {
+  constructor_id: string;
+  name: string;
+  nationality: string;
+  streak_length: number;
+  streak_start_year: number;
+  streak_end_year: number;
+}
+
+export const fetchTeamWinsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/wins?limit=${limit}`);
+
+export const fetchTeamChampionshipsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/championships?limit=${limit}`);
+
+export const fetchTeamPodiumsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/podiums?limit=${limit}`);
+
+export const fetchTeamPolesLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/poles?limit=${limit}`);
+
+export const fetchTeamPointsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/points?limit=${limit}`);
+
+export const fetchTeamEntriesLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/entries?limit=${limit}`);
+
+export const fetchTeamSeasonsLeaderboard = (limit = 20) =>
+  request<LeaderboardTeam[]>(`/api/bios/leaderboard/teams/seasons?limit=${limit}`);
+
+export const fetchTeamWinPctLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/win-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamPodiumPctLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/podium-percentage?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamAvgFinishLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/average-finish?limit=${limit}&min_races=${minRaces}`
+  );
+
+export const fetchTeamOneTwoLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/one-two-finishes?limit=${limit}`);
+
+export const fetchTeamDnfLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/dnfs?limit=${limit}`);
+
+export const fetchTeamFastestLapsLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/fastest-laps?limit=${limit}`);
+
+export const fetchTeamDriversFieldedLeaderboard = (limit = 20) =>
+  request<TeamStatEntry[]>(`/api/bios/leaderboard/teams/drivers-fielded?limit=${limit}`);
+
+export const fetchTeamWinStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/win-streaks?limit=${limit}`);
+
+export const fetchTeamPodiumStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/podium-streaks?limit=${limit}`);
+
+export const fetchTeamPointsStreaks = (limit = 10) =>
+  request<TeamStreakEntry[]>(`/api/bios/leaderboard/teams/points-streaks?limit=${limit}`);
+
+export const fetchTeamPointsPerRaceLeaderboard = (limit = 20, minRaces = 50) =>
+  request<TeamStatEntry[]>(
+    `/api/bios/leaderboard/teams/points-per-race?limit=${limit}&min_races=${minRaces}`
+  );
+
+// ---------------------------------------------------------------------------
+// Global Search (Cmd+K)
+// ---------------------------------------------------------------------------
+
+export interface SearchResultDriver {
+  id: string;
+  name: string;
+  code: string | null;
+  nationality: string | null;
+  imageUrl: string | null;
+  path: string;
+}
+
+export interface SearchResultTeam {
+  id: string;
+  name: string;
+  nationality: string | null;
+  path: string;
+}
+
+export interface SearchResultArticle {
+  id: string;
+  title: string;
+  source: string;
+  imageUrl: string | null;
+  path: string;
+}
+
+export interface GlobalSearchResults {
+  drivers: SearchResultDriver[];
+  teams: SearchResultTeam[];
+  articles: SearchResultArticle[];
+}
+
+export const fetchGlobalSearch = (query: string, limit = 10) =>
+  request<GlobalSearchResults>(`/api/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+
+// ---------------------------------------------------------------------------
+// Season Records (Supabase RPC — jolpica data)
+// ---------------------------------------------------------------------------
+
+export interface SeasonRecord {
+  label: string;
+  value: string;
+  unit?: string;
+  context?: string;
+  driverCode?: string;
+  tone?: 'default' | 'amber' | 'emerald' | 'red' | 'sky';
+}
+
+export const fetchSeasonRecords = async (year: number): Promise<SeasonRecord[]> => {
+  const { supabase } = await import('@/lib/supabase');
+  const { data, error } = await supabase.rpc('get_season_records', { p_year: year });
+  if (error) {
+    logger.error('Failed to fetch season records:', error);
+    return [];
+  }
+  return (data as SeasonRecord[]) ?? [];
 };

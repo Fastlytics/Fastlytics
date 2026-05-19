@@ -1,3 +1,4 @@
+// knip-ignore
 import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,73 +9,65 @@ import {
   fetchRaceResults,
   fetchAvailableSessions,
   fetchSpecificRaceResults,
+  fetchEventSessionSchedule,
+  fetchPitStats,
+  fetchSeasonRecords,
   TeamStanding,
   DriverStanding,
   ScheduleEvent,
+  EventSessionSchedule,
   RaceResult,
   AvailableSession,
   DetailedRaceResult,
+  PitStopTeamStat,
+  SeasonRecord,
   getCircuitLength,
   calculateDistance,
   formatDistance,
 } from '@/lib/api';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import PageHeader from '@/components/dashboard/PageHeader';
+import CircuitPreview from '@/components/dashboard/CircuitPreview';
+import ForYouWidget from '@/components/dashboard/ForYouWidget';
+import LastRaceSummary from '@/components/dashboard/LastRaceSummary';
+import PitStopLeaderboard from '@/components/dashboard/PitStopLeaderboard';
+import SeasonStats from '@/components/dashboard/SeasonStats';
 import ChampionshipWidget from '@/components/dashboard/ChampionshipWidget';
 import FavoritesWidget from '@/components/dashboard/FavoritesWidget';
-import QuickLinksWidget from '@/components/dashboard/QuickLinksWidget';
-import { ArrowRight01Icon, Activity01Icon } from 'hugeicons-react';
+
 import { getCountryCode } from '@/utils/countryUtils';
+import { getDriverImage } from '@/utils/imageMapping';
 import { SEO } from '@/components/layout/SEO';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useLastRaceDetails } from '@/hooks/useLastRaceDetails';
+import { useCircuitWeather } from '@/hooks/useCircuitWeather';
+import { getCircuitCoords } from '@/lib/circuit-coordinates';
+import { m } from 'motion/react';
 import {
-  MobileLayout,
-  MobilePageHeader,
-  MobileNextSessionCard,
-  MobileChampionshipWidget,
-  MobileRecentRaces,
-  MobileFavoritesWidget,
-} from '@/components/mobile';
+  isTestingDashboardEvent,
+  getDashboardEventStartDate,
+  toDashboardRaceSlug,
+  parseDashboardLapTime,
+  getDashboardTestingSessionOrder,
+  buildEmptyTestingInsights,
+} from './Dashboard/dashboard-utils';
 
-const isTestingEvent = (event: ScheduleEvent): boolean =>
-  event.EventFormat?.toLowerCase().includes('test') ?? false;
-
-const getEventStartDate = (event: ScheduleEvent): Date =>
-  new Date(event.Session1Date || event.EventDate);
-
-const toRaceSlug = (eventName: string): string => eventName.toLowerCase().replace(/\s+/g, '-');
-
-const parseLapTime = (timeStr: string | null | undefined): number => {
-  if (!timeStr) return Number.POSITIVE_INFINITY;
-  const cleaned = timeStr.startsWith('+') ? timeStr.slice(1) : timeStr;
-  const parts = cleaned.split(/[:.]/);
-  if (parts.length === 3) {
-    return Number(parts[0]) * 60 + Number(parts[1]) + Number(parts[2]) / 1000;
-  }
-  if (parts.length === 2) {
-    return Number(parts[0]) + Number(parts[1]) / 1000;
-  }
-  return Number.POSITIVE_INFINITY;
+export {
+  isTestingDashboardEvent,
+  getDashboardEventStartDate,
+  toDashboardRaceSlug,
+  parseDashboardLapTime,
+  getDashboardTestingSessionOrder,
+  buildEmptyTestingInsights,
 };
 
-const TESTING_SESSION_ALIAS_PATTERN = /^DAY([1-3])_(AM|PM)$/i;
-
-const getTestingSessionOrder = (sessionType: string): number => {
-  const match = sessionType.match(TESTING_SESSION_ALIAS_PATTERN);
-  if (match) {
-    const day = Number(match[1]);
-    const halfScore = match[2].toUpperCase() === 'AM' ? 0 : 1;
-    return day * 10 + halfScore;
-  }
-
-  if (sessionType === 'FP1') return 11;
-  if (sessionType === 'FP2') return 21;
-  if (sessionType === 'FP3') return 31;
-  return -1;
-};
+const isTestingEvent = isTestingDashboardEvent;
+const getEventStartDate = getDashboardEventStartDate;
+const toRaceSlug = toDashboardRaceSlug;
+const parseLapTime = parseDashboardLapTime;
+const getTestingSessionOrder = getDashboardTestingSessionOrder;
 
 const Dashboard = () => {
   const [now] = useState(() => Date.now());
@@ -83,12 +76,42 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { trackEvent, trackPageView } = useAnalytics();
 
+  const greeting = useMemo(() => {
+    const name =
+      profile?.first_name?.trim() ||
+      profile?.full_name?.trim()?.split(' ')[0] ||
+      user?.email?.split('@')[0] ||
+      '';
+    if (!name) return 'Dashboard';
+
+    const hour = new Date().getHours();
+
+    const timeGreeting = (() => {
+      if (hour >= 5 && hour < 12) return 'Good morning';
+      if (hour >= 12 && hour < 17) return 'Good afternoon';
+      if (hour >= 17 && hour < 21) return 'Good evening';
+      return 'Good night';
+    })();
+
+    const casualGreetings = ['Howdy', 'Hey', 'Hello', 'Hi', 'Welcome back'];
+    const day = new Date().getDate();
+
+    const greetingWord =
+      day % 4 === 0 ? casualGreetings[day % casualGreetings.length] : timeGreeting;
+
+    return `${greetingWord}, ${name}`;
+  }, [profile, user]);
+
   useEffect(() => {
     trackPageView('dashboard', { year: selectedYear });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { data: schedule = [], isLoading: isLoadingSchedule } = useQuery<ScheduleEvent[]>({
+  const {
+    data: schedule = [],
+    isLoading: isLoadingSchedule,
+    isError: isScheduleError,
+  } = useQuery<ScheduleEvent[]>({
     queryKey: ['schedule', selectedYear],
     queryFn: () => fetchSchedule(selectedYear),
   });
@@ -120,27 +143,37 @@ const Dashboard = () => {
   );
   const isTestingMode = !hasRaceResults && !hasRaceWeekendStarted && testingEvents.length > 0;
 
-  const { data: teamStandings = [], isLoading: isLoadingTeams } = useQuery<TeamStanding[]>({
+  const {
+    data: teamStandings = [],
+    isLoading: isLoadingTeams,
+    isError: isTeamsError,
+  } = useQuery<TeamStanding[]>({
     queryKey: ['teamStandings', selectedYear],
     queryFn: () => fetchTeamStandings(selectedYear),
   });
 
-  const { data: driverStandings = [], isLoading: isLoadingDrivers } = useQuery<DriverStanding[]>({
+  const {
+    data: driverStandings = [],
+    isLoading: isLoadingDrivers,
+    isError: isDriversError,
+  } = useQuery<DriverStanding[]>({
     queryKey: ['driverStandings', selectedYear],
     queryFn: () => fetchDriverStandings(selectedYear),
   });
 
-  const { nextSession, recentRaces, recentTestingEvents } = useMemo(() => {
-    if (schedule.length === 0) {
-      return { nextSession: undefined, recentRaces: [], recentTestingEvents: [] };
-    }
-
-    const now = new Date();
+  const { nextSession, nextRace, recentRaces, recentTestingEvents } = useMemo(() => {
+    if (schedule.length === 0)
+      return {
+        nextSession: undefined,
+        nextRace: undefined,
+        recentRaces: [],
+        recentTestingEvents: [],
+      };
+    const nowDate = new Date();
     let upcomingSession = undefined;
-    const sortedSchedule = [...schedule].sort(
+    const sortedSchedule = schedule.toSorted(
       (a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
     );
-
     for (const event of sortedSchedule) {
       const sessions = [
         { name: event.Session1, date: event.Session1Date },
@@ -149,9 +182,8 @@ const Dashboard = () => {
         { name: event.Session4, date: event.Session4Date },
         { name: event.Session5, date: event.Session5Date },
       ].filter((s) => s.name && s.date);
-
       for (const session of sessions) {
-        if (session.date && new Date(session.date) > now) {
+        if (session.date && new Date(session.date) > nowDate) {
           upcomingSession = {
             eventName: event.EventName,
             sessionName: session.name!,
@@ -162,22 +194,23 @@ const Dashboard = () => {
           break;
         }
       }
-
       if (upcomingSession) break;
     }
-
+    // Next race weekend = first non-testing event whose EventDate is in the future.
+    const upcomingRace = raceEvents
+      .toSorted((a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime())
+      .find((e) => new Date(e.EventDate).getTime() >= nowDate.getTime());
     const recentRaceEvents = raceEvents
-      .filter((e) => getEventStartDate(e) < now)
+      .filter((e) => getEventStartDate(e) < nowDate)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
       .slice(0, 4);
-
     const recentTesting = testingEvents
-      .filter((e) => new Date(e.EventDate) < now)
+      .filter((e) => new Date(e.EventDate) < nowDate)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
       .slice(0, 4);
-
     return {
       nextSession: upcomingSession,
+      nextRace: upcomingRace,
       recentRaces: recentRaceEvents,
       recentTestingEvents: recentTesting,
     };
@@ -185,11 +218,9 @@ const Dashboard = () => {
 
   const primaryTestingEvent = useMemo(() => {
     if (!isTestingMode || testingEvents.length === 0) return undefined;
-
     const completed = testingEvents
       .filter((event) => new Date(event.EventDate).getTime() <= now)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime());
-
     return completed[0] ?? testingEvents[0];
   }, [isTestingMode, testingEvents, now]);
 
@@ -202,7 +233,7 @@ const Dashboard = () => {
   const testingSpotlightSession = useMemo(() => {
     if (testingAvailableSessions.length === 0) return '';
     return (
-      [...testingAvailableSessions].sort(
+      testingAvailableSessions.toSorted(
         (a, b) => getTestingSessionOrder(b.type) - getTestingSessionOrder(a.type)
       )[0]?.type ?? ''
     );
@@ -210,7 +241,7 @@ const Dashboard = () => {
 
   const testingSpotlightSessionName = useMemo(
     () =>
-      testingAvailableSessions.find((session) => session.type === testingSpotlightSession)?.name ??
+      testingAvailableSessions.find((s) => s.type === testingSpotlightSession)?.name ??
       testingSpotlightSession,
     [testingAvailableSessions, testingSpotlightSession]
   );
@@ -232,7 +263,7 @@ const Dashboard = () => {
   });
 
   const testingInsights = useMemo(() => {
-    if (!testingSessionResults || testingSessionResults.length === 0) {
+    if (!testingSessionResults?.length) {
       return {
         fastest: [] as DetailedRaceResult[],
         mileage: [] as DetailedRaceResult[],
@@ -248,54 +279,54 @@ const Dashboard = () => {
         circuitLength: 5.0,
       };
     }
-
     const circuitLength = getCircuitLength(
       primaryTestingEvent?.EventName,
       primaryTestingEvent?.Location
     );
-
     const fastest = [...testingSessionResults]
-      .filter((result) => !!result.fastestLapTime)
+      .filter((r) => !!r.fastestLapTime)
       .sort((a, b) => {
-        const lapDelta = parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime);
-        if (lapDelta !== 0) return lapDelta;
-        return (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0);
+        const d = parseLapTime(a.fastestLapTime) - parseLapTime(b.fastestLapTime);
+        return d !== 0 ? d : (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0);
       });
-
-    const mileage = [...testingSessionResults].sort(
+    const mileage = testingSessionResults.toSorted(
       (a, b) => (b.lapsCompleted ?? 0) - (a.lapsCompleted ?? 0)
     );
     const totalLaps = testingSessionResults.reduce(
-      (sum, result) => sum + (result.lapsCompleted ?? result.laps ?? 0),
+      (s, r) => s + (r.lapsCompleted ?? r.laps ?? 0),
       0
     );
     const totalDistance = calculateDistance(totalLaps, circuitLength);
     const morningLaps = testingSessionResults.reduce(
-      (sum, result) => sum + (result.morningLapsCompleted ?? 0),
+      (s, r) => s + (r.morningLapsCompleted ?? 0),
       0
     );
     const afternoonLaps = testingSessionResults.reduce(
-      (sum, result) => sum + (result.afternoonLapsCompleted ?? 0),
+      (s, r) => s + (r.afternoonLapsCompleted ?? 0),
       0
     );
-
-    const morningFastest =
-      [...testingSessionResults]
-        .filter((result) => !!result.morningFastestLapTime)
-        .sort(
-          (a, b) => parseLapTime(a.morningFastestLapTime) - parseLapTime(b.morningFastestLapTime)
-        )[0] ?? null;
-    const afternoonFastest =
-      [...testingSessionResults]
-        .filter((result) => !!result.afternoonFastestLapTime)
-        .sort(
-          (a, b) =>
-            parseLapTime(a.afternoonFastestLapTime) - parseLapTime(b.afternoonFastestLapTime)
-        )[0] ?? null;
-
+    const morningFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
+      (best, result) => {
+        if (!result.morningFastestLapTime) return best;
+        if (!best) return result;
+        return parseLapTime(result.morningFastestLapTime) < parseLapTime(best.morningFastestLapTime)
+          ? result
+          : best;
+      },
+      null
+    );
+    const afternoonFastest = testingSessionResults.reduce<DetailedRaceResult | null>(
+      (best, result) => {
+        if (!result.afternoonFastestLapTime) return best;
+        if (!best) return result;
+        return parseLapTime(result.afternoonFastestLapTime) <
+          parseLapTime(best.afternoonFastestLapTime)
+          ? result
+          : best;
+      },
+      null
+    );
     const leaderLaps = mileage[0]?.lapsCompleted ?? mileage[0]?.laps ?? 0;
-    const leaderDistance = calculateDistance(leaderLaps, circuitLength);
-
     return {
       fastest,
       mileage,
@@ -307,7 +338,7 @@ const Dashboard = () => {
       afternoonLaps,
       driverCount: testingSessionResults.length,
       leaderLaps,
-      leaderDistance,
+      leaderDistance: calculateDistance(leaderLaps, circuitLength),
       circuitLength,
     };
   }, [testingSessionResults, primaryTestingEvent]);
@@ -319,421 +350,584 @@ const Dashboard = () => {
         d.code === profile.favorite_driver ||
         d.name.toLowerCase().includes(profile.favorite_driver.toLowerCase())
     );
-    return driver?.name.split(' ').pop()?.toUpperCase();
+    return driver?.name.split(' ').pop();
   }, [profile, driverStandings]);
 
-  const isMobile = useIsMobile();
+  const favoriteTeamName = useMemo(() => {
+    if (!profile?.favorite_team || teamStandings.length === 0) return undefined;
+    const team = teamStandings.find(
+      (t) =>
+        t.team === profile.favorite_team ||
+        t.team.toLowerCase().includes(profile.favorite_team.toLowerCase())
+    );
+    return team?.team ?? profile.favorite_team;
+  }, [profile, teamStandings]);
 
-  if (isMobile) {
+  /* ── Computed dashboard-level stats ───────────────────────────── */
+
+  // Most recent race (by round number)
+  const lastRace = useMemo(() => {
+    if (raceResults.length === 0) return null;
+    return [...raceResults].sort((a, b) => (b.round ?? 0) - (a.round ?? 0))[0];
+  }, [raceResults]);
+
+  const lastRaceCountryCode = useMemo(() => {
+    if (!lastRace) return undefined;
+    // RaceResult doesn't carry country directly — match against schedule
+    const match = schedule.find(
+      (e) => e.EventName === lastRace.event || e.RoundNumber === lastRace.round
+    );
+    const src = match?.Country || match?.Location || lastRace.location;
+    return src ? getCountryCode(src) : undefined;
+  }, [lastRace, schedule]);
+
+  // Pit stop data from OpenF1
+  const { data: pitStats = [], isLoading: isLoadingPitStats } = useQuery<PitStopTeamStat[]>({
+    queryKey: ['pitStats', selectedYear],
+    queryFn: () => fetchPitStats(selectedYear),
+    staleTime: 1000 * 60 * 30, // 30 min
+  });
+
+  // Season records from Supabase (jolpica data)
+  const { data: seasonStats = [], isLoading: isLoadingSeasonStats } = useQuery<SeasonRecord[]>({
+    queryKey: ['seasonRecords', selectedYear],
+    queryFn: () => fetchSeasonRecords(selectedYear),
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  // Page header badge: show "LIVE NOW" if a session is in progress, else an info pill about next session.
+  const headerBadge = useMemo(() => {
+    if (!nextSession) return null;
+    const diff = new Date(nextSession.date).getTime() - now;
+    if (diff <= 0) {
+      return { label: `LIVE NOW — ${nextSession.sessionName}`, tone: 'live' as const };
+    }
+    const hours = diff / (1000 * 60 * 60);
+    if (hours < 24) {
+      return {
+        label: `${nextSession.sessionName} in ${Math.ceil(hours)}h`,
+        tone: 'info' as const,
+      };
+    }
+    return null;
+  }, [nextSession, now]);
+
+  const nextRaceCountryCode = useMemo(
+    () => (nextRace ? getCountryCode(nextRace.Country || nextRace.Location) : undefined),
+    [nextRace]
+  );
+
+  const nextRaceCircuitLength = useMemo(
+    () => getCircuitLength(nextRace?.EventName, nextRace?.Location),
+    [nextRace]
+  );
+
+  // Circuit coords + weather forecast for the next race (Open-Meteo)
+  const nextRaceCoords = useMemo(
+    () => (nextRace ? getCircuitCoords(nextRace.EventName, nextRace.Location) : null),
+    [nextRace]
+  );
+
+  // Fetch the session schedule for the next race to get exact start times
+  const nextRaceSlug = useMemo(
+    () => (nextRace ? toDashboardRaceSlug(nextRace.EventName) : undefined),
+    [nextRace]
+  );
+
+  const { data: nextRaceSchedule } = useQuery<EventSessionSchedule>({
+    queryKey: ['sessionSchedule', selectedYear, nextRaceSlug],
+    queryFn: () => fetchEventSessionSchedule(selectedYear, nextRaceSlug!),
+    enabled: !!nextRaceSlug,
+    staleTime: 1000 * 60 * 60,
+  });
+
+  const raceSessionStartTime = useMemo(() => {
+    const raceSession = nextRaceSchedule?.sessions.find((s) => s.name === 'Race');
+    return raceSession?.date ?? nextRace?.EventDate;
+  }, [nextRaceSchedule, nextRace]);
+
+  const { data: nextRaceWeather, isLoading: isLoadingWeather } = useCircuitWeather(
+    nextRaceCoords?.lat,
+    nextRaceCoords?.lng,
+    nextRace?.EventDate,
+    nextRaceCoords?.timezone,
+    raceSessionStartTime
+  );
+
+  // Rich details for the most recent race (podium gaps, pole, fastest lap, DNFs, biggest gainer)
+  const { data: lastRaceDetails, isLoading: isLoadingLastRaceDetails } = useLastRaceDetails(
+    selectedYear,
+    lastRace?.event
+  );
+
+  const prevYear = selectedYear - 1;
+
+  const { data: prevYearSchedule = [] } = useQuery<ScheduleEvent[]>({
+    queryKey: ['schedule', prevYear],
+    queryFn: () => fetchSchedule(prevYear),
+    enabled: !!nextRace && prevYear >= 1950,
+  });
+
+  const prevYearEvent = useMemo(() => {
+    if (!nextRace || prevYearSchedule.length === 0) return undefined;
+    const byName = prevYearSchedule.find(
+      (e) => e.EventName === nextRace.EventName && !isTestingEvent(e)
+    );
+    if (byName) return byName;
+    return prevYearSchedule.find(
+      (e) => e.RoundNumber === nextRace.RoundNumber && !isTestingEvent(e)
+    );
+  }, [nextRace, prevYearSchedule]);
+
+  const { data: prevYearRaceResults = [] } = useQuery<DetailedRaceResult[]>({
+    queryKey: ['prevYearRaceResults', prevYear, prevYearEvent?.EventName],
+    queryFn: () => fetchSpecificRaceResults(prevYear, toRaceSlug(prevYearEvent!.EventName), 'R'),
+    enabled: !!prevYearEvent,
+  });
+
+  const lastYearPole = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const poleSitter = prevYearRaceResults.find((r) => r.gridPosition === 1);
+    if (!poleSitter) return null;
+    return {
+      driver: poleSitter.fullName,
+      lapTime: poleSitter.poleLapTimeValue || '',
+      headshotUrl: getDriverImage(poleSitter.driverCode, prevYear) || null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
+  const lastYearWinner = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const winner = prevYearRaceResults.find((r) => r.position === 1);
+    if (!winner) return null;
+    return {
+      driver: winner.fullName,
+      team: winner.team,
+      headshotUrl: getDriverImage(winner.driverCode, prevYear) || null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
+  const lastYearFastestLap = useMemo(() => {
+    if (prevYearRaceResults.length === 0) return null;
+    const fl = prevYearRaceResults.find((r) => r.isFastestLap);
+    if (fl)
+      return {
+        driver: fl.fullName,
+        lapTime: fl.fastestLapTimeValue || '',
+        headshotUrl: getDriverImage(fl.driverCode, prevYear) || null,
+      };
+    const fastest = [...prevYearRaceResults]
+      .filter((r) => r.fastestLapTimeValue)
+      .sort((a, b) => parseLapTime(a.fastestLapTimeValue) - parseLapTime(b.fastestLapTimeValue));
+    if (fastest.length === 0) return null;
+    return {
+      driver: fastest[0].fullName,
+      lapTime: fastest[0].fastestLapTimeValue || '',
+      headshotUrl: fastest[0].driverCode
+        ? getDriverImage(fastest[0].driverCode, prevYear) || null
+        : null,
+    };
+  }, [prevYearRaceResults, prevYear]);
+
+  const hasCriticalDashboardError = isScheduleError || isTeamsError || isDriversError;
+  const isLoadingCore = isLoadingDrivers || isLoadingTeams || isLoadingSchedule;
+
+  if (hasCriticalDashboardError) {
     return (
-      <MobileLayout>
-        <div className="min-h-screen bg-black text-white font-sans">
-          <SEO
-            title="F1 Dashboard - Telemetry & Standings"
-            description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
-            keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
-          />
-
-          <main className="pt-4 pb-6 px-4 space-y-6">
-            <MobilePageHeader />
-            <MobileNextSessionCard nextSession={nextSession} />
-
-            {user && (
-              <MobileFavoritesWidget
-                profile={profile}
-                drivers={driverStandings}
-                teams={teamStandings}
-                schedule={schedule}
-                isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-              />
-            )}
-
-            {isTestingMode ? (
-              <>
-                <div className="bg-black border-2 border-white/10 rounded-xl p-4 space-y-4">
-                  <div className="flex items-center gap-2 text-red-500">
-                    <Activity01Icon className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-widest">
-                      Testing Mode
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-zinc-900/50 border border-white/10 rounded-lg p-3">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                        Session
-                      </div>
-                      <div className="text-sm font-black uppercase text-white">
-                        {testingSpotlightSessionName || 'Day Session'}
-                      </div>
-                    </div>
-                    <div className="bg-zinc-900/50 border border-white/10 rounded-lg p-3">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                        Day Mileage
-                      </div>
-                      <div className="text-sm font-black uppercase text-white">
-                        {testingInsights.totalLaps}
-                      </div>
-                    </div>
-                    <div className="bg-zinc-900/50 border border-white/10 rounded-lg p-3">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                        Morning Laps
-                      </div>
-                      <div className="text-sm font-black uppercase text-white">
-                        {testingInsights.morningLaps}
-                      </div>
-                    </div>
-                    <div className="bg-zinc-900/50 border border-white/10 rounded-lg p-3">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                        Afternoon Laps
-                      </div>
-                      <div className="text-sm font-black uppercase text-white">
-                        {testingInsights.afternoonLaps}
-                      </div>
-                    </div>
-                  </div>
-
-                  {testingInsights.fastest.length > 0 && (
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/race/${selectedYear}-${toRaceSlug(primaryTestingEvent?.EventName || '')}?session=${testingSpotlightSession}&view=analysis`
-                        )
-                      }
-                      className="w-full text-left bg-zinc-900/40 border border-white/10 rounded-lg p-3 hover:border-red-600/50 transition-colors"
-                    >
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                        Fastest Driver
-                      </div>
-                      <div className="text-sm font-black uppercase text-white">
-                        {testingInsights.fastest[0].fullName}
-                      </div>
-                      <div className="text-xs font-sans text-red-500 mt-0.5">
-                        {testingInsights.fastest[0].fastestLapTime || '-'}
-                      </div>
-                    </button>
-                  )}
-
-                  {(testingInsights.morningFastest || testingInsights.afternoonFastest) && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-zinc-900/40 border border-white/10 rounded-lg p-3">
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                          Morning Fastest
-                        </div>
-                        <div className="text-xs font-black uppercase text-white mt-1">
-                          {testingInsights.morningFastest?.driverCode || '-'}
-                        </div>
-                      </div>
-                      <div className="bg-zinc-900/40 border border-white/10 rounded-lg p-3">
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
-                          Afternoon Fastest
-                        </div>
-                        <div className="text-xs font-black uppercase text-white mt-1">
-                          {testingInsights.afternoonFastest?.driverCode || '-'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className="text-lg font-black uppercase italic tracking-tighter flex items-center gap-2">
-                    <span className="w-2 h-6 bg-red-600 block"></span>
-                    Recent <span className="text-gray-500">Testing</span>
-                  </h3>
-                  {(recentTestingEvents.length > 0 ? recentTestingEvents : testingEvents)
-                    .slice(0, 4)
-                    .map((event) => (
-                      <button
-                        key={event.EventName}
-                        onClick={() =>
-                          navigate(
-                            `/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`
-                          )
-                        }
-                        className="w-full flex items-center justify-between bg-black border-2 border-white/10 rounded-xl p-3"
-                      >
-                        <div className="text-left">
-                          <div className="font-black uppercase italic text-white text-sm">
-                            {event.EventName}
-                          </div>
-                          <div className="text-[10px] font-sans text-gray-500 uppercase">
-                            {event.Location}
-                          </div>
-                        </div>
-                        <ArrowRight01Icon className="w-4 h-4 text-gray-500" />
-                      </button>
-                    ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <MobileChampionshipWidget
-                  drivers={driverStandings}
-                  teams={teamStandings}
-                  schedule={schedule}
-                  raceResults={raceResults}
-                  isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-                  profile={profile}
-                />
-                <MobileRecentRaces recentRaces={recentRaces} />
-              </>
-            )}
-          </main>
+      <>
+        <SEO
+          title="Dashboard"
+          description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
+          keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
+        />
+        <div className="flex min-h-[60vh] items-center justify-center text-center">
+          <div className="space-y-2">
+            <h1 className="text-[18px] font-medium text-white">Unable to load dashboard</h1>
+            <p className="text-[13px] text-white/80">
+              Critical data could not be loaded. Please try again shortly.
+            </p>
+          </div>
         </div>
-      </MobileLayout>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white">
+    <>
       <SEO
-        title="F1 Dashboard - Telemetry & Standings"
-        description="Real-time F1 dashboard with telemetry, driver standings, team standings, and race schedule. Stay updated with the latest Formula 1 data."
-        keywords={['f1 dashboard', 'telemetry', 'f1 standings', 'f1 schedule', 'race results']}
+        title="Dashboard"
+        description="Follow the season from one live race desk with telemetry, standings, schedule updates, pace context, and recent event breakdowns."
+        keywords={['f1 dashboard', 'f1 data', 'telemetry', 'driver standings', 'race results']}
       />
-      <DashboardNavbar />
 
-      <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <DashboardHeader
+      <div className="space-y-5 text-white">
+        {/* 1. Page header */}
+        <PageHeader
+          title={greeting}
+          titleClassName="text-[22px] font-bold"
+          subtitle={`Season ${selectedYear} overview`}
           selectedYear={selectedYear}
-          nextSession={nextSession}
-          favoriteDriverName={favoriteDriverName}
+          badge={headerBadge}
         />
 
-        {user && (
-          <FavoritesWidget
-            profile={profile}
-            drivers={driverStandings}
-            teams={teamStandings}
-            schedule={schedule}
-            isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
+        {/* 2. Circuit preview + Last race + For You */}
+        <div className="grid gap-5 lg:grid-cols-4">
+          <div className="lg:col-span-2 h-full">
+            <CircuitPreview
+              nextRace={nextRace}
+              circuitLengthKm={nextRaceCircuitLength}
+              countryCode={nextRaceCountryCode}
+              lastYearPole={lastYearPole}
+              lastYearWinner={lastYearWinner}
+              lastYearFastestLap={lastYearFastestLap}
+              weather={nextRaceWeather}
+              isLoadingWeather={isLoadingWeather}
+              isLoading={isLoadingSchedule}
+              driverStandings={driverStandings}
+              teamStandings={teamStandings}
+              onClick={() => {
+                if (!nextRace) return;
+                trackEvent('widget_clicked', {
+                  widget: 'circuit_preview',
+                  event: nextRace.EventName,
+                });
+                navigate(`/race/${selectedYear}-${toRaceSlug(nextRace.EventName)}`);
+              }}
+            />
+          </div>
+          <div className="h-full">
+            <LastRaceSummary
+              raceName={lastRace?.event ?? ''}
+              roundNumber={lastRace?.round ?? 0}
+              countryCode={lastRaceCountryCode}
+              date={lastRace?.date ?? ''}
+              podium={lastRaceDetails?.podium ?? []}
+              pole={lastRaceDetails?.pole}
+              fastestLap={lastRaceDetails?.fastestLap}
+              biggestGainer={lastRaceDetails?.biggestGainer}
+              dnfCount={lastRaceDetails?.dnfCount ?? 0}
+              isLoading={(isLoadingSchedule && !lastRace) || isLoadingLastRaceDetails}
+              onClick={() => {
+                if (!lastRace?.event) return;
+                trackEvent('widget_clicked', {
+                  widget: 'last_race_summary',
+                  event: lastRace.event,
+                });
+                navigate(`/race/${selectedYear}-${toRaceSlug(lastRace.event)}?view=analysis`);
+              }}
+            />
+          </div>
+          <div>
+            <ForYouWidget
+              favoriteDriverName={favoriteDriverName}
+              favoriteTeamName={favoriteTeamName}
+            />
+          </div>
+        </div>
+
+        {/* 5. Pit stops + Season stats */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <PitStopLeaderboard
+            teamStats={pitStats}
+            isLoading={isLoadingPitStats}
+            selectedYear={selectedYear}
           />
-        )}
+          <SeasonStats stats={seasonStats} year={selectedYear} isLoading={isLoadingSeasonStats} />
+        </div>
 
-        {user && <QuickLinksWidget />}
-
-        <div className="grid lg:grid-cols-3 gap-8 mb-12">
-          <div className="lg:col-span-3 space-y-12">
-            <section>
-              {isTestingMode ? (
-                <div className="bg-black border-2 border-gray-800 p-6 space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-                      <span className="w-1 h-8 bg-red-600 block"></span>
-                      Testing <span className="text-gray-500">Command Center</span>
-                    </h3>
-                    {primaryTestingEvent && (
-                      <button
-                        onClick={() =>
-                          navigate(
-                            `/race/${selectedYear}-${toRaceSlug(primaryTestingEvent.EventName)}?session=${testingSpotlightSession}&view=analysis`
-                          )
-                        }
-                        className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
-                      >
-                        Open Session Analysis <ArrowRight01Icon className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <div className="bg-gray-900/40 border border-gray-800 p-4">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                        Spotlight Session
-                      </div>
-                      <div className="text-2xl font-black uppercase tracking-tight mt-1">
-                        {testingSpotlightSessionName || 'Day Session'}
-                      </div>
-                    </div>
-                    <div className="bg-gray-900/40 border border-gray-800 p-4">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                        Full-Day Laps
-                      </div>
-                      <div className="text-2xl font-black uppercase tracking-tight mt-1">
-                        {formatDistance(testingInsights.totalDistance)}
-                      </div>
-                    </div>
-                    <div className="bg-gray-900/40 border border-gray-800 p-4">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                        Morning Laps
-                      </div>
-                      <div className="text-2xl font-black uppercase tracking-tight mt-1">
-                        {testingInsights.morningLaps}
-                      </div>
-                    </div>
-                    <div className="bg-gray-900/40 border border-gray-800 p-4">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                        Afternoon Laps
-                      </div>
-                      <div className="text-2xl font-black uppercase tracking-tight mt-1">
-                        {testingInsights.afternoonLaps}
-                      </div>
-                    </div>
-                  </div>
-
-                  {(testingInsights.morningFastest || testingInsights.afternoonFastest) && (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="bg-gray-900/30 border border-gray-800 p-4">
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                          Morning Fastest
-                        </div>
-                        <div className="font-bold uppercase mt-1">
-                          {testingInsights.morningFastest?.fullName || '-'}
-                        </div>
-                        <div className="text-sm font-sans text-red-500 mt-1">
-                          {testingInsights.morningFastest?.morningFastestLapTime || '-'}
-                        </div>
-                      </div>
-                      <div className="bg-gray-900/30 border border-gray-800 p-4">
-                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">
-                          Afternoon Fastest
-                        </div>
-                        <div className="font-bold uppercase mt-1">
-                          {testingInsights.afternoonFastest?.fullName || '-'}
-                        </div>
-                        <div className="text-sm font-sans text-red-500 mt-1">
-                          {testingInsights.afternoonFastest?.afternoonFastestLapTime || '-'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold uppercase tracking-widest text-gray-500">
-                        Fastest First
-                      </div>
-                      <div className="text-xs font-sans text-gray-600">
-                        Sorted by best lap, then mileage
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {testingInsights.fastest.slice(0, 5).map((driver, index) => {
-                        const laps = driver.lapsCompleted ?? driver.laps ?? 0;
-                        const distance = calculateDistance(laps, testingInsights.circuitLength);
-                        const reliability =
-                          testingInsights.leaderLaps > 0
-                            ? Math.round((laps / testingInsights.leaderLaps) * 100)
-                            : 0;
-
-                        return (
-                          <div
-                            key={`${driver.driverCode}-${index}`}
-                            className="flex items-center justify-between p-3 bg-gray-900/40 border border-gray-800"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="text-lg font-sans text-gray-500 w-8">{index + 1}</div>
-                              <div>
-                                <div className="font-bold uppercase">{driver.fullName}</div>
-                                <div className="text-xs font-sans text-gray-500">{driver.team}</div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-sans text-red-500 text-sm">
-                                {driver.fastestLapTime || '-'}
-                              </div>
-                              <div className="text-xs font-sans text-gray-500">
-                                {formatDistance(distance)} • {reliability}% reliability
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {testingInsights.fastest.length === 0 && (
-                        <div className="text-center py-6 text-gray-500 font-sans text-sm">
-                          No testing session data cached yet.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <ChampionshipWidget
+        {/* 6. My Garage + Championship */}
+        {isTestingMode ? (
+          <TestingCommandCenter
+            testingSpotlightSessionName={testingSpotlightSessionName}
+            testingSpotlightSession={testingSpotlightSession}
+            testingInsights={testingInsights}
+            primaryTestingEvent={primaryTestingEvent}
+            selectedYear={selectedYear}
+            navigate={navigate}
+            toRaceSlug={toRaceSlug}
+            calculateDistance={calculateDistance}
+            formatDistance={formatDistance}
+          />
+        ) : (
+          <div className={`grid gap-5 ${user ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+            {user && (
+              <div className="h-full">
+                <FavoritesWidget
+                  profile={profile}
                   drivers={driverStandings}
                   teams={teamStandings}
                   schedule={schedule}
-                  raceResults={raceResults}
-                  isLoading={isLoadingDrivers || isLoadingTeams || isLoadingSchedule}
-                  profile={profile}
+                  isLoading={isLoadingCore}
                 />
-              )}
-            </section>
-
-            <div className="bg-black border-2 border-gray-800 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-                  <span className="w-1 h-8 bg-red-600 block"></span>
-                  {isTestingMode ? (
-                    <>
-                      Recent <span className="text-gray-500">Testing</span>
-                    </>
-                  ) : (
-                    <>
-                      Recent <span className="text-gray-500">Races</span>
-                    </>
-                  )}
-                </h3>
-                <button
-                  onClick={() => {
-                    trackEvent('widget_clicked', {
-                      widget: isTestingMode ? 'recent_testing' : 'recent_races',
-                      action: 'view_calendar',
-                    });
-                    navigate('/calendar');
-                  }}
-                  className="text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors flex items-center gap-2"
-                >
-                  View Calendar <ArrowRight01Icon className="w-4 h-4" />
-                </button>
               </div>
-
-              <div className="space-y-4">
-                {(isTestingMode ? recentTestingEvents : recentRaces).map((event) => (
-                  <div
-                    key={`${event.EventName}-${event.EventDate}`}
-                    onClick={() => {
-                      trackEvent('widget_clicked', {
-                        widget: isTestingMode ? 'recent_testing' : 'recent_races',
-                        action: 'click_event',
-                        event: event.EventName,
-                      });
-                      navigate(
-                        `/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`
-                      );
-                    }}
-                    className="flex items-center justify-between p-4 bg-gray-900/50 border border-gray-800 hover:border-red-600/50 cursor-pointer transition-colors group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-7 bg-gray-800 rounded overflow-hidden shrink-0">
-                        <img
-                          src={`https://flagcdn.com/h40/${getCountryCode(event.Country || event.Location)}.png`}
-                          alt={event.Country || event.Location}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="font-bold text-lg uppercase">{event.EventName}</div>
-                        <div className="text-xs font-sans text-gray-500">{event.Location}</div>
-                      </div>
-                    </div>
-                    <ArrowRight01Icon className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
-                  </div>
-                ))}
-                {(isTestingMode ? recentTestingEvents : recentRaces).length === 0 && (
-                  <div className="text-center py-8 text-gray-500 font-sans text-sm">
-                    {isTestingMode
-                      ? 'No testing sessions completed yet this season.'
-                      : 'No races completed yet this season.'}
-                  </div>
-                )}
-              </div>
+            )}
+            <div className={`h-full ${user ? 'lg:col-span-2' : 'lg:col-span-2'}`}>
+              <ChampionshipWidget
+                drivers={driverStandings}
+                teams={teamStandings}
+                schedule={schedule}
+                raceResults={raceResults}
+                isLoading={isLoadingCore}
+                profile={profile}
+              />
+            </div>
+            <div className="h-full">
+              <RecentEventsSection
+                isTestingMode={false}
+                events={recentRaces}
+                selectedYear={selectedYear}
+                navigate={navigate}
+                trackEvent={trackEvent}
+                toRaceSlug={toRaceSlug}
+                getCountryCode={getCountryCode}
+              />
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 
-export { Dashboard };
+/* ─── Testing Command Center ─── */
+const TestingCommandCenter = ({
+  testingSpotlightSessionName,
+  testingSpotlightSession,
+  testingInsights,
+  primaryTestingEvent,
+  selectedYear,
+  navigate,
+  toRaceSlug,
+  calculateDistance,
+  formatDistance,
+}: {
+  testingSpotlightSessionName: string;
+  testingSpotlightSession: string;
+  testingInsights: ReturnType<typeof buildEmptyTestingInsights>;
+  primaryTestingEvent?: ScheduleEvent;
+  selectedYear: number;
+  navigate: ReturnType<typeof useNavigate>;
+  toRaceSlug: (name: string) => string;
+  calculateDistance: (laps: number, circuitLength: number) => number;
+  formatDistance: (dist: number) => string;
+}) => (
+  <div className={CARD_CONTAINER}>
+    {/* Header */}
+    <div className="flex items-center justify-between px-5 pt-5 pb-4">
+      <span className={CARD_LABEL}>Pre-Season Testing</span>
+      {primaryTestingEvent && (
+        <button
+          onClick={() =>
+            navigate(
+              `/race/${selectedYear}-${toRaceSlug(primaryTestingEvent.EventName)}?session=${testingSpotlightSession}&view=analysis`
+            )
+          }
+          className="flex items-center gap-1 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
+        >
+          Open Analysis
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M1 6h10M7 2l4 4-4 4"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
+    </div>
+
+    {/* Stats grid */}
+    <div className="grid grid-cols-2 gap-px border-t border-white/[0.04] md:grid-cols-4">
+      {[
+        { label: 'Session', value: testingSpotlightSessionName || 'Day Session' },
+        { label: 'Distance', value: formatDistance(testingInsights.totalDistance) },
+        { label: 'AM Laps', value: String(testingInsights.morningLaps) },
+        { label: 'PM Laps', value: String(testingInsights.afternoonLaps) },
+      ].map((item) => (
+        <div key={item.label} className="px-5 py-4">
+          <div className={CARD_LABEL}>{item.label}</div>
+          <div className="mt-1 font text-[20px] tabular-nums text-white">{item.value}</div>
+        </div>
+      ))}
+    </div>
+
+    {/* Session splits */}
+    {(testingInsights.morningFastest || testingInsights.afternoonFastest) && (
+      <div className="grid border-t border-white/[0.04] md:grid-cols-2">
+        {[
+          {
+            label: 'Morning Fastest',
+            result: testingInsights.morningFastest,
+            timeKey: 'morningFastestLapTime' as const,
+          },
+          {
+            label: 'Afternoon Fastest',
+            result: testingInsights.afternoonFastest,
+            timeKey: 'afternoonFastestLapTime' as const,
+          },
+        ].map((slot) => (
+          <div key={slot.label} className="px-5 py-4 border-r border-white/[0.04] last:border-r-0">
+            <div className={CARD_LABEL}>{slot.label}</div>
+            <div className="mt-1 text-[14px] font-medium text-white">
+              {slot.result?.fullName || '—'}
+            </div>
+            <div className="font text-[13px] tabular-nums text-emerald-400">
+              {slot.result?.[slot.timeKey] || '—'}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Fastest drivers table */}
+    {testingInsights.fastest.length > 0 && (
+      <div className="border-t border-white/[0.04] px-2 py-3">
+        <div className="px-3 pb-2">
+          <span className={CARD_LABEL}>Fastest — sorted by best lap, then mileage</span>
+        </div>
+        {testingInsights.fastest.slice(0, 5).map((driver, i) => {
+          const laps = driver.lapsCompleted ?? driver.laps ?? 0;
+          const distance = calculateDistance(laps, testingInsights.circuitLength);
+          const reliability =
+            testingInsights.leaderLaps > 0
+              ? Math.round((laps / testingInsights.leaderLaps) * 100)
+              : 0;
+          return (
+            <div
+              key={driver.driverCode}
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
+            >
+              <span className="w-4 shrink-0 font text-[13px] tabular-nums text-white">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium text-white">{driver.fullName}</div>
+                <div className="text-[12px] text-white/80">{driver.team}</div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="font text-[13px] tabular-nums text-emerald-400">
+                  {driver.fastestLapTime || '—'}
+                </div>
+                <div className="font text-[11px] tabular-nums text-white/80">
+                  {formatDistance(distance)} · {reliability}%
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+);
+
+/* ─── Recent Events Section ─── */
+const RecentEventsSection = ({
+  isTestingMode,
+  events,
+  selectedYear,
+  navigate,
+  trackEvent,
+  toRaceSlug,
+  getCountryCode,
+}: {
+  isTestingMode: boolean;
+  events: ScheduleEvent[];
+  selectedYear: number;
+  navigate: ReturnType<typeof useNavigate>;
+  trackEvent: (name: string, props: Record<string, unknown>) => void;
+  toRaceSlug: (name: string) => string;
+  getCountryCode: (country: string) => string;
+}) => (
+  <div className={`h-full ${CARD_CONTAINER}`}>
+    {/* Header */}
+    <div className="flex items-center justify-between px-5 pt-5 pb-3">
+      <span className={CARD_LABEL}>{isTestingMode ? 'Recent Testing' : 'Recent Races'}</span>
+      <button
+        onClick={() => {
+          trackEvent('widget_clicked', {
+            widget: isTestingMode ? 'recent_testing' : 'recent_races',
+            action: 'view_calendar',
+          });
+          navigate('/calendar');
+        }}
+        className="flex items-center gap-1 text-[12px] font-medium text-white/80 transition-colors hover:text-white"
+      >
+        View calendar
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path
+            d="M1 6h10M7 2l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    {/* Event list */}
+    <div className="px-2 pb-3">
+      {events.length === 0 ? (
+        <div className="py-8 text-center text-[13px] text-white/80">
+          {isTestingMode
+            ? 'No testing sessions completed yet.'
+            : 'No races completed yet this season.'}
+        </div>
+      ) : (
+        events.map((event) => (
+          <m.div
+            key={`${event.EventName}-${event.EventDate}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => {
+              trackEvent('widget_clicked', {
+                widget: isTestingMode ? 'recent_testing' : 'recent_races',
+                action: 'click_event',
+                event: event.EventName,
+              });
+              navigate(`/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`);
+            }}
+            className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
+          >
+            {/* Flag */}
+            <div className="h-12 w-18 shrink-0 overflow-hidden rounded border border-white/[0.06]">
+              <img
+                src={`https://flagcdn.com/${getCountryCode(event.Country || event.Location)}.svg`}
+                alt={event.Country || event.Location}
+                className="size-full object-cover"
+              />
+            </div>
+
+            {/* Name */}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[14px] font-medium text-white transition-colors group-hover:text-white">
+                {event.EventName}
+              </div>
+              <div className="text-[12px] text-white/80">{event.Location}</div>
+            </div>
+
+            {/* Arrow */}
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 12 12"
+              fill="none"
+              className="shrink-0 text-white/50 transition-colors group-hover:text-white/80"
+            >
+              <path
+                d="M1 6h10M7 2l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </m.div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
 export default Dashboard;

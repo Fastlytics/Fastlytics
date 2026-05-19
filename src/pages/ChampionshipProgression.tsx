@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAnalytics } from '@/hooks/useAnalytics';
-import { motion } from 'framer-motion';
-import { ArrowLeft01Icon, FilterHorizontalIcon, AlertCircleIcon } from 'hugeicons-react';
-import { TrendingUp } from 'lucide-react';
+// knip-ignore
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+
+import { m, AnimatePresence } from 'motion/react';
+import { AlertCircleIcon } from 'hugeicons-react';
 import {
   LineChart,
   Line,
@@ -13,73 +12,81 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+} from '@/lib/recharts-lazy';
 
-import DashboardNavbar from '@/components/dashboard/DashboardNavbar';
+import { SEO } from '@/components/layout/SEO';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { CustomTooltipProps, CustomLegendProps } from '@/types';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import { useQuery } from '@tanstack/react-query';
 import { useSeason } from '@/contexts/SeasonContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { fetchChampionshipProgression, ChampionshipProgressionData } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { getCountryCode } from '@/utils/countryUtils';
 import { getDriverImage } from '@/utils/imageMapping';
-import { useEffect } from 'react';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { CARD_CONTAINER } from '@/lib/card-styles';
+import { cn } from '@/lib/utils';
+import { ArrowUpDownIcon } from 'hugeicons-react';
+
+import ChampionshipTooltip from '@/pages/ChampionshipProgression/ChampionshipTooltip';
+import ChampionshipLegend from '@/pages/ChampionshipProgression/ChampionshipLegend';
 
 const ChampionshipProgression = () => {
-  const navigate = useNavigate();
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
-  const isMobile = useIsMobile();
+  const { user, isSubscribed } = useAuth();
   const { trackEvent, trackPageView } = useAnalytics();
+
+  const currentSeasonYear = getCurrentSeasonYear();
+  const isFreeTierUser = !!user && !isSubscribed('pro');
+  const isYearLocked = (year: number) => isFreeTierUser && year < currentSeasonYear;
+  const years = availableYears.length > 0 ? availableYears : [2026, 2025, 2024, 2023, 2022];
+
+  // Season picker state
+  const [seasonOpen, setSeasonOpen] = useState(false);
+  const seasonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (seasonRef.current && !seasonRef.current.contains(e.target as Node)) {
+        setSeasonOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     trackPageView('championship_progression', { year: selectedYear });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // State for driver filtering
-  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Driver picker state
+  const [selectedDriversMap, setSelectedDriversMap] = useState<Record<number, string[]>>({});
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [focusedDriver, setFocusedDriver] = useState<string | null>(null);
 
-  // Reset selected drivers when year changes
-  useEffect(() => {
-    setSelectedDrivers([]);
-  }, [selectedYear]);
-
-  // Fetch Data
   const { data, isLoading, isError, error } = useQuery<ChampionshipProgressionData>({
     queryKey: ['championshipProgression', selectedYear],
     queryFn: () => fetchChampionshipProgression(selectedYear),
   });
 
-  // Process data for Chart
   const chartData = useMemo(() => {
     if (!data || !data.rounds) return [];
 
     return data.rounds.map((round, index) => {
       const point: Record<string, string | number> = {
         name: round.event,
-        uniqueId: `${round.round}_${round.event}`, // Unique identifier for X-Axis
+        uniqueId: `${round.round}_${round.event}`,
         shortName: round.country || `R${round.round}`,
         country: round.country || round.event,
         round: round.round,
       };
 
-      // Add points for each driver
       Object.entries(data.drivers).forEach(([code, driverData]) => {
         if (driverData.points_history[index] !== undefined) {
           point[code] = driverData.points_history[index];
@@ -90,417 +97,416 @@ const ChampionshipProgression = () => {
     });
   }, [data]);
 
-  // Determine drivers to show by default (Title Contenders going into final race)
-  useEffect(() => {
-    if (data && selectedDrivers.length === 0) {
-      const roundsReceived = data.rounds.length;
-      const checkIndex = roundsReceived > 1 ? roundsReceived - 2 : 0; // Index of the penultimate round (state before last race)
-
-      // Calculate points at the check index
-      const driversAtCheck = Object.entries(data.drivers)
-        .map(([code, d]) => ({
-          code,
-          points: d.points_history[checkIndex] || 0,
-          currentPoints: d.points_history[d.points_history.length - 1] || 0, // For sorting
-        }))
-        .sort((a, b) => b.points - a.points);
-
-      if (driversAtCheck.length > 0) {
-        const leaderPoints = driversAtCheck[0].points;
-        // Drivers within 26 points (Win + FL) of leader at penultimate round
-        // (Assuming simple 26pts remaining, can be made more robust if needed, but this is a solid heuristic for "last race title decider")
-        const contenders = driversAtCheck
-          .filter((d) => leaderPoints - d.points <= 26)
-          .map((d) => d.code);
-
-        if (contenders.length > 1) {
-          setSelectedDrivers(contenders);
-        } else {
-          // If title decided before last race, or only 1 contender, fallback to top 5
-          const top5 = driversAtCheck
-            .sort((a, b) => b.currentPoints - a.currentPoints)
-            .slice(0, 5)
-            .map((d) => d.code);
-          setSelectedDrivers(top5);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]); // Run only when data loads initially
-
-  const handleDriverToggle = (code: string) => {
-    setSelectedDrivers((prev) =>
-      prev.includes(code) ? prev.filter((d) => d !== code) : [...prev, code]
-    );
-  };
-
-  const selectAllTop10 = () => {
-    if (!data) return;
-    const top10 = Object.entries(data.drivers)
+  const driverCodes = useMemo(() => {
+    if (!data) return [];
+    return Object.entries(data.drivers)
       .sort(([, a], [, b]) => {
         const pointsA = a.points_history[a.points_history.length - 1] || 0;
         const pointsB = b.points_history[b.points_history.length - 1] || 0;
         return pointsB - pointsA;
       })
-      .slice(0, 10)
       .map(([code]) => code);
-    setSelectedDrivers(top10);
-    trackEvent('filter_action', {
-      page: 'championship_progression',
-      action: 'select_top10',
-      year: selectedYear,
+  }, [data]);
+
+  const defaultDrivers = useMemo(() => {
+    if (!data) return [];
+    const roundsReceived = data.rounds.length;
+    const checkIndex = roundsReceived > 1 ? roundsReceived - 2 : 0;
+
+    const driversAtCheck = Object.entries(data.drivers)
+      .map(([code, d]) => ({
+        code,
+        points: d.points_history[checkIndex] || 0,
+        currentPoints: d.points_history[d.points_history.length - 1] || 0,
+      }))
+      .sort((a, b) => b.points - a.points);
+
+    if (driversAtCheck.length > 0) {
+      const leaderPoints = driversAtCheck[0].points;
+      const contenders = driversAtCheck.flatMap((d) =>
+        leaderPoints - d.points <= 26 ? [d.code] : []
+      );
+
+      if (contenders.length > 1) return contenders;
+      return driversAtCheck
+        .sort((a, b) => b.currentPoints - a.currentPoints)
+        .slice(0, 5)
+        .map((d) => d.code);
+    }
+    return [];
+  }, [data]);
+
+  const selectedDrivers = selectedDriversMap[selectedYear]?.length
+    ? selectedDriversMap[selectedYear]
+    : defaultDrivers;
+
+  const setSelectedDrivers = (value: React.SetStateAction<string[]>) => {
+    setSelectedDriversMap((prev) => {
+      const current = prev[selectedYear] || [];
+      const next =
+        typeof value === 'function' ? (value as (prev: string[]) => string[])(current) : value;
+      return { ...prev, [selectedYear]: next };
     });
   };
 
-  const clearSelection = () => {
-    setSelectedDrivers([]);
+  const handleDriverToggle = (code: string) => {
+    trackEvent('driver_toggled', { driver: code, chart: 'championship', year: selectedYear });
+    setSelectedDrivers((prev) =>
+      prev.includes(code) ? prev.filter((d) => d !== code) : [...prev, code]
+    );
+  };
+
+  const handleSelectAll = () => {
+    trackEvent('filter_action', {
+      page: 'championship_progression',
+      action: 'select_all',
+      year: selectedYear,
+    });
+    setSelectedDrivers(driverCodes);
+  };
+
+  const handleSelectNone = () => {
     trackEvent('filter_action', {
       page: 'championship_progression',
       action: 'clear_selection',
       year: selectedYear,
     });
-  };
-
-  // No separate helper needed — getDriverImage imported from @/utils/imageMapping
-  // Usage: getDriverImage(driverCode, selectedYear)
-
-  // Custom Toolkit Styles
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps<number>) => {
-    if (active && payload && payload.length) {
-      // Sort payload by value (points) descending
-      const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0));
-
-      // Access direct data point from payload
-      const dataPoint = payload[0]?.payload;
-      const country = dataPoint?.country || label;
-      const eventName = dataPoint?.name || label;
-
-      return (
-        <div className="bg-black/95 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-md min-w-[280px]">
-          <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-800">
-            <img
-              src={`https://flagcdn.com/h24/${getCountryCode(country)}.png`}
-              alt="Country Flag"
-              className="h-4 rounded-[2px]"
-            />
-            <p className="font-black text-white uppercase italic tracking-wider text-sm">
-              {eventName}
-            </p>
-          </div>
-          <div className="space-y-3">
-            {sortedPayload.map((entry, index: number) => {
-              // Use dataKey (driver code) for image lookup if available, otherwise name
-              const driverId = entry.dataKey || entry.name;
-              const headshot = getDriverImage(driverId, selectedYear);
-
-              return (
-                <div key={entry.name} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-500 font-mono text-xs w-4">#{index + 1}</span>
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-900 border border-gray-800">
-                        {headshot ? (
-                          <img
-                            src={headshot}
-                            alt={entry.name}
-                            className="w-full h-full object-cover object-top"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs font-bold text-gray-500">
-                            {entry.name[0]}
-                          </div>
-                        )}
-                      </div>
-                      <div
-                        className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                    </div>
-                    <span className="font-bold text-sm text-gray-200">{entry.name}</span>
-                  </div>
-                  <span className="font-black font-mono text-white text-sm tabular-nums">
-                    {entry.value}{' '}
-                    <span className="text-[10px] text-gray-500 font-normal ml-0.5">PTS</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-  };
-
-  // Custom Legend Component
-  const CustomLegend = ({ payload }: CustomLegendProps) => {
-    if (!payload) return null;
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-4 mb-6 pt-4">
-        {payload.map((entry, index: number) => {
-          const driverId = entry.dataKey || entry.value; // Prefer dataKey (code)
-          const headshot = getDriverImage(driverId, selectedYear);
-
-          return (
-            <div
-              key={`legend-${index}`}
-              className="flex items-center gap-2 bg-zinc-900/50 pr-3 pl-1 py-1 rounded-full border border-gray-800 backdrop-blur-sm"
-            >
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700">
-                {headshot ? (
-                  <img
-                    src={headshot}
-                    alt={entry.value}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-                    {entry.value[0]}
-                  </div>
-                )}
-              </div>
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-xs font-bold text-gray-200">{entry.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
+    setSelectedDrivers([]);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-red-600 selection:text-white flex flex-col">
-      <DashboardNavbar />
+    <>
+      <SEO
+        title="Championship Race"
+        description={`Track the ${selectedYear} championship race with cumulative points, contender filters, and round-by-round momentum swings.`}
+        keywords={['championship standings', 'title fight', 'f1 standings', 'points progression']}
+      />
 
-      <main className="flex-grow pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <div className="space-y-5 text-white">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b-2 border-gray-800 pb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-500 hover:text-white hover:bg-gray-800"
-                onClick={() => navigate('/dashboard')}
-              >
-                <ArrowLeft01Icon className="h-6 w-6" />
-              </Button>
-              <h1 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-                Championship <span className="text-red-600">Progression</span>
-                <TrendingUp className="h-8 w-8 text-gray-600 md:h-10 md:w-10" />
-              </h1>
-            </div>
-            <p className="text-gray-500 font-mono text-sm uppercase tracking-widest ml-14">
-              Season Cumulative Points Analysis
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center justify-between gap-4"
+        >
+          <div className="min-w-0">
+            <h1 className="text-[20px] font-semibold tracking-[-0.01em] text-white">
+              Championship Progression
+            </h1>
+            <p className="mt-0.5 text-[12px] text-white/80">
+              Cumulative points · {selectedYear} season
             </p>
           </div>
 
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-4 ml-14 md:ml-0">
-            <Select
-              value={String(selectedYear)}
-              onValueChange={(value) => {
-                setSelectedYear(Number(value));
-                trackEvent('season_changed', {
-                  page: 'championship_progression',
-                  year: Number(value),
-                });
-              }}
-            >
-              <SelectTrigger className="w-[140px] bg-black border-2 border-gray-800 text-white hover:border-red-600 rounded-none font-bold uppercase tracking-widest">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent className="bg-black border-2 border-gray-800 text-white rounded-none">
-                <SelectGroup>
-                  <SelectLabel className="text-xs text-gray-500 uppercase p-2">Season</SelectLabel>
-                  {availableYears.map((year) => (
-                    <SelectItem
-                      key={year}
-                      value={String(year)}
-                      className="cursor-pointer focus:bg-red-600 focus:text-white font-bold"
-                    >
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant={isFilterOpen ? 'destructive' : 'outline'}
-              className={cn(
-                'border-2 font-bold uppercase tracking-wider gap-2',
-                isFilterOpen
-                  ? 'bg-red-600 border-red-600 text-white'
-                  : 'bg-black border-gray-800 text-gray-300 hover:text-white hover:border-white'
-              )}
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            >
-              <FilterHorizontalIcon className="w-4 h-4" />
-              Drivers
-            </Button>
-          </div>
-        </div>
-
-        {/* Driver Filter Panel (Collapsible) */}
-        <motion.div
-          initial={false}
-          animate={{ height: isFilterOpen ? 'auto' : 0, opacity: isFilterOpen ? 1 : 0 }}
-          className="overflow-hidden mb-6"
-        >
-          <div className="bg-zinc-900/50 border border-gray-800 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider">
-                Select Drivers to Compare
-              </h3>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={selectAllTop10} className="text-xs h-7">
-                  Top 10
-                </Button>
+          <div className="flex shrink-0 items-center gap-3">
+            {/* Driver picker — PositionChart style */}
+            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+              <PopoverTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearSelection}
-                  className="text-xs h-7 text-red-500 hover:text-red-400 hover:bg-red-900/20"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={isPopoverOpen}
+                  className="w-auto min-w-[160px] justify-between text-[11px] font-semibold h-8 rounded-lg border border-white/[0.08] bg-white/[0.03] text-white hover:bg-white/[0.06] hover:text-white uppercase tracking-wider"
+                  disabled={driverCodes.length === 0}
                 >
-                  Clear
+                  {selectedDrivers.length === driverCodes.length
+                    ? 'All Drivers'
+                    : selectedDrivers.length === 0
+                      ? 'Select Drivers...'
+                      : `${selectedDrivers.length} Selected`}
+                  <ArrowUpDownIcon className="ml-2 size-3.5 shrink-0 opacity-50" />
                 </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {data?.drivers &&
-                Object.entries(data.drivers)
-                  .sort(([, a], [, b]) => {
-                    // Sort by current points descending
-                    const pointsA = a.points_history[a.points_history.length - 1] || 0;
-                    const pointsB = b.points_history[b.points_history.length - 1] || 0;
-                    return pointsB - pointsA;
-                  })
-                  .map(([code, driver]) => (
-                    <div key={code} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`driver - ${code} `}
-                        checked={selectedDrivers.includes(code)}
-                        onCheckedChange={() => handleDriverToggle(code)}
-                        className="border-gray-600 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
-                      />
-                      <label
-                        htmlFor={`driver - ${code} `}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
-                      >
-                        <span
-                          className="w-1.5 h-6 block rounded-full"
-                          style={{ backgroundColor: driverColor(code, selectedYear) }}
-                        ></span>
-                        <span
-                          className={
-                            selectedDrivers.includes(code)
-                              ? 'text-white font-bold'
-                              : 'text-gray-400'
-                          }
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-1.5 rounded-xl border border-white/[0.08] bg-[#0c0c0e] shadow-2xl">
+                <div className="flex items-center justify-between px-2 py-1.5 mb-1 border-b border-white/[0.06] pb-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-white">
+                    {selectedDrivers.length} / {driverCodes.length} visible
+                  </span>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={handleSelectAll}
+                      className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={handleSelectNone}
+                      className="text-[10px] font-semibold uppercase tracking-wider text-white hover:text-white px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+                <ScrollArea className="h-[300px]">
+                  <div className="grid gap-0.5">
+                    {driverCodes.map((code) => {
+                      const headshot = getDriverImage(code, selectedYear);
+                      const fullName = data?.drivers[code]?.name || code;
+                      const isSelected = selectedDrivers.includes(code);
+                      const dColor = driverColor(code, selectedYear);
+
+                      return (
+                        <button
+                          key={code}
+                          onClick={() => handleDriverToggle(code)}
+                          className={cn(
+                            'flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-all text-left',
+                            isSelected ? 'bg-white/[0.04]' : 'opacity-50 hover:opacity-70',
+                            focusedDriver && focusedDriver !== code && '!opacity-20'
+                          )}
+                          onMouseEnter={() => setFocusedDriver(code)}
+                          onMouseLeave={() => setFocusedDriver(null)}
                         >
-                          {driver.name}
-                        </span>
-                      </label>
+                          {/* Check indicator */}
+                          <div
+                            className={cn(
+                              'size-4 rounded shrink-0 flex items-center justify-center border transition-all',
+                              isSelected
+                                ? 'bg-red-500 border-red-500'
+                                : 'border-white/[0.15] bg-transparent'
+                            )}
+                          >
+                            {isSelected && (
+                              <svg
+                                className="size-2.5 text-white"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+
+                          {/* Team color bar */}
+                          <div
+                            className={cn(
+                              'h-8 w-0.5 rounded-full shrink-0 transition-opacity',
+                              isSelected ? 'opacity-100' : 'opacity-30'
+                            )}
+                            style={{ backgroundColor: dColor }}
+                          />
+
+                          {/* Headshot */}
+                          <Avatar className="size-8 shrink-0 border border-white/[0.08]">
+                            <AvatarImage src={headshot} className="object-cover object-top" />
+                            <AvatarFallback className="bg-[#1a1a1e] text-[10px] font-bold text-white">
+                              {code[0]}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Name */}
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span
+                              className={cn(
+                                'text-[12px] font-semibold truncate transition-colors',
+                                isSelected ? 'text-white' : 'text-white'
+                              )}
+                            >
+                              {fullName}
+                            </span>
+                            <span className="text-[10px] font-medium text-white/80">{code}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
+            {/* Season picker — BreadcrumbBar style */}
+            <div ref={seasonRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setSeasonOpen(!seasonOpen)}
+                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-medium transition-all ${
+                  seasonOpen
+                    ? 'border-white/[0.08] bg-white/[0.04] text-white'
+                    : 'border-white/[0.04] text-white hover:border-white/[0.08] hover:text-white'
+                }`}
+              >
+                <span className="font-mono tabular-nums">{selectedYear}</span>
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  className={`text-white/60 transition-transform ${seasonOpen ? 'rotate-180' : ''}`}
+                >
+                  <path
+                    d="M2 4l3 3 3-3"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {seasonOpen && (
+                  <m.div
+                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                    transition={{ duration: 0.12, ease: 'easeOut' }}
+                    className="absolute right-0 top-full z-50 mt-1.5 min-w-[140px] overflow-hidden rounded-lg border border-white/[0.04] bg-[#0a0a0a] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                  >
+                    <div className="p-1">
+                      {years.map((year) => {
+                        const locked = isYearLocked(year);
+                        return (
+                          <button
+                            key={year}
+                            type="button"
+                            onClick={() => {
+                              if (locked) {
+                                setSeasonOpen(false);
+                                return;
+                              }
+                              setSelectedYear(year);
+                              setSeasonOpen(false);
+                              trackEvent('season_changed', {
+                                page: 'championship_progression',
+                                year,
+                              });
+                            }}
+                            className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+                              locked
+                                ? 'cursor-not-allowed text-white/50'
+                                : year === selectedYear
+                                  ? 'bg-white/[0.04] text-white'
+                                  : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-mono tabular-nums">{year}</span>
+                            {locked && (
+                              <span className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-sky-300">
+                                PRO
+                              </span>
+                            )}
+                            {!locked && year === selectedYear && (
+                              <span className="size-1 rounded-full bg-white/60" />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </m.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
-        {/* Content Area */}
-        <div className="w-full bg-zinc-950 border border-gray-800 rounded-xl p-4 md:p-8 h-[600px] relative">
+        {/* Chart */}
+        <div className={`${CARD_CONTAINER} relative h-[calc(100vh-160px)]`}>
           {isLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm rounded-xl">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-400 animate-pulse font-mono text-sm">
-                  Loading Progression Data...
-                </p>
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg">
+              <div className="flex flex-col items-center gap-3">
+                <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+                <span className="text-[12px] text-white/50">Loading progression data…</span>
               </div>
             </div>
           ) : isError ? (
-            <div className="absolute inset-0 flex items-center justify-center flex-col text-center p-8">
-              <AlertCircleIcon className="w-16 h-16 text-red-600 mb-4 opacity-50" />
-              <h3 className="text-xl font-bold uppercase text-white mb-2">Unavailable</h3>
-              <p className="text-gray-500 max-w-md">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+              <AlertCircleIcon className="mb-3 size-10 text-white/20" />
+              <h3 className="text-[15px] font-medium text-white">Unavailable</h3>
+              <p className="mt-1 max-w-md text-[13px] text-white/60">
                 {(error as Error)?.message ||
                   "Could not load championship progression data. This may be because the season data hasn't been processed yet."}
               </p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                <XAxis
-                  dataKey="uniqueId"
-                  tick={({ x, y, payload }) => {
-                    const dataPoint = chartData[payload.index];
-                    const countryName = dataPoint ? dataPoint.country : payload.value;
+            <div className="h-full p-4 md:p-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(255,255,255,0.04)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="uniqueId"
+                    tick={({ x, y, payload }) => {
+                      const dataPoint = chartData[payload.index];
+                      const countryName = dataPoint ? String(dataPoint.country) : payload.value;
+                      const roundNum = dataPoint ? dataPoint.round : payload.index + 1;
+                      const countryCode = getCountryCode(countryName);
+                      return (
+                        <g transform={`translate(${x},${y})`}>
+                          <foreignObject x={-14} y={8} width={28} height={40}>
+                            <div className="flex flex-col items-center gap-[3px]">
+                              <img
+                                src={`https://flagcdn.com/${countryCode}.svg`}
+                                alt={countryName}
+                                className="h-[14px] w-[20px] rounded-[2px] object-cover opacity-80"
+                              />
+                              <span className="text-[9px] font-medium tabular-nums text-white/40">
+                                {roundNum}
+                              </span>
+                            </div>
+                          </foreignObject>
+                        </g>
+                      );
+                    }}
+                    interval={0}
+                    tickLine={false}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                    height={56}
+                  />
+                  <YAxis
+                    stroke="transparent"
+                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[
+                      0,
+                      (dataMax: number) => {
+                        if (!dataMax || dataMax <= 0 || isNaN(dataMax)) return 100;
+                        if (dataMax <= 20) return Math.ceil(dataMax / 5) * 5;
+                        if (dataMax <= 50) return Math.ceil(dataMax / 10) * 10;
+                        if (dataMax <= 100) return Math.ceil(dataMax / 20) * 20;
+                        return Math.ceil(dataMax / 50) * 50;
+                      },
+                    ]}
+                  />
+                  <Tooltip content={<ChampionshipTooltip selectedYear={selectedYear} />} />
+                  <Legend
+                    content={<ChampionshipLegend selectedYear={selectedYear} />}
+                    verticalAlign="bottom"
+                  />
+                  {selectedDrivers.map((code) => {
+                    const driverData = data?.drivers[code];
+                    if (!driverData) return null;
                     return (
-                      <g transform={`translate(${x},${y})`}>
-                        <foreignObject x={-12} y={10} width={24} height={18}>
-                          <img
-                            src={`https://flagcdn.com/h24/${getCountryCode(countryName)}.png`}
-                            alt={countryName}
-                            className="w-full h-full object-cover rounded-[2px] opacity-80 hover:opacity-100 transition-opacity"
-                          />
-                        </foreignObject>
-                      </g>
+                      <Line
+                        key={code}
+                        type="monotone"
+                        dataKey={code}
+                        stroke={driverColor(code, selectedYear)}
+                        strokeWidth={focusedDriver === code ? 4 : 2}
+                        strokeOpacity={focusedDriver ? (focusedDriver === code ? 1 : 0.1) : 1}
+                        dot={{ r: 2.5, fill: driverColor(code, selectedYear), strokeWidth: 0 }}
+                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }}
+                        animationDuration={1200}
+                        name={driverData.name}
+                      />
                     );
-                  }}
-                  interval={0}
-                  tickLine={false}
-                  axisLine={{ stroke: '#333' }}
-                  height={40}
-                />
-                <YAxis
-                  stroke="#666"
-                  tick={{ fill: '#666', fontSize: 12, fontWeight: 'bold', fontFamily: 'Geist' }}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[
-                    0,
-                    (dataMax: number) => {
-                      // Adaptive rounding based on the maximum value
-                      if (!dataMax || dataMax <= 0 || isNaN(dataMax)) return 100;
-
-                      // Low points (e.g. backmarkers): round to nearest 5 or 10
-                      if (dataMax <= 20) return Math.ceil(dataMax / 5) * 5;
-                      if (dataMax <= 50) return Math.ceil(dataMax / 10) * 10;
-                      if (dataMax <= 100) return Math.ceil(dataMax / 20) * 20;
-
-                      // High points (title contenders): round to nearest 50
-                      return Math.ceil(dataMax / 50) * 50;
-                    },
-                  ]}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend content={<CustomLegend />} verticalAlign="bottom" />
-                {selectedDrivers.map((code) => {
-                  const driverData = data?.drivers[code];
-                  if (!driverData) return null;
-                  return (
-                    <Line
-                      key={code}
-                      type="monotone"
-                      dataKey={code}
-                      stroke={driverColor(code, selectedYear)}
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: driverColor(code, selectedYear), strokeWidth: 0 }}
-                      activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
-                      animationDuration={1500}
-                      name={driverData.name}
-                    />
-                  );
-                })}
-              </LineChart>
-            </ResponsiveContainer>
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </>
   );
 };
 
-export { ChampionshipProgression };
 export default ChampionshipProgression;

@@ -1,3 +1,100 @@
+// knip-ignore
+export const driverImages2019: Record<string, string> = {
+  ALB: '/drivers/2019/albon.png',
+  BOT: '/drivers/2019/bottas.png',
+  GAS: '/drivers/2019/gasly.png',
+  GIO: '/drivers/2019/giovinazzi.png',
+  GRO: '/drivers/2019/grosjean.png',
+  HAM: '/drivers/2019/hamilton.png',
+  HUL: '/drivers/2019/hulkenberg.png',
+  KUB: '/drivers/2019/kubica.png',
+  KVY: '/drivers/2019/kvyat.png',
+  LEC: '/drivers/2019/leclerc.png',
+  MAG: '/drivers/2019/magnussen.png',
+  NOR: '/drivers/2019/norris.png',
+  PER: '/drivers/2019/perez.png',
+  RAI: '/drivers/2019/raikkonen.png',
+  RIC: '/drivers/2019/ricciardo.png',
+  RUS: '/drivers/2019/russell.png',
+  SAI: '/drivers/2019/sainz.png',
+  STR: '/drivers/2019/stroll.png',
+  VER: '/drivers/2019/verstappen.png',
+  VET: '/drivers/2019/vettel.png',
+};
+
+export const driverImages2020: Record<string, string> = {
+  ALB: '/drivers/2020/albon.png',
+  BOT: '/drivers/2020/bottas.png',
+  GAS: '/drivers/2020/gasly.png',
+  GIO: '/drivers/2020/giovinazzi.png',
+  GRO: '/drivers/2020/grosjean.png',
+  HAM: '/drivers/2020/hamilton.png',
+  HUL: '/drivers/2020/hulkenberg.png',
+  KVY: '/drivers/2020/kvyat.png',
+  LAT: '/drivers/2020/latifi.png',
+  LEC: '/drivers/2020/leclerc.png',
+  MAG: '/drivers/2020/magnussen.png',
+  NOR: '/drivers/2020/norris.png',
+  OCO: '/drivers/2020/ocon.png',
+  PER: '/drivers/2020/perez.png',
+  RAI: '/drivers/2020/raikkonen.png',
+  RIC: '/drivers/2020/ricciardo.png',
+  RUS: '/drivers/2020/russell.png',
+  SAI: '/drivers/2020/sainz.png',
+  STR: '/drivers/2020/stroll.png',
+  VER: '/drivers/2020/verstappen.png',
+  VET: '/drivers/2020/vettel.png',
+};
+
+export const driverImages2021: Record<string, string> = {
+  ALO: '/drivers/2021/alonso.png',
+  BOT: '/drivers/2021/bottas.png',
+  GAS: '/drivers/2021/gasly.png',
+  GIO: '/drivers/2021/giovinazzi.png',
+  HAM: '/drivers/2021/hamilton.png',
+  KUB: '/drivers/2021/kubica.png',
+  LAT: '/drivers/2021/latifi.png',
+  LEC: '/drivers/2021/leclerc.png',
+  MAZ: '/drivers/2021/mazepin.png',
+  NOR: '/drivers/2021/norris.png',
+  OCO: '/drivers/2021/ocon.png',
+  PER: '/drivers/2021/perez.png',
+  RAI: '/drivers/2021/raikkonen.png',
+  RIC: '/drivers/2021/ricciardo.png',
+  RUS: '/drivers/2021/russell.png',
+  SAI: '/drivers/2021/sainz.png',
+  MSC: '/drivers/2021/schumacher.png',
+  STR: '/drivers/2021/stroll.png',
+  TSU: '/drivers/2021/tsunoda.png',
+  VER: '/drivers/2021/verstappen.png',
+  VET: '/drivers/2021/vettel.png',
+};
+
+export const driverImages2022: Record<string, string> = {
+  ALB: '/drivers/2022/albon.png',
+  ALO: '/drivers/2022/alonso.png',
+  BOT: '/drivers/2022/bottas.png',
+  DEV: '/drivers/2022/devries.png',
+  GAS: '/drivers/2022/gasly.png',
+  HAM: '/drivers/2022/hamilton.png',
+  HUL: '/drivers/2022/hulkenberg.png',
+  LAT: '/drivers/2022/latifi.png',
+  LEC: '/drivers/2022/leclerc.png',
+  MAG: '/drivers/2022/magnussen.png',
+  NOR: '/drivers/2022/norris.png',
+  OCO: '/drivers/2022/ocon.png',
+  PER: '/drivers/2022/perez.png',
+  RIC: '/drivers/2022/ricciardo.png',
+  RUS: '/drivers/2022/russell.png',
+  SAI: '/drivers/2022/sainz.png',
+  MSC: '/drivers/2022/schumacher.png',
+  STR: '/drivers/2022/stroll.png',
+  TSU: '/drivers/2022/tsunoda.png',
+  VER: '/drivers/2022/verstappen.png',
+  VET: '/drivers/2022/vettel.png',
+  ZHO: '/drivers/2022/zhouguanyu.png',
+};
+
 export const driverImages2023: Record<string, string> = {
   ALB: '/drivers/2023/albon.png',
   ALO: '/drivers/2023/alonso.png',
@@ -163,11 +260,23 @@ export const getDriverImage = (driverCode: string, year: number): string => {
 
   const code = driverCode.toUpperCase();
 
+  if (year === 2019) {
+    return driverImages2019[code] || '';
+  }
+  if (year === 2020) {
+    return driverImages2020[code] || '';
+  }
+  if (year === 2021) {
+    return driverImages2021[code] || '';
+  }
+  if (year === 2022) {
+    return driverImages2022[code] || '';
+  }
   if (year === 2023) {
-    return driverImages2023[code] || driverImages2025[code] || '';
+    return driverImages2023[code] || '';
   }
   if (year === 2024) {
-    return driverImages2024[code] || driverImages2025[code] || '';
+    return driverImages2024[code] || '';
   }
   if (year === 2025) {
     return driverImages2025[code] || '';
@@ -177,7 +286,34 @@ export const getDriverImage = (driverCode: string, year: number): string => {
     return driverImages2026[code] || driverImages2025[code] || '';
   }
 
-  return driverImages2025[code] || '';
+  return '';
+};
+
+export const getDriverImagesByCode = (driverCode: string): { year: number; url: string }[] => {
+  if (!driverCode) return [];
+  const code = driverCode.toUpperCase();
+  const results: { year: number; url: string }[] = [];
+
+  const years = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019] as const;
+  const maps = [
+    driverImages2026,
+    driverImages2025,
+    driverImages2024,
+    driverImages2023,
+    driverImages2022,
+    driverImages2021,
+    driverImages2020,
+    driverImages2019,
+  ];
+
+  years.forEach((year, i) => {
+    const url = maps[i][code];
+    if (url) {
+      results.push({ year, url });
+    }
+  });
+
+  return results;
 };
 
 export const getCarImage = (teamName: string, year: number): string => {

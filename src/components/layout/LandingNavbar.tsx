@@ -1,121 +1,217 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Gauge } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
+
+const navLinks = [
+  { label: 'Features', href: '/features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'About', href: '/about' },
+  { label: 'FAQ', href: '/faq' },
+];
 
 const LandingNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  const isActive = (href: string) => {
+    if (href.startsWith('/#')) return location.pathname === '/';
+    return location.pathname === href;
+  };
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b-2 ${
+      style={{ fontFamily: "'Inter', sans-serif" }}
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-black/90 backdrop-blur-md border-red-600 py-4'
-          : 'bg-transparent border-transparent py-6'
+          ? 'bg-[#09090b]/70 backdrop-blur-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)]'
+          : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-600 blur-sm opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-              <Gauge className="h-10 w-10 text-red-600 relative z-10 transform group-hover:rotate-180 transition-transform duration-700" />
-            </div>
-            <span className="text-2xl font-black tracking-tighter uppercase italic">
-              Fast<span className="text-red-600">lytics</span>
-            </span>
-          </Link>
+      <div className="mx-auto flex h-[60px] max-w-6xl items-center justify-between px-5 lg:px-8">
+        {/* Logo */}
+        <Link to="/" className="relative z-10 flex items-center gap-2.5">
+          <FastlyticsLogo size={15} />
+        </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            <a
-              href="/#features"
-              className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors"
-            >
-              Features
-            </a>
-            <Link
-              to="/about"
-              className="text-sm font-bold uppercase tracking-widest hover:text-red-500 transition-colors"
-            >
-              About
-            </Link>
-            <Link to="/auth">
-              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 hover:border-red-500 rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all duration-300">
-                <span className="skew-x-[10deg] group-hover:skew-x-0">
-                  {user ? 'Dashboard' : 'Sign Up'}
-                </span>
-              </Button>
-            </Link>
+        {/* Desktop nav — centered pill */}
+        <div className="hidden md:flex absolute inset-x-0 justify-center pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-1.5 py-1">
+            {navLinks.map((item) => {
+              const active = isActive(item.href);
+              const isAnchor = item.href.startsWith('/#');
+
+              if (isAnchor) {
+                return (
+                  <a
+                    key={item.label}
+                    href={location.pathname === '/' ? item.href.replace('/', '') : item.href}
+                    className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all duration-200 ${
+                      active
+                        ? 'bg-white/[0.08] text-white'
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-all duration-200 ${
+                    active
+                      ? 'bg-white/[0.08] text-white'
+                      : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden flex flex-col gap-1.5 p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <span
-              className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}
-            />
-            <span
-              className={`block w-8 h-0.5 bg-white transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}
-            />
-            <span
-              className={`block w-8 h-0.5 bg-white transition-transform duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}
-            />
-          </button>
         </div>
+
+        {/* Desktop CTA */}
+        <div className="relative z-10 hidden items-center gap-2.5 md:flex">
+          {!user && (
+            <Link
+              to="/login"
+              className="rounded-full px-4 py-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
+            >
+              Log in
+            </Link>
+          )}
+          <Link
+            to="/dashboard"
+            className="group relative inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+          >
+            {user ? 'Dashboard' : 'Get started'}
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              className="transition-transform group-hover:translate-x-0.5"
+            >
+              <path
+                d="M2.5 6h7M6.5 3l3 3-3 3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        </div>
+
+        {/* Mobile menu button */}
+        <button
+          type="button"
+          className="relative z-10 flex size-9 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-white md:hidden"
+          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            {mobileOpen ? (
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            ) : (
+              <path
+                d="M2 4.5h12M2 8h12M2 11.5h12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            )}
+          </svg>
+        </button>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-black border-b-2 border-red-600 overflow-hidden"
-          >
-            <div className="px-4 py-8 flex flex-col gap-6">
-              <a
-                href="/#features"
-                className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </a>
+      {/* Mobile menu */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-out md:hidden ${
+          mobileOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="border-t border-white/[0.04] bg-[#09090b]/95 px-5 pb-5 pt-4 backdrop-blur-2xl">
+          <div className="flex flex-col gap-0.5">
+            {navLinks.map((item) => {
+              const active = isActive(item.href);
+              const isAnchor = item.href.startsWith('/#');
+
+              if (isAnchor) {
+                return (
+                  <a
+                    key={item.label}
+                    href={location.pathname === '/' ? item.href.replace('/', '') : item.href}
+                    className={`rounded-lg px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
+                      active ? 'bg-white/[0.06] text-white' : 'text-white/60 hover:text-white'
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={`rounded-lg px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
+                    active ? 'bg-white/[0.06] text-white' : 'text-white/60 hover:text-white'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex gap-2.5">
+            {!user && (
               <Link
-                to="/about"
-                className="text-xl font-bold uppercase tracking-widest hover:text-red-500"
-                onClick={() => setMobileMenuOpen(false)}
+                to="/login"
+                className="flex-1 rounded-full border border-white/[0.08] bg-white/[0.03] py-2.5 text-center text-[13px] font-medium text-white transition-colors hover:bg-white/[0.06]"
+                onClick={() => setMobileOpen(false)}
               >
-                About
+                Log in
               </Link>
-              <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest border-2 border-red-600 rounded-none py-6">
-                  {user ? 'Dashboard' : 'Sign Up'}
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+            <Link
+              to="/dashboard"
+              className="flex-1 rounded-full bg-white py-2.5 text-center text-[13px] font-semibold text-black"
+              onClick={() => setMobileOpen(false)}
+            >
+              {user ? 'Dashboard' : 'Get started'}
+            </Link>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 };
 
-export { LandingNavbar };
 export default LandingNavbar;

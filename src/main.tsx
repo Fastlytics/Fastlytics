@@ -1,13 +1,43 @@
-import { StrictMode } from 'react';
+import * as Sentry from '@sentry/react';
+import {
+  useLocation,
+  useNavigationType,
+  createRoutesFromChildren,
+  matchRoutes,
+} from 'react-router-dom';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import { PostHogProvider } from 'posthog-js/react';
 import posthog from 'posthog-js';
 import { ErrorBoundary } from 'react-error-boundary';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { ErrorFallback } from './components/layout/ErrorFallback';
-import { hasAnalyticsConsent, hasConsentChoice } from './lib/consent';
+import { getConsentPreferences, hasAnalyticsConsent, hasConsentChoice } from './lib/consent';
 import App from './App.tsx';
 import './index.css';
+
+/* ─── Sentry (error monitoring) ───
+ * Sentry is initialized unconditionally because crash reporting is
+ * considered a "legitimate interest" under GDPR Art. 6(1)(f).
+ * However, we strip PII (user IDs, emails) when analytics consent is
+ * NOT granted. The DSN contains no PII by itself. */
+Sentry.init({
+  dsn: 'https://d6124c77a3ce6da34a6e3fcb510280a5@o4509542641434624.ingest.de.sentry.io/4511292801024080',
+  sendDefaultPii: hasAnalyticsConsent(),
+  integrations: [
+    Sentry.reactRouterV7BrowserTracingIntegration({
+      useEffect,
+      useLocation,
+      useNavigationType,
+      createRoutesFromChildren,
+      matchRoutes,
+    }),
+  ],
+  tracesSampleRate: hasAnalyticsConsent() ? 1.0 : 0.0,
+  tracePropagationTargets: ['localhost', /^https:\/\/api\.fastlytics\.app\/api/],
+  enableLogs: hasAnalyticsConsent(),
+});
 
 /** Inject the Umami analytics script */
 const initUmami = () => {
@@ -21,6 +51,14 @@ const initUmami = () => {
   }
 };
 
+/** Remove the Umami analytics script */
+const removeUmami = () => {
+  const script = document.querySelector('script[data-website-id]');
+  if (script) {
+    script.remove();
+  }
+};
+
 /** Initialize PostHog with full config */
 const initPostHog = () => {
   const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
@@ -30,59 +68,61 @@ const initPostHog = () => {
       defaults: '2025-05-24',
       capture_exceptions: true,
       debug: import.meta.env.MODE === 'development',
-      // Auto-capture all clicks, form submissions, and page changes
       autocapture: true,
-      // Session recording for replay & heatmaps
       session_recording: {
         recordCrossOriginIframes: false,
         maskAllInputs: true,
         maskTextSelector: '[data-mask]',
       },
-      // Capture pageview and pageleave events automatically
       capture_pageview: true,
       capture_pageleave: true,
-      // Enable heatmaps
       enable_heatmaps: true,
-      // Scroll depth tracking
       scroll_depth: true,
-      // Capture dead clicks (clicks that don't trigger navigation)
       capture_dead_clicks: true,
-      // Capture performance metrics
       capture_performance: true,
-      // Persistence
       persistence: 'localStorage+cookie',
-      // Respect cookie consent — start opted out if no consent yet
-      opt_out_capturing_by_default: !hasAnalyticsConsent(),
+      opt_out_capturing_by_default: false,
     });
   }
 };
 
-// If consent was already given, initialize analytics immediately
-if (hasAnalyticsConsent()) {
-  initUmami();
-  initPostHog();
-} else if (!hasConsentChoice()) {
-  // No choice yet — initialize PostHog in opted-out mode so the provider works,
-  // but no data is captured until they accept
-  initPostHog();
-}
+/** Shutdown PostHog tracking */
+const shutdownPostHog = () => {
+  if (posthog.__loaded) {
+    posthog.opt_out_capturing();
+  }
+};
+
+/** Bootstrap analytics based on current consent */
+const bootstrapAnalytics = () => {
+  if (hasAnalyticsConsent()) {
+    initUmami();
+    initPostHog();
+    posthog.opt_in_capturing?.();
+  } else {
+    removeUmami();
+    shutdownPostHog();
+  }
+};
+
+// Initial bootstrap
+bootstrapAnalytics();
 
 // Listen for consent changes at runtime (from ConsentBanner)
-window.addEventListener('consent-changed', ((e: CustomEvent<{ accepted: boolean }>) => {
-  if (e.detail.accepted) {
+window.addEventListener('consent-changed', ((
+  e: CustomEvent<{ preferences: { analytics: boolean } }>
+) => {
+  const { analytics } = e.detail.preferences;
+  if (analytics) {
     initUmami();
     if (posthog.__loaded) {
       posthog.opt_in_capturing();
     } else {
       initPostHog();
-      posthog.opt_in_capturing();
     }
-    posthog.capture('cookie_consent_accepted');
   } else {
-    posthog.capture('cookie_consent_declined');
-    if (posthog.__loaded) {
-      posthog.opt_out_capturing();
-    }
+    removeUmami();
+    shutdownPostHog();
   }
 }) as EventListener);
 
@@ -91,7 +131,9 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <PostHogProvider client={posthog}>
         <HelmetProvider>
-          <App />
+          <LazyMotion features={domAnimation} strict>
+            <App />
+          </LazyMotion>
         </HelmetProvider>
       </PostHogProvider>
     </ErrorBoundary>

@@ -1,56 +1,34 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchSessionReplayMetadata,
-  fetchSessionReplayChunk,
-  SessionReplayData,
-  ReplayChunk,
-  ReplayDriverData,
-  ReplayDriversMap,
-} from '@/lib/api';
+import * as Sentry from '@sentry/react';
+import { fetchSessionReplayMetadata, SessionReplayData } from '@/lib/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useChunkLoader } from '@/hooks/useChunkLoader';
+import { useReplayState } from '@/hooks/useReplayState';
+import { useReplayData } from '@/hooks/useReplayData';
+import { useLeaderboard } from '@/hooks/useLeaderboard';
+import { useCamera } from '@/hooks/useCamera';
+import { useReplayWidgets, WidgetId } from '@/hooks/useReplayWidgets';
+import {
+  getSectorMarkers,
+  getSpeedHeatmapSegments,
+  getTrackStatusSegments,
+  getTimeForLap,
+} from './replay-utils';
 
 import ReplayLoader from './ReplayLoader';
 import PlaybackControls from './PlaybackControls';
-import RaceControlMessages from './RaceControlMessages';
+import RaceControlToasts from './RaceControlToasts';
+import RaceControlFeed from './RaceControlFeed';
 import Leaderboard from './Leaderboard';
-import {
-  getSectorMarkers,
-  getTrailPoints,
-  getSpeedHeatmapSegments,
-  getTrackStatusSegments,
-  getTyreAge,
-  getTimeForLap,
-  getAllLapNumbers,
-} from './replay-utils';
-import { getDriverImage } from '@/utils/imageMapping';
-import {
-  Play,
-  Pause,
-  FastForward,
-  Rewind,
-  Clock,
-  X,
-  Maximize,
-  Minimize,
-  Gauge,
-  Flag,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Search,
-  Zap,
-  ZapOff,
-  Info,
-  Swords,
-  Split,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import TrackCanvas from './TrackCanvas';
+import WeatherOverlay from './WeatherOverlay';
+import SectorTimesPanel from './SectorTimesPanel';
+import QualifyingCountdown from './QualifyingCountdown';
+import TelemetryOverlay from './TelemetryOverlay';
+import LapHistoryPanel from './LapHistoryPanel';
+import ReplayToolbar from './ReplayToolbar';
+import { Play, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SessionReplayProps {
@@ -65,1093 +43,283 @@ interface SessionReplayMetadata extends SessionReplayData {
   total_duration?: number;
 }
 
-interface DriverFrameState {
-  code?: string;
-  originalCode?: string;
-  x: number;
-  y: number;
-  dist?: number;
-  ref_dist: number;
-  rel_dist?: number;
-  speed: number;
-  gear: number;
-  drs: number;
-  rpm: number;
-  lap: number;
-  tyre?: number;
-  throttle: number;
-  brake: number;
-  track_index?: number;
-  pos?: number;
-  bestLap?: CompletedLapInfo;
-  isGhost?: boolean;
-  color?: string;
+function interpolateSeriesValue(timeline: number[], values: number[], time: number) {
+  if (!timeline.length || !values.length) return 0;
+  if (time <= timeline[0]) return values[0] ?? 0;
+  const lastIndex = Math.min(timeline.length, values.length) - 1;
+  if (time >= timeline[lastIndex]) return values[lastIndex] ?? 0;
+
+  let low = 0;
+  let high = lastIndex;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const sampleTime = timeline[mid];
+
+    if (sampleTime === time) return values[mid] ?? 0;
+    if (sampleTime < time) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  const prevIndex = Math.max(0, high);
+  const nextIndex = Math.min(lastIndex, low);
+  const prevTime = timeline[prevIndex];
+  const nextTime = timeline[nextIndex];
+  const prevValue = values[prevIndex] ?? 0;
+  const nextValue = values[nextIndex] ?? prevValue;
+  const alpha = nextTime === prevTime ? 0 : (time - prevTime) / (nextTime - prevTime);
+
+  return prevValue + (nextValue - prevValue) * alpha;
 }
 
-interface CompletedLapInfo {
-  driver: string;
-  lap: number;
-  time_str: string;
-  seconds: number;
-  timestamp: number;
-  compound: string;
+function sampleRecentSeries(
+  timeline: number[] | undefined,
+  values: number[] | undefined,
+  currentTime: number,
+  durationSeconds = 6,
+  sampleCount = 150
+) {
+  if (!timeline?.length || !values?.length) return [];
+
+  const startTime = Math.max(timeline[0], currentTime - durationSeconds);
+  const endTime = Math.min(currentTime, timeline[Math.min(timeline.length, values.length) - 1]);
+  if (endTime <= startTime) return [interpolateSeriesValue(timeline, values, endTime)];
+
+  return Array.from({ length: sampleCount }, (_, index) => {
+    const alpha = sampleCount === 1 ? 1 : index / (sampleCount - 1);
+    return interpolateSeriesValue(timeline, values, startTime + (endTime - startTime) * alpha);
+  });
 }
 
-const FPS = 25;
+const normalizeBrakeValue = (value: number) =>
+  Number.isFinite(value) && value >= 0 && value <= 1 ? value * 100 : value;
 
-const getMessageConfig = (msg: { message: string; flag?: string }) => {
-  const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
+const normalizeBrakeSeries = (values: number[] | undefined) =>
+  values?.map((value) => normalizeBrakeValue(value)) ?? [];
 
-  if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
-    return {
-      type: 'red',
-      icon: Flag,
-      color: 'text-red-500',
-      border: 'border-red-600',
-      bg: 'bg-red-950/90',
-      fill: true,
-    };
-  }
-  if (text.includes('GREEN') || text.includes('RESUMED') || text.includes('CLEAR')) {
-    return {
-      type: 'green',
-      icon: Flag,
-      color: 'text-green-500',
-      border: 'border-green-500',
-      bg: 'bg-green-950/90',
-      fill: true,
-    };
-  }
-  // Specific status messages (Prioritize over generic flags)
-  if (text.includes('PENALTY')) {
-    return {
-      type: 'penalty',
-      icon: AlertCircle,
-      color: 'text-orange-500',
-      border: 'border-orange-500',
-      bg: 'bg-orange-950/90',
-      fill: false,
-    };
-  }
-  if (text.includes('NO INVESTIGATION')) {
-    return {
-      type: 'info',
-      icon: CheckCircle,
-      color: 'text-green-400',
-      border: 'border-green-500',
-      bg: 'bg-gray-900/90',
-      fill: false,
-    };
-  }
-  if (
-    text.includes('INVESTIGATION') ||
-    text.includes('NOTED') ||
-    text.includes('INCIDENT') ||
-    text.includes('INFRINGEMENT')
-  ) {
-    return {
-      type: 'investigation',
-      icon: Search,
-      color: 'text-indigo-400',
-      border: 'border-indigo-500',
-      bg: 'bg-indigo-950/90',
-      fill: false,
-    };
-  }
-  // Track Status Flags
-  if (
-    text.includes('YELLOW') ||
-    text.includes('SAFETY CAR') ||
-    /\bSC\b/.test(text) ||
-    text.includes('VSC')
-  ) {
-    return {
-      type: 'yellow',
-      icon: AlertTriangle,
-      color: 'text-yellow-400',
-      border: 'border-yellow-500',
-      bg: 'bg-yellow-950/90',
-      fill: false,
-    };
-  }
-  if (text.includes('BLUE')) {
-    return {
-      type: 'blue',
-      icon: Flag,
-      color: 'text-blue-400',
-      border: 'border-blue-500',
-      bg: 'bg-blue-950/90',
-      fill: true,
-    };
-  }
-  if (text.includes('DRS ENABLED')) {
-    return {
-      type: 'drs',
-      icon: Zap,
-      color: 'text-green-400',
-      border: 'border-green-500',
-      bg: 'bg-gray-900/90',
-      fill: true,
-    };
-  }
-  if (text.includes('DRS DISABLED')) {
-    return {
-      type: 'drs',
-      icon: ZapOff,
-      color: 'text-red-400',
-      border: 'border-red-500',
-      bg: 'bg-gray-900/90',
-      fill: false,
-    };
-  }
-  if (text.includes('CHEQUERED')) {
-    return {
-      type: 'finish',
-      icon: Flag,
-      color: 'text-white',
-      border: 'border-white',
-      bg: 'bg-black/90',
-      fill: false,
-    };
+function findSectorBoundaryTime(
+  timeline: number[] | undefined,
+  laps: number[] | undefined,
+  relativeDistances: number[] | undefined,
+  lap: number,
+  boundary: number,
+  fallbackTime: number,
+  searchStartIndex = 0
+) {
+  if (!timeline?.length || !laps?.length || !relativeDistances?.length) return fallbackTime;
+  if (boundary <= 0) return fallbackTime;
+
+  const limit = Math.min(timeline.length, laps.length, relativeDistances.length);
+  for (let i = Math.max(1, searchStartIndex); i < limit; i++) {
+    if (laps[i] !== lap) {
+      // If we've passed the lap, stop searching
+      if (laps[i] > lap && i > searchStartIndex + 10) break;
+      continue;
+    }
+
+    const previousRel = laps[i - 1] === lap ? relativeDistances[i - 1] : 0;
+    const currentRel = relativeDistances[i];
+    if (previousRel <= boundary && currentRel >= boundary) {
+      const span = currentRel - previousRel;
+      const alpha = span === 0 ? 0 : (boundary - previousRel) / span;
+      return timeline[i - 1] + (timeline[i] - timeline[i - 1]) * alpha;
+    }
   }
 
-  return {
-    type: 'other',
-    icon: Info,
-    color: 'text-gray-400',
-    border: 'border-gray-600',
-    bg: 'bg-gray-900/90',
-    fill: false,
-  };
-};
+  return fallbackTime;
+}
 
 const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, className }) => {
   const { trackEvent, trackPageView } = useAnalytics();
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
 
-  // Track page view on mount
   useEffect(() => {
     trackPageView('session_replay', { year, event, session });
+    Sentry.addBreadcrumb({
+      category: 'replay',
+      message: `Opened replay: ${year} ${event} ${session}`,
+      level: 'info',
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, event, session]);
 
-  // --- Progressive Loading State ---
+  useEffect(() => {
+    const updateViewportSize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    updateViewportSize();
+    window.addEventListener('resize', updateViewportSize);
+    document.addEventListener('fullscreenchange', updateViewportSize);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportSize);
+      document.removeEventListener('fullscreenchange', updateViewportSize);
+    };
+  }, []);
+
   const {
     data: metadata,
     isLoading: isMetaLoading,
     error: metaError,
   } = useQuery<SessionReplayData>({
-    queryKey: ['sessionReplayMetadata', year, event, session],
+    queryKey: ['sessionReplayMetadata', year, event, session, 'precision-v3'],
     queryFn: () => fetchSessionReplayMetadata(year, event, session),
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 60,
   });
 
-  const [replayData, setReplayData] = useState<SessionReplayData | null>(null);
-  const [loadedChunks, setLoadedChunks] = useState<Set<number>>(new Set());
-  const [totalChunks, setTotalChunks] = useState(0);
-  const [isBuffering, setIsBuffering] = useState(false);
-
-  // Playback State (Moved Up)
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
-  const [showSpeedHeatmap, setShowSpeedHeatmap] = useState(false);
-  const [leaderboardOrder, setLeaderboardOrder] = useState<string[]>([]);
-  const [dismissedMessages, setDismissedMessages] = useState<Set<string>>(new Set());
-
-  // Seekbar Hover State
-  const [hoverTime, setHoverTime] = useState<number | null>(null);
-  const [hoverPos, setHoverPos] = useState<number | null>(null);
-
-  // Reset State on Session Change
-  useEffect(() => {
-    setIsPlaying(false);
-    setHasStarted(false);
-    setCurrentTime(0);
-    setReplayData(null);
-    setLoadedChunks(new Set());
-    setTotalChunks(0);
-    setSelectedDriver(null);
-    setLeaderboardOrder([]);
-    setDismissedMessages(new Set());
-  }, [year, event, session]);
-
-  // Initial Data Construction from Metadata
-  useEffect(() => {
-    if (metadata) {
-      const initDrivers: Record<string, ReplayDriverData> = {};
-      // Initialize empty arrays for all drivers found in colors map
-      // We use driver_colors keys as source of truth for driver list
-      if (metadata.driver_colors) {
-        Object.keys(metadata.driver_colors).forEach((d) => {
-          initDrivers[d] = {
-            x: [],
-            y: [],
-            dist: [],
-            rel_dist: [],
-            speed: [],
-            gear: [],
-            drs: [],
-            rpm: [],
-            lap: [],
-            tyre: [],
-            throttle: [],
-            brake: [],
-          };
-        });
-      }
-
-      // Construct initial base (metadata + empty arrays)
-      // We must cast because metadata doesn't have 'time' or 'drivers' technically if fetched from new endpoint
-      const baseValues: SessionReplayData = {
-        ...metadata,
-        time: [],
-        drivers: initDrivers,
-      };
-
-      setReplayData(baseValues);
-
-      // Check manifest
-      const metadataExt = metadata as SessionReplayMetadata;
-      const manifest = metadataExt.chunk_manifest || [];
-      setTotalChunks(manifest.length);
-      setLoadedChunks(new Set());
-    }
-  }, [metadata]);
-
-  // Chunk Fetching Loop
-  useEffect(() => {
-    if (!metadata || !replayData || totalChunks === 0) return;
-
-    const fetchNextChunk = async () => {
-      const nextChunkId = loadedChunks.size;
-      if (nextChunkId >= totalChunks) return;
-
-      // Don't fetch if already fetching?
-      // Pure useEffect dependency chain works but better to have a ref to prevent double-fetch?
-      // Actually, useEffect runs when loadedChunks changes.
-
-      try {
-        const chunk = await fetchSessionReplayChunk(year, event, session, nextChunkId);
-
-        setReplayData((prev) => {
-          if (!prev) return null;
-
-          // MERGE Logic
-          const newTime = prev.time.concat(chunk.time);
-          const newDrivers = { ...prev.drivers };
-
-          for (const [dCode, dData] of Object.entries(chunk.drivers)) {
-            if (!newDrivers[dCode]) {
-              // Should be initialized, but just in case
-              newDrivers[dCode] = { ...dData };
-            } else {
-              // Append arrays
-              const curr = newDrivers[dCode];
-              newDrivers[dCode] = {
-                x: curr.x.concat(dData.x),
-                y: curr.y.concat(dData.y),
-                dist: curr.dist.concat(dData.dist),
-                rel_dist: curr.rel_dist.concat(dData.rel_dist),
-                speed: curr.speed.concat(dData.speed),
-                gear: curr.gear.concat(dData.gear),
-                drs: curr.drs.concat(dData.drs),
-                rpm: curr.rpm.concat(dData.rpm),
-                lap: curr.lap.concat(dData.lap),
-                tyre: curr.tyre.concat(dData.tyre),
-                throttle: curr.throttle.concat(dData.throttle),
-                brake: curr.brake.concat(dData.brake),
-              };
-            }
-          }
-
-          return {
-            ...prev,
-            time: newTime,
-            drivers: newDrivers,
-          };
-        });
-
-        setLoadedChunks((prev) => {
-          const next = new Set(prev);
-          next.add(nextChunkId);
-          return next;
-        });
-      } catch (e) {
-        console.error(`Error loading chunk ${nextChunkId}`, e);
-        // Retry logic? For now just stop or retry after delay?
-        // Simple: just return, creates a stall.
-      }
-    };
-
-    // Fetch strictly sequential
-    fetchNextChunk();
-  }, [metadata, totalChunks, loadedChunks.size, event, replayData, session, year]); // Depend on size to trigger next
-
-  // Derived State for UI
-  const data = replayData;
-  const isLoading = isMetaLoading || !replayData || loadedChunks.size === 0; // Wait for at least chunk 0
-  const error = metaError;
-
-  // Buffering Check
-  useEffect(() => {
-    if (!data || isLoading) return;
-    // If current time is close to end of data AND we are not fully loaded...
-    const bufferWindow = 10; // 10 seconds ahead
-    // We know the total duration from metadata (hopefully)
-    // If metadata has total_duration use it, else fallback
-    const metadataExt = metadata as SessionReplayMetadata | undefined;
-    const totalDur = metadataExt?.total_duration || 9999;
-    const loadedDur = data.time[data.time.length - 1] || 0;
-
-    if (isPlaying && currentTime + bufferWindow > loadedDur && loadedChunks.size < totalChunks) {
-      setIsBuffering(true);
-      setIsPlaying(false); // Auto-pause
-    } else {
-      setIsBuffering(false);
-    }
-  }, [currentTime, data, isPlaying, loadedChunks.size, totalChunks, isLoading, metadata]);
-
-  // --- Ghost Mode State ---
-  const [replayMode, setReplayMode] = useState<'session' | 'ghost'>('session');
-  const [ghostConfig, setGhostConfig] = useState<{
-    d1: string | null;
-    l1: number | null;
-    d2: string | null;
-    l2: number | null;
-  }>({ d1: null, l1: null, d2: null, l2: null });
-
-  // Draggable Overlay State
-  const [overlayPos, setOverlayPos] = useState<{ x: number; y: number } | null>(null);
-  const [ghostPos1, setGhostPos1] = useState<{ x: number; y: number } | null>(null);
-  const [ghostPos2, setGhostPos2] = useState<{ x: number; y: number } | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isGhostConfigOpen, setIsGhostConfigOpen] = useState(true);
-
-  // --- Refs ---
-  const requestRef = useRef<number | null>(null);
-  const previousTimeRef = useRef<number | null>(null);
-
-  // Find absolute bounds for slider
-  // Find absolute bounds for slider
-  const { totalDuration, totalLaps } = useMemo(() => {
-    if (!data?.time?.length) return { totalDuration: 0, totalLaps: 0 };
-
-    const maxTime = data.time[data.time.length - 1];
-
-    // Calculate Total Laps from data
-    let maxLap = 0;
-    if (data.drivers) {
-      for (const d of Object.values(data.drivers)) {
-        if (d.lap && d.lap.length > 0) {
-          // Arrays can be very large causing stack overflow with Math.max(...)
-          // Since lap data is monotonic (increasing), just check the last element
-          const lastLap = d.lap[d.lap.length - 1];
-          if (lastLap > maxLap) maxLap = lastLap;
-        }
-      }
-    }
-    return { totalDuration: maxTime, totalLaps: maxLap };
-  }, [data]);
-
-  // --- Ghost Mode Duration ---
-  const ghostDuration = useMemo(() => {
-    if (!data || !ghostConfig.d1 || !ghostConfig.l1 || !ghostConfig.d2 || !ghostConfig.l2) return 0;
-
-    // Helper to get lap duration
-    const getLapDuration = (d: string, l: number) => {
-      const lap = data.completed_laps.find((cL) => cL.driver === d && cL.lap === l);
-      return lap ? lap.seconds : 0;
-    };
-
-    const t1 = getLapDuration(ghostConfig.d1, ghostConfig.l1);
-    const t2 = getLapDuration(ghostConfig.d2, ghostConfig.l2);
-    return Math.max(t1, t2);
-  }, [data, ghostConfig]);
-
-  // Effective Max Duration based on Mode
-  const activeTotalDuration = replayMode === 'session' ? totalDuration : ghostDuration;
-
-  // --- Zoom & Pan State ---
-  const [viewState, setViewState] = useState({ scale: 1, x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(true); // Default to following (Leader)
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Refs for accessing state in closures (event listeners / animation loop)
-  const isFollowingRef = useRef(true);
-  const viewStateRef = useRef({ scale: 1, x: 0, y: 0 }); // To avoid layout thrashing dependency loops
-  const selectedDriverRef = useRef<string | null>(null);
-  const leaderboardOrderRef = useRef<string[]>([]);
-
-  // Sync refs
-  useEffect(() => {
-    isFollowingRef.current = isFollowing;
-  }, [isFollowing]);
-  useEffect(() => {
-    viewStateRef.current = viewState;
-  }, [viewState]);
-  useEffect(() => {
-    selectedDriverRef.current = selectedDriver;
-  }, [selectedDriver]);
-  useEffect(() => {
-    leaderboardOrderRef.current = leaderboardOrder;
-  }, [leaderboardOrder]);
-
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // Toggle Fullscreen
-  const toggleFullscreen = () => {
-    if (!rootRef.current) return;
-    const entering = !document.fullscreenElement;
-    trackEvent('replay_fullscreen_toggled', { entering, year, event, session });
-
-    if (entering) {
-      rootRef.current.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  // --- Drag Logic for Overlay ---
-  useEffect(() => {
-    if (activeDragId) {
-      const handleGlobalMove = (e: MouseEvent) => {
-        const newPos = {
-          x: e.clientX - dragOffsetRef.current.x,
-          y: e.clientY - dragOffsetRef.current.y,
-        };
-        if (activeDragId === 'main') setOverlayPos(newPos);
-        else if (activeDragId === 'ghost1') setGhostPos1(newPos);
-        else if (activeDragId === 'ghost2') setGhostPos2(newPos);
-      };
-
-      const handleGlobalUp = () => {
-        setActiveDragId(null);
-      };
-
-      window.addEventListener('mousemove', handleGlobalMove);
-      window.addEventListener('mouseup', handleGlobalUp);
-
-      return () => {
-        window.removeEventListener('mousemove', handleGlobalMove);
-        window.removeEventListener('mouseup', handleGlobalUp);
-      };
-    }
-  }, [activeDragId]);
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if active element is an input (e.g. slider, though slider usually handles arrows natively, we might want custom seek)
-      // But for the range slider, let's let it handle arrows if focused?
-      // Actually, global hotkeys usually override unless focusing a text input.
-      // Our slider is type="range".
-
-      if (e.target instanceof HTMLInputElement && e.target.type === 'text') return; // Ignore text inputs
-      if (e.target instanceof HTMLTextAreaElement) return;
-
-      switch (e.key) {
-        case ' ':
-        case 'k': // YouTube style
-        case 'K':
-          e.preventDefault(); // Prevent scroll
-          setIsPlaying((prev) => !prev);
-          break;
-        case 'f':
-        case 'F':
-          toggleFullscreen();
-          break;
-        case 'ArrowLeft':
-        case 'j': // YouTube style (10s usually, but uniform 5s here)
-        case 'J':
-          e.preventDefault();
-          setCurrentTime((prev) => Math.max(0, prev - 5));
-          break;
-        case 'ArrowRight':
-        case 'l': // YouTube style
-        case 'L':
-          e.preventDefault();
-          setCurrentTime((prev) => Math.min(totalDuration, prev + 5));
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTotalDuration, totalDuration]); // toggleFullscreen is stable/closure safe? toggleFullscreen uses refs so it's safe.
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
-    setIsDragging(true);
-    setIsFollowing(false); // User wants to manually pan
-    setDragStart({ x: e.clientX - viewState.x, y: e.clientY - viewState.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !dragStart) return;
-    setViewState((prev) => ({
-      ...prev,
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    }));
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDragStart(null);
-  };
-
-  // Playback Loop
-  const animate = useCallback(
-    function tick(time: number) {
-      if (previousTimeRef.current !== null) {
-        const deltaTime = (time - previousTimeRef.current) / 1000; // ms to s
-
-        if (isPlaying) {
-          setCurrentTime((prevTime) => {
-            const newTime = prevTime + deltaTime * playbackSpeed;
-            if (newTime >= activeTotalDuration) {
-              setIsPlaying(false);
-              return activeTotalDuration;
-            }
-            return newTime;
-          });
-        }
-      }
-      previousTimeRef.current = time;
-      requestRef.current = requestAnimationFrame(tick);
-    },
-    [isPlaying, playbackSpeed, activeTotalDuration]
-  );
-
-  useEffect(() => {
-    requestRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
-  }, [isPlaying, playbackSpeed, activeTotalDuration, animate]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-
-      const scaleSensitivity = 0.001;
-      const delta = -e.deltaY * scaleSensitivity;
-      // Use functional update to avoid stale state in closure if we didn't use refs,
-      // but here we can just assume access to current state if we depend on it,
-      // OR better yet, use functional state update for setViewState
-      // However, inside this native listener, 'viewState' from closure will be STALE unless we include it in dependency array.
-      // But if we include it in dependency array, we re-bind listener every frame = bad performance.
-      // Solution: Use a ref for viewState or functional update entirely.
-
-      setViewState((prev) => {
-        const newScale = Math.min(Math.max(1, prev.scale + delta * prev.scale), 20);
-
-        if (isFollowingRef.current) {
-          // Zoom to center (Driver)
-          // We don't need to weird math here, just update scale.
-          // The Follow Logic in the effect will handle centering on next tick.
-          // BUT for smoothness, we can try to re-center immediately if we have data.
-          // Actually, let's just update scale and X/Y will be corrected by the Follow Effect almost instantly.
-          // To prevent jumpiness, we keep the center point stable relative to screen center?
-          // Actually if we just return X/Y unchanged, the next 'follow' tick will snap it.
-          // Let's try just updating scale.
-          return { ...prev, scale: newScale };
-        }
-
-        // Free Mode: Zoom to mouse
-        const rect = container.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        const contentX = (mouseX - prev.x) / prev.scale;
-        const contentY = (mouseY - prev.y) / prev.scale;
-
-        const newX = mouseX - contentX * newScale;
-        const newY = mouseY - contentY * newScale;
-
-        return {
-          scale: newScale,
-          x: newX,
-          y: newY,
-        };
-      });
-    };
-
-    container.addEventListener('wheel', onWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('wheel', onWheel);
-    };
-  }, [isLoading]); // Re-attach when loading finishes and ref is available
-
-  const currentFrameIndex = Math.floor(currentTime * FPS);
-  // Ensure index is within bounds
-  const safeIndex = Math.min(Math.max(0, currentFrameIndex), (data?.time?.length || 1) - 1);
-
-  // Optimization: Cache last known path index for each driver to speed up search
-  const lastTrackIndices = useRef<Record<string, number>>({});
-
-  // --- Ghost Mode: Pre-calculate Lap Start Indices ---
-  const driverLapStartIndices = useMemo(() => {
-    if (!data) return {};
-    const map: Record<string, Record<number, number>> = {};
-
-    for (const [code, d] of Object.entries(data.drivers)) {
-      map[code] = {};
-      if (d.lap) {
-        let currentLap = -1000;
-        // Find start index of each lap
-        for (let i = 0; i < d.lap.length; i++) {
-          const l = d.lap[i];
-          if (l !== currentLap) {
-            if (map[code][l] === undefined) {
-              map[code][l] = i;
-            }
-            currentLap = l;
-          }
-        }
-      }
-    }
-    return map;
-  }, [data]);
-
-  // Helper: Find nearest point index on the circuit path
-  const getTrackIndex = (code: string, x: number, y: number, points: number[][]) => {
-    if (!points || points.length === 0) return 0;
-
-    // Start search from last known index or 0
-    const startIdx = lastTrackIndices.current[code] || 0;
-    const searchWindow = 500; // Look ahead/behind window (optimize for 60fps)
-
-    let bestIdx = startIdx;
-    let minDistSq = Infinity;
-
-    const len = points.length;
-
-    // Search in window around startIdx (accounting for wrap-around)
-    // We actully primarily search FORWARD because cars move forward.
-    // But we search a bit backward too just in case of jitter or visual interpolation lag.
-    for (let offset = -50; offset < searchWindow; offset++) {
-      let idx = startIdx + offset;
-      // Handle wrapping
-      if (idx < 0) idx += len;
-      if (idx >= len) idx %= len;
-
-      const px = points[idx][0];
-      const py = points[idx][1];
-      const dSq = (px - x) ** 2 + (py - y) ** 2;
-
-      if (dSq < minDistSq) {
-        minDistSq = dSq;
-        bestIdx = idx;
-      }
-    }
-
-    // Fallback: If distance is too large (e.g. jumped track or first load), global search?
-    // For now, assume local search is good enough after first frame (or effectively standard sort).
-    // Actually, for first frame 'startIdx' is 0, so we might need global search if window misses.
-    // Let's do a global search if we haven't seen this driver before.
-    if (lastTrackIndices.current[code] === undefined) {
-      minDistSq = Infinity;
-      for (let i = 0; i < len; i += 5) {
-        // coarse search first?
-        const px = points[i][0];
-        const py = points[i][1];
-        const dSq = (px - x) ** 2 + (py - y) ** 2;
-        if (dSq < minDistSq) {
-          minDistSq = dSq;
-          bestIdx = i;
-        }
-      }
-    }
-
-    lastTrackIndices.current[code] = bestIdx;
-    return bestIdx;
-  };
-
-  // --- Ghost Mode: Frame Reconstruction ---
-  // --- Ghost Mode: Frame Reconstruction ---
-  // --- Ghost Mode: Frame Reconstruction ---
-  const ghostFrameDrivers = useMemo(() => {
-    if (replayMode !== 'ghost' || !data) return {};
-    const { d1, l1, d2, l2 } = ghostConfig;
-    if (!d1 || !l1 || !d2 || !l2) return {};
-
-    const drivers: Record<string, DriverFrameState> = {};
-    const pathPoints = data.circuit_points || [];
-    const pathDists = data.circuit_distances || [];
-
-    // Helper to extract driver state at time t relative to lap start
-    const extractState = (dCode: string, lapNum: number, label: string) => {
-      const startIdx = driverLapStartIndices[dCode]?.[lapNum];
-      if (startIdx === undefined) return null;
-
-      // Current frame index relative to lap start
-      const offset = Math.floor(currentTime * FPS);
-      const absIdx = startIdx + offset;
-
-      // Check if we are still within THIS lap (or reasonable bound)
-      // Simple check: if valid index
-      const dData = data.drivers[dCode];
-      if (!dData || absIdx >= dData.x.length) return null;
-
-      // Verify lap number hasn't changed (driver finished lap)
-      if (dData.lap[absIdx] !== lapNum) return null; // Finished lap
-
-      const x = dData.x[absIdx];
-      const y = dData.y[absIdx];
-
-      // Recalculate track index for smooth visual (mostly for consistency)
-      const trackIdx = getTrackIndex(label, x, y, pathPoints); // Use label (e.g. VER_GHOST) for cache key
-
-      let refDist = 0;
-      if (pathDists.length > 0 && trackIdx < pathDists.length) {
-        refDist = pathDists[trackIdx];
-      } else {
-        refDist = dData.dist?.[absIdx] ?? 0;
-      }
-
-      return {
-        code: label, // We rename them to display logic 'VER (L5)'? Or just keep code unique like 'VER_L5'
-        originalCode: dCode, // Keep ref
-        x,
-        y,
-        ref_dist: refDist, // NEW: Required for interval calc
-        speed: dData.speed?.[absIdx] ?? 0,
-        rpm: dData.rpm?.[absIdx] ?? 0,
-        gear: dData.gear?.[absIdx] ?? 0,
-        throttle: dData.throttle?.[absIdx] ?? 0,
-        brake: dData.brake?.[absIdx] ?? 0,
-        drs: dData.drs?.[absIdx] ?? 0,
-        lap: lapNum,
-        // Visuals
-        color: data.driver_colors[dCode] || '#ffffff', // Use Team Color
-      };
-    };
-
-    const c1 = extractState(d1, l1, d1); // Keep code as driver name for image lookup
-    const c2 = extractState(d2, l2, d2);
-
-    if (c1 && c2 && c1.color === c2.color) {
-      c2.color = '#ffffff'; // Force second driver to white if same team
-    }
-
-    if (c1) drivers[d1 + '_GHOST'] = { ...c1, isGhost: true }; // Append suffix to avoid key collision if comparing same driver
-    if (c2) drivers[d2 + '_GHOST'] = { ...c2, isGhost: true };
-
-    return drivers;
-  }, [replayMode, ghostConfig, currentTime, data, driverLapStartIndices]);
-
-  // Reconstruct "Frame" view from Columnar data for easier rendering
-  const currentFrameDrivers = useMemo(() => {
-    if (!data) return {};
-    const drivers: Record<string, DriverFrameState> = {};
-
-    const pathPoints = data.circuit_points || [];
-    const pathDists = data.circuit_distances || [];
-    const pathLen = pathPoints.length;
-
-    for (const [code, d] of Object.entries(data.drivers)) {
-      // Access arrays at safeIndex
-      const x = d.x[safeIndex];
-      const y = d.y[safeIndex];
-
-      // Calculate visual track position
-      const trackIdx = getTrackIndex(code, x, y, pathPoints);
-
-      // Calculate Standardized Distance (Reference Odometer)
-      // If we have circuit_distances, use them. Otherwise fallback to raw.
-      let refDist = 0;
-      if (pathDists.length > 0 && trackIdx < pathDists.length) {
-        refDist = pathDists[trackIdx];
-      } else {
-        refDist = d.dist[safeIndex]; // fallback
-      }
-
-      drivers[code] = {
-        x,
-        y,
-        dist: d.dist[safeIndex], // Keep raw for debugging/telemetry
-        ref_dist: refDist, // NEW: Normalized distance for intervals
-        rel_dist: d.rel_dist[safeIndex],
-        speed: d.speed?.[safeIndex] ?? 0,
-        gear: d.gear?.[safeIndex] ?? 0,
-        drs: d.drs?.[safeIndex] ?? 0,
-        rpm: d.rpm?.[safeIndex] ?? 0,
-        lap: d.lap?.[safeIndex] ?? 0,
-        tyre: d.tyre?.[safeIndex] ?? 0,
-        throttle: d.throttle?.[safeIndex] ?? 0,
-        brake: d.brake?.[safeIndex] ?? 0,
-        track_index: trackIdx,
-      };
-    }
-    return drivers;
-  }, [data, safeIndex]);
-
-  // --- Active Drivers Source ---
-  const activeDrivers = replayMode === 'ghost' ? ghostFrameDrivers : currentFrameDrivers;
-
-  // --- Following Logic ---
-  useEffect(() => {
-    if (!isFollowing || !containerRef.current || !data || Object.keys(activeDrivers).length === 0) {
-      return;
-    }
-
-    const container = containerRef.current;
-    const { width, height } = container.getBoundingClientRect();
-
-    let targetDriverCode = selectedDriverRef.current;
-
-    // Ghost Mode Logic: Auto-select first ghost driver if nothing selected
-    if (replayMode === 'ghost' && !targetDriverCode && ghostConfig.d1) {
-      targetDriverCode = ghostConfig.d1 + '_GHOST';
-    }
-
-    if (!targetDriverCode && leaderboardOrderRef.current.length > 0) {
-      targetDriverCode = leaderboardOrderRef.current[0]; // Follow leader if no driver selected
-    }
-
-    if (targetDriverCode) {
-      const driver = activeDrivers[targetDriverCode];
-      if (driver) {
-        // Calculate correct transform considering SVG Aspect Ratio (xMidYMid meet)
-        const VIEWBOX_WIDTH = 1000;
-        const VIEWBOX_HEIGHT = 500;
-
-        // Calculate how the SVG is scaled within the container
-        const scaleX = width / VIEWBOX_WIDTH;
-        const scaleY = height / VIEWBOX_HEIGHT;
-        const fitScale = Math.min(scaleX, scaleY);
-
-        // Calculate offsets (bars)
-        const offsetX = (width - VIEWBOX_WIDTH * fitScale) / 2;
-        const offsetY = (height - VIEWBOX_HEIGHT * fitScale) / 2;
-
-        setViewState((prev) => {
-          // Driver Position in Screen Pixels (at Zoom 1)
-          // Visual position = Offset + (SVG_Coord * FitScale)
-          const visualDriverX = offsetX + driver.x * fitScale;
-          const visualDriverY = offsetY + driver.y * fitScale;
-
-          // We want visualDriverX to be at Center (width/2)
-          // Center = Translate + (VisualPos * ZoomScale)
-          // Translate = Center - (VisualPos * ZoomScale)
-
-          // Account for Leaderboard Overlay (w-64 = 256px) on Desktop (md: 768px)
-          // We want to center in the *visible* area.
-          // If desktop, visible width is (width - 256). Center is (width - 256) / 2.
-          const leaderboardOffset = window.innerWidth >= 768 ? 256 : 0;
-          const centerX = (width - leaderboardOffset) / 2;
-          const centerY = height / 2;
-
-          const newX = centerX - visualDriverX * prev.scale;
-          const newY = centerY - visualDriverY * prev.scale;
-
-          return {
-            ...prev,
-            x: newX,
-            y: newY,
-          };
-        });
-      }
-    }
-  }, [
-    isFollowing,
-    currentTime,
-    selectedDriver,
-    activeDrivers,
-    data,
-    leaderboardOrder,
-    replayMode,
-    ghostConfig,
-  ]); // currentTime to trigger updates, selectedDriver/leaderboardOrder for target change
-
-  // Helper: Calculate a sorting score (Lap takes precedence, then Visual Path Index)
-  const getDriverScore = useCallback((d: DriverFrameState | null | undefined) => {
-    if (!d) return -1;
-    // visual sorting: Lap * totalPoints + trackIndex
-    // data.circuit_points might not be available in closure if not passed, but we can assume nice range.
-    // Using 1,000,000 as multiplier is safe as points < 1M.
-    return d.lap * 1000000 + (d.track_index || 0);
-  }, []);
-
-  // Sort function for "Hard Sort" (Absolute distance)
-  const getSortedOrder = useCallback(
-    (currentDrivers: Record<string, DriverFrameState>) => {
-      return Object.entries(currentDrivers)
-        .sort(([, a], [, b]) => {
-          // START FIX: Grid Position for < 200m
-          if ((a.dist ?? 0) < 200 && (b.dist ?? 0) < 200) {
-            const gA = data?.driver_grid_positions?.[a.code ?? ''] ?? 99;
-            const gB = data?.driver_grid_positions?.[b.code ?? ''] ?? 99;
-            return gA - gB;
-          }
-          return getDriverScore(b) - getDriverScore(a);
-        })
-        .map(([code]) => code);
-    },
-    [data?.driver_grid_positions, getDriverScore]
-  );
-
-  // --- Leaderboard Logic with Hysteresis ---
-  useEffect(() => {
-    if (!data) return;
-
-    // Ghost Mode: Simple ordering (Driver 1 then Driver 2)
-    if (replayMode === 'ghost') {
-      const keys = Object.keys(activeDrivers);
-      // Sort by our config order d1, d2
-      const sorted = keys.sort((a, b) => {
-        if (a.includes(ghostConfig.d1 || '')) return -1;
-        return 1;
-      });
-      setLeaderboardOrder(sorted);
-      return;
-    }
-
-    // If not playing (Seeking/Paused) or first load, do a Hard Sort
-    if (!isPlaying || leaderboardOrder.length === 0) {
-      const newOrder = getSortedOrder(activeDrivers);
-      if (JSON.stringify(newOrder) !== JSON.stringify(leaderboardOrder)) {
-        setLeaderboardOrder(newOrder);
-      }
-      return;
-    }
-
-    // --- HYSTERESIS SORT ---
-    // While playing, we only swap if overtake is clearer (> 0.5m equivalent score)
-    const OVERTAKE_THRESHOLD = 0.5; // meters
-
-    const newOrder = [...leaderboardOrder];
-    let swapped = false;
-
-    // Bubble sort pass
-    for (let i = 0; i < newOrder.length - 1; i++) {
-      const driverA = newOrder[i]; // Currently Ahead
-      const driverB = newOrder[i + 1]; // Currently Behind
-
-      const dA = activeDrivers[driverA];
-      const dB = activeDrivers[driverB];
-
-      if (!dA || !dB) continue;
-
-      // 1. Grid Logic (Start only)
-      if (dA.dist < 200 && dB.dist < 200) {
-        const gA = data?.driver_grid_positions?.[driverA] ?? 99;
-        const gB = data?.driver_grid_positions?.[driverB] ?? 99;
-        if (gB < gA) {
-          // B should be ahead based on grid
-          newOrder[i] = driverB;
-          newOrder[i + 1] = driverA;
-          swapped = true;
-        }
-        continue;
-      }
-
-      // 2. Race Logic
-      // Swap if B's Score > A's Score + Threshold
-      const scoreA = getDriverScore(dA);
-      const scoreB = getDriverScore(dB);
-
-      if (scoreB > scoreA + OVERTAKE_THRESHOLD) {
-        newOrder[i] = driverB;
-        newOrder[i + 1] = driverA;
-        swapped = true;
-      }
-    }
-
-    if (swapped) {
-      setLeaderboardOrder(newOrder);
-    }
-  }, [
-    activeDrivers,
+  const {
     isPlaying,
+    setIsPlaying,
+    hasStarted,
+    setHasStarted,
+    playbackSpeed,
+    currentTime,
+    setCurrentTime,
+    selectedDriver,
+    setSelectedDriver,
+    showSpeedHeatmap,
+    setShowSpeedHeatmap,
+    showWeather,
+    setShowWeather,
+    showRaceControlFeed,
+    setShowRaceControlFeed,
+    showSectorTimes,
+    setShowSectorTimes,
+    showTelemetry,
+    setShowTelemetry,
+    showLapHistory,
+    setShowLapHistory,
+    showIntervals,
+    setShowIntervals,
+    dismissedMessages,
+    reset: resetState,
+    cycleSpeed,
+    dismissMessage,
+  } = useReplayState(0, () => {});
+
+  const {
+    replayData: data,
+    loadedChunks,
+    loadedDuration,
+    isFullyLoaded,
+    isBuffering,
+    seekTo,
+  } = useChunkLoader(metadata ?? null, year, event, session, currentTime);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    safeIndex,
+    currentFrameDrivers,
+    totalDuration,
+    totalLaps: derivedTotalLaps,
+    driverLapStartTimes,
+    tyreAgeMap,
+  } = useReplayData(data, currentTime);
+
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+
+  const isBufferingRef = useRef(isBuffering);
+  useEffect(() => {
+    isBufferingRef.current = isBuffering;
+  }, [isBuffering]);
+
+  const activeTotalDuration = useMemo(() => {
+    const meta = metadata as SessionReplayMetadata | undefined;
+    const manifest = meta?.chunk_manifest;
+    return meta?.total_duration ?? manifest?.[manifest.length - 1]?.end ?? totalDuration;
+  }, [metadata, totalDuration]);
+
+  const totalLaps = useMemo(() => {
+    const meta = metadata as SessionReplayMetadata | undefined;
+    return meta?.total_laps ?? meta?.circuit_metadata?.total_laps ?? derivedTotalLaps;
+  }, [metadata, derivedTotalLaps]);
+
+  // Throttle seekTo to chunk-loader: only seek on significant jumps (user drag), not normal playback
+  const prevSeekTimeRef = useRef(currentTime);
+  useEffect(() => {
+    const delta = Math.abs(currentTime - prevSeekTimeRef.current);
+    if (delta > 3) {
+      seekTo(currentTime);
+    }
+    prevSeekTimeRef.current = currentTime;
+  }, [currentTime, seekTo]);
+
+  const { leaderboardOrder, leaderboard, driverVisuals } = useLeaderboard(
     data,
-    replayMode,
-    ghostConfig,
-    getSortedOrder,
+    currentFrameDrivers,
+    session === 'Race' || session === 'R',
+    isPlaying,
+    currentTime
+  );
+
+  const {
+    viewState,
+    isFullscreen,
+    rootRef,
+    toggleFullscreen,
+    follow,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+  } = useCamera(
+    containerRef,
+    currentFrameDrivers,
+    selectedDriver,
     leaderboardOrder,
-    getDriverScore,
-  ]);
+    true,
+    () => {},
+    isMetaLoading || !data
+  );
 
-  // --- Session Logic (Race vs Qualy) ---
-  const isRace = useMemo(() => {
-    return session === 'Race' || session === 'R';
-  }, [session]);
+  useEffect(() => {
+    resetState();
+  }, [year, event, session, resetState]);
 
+  const isRace = session === 'Race' || session === 'R';
   const isQualifying = useMemo(() => {
     const s = session.toUpperCase();
     return s.includes('Q') || s.includes('QUALIFYING');
   }, [session]);
 
-  // --- Qualifying Countdown Timer ---
   const sessionTimeRemaining = useMemo(() => {
     if (!data || isRace) return null;
-
-    // 1. Determine Nominal Duration
-    let duration = 0;
     const s = session.toUpperCase();
-    if (s === 'Q1') duration = 18 * 60;
-    else if (s === 'Q2') duration = 15 * 60;
-    else if (s === 'Q3') duration = 12 * 60;
-    else if (s === 'SQ1') duration = 12 * 60;
-    else if (s === 'SQ2') duration = 10 * 60;
-    else if (s === 'SQ3') duration = 8 * 60;
-    else return null; // Practice or Unknown
+    const durationMap: Record<string, number> = {
+      Q1: 18 * 60,
+      Q2: 15 * 60,
+      Q3: 12 * 60,
+      SQ1: 12 * 60,
+      SQ2: 10 * 60,
+      SQ3: 8 * 60,
+    };
+    const duration = durationMap[s];
+    if (!duration) return null;
 
-    // 2. Adjust for Red Flags
-    // We need to calculate how much time was LOST due to red flags UP TO currentTime.
     let lostTime = 0;
     let isRedFlagActive = false;
-
-    // Ensure intervals are sorted
-    /* Track Status Codes via FastF1: 
-           '1': Green, '2': Yellow, '3': SC, '4': VSC, '5': Red, '6': Bat, '7': Null 
-           In API response, we get objects with { status, start_time, end_time }
-        */
     const statuses = data.track_statuses || [];
 
     for (const status of statuses) {
       if (status.status === '5' || status.status === 'Red') {
         const sStart = status.start_time;
         const sEnd = status.end_time || 999999;
-
-        // Fix: Ignore Red Flags that happened entirely before the replay start (negative time)
-        // And clamp partially overlapping ones to 0.
         if (sEnd <= 0) continue;
-
         const clampedStart = Math.max(0, sStart);
         const clampedEnd = Math.max(0, sEnd);
-
-        // If red flag hasn't started yet relative to replay time, ignore
         if (clampedStart > currentTime) continue;
-
         if (currentTime >= clampedEnd) {
-          // This red flag is fully in the past (within our timeline).
           lostTime += clampedEnd - clampedStart;
         } else {
-          // We are currently INSIDE this red flag
           lostTime += currentTime - clampedStart;
           isRedFlagActive = true;
         }
@@ -1160,7 +328,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
     const effectiveElapsed = currentTime - lostTime;
     const remaining = Math.max(0, duration - effectiveElapsed);
-
     return {
       remaining,
       isRed: isRedFlagActive,
@@ -1173,179 +340,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
   }, [isRace, session, data, currentTime]);
 
-  // --- Timing Standings (for Qualy/Practice) ---
-  const timingStandings = useMemo(() => {
-    if (isRace || !data?.completed_laps) return null;
+  const trackColorTimeline = useMemo(() => {
+    if (!data?.race_control_messages?.length) return [];
+    const segments: { start: number; end: number; color: string }[] = [];
+    let currentColor = '#1a1a1e';
+    let segStart = 0;
 
-    // 1. Filter laps completed so far
-    const lapsSoFar = data.completed_laps.filter((l) => l.timestamp <= currentTime);
-
-    // 2. Find Best Lap per Driver
-    const bestLaps: Record<string, (typeof data.completed_laps)[0]> = {};
-    for (const lap of lapsSoFar) {
-      if (!bestLaps[lap.driver] || lap.seconds < bestLaps[lap.driver].seconds) {
-        bestLaps[lap.driver] = lap;
-      }
-    }
-
-    // 3. Sort Drivers
-    // Get all drivers from data.drivers to ensure we show everyone even if no lap
-    const allDrivers = Object.keys(data.drivers || {});
-
-    // Sort: Drivers with time < Drivers without time
-    // Then by time ASC
-    const sorted = allDrivers.sort((a, b) => {
-      const lapA = bestLaps[a];
-      const lapB = bestLaps[b];
-
-      if (lapA && lapB) return lapA.seconds - lapB.seconds;
-      if (lapA) return -1; // A has time, comes first
-      if (lapB) return 1; // B has time, comes first
-      return a.localeCompare(b); // Alphabetical tie-break
-    });
-
-    return { sorted, bestLaps };
-  }, [data, currentTime, isRace]);
-
-  // --- Leaderboard Calculation ---
-  const leaderboard = useMemo(() => {
-    if (!data) return [];
-    const drivers = activeDrivers;
-
-    // Ghost Mode - Return simplified interaction
-    if (replayMode === 'ghost') {
-      return Object.entries(drivers)
-        .sort(([, a], [, b]) => (b.ref_dist || 0) - (a.ref_dist || 0)) // Sort by distance descending
-        .map(([k, d], i) => ({
-          pos: i + 1,
-          ...d,
-          code: k, // Key is the ghost ID (e.g. VER_GHOST)
-          grid: 0,
-          color: d.color,
-        }));
-    }
-
-    const items = Object.entries(drivers).map(([code, d]) => ({
-      code,
-      ...d,
-      pos: 0, // calc below
-      grid: data.driver_grid_positions?.[code] || 0,
-      color: data.driver_colors[code] || 'white',
-    }));
-
-    if (isRace) {
-      // --- RACE MODE: Sort by Track Position ---
-      // Sort by Lap (desc) then specific RefDist/Dist (desc)
-      // Use leaderboardOrder from hysteresis for race mode
-      if (!leaderboardOrder.length) return []; // Should not happen if data is present
-
-      const raceItems = leaderboardOrder
-        .map((code, index) => {
-          const d = activeDrivers[code];
-          if (!d) return null;
-          return {
-            pos: index + 1,
-            code,
-            ...d,
-            grid: data.driver_grid_positions?.[code] || 0,
-            color: data.driver_colors[code] || '#fff',
-            tyre: d.tyre,
-          };
-        })
-        .filter((d) => d !== null);
-      return raceItems;
-    } else {
-      // --- QUALY/PRACTICE MODE: Sort by Timing ---
-      if (timingStandings) {
-        const { sorted, bestLaps } = timingStandings;
-        // Re-order items array to match 'sorted' list
-        // Create lookup for efficiency
-        const driverMap = new Map(items.map((i) => [i.code, i]));
-
-        // Clear items and rebuild from sorted list
-        const newItems: typeof items = [];
-        sorted.forEach((code) => {
-          const d = driverMap.get(code);
-          if (d) {
-            // Attach timing info for render
-            d.bestLap = bestLaps[code];
-            newItems.push(d);
-          }
-        });
-
-        return newItems.map((d, i) => ({ ...d, pos: i + 1 }));
-      }
-    }
-
-    return []; // Fallback if no data or timingStandings not ready
-  }, [activeDrivers, data, isRace, timingStandings, leaderboardOrder, replayMode]);
-
-  const driverNameMap: Record<string, string> = {};
-
-  // Pre-calculate Lap Start Times for all drivers
-  const driverLapStartTimes = useMemo(() => {
-    if (!data) return {};
-    const map: Record<string, Record<number, number>> = {};
-
-    for (const [code, d] of Object.entries(data.drivers)) {
-      map[code] = {};
-      let currentLap = -1;
-
-      // Iterate through the lap array
-      // d.lap is array of lap numbers corresponding to data.time
-      if (d.lap && data.time) {
-        for (let i = 0; i < d.lap.length; i++) {
-          const lap = d.lap[i];
-          if (lap !== currentLap) {
-            // Lap changed (or started)
-            // Only record the *first* time we see a new lap number
-            if (map[code][lap] === undefined) {
-              map[code][lap] = data.time[i];
-            }
-            currentLap = lap;
-          }
-        }
-      }
-    }
-    return map;
-  }, [data]);
-
-  // Calculate Track Status Color
-  const trackColor = useMemo(() => {
-    if (!data?.race_control_messages) return '#1f2937';
-
-    // Check for Qualifying End (Timer = 0) to prevent Red Track
-    // If it's qualifying and time is up, we don't want red track even if there is a 'red flag' or 'suspended' message
-    // that happened EXACTLY at 0:00 (which sometimes happens as session end).
-    // BUT actually, user request was "dont make the track red after timer reaches zero".
-    // The red track logic below checks for "RED FLAG" message.
-    // Often Q sessions end with a Red Flag or just "Session Suspended" which triggers Red.
-
-    // If session is qualifying and time is up, force default color ?
-    // Or rather, if time is up, ignore "RED FLAG" status?
-    if (isQualifying && sessionTimeRemaining?.remaining === 0) {
-      return '#1f2937';
-    }
-
-    // Iterate backwards from current time to find last status update
-    for (let i = data.race_control_messages.length - 1; i >= 0; i--) {
-      const msg = data.race_control_messages[i];
-      if (msg.time > currentTime) continue;
-
+    for (const msg of data.race_control_messages) {
       const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
-
-      // Status Changes
+      let newColor = currentColor;
       if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
-        // Double check if we are in qualifying and time is up (redundant but safe)
-        if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1f2937';
-        return '#ef4444'; // Red
-      }
-      if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED'))
-        return '#1f2937'; // Back to Normal
-
-      // Yellow / SC / VSC
-      // Exclude "INFRINGEMENT", "PENALTY", "INCIDENT" to avoid false positives from race control NOTIFICATIONS
-      if (
+        newColor = '#dc2626';
+      } else if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED')) {
+        newColor = '#1a1a1e';
+      } else if (
         (text.includes('YELLOW') ||
           text.includes('SAFETY CAR') ||
           text.includes('VIRTUAL') ||
@@ -1355,345 +363,510 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         !text.includes('INVESTIGATION') &&
         !text.includes('BLUE')
       ) {
-        return '#eab308'; // Yellow
+        newColor = '#ca8a04';
+      }
+
+      if (newColor !== currentColor) {
+        segments.push({ start: segStart, end: msg.time, color: currentColor });
+        currentColor = newColor;
+        segStart = msg.time;
       }
     }
+    segments.push({ start: segStart, end: Infinity, color: currentColor });
+    return segments;
+  }, [data?.race_control_messages]);
 
-    return '#1f2937'; // Default
-  }, [currentTime, data, isQualifying, sessionTimeRemaining]);
+  const trackColor = useMemo(() => {
+    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
+    for (let i = trackColorTimeline.length - 1; i >= 0; i--) {
+      const seg = trackColorTimeline[i];
+      if (currentTime >= seg.start && currentTime < seg.end) {
+        return seg.color;
+      }
+    }
+    return '#1a1a1e';
+  }, [currentTime, trackColorTimeline, isQualifying, sessionTimeRemaining]);
 
-  // --- Feature 1: Sector Markers + Start/Finish Line ---
   const sectorMarkers = useMemo(() => {
     if (!data?.circuit_points || !data?.circuit_distances) return [];
     return getSectorMarkers(data.circuit_points, data.circuit_distances);
   }, [data?.circuit_points, data?.circuit_distances]);
 
-  // --- Feature 3: Speed Heatmap Segments ---
-  const speedHeatmapSegments = useMemo(() => {
+  const seekbarStatusSegments = useMemo(() => {
+    if (!data?.track_statuses) return [];
+    return getTrackStatusSegments(data.track_statuses, activeTotalDuration || 1);
+  }, [data?.track_statuses, activeTotalDuration]);
+
+  const availableLaps = useMemo(() => {
+    if (totalLaps > 0) {
+      return Array.from({ length: totalLaps }, (_, index) => index + 1);
+    }
+
+    const lapSet = new Set<number>();
+    for (const lap of metadata?.completed_laps || []) {
+      if (lap.lap > 0) lapSet.add(lap.lap);
+    }
+    return [...lapSet].sort((a, b) => a - b);
+  }, [metadata?.completed_laps, totalLaps]);
+
+  const getSeekTimeForLap = useCallback(
+    (lap: number) => {
+      const lapTimestamps = (metadata?.completed_laps || [])
+        .filter((entry) => entry.lap === lap)
+        .map((entry) => entry.timestamp);
+
+      if (lapTimestamps.length > 0) {
+        return Math.min(...lapTimestamps);
+      }
+
+      return data ? getTimeForLap(data.drivers, data.time, lap) : null;
+    },
+    [data, metadata?.completed_laps]
+  );
+
+  const currentLap = useMemo(() => {
+    const code = selectedDriver || leaderboard[0]?.code;
+    if (!code) return 0;
+    return currentFrameDrivers[code]?.lap || 0;
+  }, [selectedDriver, leaderboard, currentFrameDrivers]);
+
+  const formatTime = useCallback((seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }, []);
+
+  const requestRef = useRef<number | null>(null);
+  const previousTimeRef = useRef<number | null>(null);
+  const playbackSpeedRef = useRef(playbackSpeed);
+  const activeTotalDurationRef = useRef(activeTotalDuration);
+  const loadedDurationRef = useRef(loadedDuration);
+  const isFullyLoadedRef = useRef(isFullyLoaded);
+
+  useEffect(() => {
+    playbackSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+  useEffect(() => {
+    activeTotalDurationRef.current = activeTotalDuration;
+  }, [activeTotalDuration]);
+  useEffect(() => {
+    loadedDurationRef.current = loadedDuration;
+  }, [loadedDuration]);
+  useEffect(() => {
+    isFullyLoadedRef.current = isFullyLoaded;
+  }, [isFullyLoaded]);
+
+  const animate = useCallback(
+    function tick(time: number) {
+      if (previousTimeRef.current !== null) {
+        const deltaTime = (time - previousTimeRef.current) / 1000;
+        if (isPlayingRef.current && !isBufferingRef.current) {
+          const speed = playbackSpeedRef.current;
+          const totalDur = activeTotalDurationRef.current;
+          const loaded = loadedDurationRef.current;
+          const fullyLoaded = isFullyLoadedRef.current;
+
+          setCurrentTime((prevTime) => {
+            const newTime = prevTime + deltaTime * speed;
+            const playableTime = fullyLoaded ? totalDur : Math.max(0, loaded - 0.25);
+            if (newTime >= playableTime && playableTime < totalDur) {
+              setIsPlaying(false);
+              return playableTime;
+            }
+            if (newTime >= totalDur) {
+              setIsPlaying(false);
+              return totalDur;
+            }
+            return newTime;
+          });
+        }
+      }
+      previousTimeRef.current = time;
+      if (isPlayingRef.current) {
+        requestRef.current = requestAnimationFrame(tick);
+      } else {
+        requestRef.current = null;
+      }
+    },
+    [setCurrentTime, setIsPlaying]
+  );
+
+  useEffect(() => {
+    if (isPlaying) {
+      previousTimeRef.current = null;
+      requestRef.current = requestAnimationFrame(animate);
+    }
+    return () => {
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [isPlaying, animate]);
+
+  const handleDriverClick = useCallback(
+    (code: string) => {
+      setSelectedDriver(code === selectedDriver ? null : code);
+    },
+    [selectedDriver, setSelectedDriver]
+  );
+
+  const driverArrays = useMemo(() => {
+    if (!data?.drivers) return {};
+    const result: Record<string, { x: number[]; y: number[] }> = {};
+    for (const [code, d] of Object.entries(data.drivers)) {
+      result[code] = { x: d.x, y: d.y };
+    }
+    return result;
+  }, [data?.drivers]);
+
+  const [speedHeatmapSegments, setSpeedHeatmapSegments] = useState<
+    { path: string; color: string }[]
+  >([]);
+  const heatmapComputeIdRef = useRef(0);
+  const safeIndexRef = useRef(safeIndex);
+  useEffect(() => {
+    safeIndexRef.current = safeIndex;
+  }, [safeIndex]);
+
+  useEffect(() => {
     if (
       !showSpeedHeatmap ||
       !selectedDriver ||
       !data?.circuit_points ||
       !data?.drivers[selectedDriver]
-    )
-      return [];
+    ) {
+      setSpeedHeatmapSegments([]);
+      return;
+    }
+
+    const id = ++heatmapComputeIdRef.current;
+    const timer = setTimeout(() => {
+      if (id !== heatmapComputeIdRef.current) return;
+      const currentSafeIndex = safeIndexRef.current;
+      const driverData = data.drivers[selectedDriver];
+      const pathPoints = data.circuit_points;
+      const speedArray: number[] = new Array(pathPoints.length).fill(0);
+      const len = driverData.x.length;
+      const sampleRange = Math.min(len, 25 * 120);
+      const start = Math.max(0, currentSafeIndex - sampleRange);
+      const end = Math.min(len - 1, currentSafeIndex);
+      for (let i = start; i <= end; i++) {
+        const px = driverData.x[i];
+        const py = driverData.y[i];
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        for (let j = 0; j < pathPoints.length; j += 3) {
+          const dx = pathPoints[j][0] - px;
+          const dy = pathPoints[j][1] - py;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestDist) {
+            bestDist = d2;
+            bestIdx = j;
+          }
+        }
+        speedArray[bestIdx] = driverData.speed[i];
+      }
+      setSpeedHeatmapSegments(getSpeedHeatmapSegments(pathPoints, speedArray, 350));
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [showSpeedHeatmap, selectedDriver, data]);
+
+  // Throttle telemetry sparkline updates — only recompute every ~160ms
+  const [throttledTime, setThrottledTime] = useState(currentTime);
+  const throttleTimerRef = useRef<number | null>(null);
+  const lastThrottledTimeRef = useRef(currentTime);
+  useEffect(() => {
+    // Skip if timer already pending
+    if (throttleTimerRef.current !== null) return;
+    // Skip if time hasn't moved enough (< 80ms of playback)
+    if (Math.abs(currentTime - lastThrottledTimeRef.current) < 0.08) return;
+    throttleTimerRef.current = window.setTimeout(() => {
+      lastThrottledTimeRef.current = currentTime;
+      setThrottledTime(currentTime);
+      throttleTimerRef.current = null;
+    }, 160);
+  }, [currentTime]);
+
+  // Cleanup throttle timer on unmount
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current !== null) {
+        window.clearTimeout(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const recentSpeedHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(
+      data?.time,
+      data?.drivers?.[selectedDriver]?.speed,
+      throttledTime,
+      6,
+      60
+    );
+  }, [data, selectedDriver, throttledTime]);
+
+  const recentThrottleHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(
+      data?.time,
+      data?.drivers?.[selectedDriver]?.throttle,
+      throttledTime,
+      6,
+      60
+    );
+  }, [data, selectedDriver, throttledTime]);
+
+  const recentBrakeHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return normalizeBrakeSeries(
+      sampleRecentSeries(data?.time, data?.drivers?.[selectedDriver]?.brake, throttledTime, 6, 60)
+    );
+  }, [data, selectedDriver, throttledTime]);
+
+  const recentRpmHistory = useMemo(() => {
+    if (!selectedDriver) return [];
+    return sampleRecentSeries(
+      data?.time,
+      data?.drivers?.[selectedDriver]?.rpm,
+      throttledTime,
+      6,
+      60
+    );
+  }, [data, selectedDriver, throttledTime]);
+
+  const liveLapTime = useMemo(() => {
+    if (!selectedDriver) return null;
+    const driver = currentFrameDrivers[selectedDriver];
+    if (!driver) return null;
+    const lapStart = driverLapStartTimes[selectedDriver]?.[driver.lap];
+    if (typeof lapStart !== 'number') return null;
+    return Math.max(0, currentTime - lapStart);
+  }, [currentFrameDrivers, currentTime, driverLapStartTimes, selectedDriver]);
+
+  const liveSector = useMemo(() => {
+    if (!selectedDriver || !data?.time) return null;
+    const driver = currentFrameDrivers[selectedDriver];
     const driverData = data.drivers[selectedDriver];
-    // Build speed-by-track-index mapping from current driver data at current frame
-    const pathPoints = data.circuit_points;
-    const speedArray: number[] = new Array(pathPoints.length).fill(0);
-    const len = driverData.x.length;
-    // Sample recent frames (last ~2 laps worth ≈ FPS*120) around safeIndex
-    const sampleRange = Math.min(len, 25 * 120);
-    const start = Math.max(0, safeIndex - sampleRange);
-    const end = Math.min(len - 1, safeIndex);
-    for (let i = start; i <= end; i++) {
-      const px = driverData.x[i];
-      const py = driverData.y[i];
-      // Find closest track index
-      let bestIdx = 0;
-      let bestDist = Infinity;
-      // Sample every 3rd point for performance
-      for (let j = 0; j < pathPoints.length; j += 3) {
-        const dx = pathPoints[j][0] - px;
-        const dy = pathPoints[j][1] - py;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < bestDist) {
-          bestDist = d2;
-          bestIdx = j;
-        }
-      }
-      speedArray[bestIdx] = driverData.speed[i];
-    }
-    return getSpeedHeatmapSegments(data.circuit_points, speedArray, 350);
-  }, [showSpeedHeatmap, selectedDriver, data, safeIndex]);
+    if (!driver || !driverData) return null;
 
-  // --- Feature 4: Track Status Segments for Seekbar ---
-  const seekbarStatusSegments = useMemo(() => {
-    if (!data?.track_statuses) return [];
-    return getTrackStatusSegments(data.track_statuses, activeTotalDuration);
-  }, [data?.track_statuses, activeTotalDuration]);
+    const lapStart = driverLapStartTimes[selectedDriver]?.[driver.lap];
+    if (typeof lapStart !== 'number') return null;
 
-  // --- Feature 6: Tyre Age per Driver ---
-  const tyreAgeMap = useMemo(() => {
-    if (!data?.drivers) return {};
-    const result: Record<string, number> = {};
-    for (const [code, d] of Object.entries(data.drivers)) {
-      result[code] = getTyreAge(d.tyre, d.lap, safeIndex);
-    }
-    return result;
-  }, [data?.drivers, safeIndex]);
+    const relativeDistance = Number.isFinite(driver.rel_dist ?? NaN)
+      ? Math.max(0, Math.min(0.999999, driver.rel_dist ?? 0))
+      : 0;
+    const label = relativeDistance < 1 / 3 ? 'S1' : relativeDistance < 2 / 3 ? 'S2' : 'S3';
+    const boundary = label === 'S1' ? 0 : label === 'S2' ? 1 / 3 : 2 / 3;
 
-  // --- Feature 7: Lap-Based Seeking ---
-  const availableLaps = useMemo(() => {
-    if (!data?.drivers) return [];
-    return getAllLapNumbers(data.drivers);
-  }, [data?.drivers]);
+    // Find approximate start index for the current lap to avoid scanning from 0
+    const lapStartIdx = Math.max(0, safeIndex - 3000); // ~2 minutes back at 25fps
+    const sectorStart = findSectorBoundaryTime(
+      data.time,
+      driverData.lap,
+      driverData.rel_dist,
+      driver.lap,
+      boundary,
+      lapStart,
+      lapStartIdx
+    );
 
-  const currentLap = useMemo(() => {
-    // Use selected driver's lap or leader's lap
-    const code = selectedDriver || leaderboard[0]?.code;
-    if (!code) return 0;
-    return activeDrivers[code]?.lap || 0;
-  }, [selectedDriver, leaderboard, activeDrivers]);
+    return { label, time: Math.max(0, currentTime - sectorStart) };
+  }, [currentFrameDrivers, currentTime, data, driverLapStartTimes, selectedDriver, safeIndex]);
 
-  // --- Helper for Time Display ---
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // --- DNF / OUT Visual State Logic ---
-  const driverOutTimes = useRef<Record<string, number>>({});
-
-  const driverVisuals = useMemo(() => {
-    if (!data || leaderboardOrder.length === 0) return { outStatus: {}, visibility: {} };
-
-    const outStatus: Record<string, boolean> = {};
-
-    // Determine "OUT" status (Stopped + Bottom of Active Pack)
-    // Check from bottom (last place) up.
-    let allBelowStopped = true;
-    // leaderboard is sorted by position 1..N
-    // We iterate N..1
-    for (let i = leaderboardOrder.length - 1; i >= 0; i--) {
-      const code = leaderboardOrder[i];
-      const isStopped =
-        data.driver_end_times?.[code] && currentTime > data.driver_end_times[code] + 1;
-
-      if (isStopped && allBelowStopped) {
-        outStatus[code] = true;
-      } else {
-        outStatus[code] = false;
-        if (!isStopped) allBelowStopped = false;
-      }
-    }
-
-    const visibility: Record<string, 'visible' | 'out-dimmed' | 'hidden'> = {};
-    const now = currentTime;
-
-    // Determine Visibility based on 5s delay
-    leaderboardOrder.forEach((code) => {
-      const isOut = outStatus[code];
-
-      if (isOut) {
-        if (driverOutTimes.current[code] === undefined) {
-          driverOutTimes.current[code] = now;
-        }
-        // Check 5s duration (allow 5s of "ghosting" before hiding)
-        if (now > driverOutTimes.current[code] + 5) {
-          visibility[code] = 'hidden';
-        } else {
-          visibility[code] = 'out-dimmed';
-        }
-      } else {
-        if (driverOutTimes.current[code] !== undefined) {
-          delete driverOutTimes.current[code]; // Reset if back in race (rewind)
-        }
-        visibility[code] = 'visible';
+  // Container size measurement for widget layout
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
       }
     });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [rootRef]);
 
-    // Ensure all currentFrameDrivers have a status (default visible)
-    // (Wait, leaderboardOrder contains all drivers, so we are good)
-    return { outStatus, visibility };
-  }, [leaderboardOrder, currentTime, data]);
+  const widgetBounds = useMemo(() => {
+    const width = isFullscreen ? viewportSize.width : containerSize.width || 1200;
+    const height = isFullscreen ? viewportSize.height : containerSize.height || 800;
+    const padding = 8;
+    const leaderboardWidth = isFullscreen && width >= 768 ? 256 : 0;
+    return {
+      minX: padding,
+      minY: padding,
+      maxX: Math.max(padding + 200, width - leaderboardWidth - padding),
+      maxY: Math.max(padding + 120, height - padding),
+    };
+  }, [
+    containerSize.height,
+    containerSize.width,
+    isFullscreen,
+    viewportSize.height,
+    viewportSize.width,
+  ]);
+
+  const { layouts, updateLayout } = useReplayWidgets(
+    containerSize.width || 1200,
+    containerSize.height || 800,
+    widgetBounds
+  );
+
+  const selectedDriverFullData = useMemo(() => {
+    if (!selectedDriver || !data?.drivers?.[selectedDriver]) return null;
+    const d = data.drivers[selectedDriver];
+    return {
+      speed: d.speed,
+      throttle: d.throttle,
+      brake: normalizeBrakeSeries(d.brake),
+      rpm: d.rpm,
+      time: data.time || [],
+    };
+  }, [data, selectedDriver]);
+
+  const isLoading = isMetaLoading || !data || loadedChunks.size === 0;
 
   if (isLoading) {
     return <ReplayLoader year={year} event={event} session={session} />;
   }
-  if (error) return <div className="p-12 text-center text-red-500">Error loading replay data.</div>;
-  if (!data) return null;
-
-  // Helper: Render Telemetry Overlay
-  const renderTelemetryOverlay = (
-    driverCode: string,
-    style: React.CSSProperties,
-    dragId: string,
-    currentPos: { x: number; y: number } | null,
-    setPos: (pos: { x: number; y: number }) => void
-  ) => {
-    const driverData = activeDrivers[driverCode];
-    if (!driverData) return null;
-
-    const lookupCode = driverCode.replace('_GHOST', '');
-
-    // Calculate Lap Stats (Same logic as before)
-    const driverLaps =
-      data.completed_laps?.filter((l) => l.driver === lookupCode && l.timestamp <= currentTime) ||
-      [];
-    const fastestLap =
-      driverLaps.length > 0
-        ? driverLaps.reduce((min, l) => (l.seconds < min.seconds ? l : min), driverLaps[0])
-        : null;
-    const previousLap = driverLaps.length > 0 ? driverLaps[driverLaps.length - 1] : null;
-
-    const currentLapNum = driverData.lap;
-    const lapStartTime = driverLapStartTimes[lookupCode]?.[currentLapNum] ?? 0;
-    const liveLapTime =
-      replayMode === 'ghost' ? currentTime : Math.max(0, currentTime - lapStartTime);
-
-    const formatLapTime = (sec: number) => {
-      const m = Math.floor(sec / 60);
-      const s = (sec % 60).toFixed(3);
-      return `${m}:${s.padStart(6, '0')}`;
-    };
-
-    const isBeingDragged = activeDragId === dragId;
-
+  if (metaError)
     return (
-      <div
-        key={driverCode}
-        className={`absolute w-52 bg-black/90 border-l-4 p-3 rounded backdrop-blur shadow-2xl select-none ${isFullscreen ? 'cursor-move' : ''} ${isBeingDragged ? 'scale-[1.02] shadow-white/10' : ''} z-[60]`}
-        style={{
-          borderColor: activeDrivers[driverCode]?.color || data.driver_colors[driverCode] || '#fff',
-          ...style,
-          left: currentPos ? currentPos.x : style.left,
-          top: currentPos ? currentPos.y : style.top,
-          right: currentPos ? 'auto' : style.right,
-        }}
-        onMouseDown={(e) => {
-          if (!isFullscreen) return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          dragOffsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-          if (!currentPos) setPos({ x: rect.left, y: rect.top });
-          setActiveDragId(dragId);
-        }}
-      >
-        <div className="flex items-center gap-3 mb-2 border-b border-gray-800 pb-2">
-          <div className="w-12 h-12 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700 shrink-0">
-            <img
-              src={getDriverImage(lookupCode, year)}
-              alt={lookupCode}
-              className="w-full h-full object-cover object-top transform scale-110"
-              onError={(e) => {
-                const img = e.target as HTMLImageElement;
-                img.src = '/placeholder.svg';
-              }}
-            />
-          </div>
-          <div>
-            <div className="text-base font-bold leading-tight">
-              {driverNameMap[lookupCode] || lookupCode}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-1 font-mono text-xs">
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 uppercase text-[10px]">Position</span>
-            <span className="text-white text-base font-bold">
-              {leaderboard.find((d) => d.code === driverCode)?.pos || '-'}
-            </span>
-          </div>
-          {isFullscreen ? (
-            <>
-              <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                <span className="text-gray-400 uppercase text-[10px]">Current</span>
-                <span className="text-yellow-400 text-base font-bold">
-                  {formatLapTime(liveLapTime)}
-                </span>
-              </div>
-              {replayMode !== 'ghost' && (
-                <>
-                  <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                    <span className="text-gray-400 uppercase text-[10px]">Last</span>
-                    <span className="text-white text-base">
-                      {previousLap ? previousLap.time_str : '-'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                    <span className="text-gray-400 uppercase text-[10px]">Best</span>
-                    <span className="text-purple-400 text-base font-bold">
-                      {fastestLap ? fastestLap.time_str : '-'}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              {/* Throttle & Brake Bars */}
-              <div className="flex gap-1 h-16 my-2">
-                <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                  <div
-                    className="w-full bg-green-500 transition-all duration-75 ease-linear"
-                    style={{ height: `${driverData.throttle || 0}%` }}
-                  />
-                  <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">
-                    THR
-                  </span>
-                </div>
-                <div className="flex-1 bg-gray-800 rounded relative overflow-hidden flex flex-col justify-end">
-                  <div
-                    className="w-full bg-red-500 transition-all duration-75 ease-linear"
-                    style={{
-                      height: `${driverData.brake > 1 ? driverData.brake : driverData.brake * 100}%`,
-                    }}
-                  />
-                  <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-bold mix-blend-difference text-white">
-                    BRK
-                  </span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="py-4 px-2 text-center border-b border-gray-800">
-              <span className="text-xs text-gray-500 italic block leading-relaxed">
-                Go to fullscreen for more detailed telemetry
-              </span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 uppercase text-[10px]">RPM</span>
-            <span className="text-white text-base font-bold">
-              {Math.round(driverData.rpm || 0)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 uppercase text-[10px]">Speed</span>
-            <span className="text-purple-400 text-base font-bold">
-              {Math.round(driverData.speed)} <span className="text-[10px] text-gray-500">kph</span>
-            </span>
-          </div>
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 w-1/2 uppercase text-[10px]">Gear</span>
-            <span className="text-yellow-400 text-base font-bold">{driverData.gear}</span>
-          </div>
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 w-1/2 uppercase text-[10px]">DRS</span>
-            <span
-              className={`${driverData.drs >= 10 ? 'text-green-500 font-bold' : 'text-gray-600'} text-base`}
-            >
-              {driverData.drs >= 10 ? 'OPEN' : 'CLOSED'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-            <span className="text-gray-400 uppercase text-[10px]">Lap</span>
-            <span className="text-white text-base">{driverData.lap}</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px] text-red-400 text-[14px] font-medium">
+        Error loading replay data.
       </div>
     );
+  if (!data) return null;
+
+  const visibleWidgetIds: { id: WidgetId; condition: boolean }[] = [
+    { id: 'weather', condition: showWeather },
+    { id: 'racecontrol', condition: showRaceControlFeed },
+    { id: 'sectors', condition: showSectorTimes },
+    { id: 'laphistory', condition: showLapHistory },
+    { id: 'telemetry', condition: showTelemetry },
+  ];
+
+  const renderWidget = (id: WidgetId) => {
+    switch (id) {
+      case 'weather':
+        return (
+          <WeatherOverlay
+            key={id}
+            weather={data.weather}
+            currentTime={currentTime}
+            layout={layouts.weather}
+            onUpdateLayout={(u) => updateLayout('weather', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowWeather(false)}
+          />
+        );
+      case 'racecontrol':
+        return (
+          <RaceControlFeed
+            key={id}
+            messages={data.race_control_messages}
+            currentTime={currentTime}
+            onSeek={(time) => setCurrentTime(time)}
+            layout={layouts.racecontrol}
+            onUpdateLayout={(u) => updateLayout('racecontrol', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowRaceControlFeed(false)}
+          />
+        );
+      case 'sectors':
+        return (
+          <SectorTimesPanel
+            key={id}
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+            fastestSectors={data.fastest_sectors}
+            liveSector={liveSector}
+            layout={layouts.sectors}
+            onUpdateLayout={(u) => updateLayout('sectors', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowSectorTimes(false)}
+          />
+        );
+      case 'laphistory':
+        return (
+          <LapHistoryPanel
+            key={id}
+            completedLaps={data.completed_laps}
+            currentTime={currentTime}
+            selectedDriver={selectedDriver}
+            driverData={selectedDriverFullData}
+            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+            onSeekToLap={(lap) => {
+              const time = getSeekTimeForLap(lap);
+              if (time !== null) setCurrentTime(time);
+            }}
+            layout={layouts.laphistory}
+            onUpdateLayout={(u) => updateLayout('laphistory', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowLapHistory(false)}
+          />
+        );
+      case 'telemetry':
+        return (
+          <TelemetryOverlay
+            key={id}
+            driverCode={selectedDriver}
+            telemetry={
+              selectedDriver && currentFrameDrivers[selectedDriver]
+                ? {
+                    speed: currentFrameDrivers[selectedDriver].speed,
+                    gear: currentFrameDrivers[selectedDriver].gear,
+                    throttle: currentFrameDrivers[selectedDriver].throttle,
+                    brake: normalizeBrakeValue(currentFrameDrivers[selectedDriver].brake),
+                    drs: currentFrameDrivers[selectedDriver].drs,
+                    rpm: currentFrameDrivers[selectedDriver].rpm,
+                  }
+                : null
+            }
+            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
+            speedHistory={recentSpeedHistory}
+            throttleHistory={recentThrottleHistory}
+            brakeHistory={recentBrakeHistory}
+            rpmHistory={recentRpmHistory}
+            liveLapTime={liveLapTime}
+            layout={layouts.telemetry}
+            onUpdateLayout={(u) => updateLayout('telemetry', u)}
+            bounds={widgetBounds}
+            onClose={() => setShowTelemetry(false)}
+          />
+        );
+    }
+
+    return null;
   };
 
   return (
     <div
       ref={rootRef}
-      className={`flex flex-col bg-black text-white overflow-hidden ${isFullscreen ? 'h-full' : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl shadow-2xl'} ${className}`}
+      className={cn(
+        'relative flex flex-col bg-[#09090b] text-white overflow-hidden',
+        isFullscreen
+          ? 'h-screen w-screen'
+          : 'w-full rounded-xl border border-white/[0.06] shadow-2xl min-h-[400px]',
+        !isFullscreen && !className && 'h-[calc(100vh-200px)]',
+        className
+      )}
     >
-      {/* Main Content Area */}
       <div className="flex flex-1 relative overflow-hidden">
-        {/* 1. Track Map Layer */}
         <div
           ref={containerRef}
-          className="absolute inset-0 overflow-hidden bg-[#0d0d0d] cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 overflow-hidden bg-[#0c0c0e] cursor-grab active:cursor-grabbing"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Branding Logo - Fullscreen Only */}
           {isFullscreen && (
             <div className="absolute top-6 left-6 flex items-center gap-2 z-50 pointer-events-none select-none">
               <Gauge className="text-red-500" size={28} />
@@ -1701,347 +874,84 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             </div>
           )}
 
-          {/* --- Top-Left Mode Controller (Shifted Down in Fullscreen) --- */}
-          <div
-            className={`absolute left-6 z-50 flex flex-col gap-2 transition-all duration-300 ${isFullscreen ? 'top-24' : 'top-6'}`}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            {/* Segmented Control */}
-            <div className="flex bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl relative isolate">
-              <button
-                onClick={() => {
-                  setReplayMode('session');
-                  trackEvent('replay_mode_changed', { mode: 'session', year, event, session });
-                }}
-                className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${replayMode === 'session' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
-              >
-                {replayMode === 'session' && (
-                  <motion.div
-                    layoutId="mode-highlight"
-                    className="absolute inset-0 bg-white/10 border border-white/5 rounded-lg -z-10 shadow-sm"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                Session
-              </button>
-              <button
-                onClick={() => {
-                  setReplayMode('ghost');
-                  trackEvent('replay_mode_changed', { mode: 'ghost', year, event, session });
-                }}
-                className={`relative z-10 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-2 ${replayMode === 'ghost' ? 'text-white' : 'text-gray-400 hover:text-gray-200'}`}
-              >
-                {replayMode === 'ghost' && (
-                  <motion.div
-                    layoutId="mode-highlight"
-                    className="absolute inset-0 bg-white/10 border border-white/5 rounded-lg -z-10 shadow-sm"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <Swords size={14} />
-                Head 2 Head
-              </button>
-            </div>
-
-            {/* Ghost Configuration Panel (Attached below) */}
-            {/* Ghost Configuration Panel (Attached below) */}
-            {replayMode === 'ghost' && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl w-80 mt-2 overflow-hidden"
-              >
-                {/* Header / Toggle */}
-                <div
-                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
-                  onClick={() => setIsGhostConfigOpen(!isGhostConfigOpen)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      Matchup Settings
-                    </span>
-                    {!isGhostConfigOpen && (
-                      <span className="text-xs text-white font-bold ml-2">
-                        {ghostConfig.d1 || '?'} vs {ghostConfig.d2 || '?'}
-                      </span>
-                    )}
-                  </div>
-                  <button className="text-gray-400 hover:text-white transition-colors">
-                    {isGhostConfigOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
-                </div>
-
-                {/* Collapsible Content */}
-                <AnimatePresence initial={false}>
-                  {isGhostConfigOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    >
-                      <div className="px-4 pb-4 space-y-4 pt-1">
-                        {/* Helper Component for Custom Driver Select */}
-                        <CustomDriverSelect
-                          label="Red Corner"
-                          subLab="Driver 1"
-                          color="text-red-500"
-                          driverCode={ghostConfig.d1}
-                          lapNum={ghostConfig.l1}
-                          drivers={data.drivers}
-                          driverColors={data.driver_colors}
-                          year={year}
-                          onSelectDriver={(d) =>
-                            setGhostConfig((prev) => ({ ...prev, d1: d, l1: null }))
-                          }
-                          onSelectLap={(l) => setGhostConfig((prev) => ({ ...prev, l1: l }))}
-                          container={rootRef.current}
-                        />
-
-                        <div className="flex items-center gap-3 opacity-50">
-                          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent flex-1"></div>
-                          <div className="bg-black/40 rounded-full p-1.5 border border-white/10">
-                            <Swords size={12} className="text-white/60" />
-                          </div>
-                          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent flex-1"></div>
-                        </div>
-
-                        {/* Helper Component for Driver 2 */}
-                        <CustomDriverSelect
-                          label="Blue Corner"
-                          subLab="Driver 2"
-                          color="text-blue-500"
-                          driverCode={ghostConfig.d2}
-                          lapNum={ghostConfig.l2}
-                          drivers={data.drivers}
-                          driverColors={data.driver_colors}
-                          year={year}
-                          onSelectDriver={(d) =>
-                            setGhostConfig((prev) => ({ ...prev, d2: d, l2: null }))
-                          }
-                          onSelectLap={(l) => setGhostConfig((prev) => ({ ...prev, l2: l }))}
-                          container={rootRef.current}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </div>
-
-          <div
-            className="w-full h-full origin-top-left will-change-transform"
-            style={{
-              transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
-            }}
-          >
-            <svg
-              viewBox="0 0 1000 500"
-              className="w-full h-full pointer-events-none"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              {/* Background Path (Circuit) */}
-              <path
-                d={data.circuit_layout}
-                fill="none"
-                stroke={trackColor}
-                strokeWidth="12"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-colors duration-500 ease-in-out"
-              />
-              <path
-                d={data.circuit_layout}
-                fill="none"
-                stroke="#374151" // Lighter inner
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="4 4"
-                className="opacity-30"
-              />
-
-              {/* Speed Heatmap Layer */}
-              {speedHeatmapSegments.map((seg, i) => (
-                <path
-                  key={`heatmap-${i}`}
-                  d={seg.path}
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={0.8}
-                />
-              ))}
-
-              {/* Sector Markers + Start/Finish Line */}
-              {sectorMarkers.map((marker) => {
-                const lineLen = 18;
-                const dx = Math.cos(marker.angle) * lineLen;
-                const dy = Math.sin(marker.angle) * lineLen;
-                const isStartFinish = marker.label === 'S/F';
-                return (
-                  <g key={marker.label} className="opacity-70">
-                    <line
-                      x1={marker.x - dx}
-                      y1={marker.y - dy}
-                      x2={marker.x + dx}
-                      y2={marker.y + dy}
-                      stroke={isStartFinish ? '#ffffff' : '#9ca3af'}
-                      strokeWidth={isStartFinish ? 3 : 2}
-                      strokeLinecap="round"
-                    />
-                    {isStartFinish && (
-                      <line
-                        x1={marker.x - dx * 0.6}
-                        y1={marker.y - dy * 0.6}
-                        x2={marker.x + dx * 0.6}
-                        y2={marker.y + dy * 0.6}
-                        stroke="#000000"
-                        strokeWidth={1.5}
-                        strokeDasharray="3 3"
-                        strokeLinecap="round"
-                      />
-                    )}
-                    <text
-                      x={marker.x + dx * 1.4}
-                      y={marker.y + dy * 1.4}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill={isStartFinish ? '#ffffff' : '#9ca3af'}
-                      fontSize="10"
-                      fontWeight={isStartFinish ? 'bold' : 'normal'}
-                      className="select-none"
-                    >
-                      {marker.label}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Car Trails Layer */}
-              {Object.entries(activeDrivers).map(([code, car]) => {
-                if (driverVisuals.visibility[code] === 'hidden' && replayMode !== 'ghost')
-                  return null;
-                const driverData = data.drivers[code.replace('_GHOST', '')];
-                if (!driverData) return null;
-                const color = car.color || data.driver_colors[code] || 'white';
-                const trailLength = selectedDriver === code ? 20 : 8;
-                const trail = getTrailPoints(driverData.x, driverData.y, safeIndex, trailLength);
-                return trail.map((pt, i) => (
-                  <circle
-                    key={`trail-${code}-${i}`}
-                    cx={pt.x}
-                    cy={pt.y}
-                    r={2}
-                    fill={color}
-                    opacity={pt.opacity * 0.5}
-                  />
-                ));
-              })}
-
-              {/* Cars Layer */}
-              {Object.entries(activeDrivers).map(([code, car]) => {
-                // Check Visibility
-                if (driverVisuals.visibility[code] === 'hidden' && replayMode !== 'ghost')
-                  return null;
-
-                // car.x/y are already normalized to the SVG viewbox by backend
-                // Prioritize car.color (Ghost Mode) over static map
-                const color = car.color || data.driver_colors[code] || 'white';
-                const isSelected = selectedDriver === code;
-
-                // Dim if OUT but not hidden yet
-                const isDimmed = driverVisuals.visibility[code] === 'out-dimmed';
-                const opacityClass = isDimmed ? 'opacity-50 grayscale' : '';
-
-                return (
-                  <g
-                    key={code}
-                    transform={`translate(${car.x}, ${car.y})`}
-                    className={`transition-transform duration-75 ease-linear cursor-pointer pointer-events-auto ${opacityClass}`}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      if (!isDragging) {
-                        e.stopPropagation();
-                        const newSelection = code === selectedDriver ? null : code;
-                        setSelectedDriver(newSelection);
-                        setIsFollowing(true); // Re-enable follow on selection
-                      }
-                    }}
-                  >
-                    {/* Selection Highlight */}
-                    {isSelected && (
-                      <circle
-                        r={12 / viewState.scale}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth={2 / viewState.scale}
-                        className="animate-ping opacity-75"
-                      />
-                    )}
-
-                    {/* Car Marker */}
-                    <circle
-                      r={isSelected ? 8 : 5}
-                      fill={color}
-                      stroke="black"
-                      strokeWidth={1 / viewState.scale}
-                    />
-
-                    {/* Label */}
-                    {isSelected && (
-                      <text
-                        y={-15}
-                        textAnchor="middle"
-                        fill={color}
-                        fontSize={12}
-                        fontWeight="bold"
-                        className="drop-shadow-md select-none"
-                        style={{ fontSize: `${12 / Math.sqrt(viewState.scale)}px` }}
-                      >
-                        {car.originalCode || code.replace('_GHOST', '')}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+          <TrackCanvas
+            circuitLayout={data.circuit_layout}
+            trackColor={trackColor}
+            drivers={currentFrameDrivers}
+            driverColors={data.driver_colors}
+            driverNumbers={
+              data.driver_info
+                ? Object.fromEntries(
+                    Object.entries(data.driver_info).map(([code, info]) => [code, info.number])
+                  )
+                : undefined
+            }
+            selectedDriver={selectedDriver}
+            visibility={driverVisuals.visibility}
+            viewState={viewState}
+            showHeatmap={showSpeedHeatmap}
+            heatmapSegments={speedHeatmapSegments}
+            sectorMarkers={sectorMarkers}
+            driverArrays={driverArrays}
+            safeIndex={safeIndex}
+            onClickDriver={handleDriverClick}
+          />
         </div>
 
-        {/* Title Header (Top Center) */}
         {isFullscreen && (
           <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-40 pointer-events-none select-none text-center">
             <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-white drop-shadow-lg">
-              {event} "{session}"
+              {event} &ldquo;{session}&rdquo;
             </h1>
           </div>
         )}
 
-        {/* 2. Messages Overlay (Top Center) */}
-        <RaceControlMessages
-          messages={data.race_control_messages}
-          currentTime={currentTime}
-          dismissedMessages={dismissedMessages}
-          replayMode={replayMode}
-          getMessageConfig={getMessageConfig}
-          formatTime={formatTime}
-          onDismiss={(id) => setDismissedMessages((prev) => new Set(prev).add(id))}
-        />
+        {isFullscreen && (
+          <>
+            <RaceControlToasts
+              messages={data.race_control_messages}
+              currentTime={currentTime}
+              dismissedMessages={dismissedMessages}
+              formatTime={formatTime}
+              onDismiss={dismissMessage}
+            />
 
-        {/* 3. Leaderboard Sidebar (Right) */}
+            <ReplayToolbar
+              toggles={{
+                weather: showWeather,
+                raceControl: showRaceControlFeed,
+                sectors: showSectorTimes,
+                telemetry: showTelemetry,
+                lapHistory: showLapHistory,
+                heatmap: showSpeedHeatmap,
+              }}
+              onToggle={{
+                weather: () => setShowWeather((v) => !v),
+                raceControl: () => setShowRaceControlFeed((v) => !v),
+                sectors: () => setShowSectorTimes((v) => !v),
+                telemetry: () => setShowTelemetry((v) => !v),
+                lapHistory: () => setShowLapHistory((v) => !v),
+                heatmap: () => setShowSpeedHeatmap((v) => !v),
+              }}
+            />
+
+            {isQualifying && sessionTimeRemaining && (
+              <QualifyingCountdown
+                remaining={sessionTimeRemaining.remaining}
+                isRed={sessionTimeRemaining.isRed}
+                formatted={sessionTimeRemaining.formatted}
+                sessionName={session}
+              />
+            )}
+          </>
+        )}
+
         <Leaderboard
           leaderboard={leaderboard}
           selectedDriver={selectedDriver}
           driverVisuals={driverVisuals}
           isRace={isRace}
           isQualifying={isQualifying}
-          replayMode={replayMode}
           currentTime={currentTime}
           totalLaps={totalLaps}
           year={year}
@@ -2049,44 +959,30 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           pitIntervals={data.pit_intervals}
           circuitLength={data?.circuit_distances?.[data.circuit_distances.length - 1] || 5000}
           tyreAge={tyreAgeMap}
+          showIntervals={showIntervals}
+          onToggleIntervals={() => setShowIntervals((v) => !v)}
           onSelectDriver={(code) => setSelectedDriver(code)}
-          onFollow={() => setIsFollowing(true)}
+          onFollow={follow}
         />
-
-        {replayMode === 'ghost' ? (
-          <>
-            {/* Ghost Mode: Show both overlays fixed */}
-            {ghostConfig.d1 &&
-              renderTelemetryOverlay(
-                ghostConfig.d1 + '_GHOST',
-                { top: isFullscreen ? 400 : 180, left: 24 }, // Left (Below config)
-                'ghost1',
-                ghostPos1,
-                setGhostPos1
-              )}
-            {ghostConfig.d2 &&
-              renderTelemetryOverlay(
-                ghostConfig.d2 + '_GHOST',
-                { top: isFullscreen ? 400 : 180, right: isFullscreen ? 280 : 24 }, // Right (offset from leaderboard)
-                'ghost2',
-                ghostPos2,
-                setGhostPos2
-              )}
-          </>
-        ) : (
-          // Standard Mode: Show selected driver draggable
-          selectedDriver &&
-          renderTelemetryOverlay(
-            selectedDriver,
-            { left: 24, top: isFullscreen ? 320 : 80 },
-            'main',
-            overlayPos,
-            setOverlayPos
-          )
-        )}
       </div>
 
-      {/* Central Play Button Overlay (Initial State) */}
+      {isFullscreen && (
+        <div className="absolute inset-0 z-[45] pointer-events-none">
+          {visibleWidgetIds.map(({ id, condition }) => (condition ? renderWidget(id) : null))}
+        </div>
+      )}
+
+      {hasStarted && isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center z-[46] pointer-events-none">
+          <div className="flex flex-col items-center gap-3 px-6 py-4 rounded-xl bg-black/60 backdrop-blur-sm border border-white/[0.06]">
+            <div className="size-6 animate-spin rounded-full border-2 border-white/[0.08] border-t-red-400" />
+            <span className="text-[11px] font-medium text-white/60 uppercase tracking-wider">
+              Buffering…
+            </span>
+          </div>
+        </div>
+      )}
+
       {!hasStarted && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm transition-all duration-500">
           <button
@@ -2098,9 +994,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             className="group relative flex items-center justify-center w-24 h-24 bg-red-600 hover:bg-red-500 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
           >
             <Play size={48} className="text-white fill-white ml-2" />
-            <div className="absolute inset-0 rounded-full ring-4 ring-white/20 group-hover:ring-white/40 animate-pulse"></div>
+            <div className="absolute inset-0 rounded-full ring-4 ring-white/20 group-hover:ring-white/40 animate-pulse" />
           </button>
-
           <div className="absolute bottom-20 text-center">
             <p className="text-white font-bold text-lg tracking-widest uppercase drop-shadow-md">
               Start Replay
@@ -2109,7 +1004,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         </div>
       )}
 
-      {/* 5. Playback Controls (Auto-Hide Bottom Overlay) */}
       <PlaybackControls
         isPlaying={isPlaying}
         currentTime={currentTime}
@@ -2119,177 +1013,22 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         hasStarted={hasStarted}
         showSpeedHeatmap={showSpeedHeatmap}
         seekbarStatusSegments={seekbarStatusSegments}
-        hoverTime={hoverTime}
-        hoverPos={hoverPos}
         formatTime={formatTime}
-        onPlayPause={() => {
-          setIsPlaying(!isPlaying);
-          trackEvent('replay_play_pause', {
-            action: isPlaying ? 'pause' : 'play',
-            current_time: currentTime,
-            year,
-            event,
-            session,
-          });
-        }}
+        onPlayPause={() => setIsPlaying(!isPlaying)}
         onSeek={(time) => setCurrentTime(time)}
-        onSpeedChange={() => {
-          const speeds = [1, 2, 5, 10, 20];
-          const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
-          setPlaybackSpeed(speeds[nextIdx]);
-          trackEvent('replay_speed_changed', { speed: speeds[nextIdx], year, event, session });
-        }}
+        onSpeedChange={cycleSpeed}
         onToggleFullscreen={toggleFullscreen}
         onToggleHeatmap={() => setShowSpeedHeatmap((v) => !v)}
         availableLaps={availableLaps}
         currentLap={currentLap}
         onSeekToLap={(lap) => {
-          const time = getTimeForLap(data.drivers, data.time, lap);
+          const time = getSeekTimeForLap(lap);
           if (time !== null) setCurrentTime(time);
-        }}
-        onHoverMove={(time, pos) => {
-          setHoverTime(time);
-          setHoverPos(pos);
-        }}
-        onHoverLeave={() => {
-          setHoverTime(null);
-          setHoverPos(null);
         }}
       />
     </div>
   );
 };
 
-// Helper Component Definitions must be outside the main component
-const CustomDriverSelect = ({
-  label,
-  subLab,
-  color,
-  driverCode,
-  lapNum,
-  drivers,
-  driverColors,
-  year,
-  onSelectDriver,
-  onSelectLap,
-  container,
-}: {
-  label: string;
-  subLab: string;
-  color: string;
-  driverCode: string | null;
-  lapNum: number | null;
-  drivers: ReplayDriversMap;
-  driverColors: Record<string, string>;
-  year: number;
-  onSelectDriver: (d: string) => void;
-  onSelectLap: (l: number) => void;
-  container?: HTMLElement | null;
-}) => {
-  const sortedDrivers = Object.keys(drivers).sort();
-  const laps =
-    driverCode && drivers[driverCode]?.lap
-      ? [...new Set(drivers[driverCode].lap)].sort((a, b) => a - b)
-      : [];
-
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between items-baseline mb-1">
-        <span className={`text-[10px] font-bold uppercase tracking-wider ${color}`}>{label}</span>
-        <span className="text-[10px] text-gray-500 font-medium">{subLab}</span>
-      </div>
-
-      <div className="flex gap-2">
-        {/* Driver Selector */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              className={`flex-1 flex items-center gap-2 bg-gray-900 border border-gray-700 hover:border-gray-500 rounded p-1 px-2 text-left transition-colors min-w-0 ${!driverCode ? 'text-gray-400' : 'text-white'}`}
-            >
-              {driverCode ? (
-                <>
-                  <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-800 shrink-0 border border-gray-600">
-                    <img
-                      src={getDriverImage(driverCode, year)}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  </div>
-                  <span className="font-bold text-xs truncate">{driverCode}</span>
-                </>
-              ) : (
-                <span className="text-xs">Select Driver</span>
-              )}
-              <ChevronDown size={12} className="ml-auto opacity-50" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-56 p-0 bg-gray-900 border-gray-700 text-white"
-            align="start"
-            container={container}
-          >
-            <ScrollArea className="h-64">
-              <div className="p-1">
-                {sortedDrivers.map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => onSelectDriver(d)}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-white/10 rounded transition-colors text-left"
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 border"
-                      style={{ borderColor: driverColors[d] }}
-                    >
-                      <img
-                        src={getDriverImage(d, year)}
-                        className="w-full h-full object-cover object-top"
-                      />
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm tracking-wide">{d}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
-
-        {/* Lap Selector */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              disabled={!driverCode}
-              className={`w-16 flex items-center justify-center gap-1 bg-gray-900 border border-gray-700 hover:border-gray-500 rounded p-1 transition-colors ${!lapNum ? 'text-gray-400' : 'text-white font-mono font-bold'}`}
-            >
-              <span className="text-xs">{lapNum ? `L${lapNum}` : 'Lap'}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-48 p-2 bg-gray-900 border-gray-700 text-white"
-            align="end"
-            container={container}
-          >
-            <div className="mb-2 text-[10px] text-gray-400 uppercase font-bold tracking-wider px-1">
-              Select Lap
-            </div>
-            <ScrollArea className="h-48">
-              <div className="grid grid-cols-4 gap-1">
-                {laps.map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => onSelectLap(l)}
-                    className={`p-1.5 rounded text-xs font-mono text-center transition-colors ${lapNum === l ? 'bg-white text-black font-bold' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
-  );
-};
 export { SessionReplay };
 export default SessionReplay;

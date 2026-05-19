@@ -2,11 +2,12 @@
 import React, {
   createContext,
   useState,
-  useContext,
+  use,
   ReactNode,
   useMemo,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
@@ -31,10 +32,10 @@ const SeasonContext = createContext<SeasonContextType | undefined>(undefined);
 
 export const SeasonProvider = ({ children }: { children: ReactNode }) => {
   const [selectedYear, setSelectedYearState] = useState<number>(defaultAvailableYears[0]);
-  const [hasUserSelectedYear, setHasUserSelectedYear] = useState(false);
+  const hasUserSelectedYearRef = useRef(false);
 
   const setSelectedYear = useCallback((year: number) => {
-    setHasUserSelectedYear(true);
+    hasUserSelectedYearRef.current = true;
     setSelectedYearState(year);
   }, []);
 
@@ -60,21 +61,23 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
       (_, index) => futureScheduleChecks[index]?.data === true
     );
 
-    return [...new Set([...discoveredFutureYears, ...defaultAvailableYears])].sort((a, b) => b - a);
+    return [...new Set([...discoveredFutureYears, ...defaultAvailableYears])].toSorted(
+      (a, b) => b - a
+    );
   }, [futureScheduleChecks]);
 
   useEffect(() => {
     if (availableYears.length === 0) return;
 
-    if (!availableYears.includes(selectedYear)) {
-      setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-      return;
-    }
+    const needsReset =
+      !availableYears.includes(selectedYear) ||
+      (!hasUserSelectedYearRef.current && selectedYear !== availableYears[0]);
 
-    if (!hasUserSelectedYear && selectedYear !== availableYears[0]) {
-      setTimeout(() => setSelectedYearState(availableYears[0]), 0);
-    }
-  }, [availableYears, selectedYear, hasUserSelectedYear]);
+    if (!needsReset) return;
+
+    const timeoutId = setTimeout(() => setSelectedYearState(availableYears[0]), 0);
+    return () => clearTimeout(timeoutId);
+  }, [availableYears, selectedYear]);
 
   const value = useMemo(
     () => ({
@@ -89,7 +92,7 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useSeason = (): SeasonContextType => {
-  const context = useContext(SeasonContext);
+  const context = use(SeasonContext);
   if (context === undefined) {
     throw new Error('useSeason must be used within a SeasonProvider');
   }
