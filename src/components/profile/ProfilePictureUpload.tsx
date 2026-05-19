@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getAccessToken } from '@/lib/supabase';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.fastlytics.app';
@@ -131,7 +132,11 @@ export function ProfilePictureUpload({ open, onClose, onSuccess }: ProfilePictur
       }
 
       const data = await response.json();
-      const avatarUrl = data.url;
+      const avatarUrl = resolveUploadUrl(data.url);
+
+      if (!avatarUrl) {
+        throw new Error('Upload succeeded but no avatar URL was returned');
+      }
 
       // Update the profile in Supabase
       const { error } = await supabase

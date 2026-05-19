@@ -15,6 +15,7 @@ import posthog from 'posthog-js';
 import * as Sentry from '@sentry/react';
 import { logger } from '@/lib/logger';
 import { hasAnalyticsConsent } from '@/lib/consent';
+import { resolveUploadUrl } from '@/lib/upload-url';
 
 export interface Profile {
   id: string;
@@ -186,7 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 {
                   id: userId,
                   full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'User',
-                  avatar_url: userMeta?.avatar_url,
+                  avatar_url: resolveUploadUrl(userMeta?.avatar_url),
                   onboarding_completed: false,
                 },
               ])
@@ -196,13 +197,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (createError) {
               logger.error('Error creating profile:', createError);
             } else {
-              dispatch({ type: 'SET_PROFILE', profile: newProfile });
+              dispatch({
+                type: 'SET_PROFILE',
+                profile: { ...newProfile, avatar_url: resolveUploadUrl(newProfile.avatar_url) },
+              });
             }
           } else {
             logger.error('Error fetching profile:', error);
           }
         } else {
-          dispatch({ type: 'SET_PROFILE', profile: data });
+          dispatch({
+            type: 'SET_PROFILE',
+            profile: { ...data, avatar_url: resolveUploadUrl(data.avatar_url) },
+          });
         }
       } catch (error) {
         logger.error('Unexpected error fetching profile:', error);
