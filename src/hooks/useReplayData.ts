@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { SessionReplayData } from '@/lib/api';
 import { DriverFrameState } from '@/components/replay/replay-utils';
 
@@ -78,126 +78,61 @@ function stepArray<T>(values: T[] | undefined, index: number, fallback: T): T {
 }
 
 /**
- * Pre-compute nearest circuit-point index for every driver at every frame.
- * Uses locality heuristic: starts search from previous best index since cars
- * move continuously along the track, reducing O(frames × points) to ~O(frames × localWindow).
+ * Compute nearest circuit-point index for a single driver at a single frame index.
+ * Uses a locality hint (previous result) to keep it fast for sequential playback.
  */
-function buildTrackIndices(
-  drivers: SessionReplayData['drivers'],
-  circuitPoints: number[][]
-): Record<string, number[]> {
-  if (!circuitPoints || circuitPoints.length === 0) return {};
-  const result: Record<string, number[]> = {};
+function findNearestCircuitPoint(
+  px: number,
+  py: number,
+  circuitPoints: number[][],
+  hint: number
+): number {
   const plen = circuitPoints.length;
-  // Search window around previous best — cars move ~1-3 circuit points per frame
+  if (plen === 0) return 0;
+
   const SEARCH_WINDOW = 30;
+  let bestIdx = hint;
+  let bestDist = Infinity;
 
-  for (const [code, d] of Object.entries(drivers)) {
-    if (!d.x || !d.y) continue;
-    const len = d.x.length;
-    const arr = new Array<number>(len);
-    let prevBest = 0;
-
-    for (let i = 0; i < len; i++) {
-      const px = d.x[i];
-      const py = d.y[i];
-      let bestIdx = prevBest;
-      let bestDist = Infinity;
-
-      // First: search local window around previous best (handles normal movement)
-      const localStart = Math.max(0, prevBest - SEARCH_WINDOW);
-      const localEnd = Math.min(plen - 1, prevBest + SEARCH_WINDOW);
-      for (let j = localStart; j <= localEnd; j++) {
-        const dx = circuitPoints[j][0] - px;
-        const dy = circuitPoints[j][1] - py;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < bestDist) {
-          bestDist = d2;
-          bestIdx = j;
-        }
-      }
-
-      // If local search found something close enough (< 100 units²), use it
-      // Otherwise fall back to sparse global search (every 10th point)
-      if (bestDist > 100) {
-        for (let j = 0; j < plen; j += 10) {
-          const dx = circuitPoints[j][0] - px;
-          const dy = circuitPoints[j][1] - py;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < bestDist) {
-            bestDist = d2;
-            bestIdx = j;
-          }
-        }
-        // Refine around the sparse best
-        const refineStart = Math.max(0, bestIdx - 10);
-        const refineEnd = Math.min(plen - 1, bestIdx + 10);
-        for (let j = refineStart; j <= refineEnd; j++) {
-          const dx = circuitPoints[j][0] - px;
-          const dy = circuitPoints[j][1] - py;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < bestDist) {
-            bestDist = d2;
-            bestIdx = j;
-          }
-        }
-      }
-
-      arr[i] = bestIdx;
-      prevBest = bestIdx;
+  // Local search around hint
+  const localStart = Math.max(0, hint - SEARCH_WINDOW);
+  const localEnd = Math.min(plen - 1, hint + SEARCH_WINDOW);
+  for (let j = localStart; j <= localEnd; j++) {
+    const dx = circuitPoints[j][0] - px;
+    const dy = circuitPoints[j][1] - py;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < bestDist) {
+      bestDist = d2;
+      bestIdx = j;
     }
-    result[code] = arr;
   }
-  return result;
-}
 
-/** Pre-compute tyre age for every driver at every frame in a single forward pass. */
-function buildTyreAges(drivers: SessionReplayData['drivers']): Record<string, number[]> {
-  const result: Record<string, number[]> = {};
-  for (const [code, d] of Object.entries(drivers)) {
-    if (!d.tyre || !d.lap) continue;
-    const len = d.tyre.length;
-    const arr = new Array<number>(len);
-    let stintStartLap = d.lap[0];
-    let currentTyre = d.tyre[0];
-    for (let i = 0; i < len; i++) {
-      if (d.tyre[i] !== currentTyre) {
-        currentTyre = d.tyre[i];
-        stintStartLap = d.lap[i];
+  // If local search didn't find close match, do sparse global search
+  if (bestDist > 100) {
+    for (let j = 0; j < plen; j += 10) {
+      const dx = circuitPoints[j][0] - px;
+      const dy = circuitPoints[j][1] - py;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestDist) {
+        bestDist = d2;
+        bestIdx = j;
       }
-      arr[i] = Math.max(1, d.lap[i] - stintStartLap + 1);
     }
-    result[code] = arr;
+    // Refine around the sparse best
+    const refineStart = Math.max(0, bestIdx - 10);
+    const refineEnd = Math.min(plen - 1, bestIdx + 10);
+    for (let j = refineStart; j <= refineEnd; j++) {
+      const dx = circuitPoints[j][0] - px;
+      const dy = circuitPoints[j][1] - py;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestDist) {
+        bestDist = d2;
+        bestIdx = j;
+      }
+    }
   }
-  return result;
-}
 
-/** Pre-compute active track-status code for every frame. */
-function buildTrackStatusByFrame(
-  time: number[],
-  trackStatuses: SessionReplayData['track_statuses']
-): string[] {
-  if (!time.length) return [];
-  const result = new Array<string>(time.length);
-  let statusIdx = 0;
-  for (let i = 0; i < time.length; i++) {
-    const t = time[i];
-    while (
-      statusIdx < trackStatuses.length &&
-      trackStatuses[statusIdx].end_time !== null &&
-      trackStatuses[statusIdx].end_time! < t
-    ) {
-      statusIdx++;
-    }
-    const active =
-      statusIdx < trackStatuses.length &&
-      t >= trackStatuses[statusIdx].start_time &&
-      (trackStatuses[statusIdx].end_time === null || t <= trackStatuses[statusIdx].end_time)
-        ? trackStatuses[statusIdx].status
-        : '1'; // default green
-    result[i] = active;
-  }
-  return result;
+  return bestIdx;
 }
 
 export function useReplayData(data: SessionReplayData | null, currentTime: number) {
@@ -213,27 +148,38 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     return findFrameWindow(currentTime, timeline);
   }, [timeline, currentTime]);
 
-  // Pre-compute expensive lookups once when data changes (enrich-on-merge)
-  const precomputed = useMemo(() => {
-    if (!data) {
-      return {
-        trackIndices: {} as Record<string, number[]>,
-        tyreAges: {} as Record<string, number[]>,
-        trackStatusByFrame: [] as string[],
-      };
+  // Compute track status for current frame on demand (O(statuses) which is tiny — typically <50 entries)
+  const trackStatusAtFrame = useMemo(() => {
+    if (!data?.time?.length || !data.track_statuses?.length) return '1';
+    const t = data.time[safeIndex] ?? 0;
+    const statuses = data.track_statuses;
+    for (let i = statuses.length - 1; i >= 0; i--) {
+      if (t >= statuses[i].start_time) {
+        if (statuses[i].end_time === null || t <= statuses[i].end_time!) {
+          return statuses[i].status;
+        }
+      }
     }
-    return {
-      trackIndices: buildTrackIndices(data.drivers, data.circuit_points || []),
-      tyreAges: buildTyreAges(data.drivers),
-      trackStatusByFrame: buildTrackStatusByFrame(data.time || [], data.track_statuses || []),
-    };
-  }, [data]);
+    return '1';
+  }, [data, safeIndex]);
+
+  // Provide a minimal array-like interface for backward compat with consumers
+  // that index into trackStatusByFrame[safeIndex]
+  const trackStatusByFrame = useMemo(() => {
+    // Return a sparse array with just the current index populated
+    const arr: string[] = [];
+    arr[safeIndex] = trackStatusAtFrame;
+    return arr;
+  }, [safeIndex, trackStatusAtFrame]);
+
+  // Track index hints for locality-based nearest-point search.
+  const trackIndexHintsRef = useRef<Record<string, number>>({});
 
   const currentFrameDrivers = useMemo(() => {
     if (!data) return {};
     const drivers: Record<string, DriverFrameState> = {};
     const pathDists = data.circuit_distances || [];
-    const { trackIndices } = precomputed;
+    const circuitPoints = data.circuit_points || [];
     const { prevIndex, nextIndex, alpha } = frameWindow;
 
     for (const [code, d] of Object.entries(data.drivers)) {
@@ -241,7 +187,16 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
       const y = interpolateArray(d.y, prevIndex, nextIndex, alpha, NaN);
       if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
-      const trackIdx = trackIndices[code]?.[safeIndex] ?? 0;
+      // Lazy per-frame circuit point lookup using locality hint
+      let trackIdx = 0;
+      if (circuitPoints.length > 0) {
+        /* eslint-disable react-hooks/refs */
+        const hint = trackIndexHintsRef.current[code] ?? 0;
+        trackIdx = findNearestCircuitPoint(x, y, circuitPoints, hint);
+        trackIndexHintsRef.current[code] = trackIdx;
+        /* eslint-enable react-hooks/refs */
+      }
+
       const refDist =
         pathDists.length > 0 && trackIdx < pathDists.length
           ? pathDists[trackIdx]
@@ -267,7 +222,8 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
       };
     }
     return drivers;
-  }, [data, safeIndex, precomputed, frameWindow]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, safeIndex, frameWindow]);
 
   const totalDuration = useMemo(() => {
     if (!data?.time?.length) return 0;
@@ -331,11 +287,26 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
   const tyreAgeMap = useMemo(() => {
     if (!data?.drivers) return {};
     const result: Record<string, number> = {};
-    for (const [code] of Object.entries(data.drivers)) {
-      result[code] = precomputed.tyreAges[code]?.[frameWindow.prevIndex] ?? 0;
+    const idx = frameWindow.prevIndex;
+    for (const [code, d] of Object.entries(data.drivers)) {
+      if (!d.tyre || !d.lap || idx >= d.tyre.length) {
+        result[code] = 0;
+        continue;
+      }
+      // Compute tyre age at current index by scanning back to find stint start
+      const currentTyre = d.tyre[idx];
+      const currentLap = d.lap[idx];
+      let stintStartLap = currentLap;
+      // Scan backwards (limited window) to find where tyre changed
+      const scanStart = Math.max(0, idx - 5000); // ~3.3 minutes at 25fps
+      for (let i = idx - 1; i >= scanStart; i--) {
+        if (d.tyre[i] !== currentTyre) break;
+        stintStartLap = d.lap[i];
+      }
+      result[code] = Math.max(1, currentLap - stintStartLap + 1);
     }
     return result;
-  }, [data, frameWindow.prevIndex, precomputed.tyreAges]);
+  }, [data, frameWindow.prevIndex]);
 
   return {
     safeIndex,
@@ -345,6 +316,6 @@ export function useReplayData(data: SessionReplayData | null, currentTime: numbe
     driverLapStartTimes,
     driverLapStartIndices,
     tyreAgeMap,
-    trackStatusByFrame: precomputed.trackStatusByFrame,
+    trackStatusByFrame,
   };
 }

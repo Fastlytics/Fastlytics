@@ -571,22 +571,31 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return () => clearTimeout(timer);
   }, [showSpeedHeatmap, selectedDriver, data]);
 
-  // Throttle telemetry sparkline updates — only recompute every ~160ms (4 frames at 25fps)
+  // Throttle telemetry sparkline updates — only recompute every ~160ms
   const [throttledTime, setThrottledTime] = useState(currentTime);
   const throttleTimerRef = useRef<number | null>(null);
+  const lastThrottledTimeRef = useRef(currentTime);
   useEffect(() => {
+    // Skip if timer already pending
     if (throttleTimerRef.current !== null) return;
+    // Skip if time hasn't moved enough (< 80ms of playback)
+    if (Math.abs(currentTime - lastThrottledTimeRef.current) < 0.08) return;
     throttleTimerRef.current = window.setTimeout(() => {
+      lastThrottledTimeRef.current = currentTime;
       setThrottledTime(currentTime);
       throttleTimerRef.current = null;
     }, 160);
+  }, [currentTime]);
+
+  // Cleanup throttle timer on unmount
+  useEffect(() => {
     return () => {
       if (throttleTimerRef.current !== null) {
         window.clearTimeout(throttleTimerRef.current);
         throttleTimerRef.current = null;
       }
     };
-  }, [currentTime]);
+  }, []);
 
   const recentSpeedHistory = useMemo(() => {
     if (!selectedDriver) return [];
@@ -844,13 +853,19 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         'relative flex flex-col bg-[#09090b] text-white overflow-hidden',
         isFullscreen
           ? 'h-screen w-screen'
-          : 'w-full max-w-5xl mx-auto h-[calc(100vh-200px)] min-h-[400px] rounded-xl border border-white/[0.06] shadow-2xl'
+          : 'w-full rounded-xl border border-white/[0.06] shadow-2xl min-h-[400px]',
+        !isFullscreen && !className && 'h-[calc(100vh-200px)]',
+        className
       )}
     >
       <div className="flex flex-1 relative overflow-hidden">
         <div
           ref={containerRef}
           className="absolute inset-0 overflow-hidden bg-[#0c0c0e] cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
           {isFullscreen && (
             <div className="absolute top-6 left-6 flex items-center gap-2 z-50 pointer-events-none select-none">
