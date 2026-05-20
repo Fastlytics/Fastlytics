@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { FeatureGate } from './FeatureGate';
 import { Link } from 'react-router-dom';
-import { m } from 'motion/react';
 import { LockKeyIcon } from 'hugeicons-react';
 
 interface GatedRouteProps {
@@ -9,6 +8,7 @@ interface GatedRouteProps {
   description?: string;
   requiredTier?: 'pro' | 'ultra';
   children: React.ReactNode;
+  gateShellClassName?: string;
 }
 
 /**
@@ -20,6 +20,7 @@ export const GatedRoute = ({
   description,
   requiredTier,
   children,
+  gateShellClassName,
 }: GatedRouteProps) => {
   const { user, loading, isSubscribed } = useAuth();
 
@@ -28,7 +29,7 @@ export const GatedRoute = ({
       <div className="min-h-[400px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin">
-            <svg className="size-7 text-[#ff2a1a]" fill="none" viewBox="0 0 24 24">
+            <svg className="size-7 text-red-400" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -44,53 +45,97 @@ export const GatedRoute = ({
               />
             </svg>
           </div>
-          <span className="text-xs text-white/40 uppercase tracking-wider">Loading…</span>
+          <span className="text-xs text-white/40">Loading…</span>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return <FeatureGate featureName={featureName} description={description} />;
+    return (
+      <FeatureGate
+        featureName={featureName}
+        description={description}
+        shellClassName={gateShellClassName}
+      />
+    );
   }
 
   if (requiredTier && !isSubscribed(requiredTier)) {
+    const tierLabel = requiredTier === 'ultra' ? 'Ultra' : 'Pro';
+
+    const overlayCard = (
+      <div className="w-full max-w-md rounded-xl border border-white/[0.08] bg-[#0d0d10]/95 p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-6">
+        <div className="inline-flex size-10 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
+          <LockKeyIcon className="size-4 text-red-400" />
+        </div>
+
+        <h2 className="mt-4 text-[16px] font-semibold tracking-tight text-white">{featureName}</h2>
+        <p className="mt-1 text-[13px] leading-relaxed text-white/50">
+          Upgrade to {tierLabel} to unlock {featureName}
+        </p>
+        <p className="mt-2 text-[11px] text-white/30">
+          Historical archive, unlimited replay, deeper analysis
+        </p>
+
+        <Link
+          to="/pricing"
+          className="mt-5 inline-flex h-9 items-center rounded-lg bg-white px-4 text-[13px] font-semibold text-black transition-colors hover:bg-white/90"
+        >
+          View Plans
+        </Link>
+      </div>
+    );
+
+    if (gateShellClassName) {
+      return (
+        <div
+          className={`relative flex w-full flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0c] ${gateShellClassName}`}
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] opacity-40" />
+
+          <div className="relative z-10 flex h-11 shrink-0 items-center border-b border-white/[0.06] bg-white/[0.02] px-4">
+            <div className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-white/20" />
+              <span className="size-2 rounded-full bg-white/10" />
+              <span className="size-2 rounded-full bg-white/10" />
+            </div>
+          </div>
+
+          <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center p-5 sm:p-6">
+            {overlayCard}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="relative flex items-center justify-center overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] py-10 md:py-14">
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
-        <div className="relative z-10 text-center max-w-md mx-auto px-6 md:px-8">
-          <m.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-            className="inline-flex items-center justify-center size-14 md:w-16 md:h-16 rounded-2xl bg-[#ff2a1a]/10 mb-5 md:mb-6"
-          >
-            <LockKeyIcon className="size-7 md:w-8 md:h-8 text-[#ff2a1a]" />
-          </m.div>
-          <m.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-          >
-            <h3 className="text-xl md:text-2xl uppercase font-semibold text-white mb-2 md:mb-3">
-              {featureName}
-            </h3>
-            <p className="text-xs md:text-sm text-white/40 mb-7 md:mb-8 max-w-[280px] md:max-w-full mx-auto uppercase tracking-wider">
-              Upgrade to {requiredTier === 'ultra' ? 'Ultra' : 'Pro'} to unlock {featureName}
-            </p>
-          </m.div>
-          <m.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
+      <div className="w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0c]">
+        <div className="flex w-full flex-col gap-5 px-5 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
+              <LockKeyIcon className="size-4 text-red-400" />
+            </div>
+
+            <div className="min-w-0 text-left">
+              <h2 className="text-[16px] font-semibold tracking-tight text-white">{featureName}</h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-white/50">
+                Upgrade to {tierLabel} to unlock {featureName}
+              </p>
+              <p className="mt-2 text-[11px] text-white/30">
+                Historical archive, unlimited replay, deeper analysis
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center lg:self-center">
             <Link
               to="/pricing"
-              className="inline-flex items-center justify-center h-11 md:h-12 px-6 md:px-8 text-sm md:text-base font-semibold text-white bg-[#ff2a1a] hover:bg-[#e02617] rounded-lg transition-all hover:shadow-[0_0_20px_rgba(255,42,26,0.25)]"
+              className="inline-flex h-9 items-center rounded-lg bg-white px-4 text-[13px] font-semibold text-black transition-colors hover:bg-white/90"
             >
               View Plans
             </Link>
-          </m.div>
+          </div>
         </div>
       </div>
     );

@@ -1,11 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BreadcrumbSegment } from '@/lib/breadcrumbs';
 import { useSeason } from '@/contexts/SeasonContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { useState, useRef, useEffect } from 'react';
 import { m, AnimatePresence } from 'motion/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ArrowUpRight01Icon } from 'hugeicons-react';
 import UpgradeModal from '@/components/payments/UpgradeModal';
 
 export interface BreadcrumbBarProps {
@@ -21,13 +21,10 @@ export interface BreadcrumbBarProps {
 export function BreadcrumbBar({ segments, onSearchClick }: BreadcrumbBarProps) {
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const { user, profile, isSubscribed } = useAuth();
+  const location = useLocation();
   const [seasonOpen, setSeasonOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const seasonRef = useRef<HTMLDivElement>(null);
-
-  const currentSeasonYear = getCurrentSeasonYear();
-  const isFreeTierUser = !!user && !isSubscribed('pro');
-  const isYearLocked = (year: number) => isFreeTierUser && year < currentSeasonYear;
 
   const years = availableYears.length > 0 ? availableYears : [2026, 2025, 2024, 2023, 2022];
 
@@ -146,46 +143,43 @@ export function BreadcrumbBar({ segments, onSearchClick }: BreadcrumbBarProps) {
                   className="absolute right-0 top-full z-50 mt-1.5 min-w-[140px] overflow-hidden rounded-lg border border-white/[0.04] bg-[#0a0a0a] shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
                 >
                   <div className="p-1">
-                    {years.map((year) => {
-                      const locked = isYearLocked(year);
-                      return (
-                        <button
-                          key={year}
-                          type="button"
-                          onClick={() => {
-                            if (locked) {
-                              setSeasonOpen(false);
-                              setUpgradeOpen(true);
-                              return;
-                            }
-                            setSelectedYear(year);
-                            setSeasonOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
-                            locked
-                              ? 'cursor-not-allowed text-white/50'
-                              : year === selectedYear
-                                ? 'bg-white/[0.04] text-white'
-                                : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
-                          }`}
-                        >
-                          <span className="font-mono tabular-nums">{year}</span>
-                          {locked && (
-                            <span className="rounded border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-sky-300">
-                              PRO
-                            </span>
-                          )}
-                          {!locked && year === selectedYear && (
-                            <span className="size-1 rounded-full bg-white/60" />
-                          )}
-                        </button>
-                      );
-                    })}
+                    {years.map((year) => (
+                      <button
+                        key={year}
+                        type="button"
+                        onClick={() => {
+                          setSelectedYear(year);
+                          setSeasonOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
+                          year === selectedYear
+                            ? 'bg-white/[0.04] text-white'
+                            : 'text-white/80 hover:bg-white/[0.03] hover:text-white'
+                        }`}
+                      >
+                        <span className="font-mono tabular-nums">{year}</span>
+                        {year === selectedYear && (
+                          <span className="size-1 rounded-full bg-white/60" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </m.div>
               )}
             </AnimatePresence>
           </div>
+
+          {/* Upgrade CTA for free users */}
+          {user && !isSubscribed('pro') && (
+            <button
+              type="button"
+              onClick={() => setUpgradeOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-200 transition-all hover:border-amber-300/30 hover:bg-amber-400/16 hover:text-amber-100"
+            >
+              <ArrowUpRight01Icon className="size-3.5" />
+              Upgrade
+            </button>
+          )}
 
           {/* User avatar or Sign in */}
           {user ? (
@@ -210,7 +204,11 @@ export function BreadcrumbBar({ segments, onSearchClick }: BreadcrumbBarProps) {
         </div>
       </header>
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} cancelPath="" />
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        cancelPath={location.pathname}
+      />
     </>
   );
 }

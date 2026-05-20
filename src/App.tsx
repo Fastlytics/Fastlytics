@@ -246,12 +246,7 @@ const App = () => (
                   path="/standings/progression"
                   element={
                     <DashboardLayout>
-                      <GatedRoute
-                        featureName="Championship Progression"
-                        description="Track how driver standings evolved throughout the season with interactive charts and race-by-race point progression."
-                      >
-                        <ChampionshipProgression />
-                      </GatedRoute>
+                      <ChampionshipProgression />
                     </DashboardLayout>
                   }
                 />
@@ -259,12 +254,7 @@ const App = () => (
                   path="/team-pace"
                   element={
                     <DashboardLayout>
-                      <GatedRoute
-                        featureName="Team Pace Analysis"
-                        description="Analyze team performance across race weekends with detailed pace comparisons, gap analysis, and consistency metrics."
-                      >
-                        <TeamPaceAnalysis />
-                      </GatedRoute>
+                      <TeamPaceAnalysis />
                     </DashboardLayout>
                   }
                 />

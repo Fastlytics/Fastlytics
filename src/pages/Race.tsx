@@ -2,7 +2,6 @@
 import { useMemo, useEffect, useCallback, useRef, useReducer } from 'react';
 import { SEO } from '@/components/layout/SEO';
 import { useParams, useSearchParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import HistoricalAccessPrompt from '@/components/common/HistoricalAccessPrompt';
 import {
   fetchSpecificRaceResults,
   fetchAvailableSessions,
@@ -17,7 +16,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { getCountryCode } from '@/utils/countryUtils';
-import { APIError } from '@/lib/api-client';
 import { RaceHeader } from '@/pages/Race/RaceHeader';
 import { RaceTabStrip } from '@/pages/Race/RaceTabStrip';
 import {
@@ -248,9 +246,6 @@ const Race = () => {
   });
 
   const effectiveSessionResults = selectedSession === 'Summary' ? summaryResults : sessionResults;
-  const isHistoricalAccessLocked =
-    availableSessionsError instanceof APIError && availableSessionsError.status === 402;
-
   // Derived highlights
   const raceWinner = useMemo(
     () =>
@@ -429,26 +424,6 @@ const Race = () => {
           <div className="size-6 animate-spin rounded-full border-2 border-white/[0.06] border-t-white/60" />
           <div className="text-[13px] text-white/60">Loading session data…</div>
         </div>
-      </div>
-    );
-  }
-
-  if (isHistoricalAccessLocked) {
-    return (
-      <div className="text-white">
-        <SEO
-          title={`${eventName} ${year}: weekend breakdown`}
-          description={`Explore the ${year} ${eventName} with lap data, telemetry overlays, strategy context, session results, and pace analysis.`}
-          keywords={[
-            'race analysis',
-            'f1 telemetry',
-            'race results',
-            'tire strategy',
-            eventName,
-            `${year} race weekend`,
-          ]}
-        />
-        <HistoricalAccessPrompt year={year} eventName={eventName} />
       </div>
     );
   }

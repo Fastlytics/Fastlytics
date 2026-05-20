@@ -1,7 +1,7 @@
 // knip-ignore
 import { LandingReplayAvailable, LandingReplayChunk, LandingReplayMetadata } from '@/lib/api';
 import { getGapSortKey } from '@/components/replay/replay-utils';
-import { ChartType, HeroStrategyStint, HeroViewModel } from './hero-types';
+import { ChartType, HeroChartSeries, HeroStrategyStint, HeroViewModel } from './hero-types';
 
 const DEFAULT_TRACK_PATH =
   'M70 110 C40 80 60 40 110 45 L170 48 C210 50 225 35 210 20 C190 2 220 -5 260 8 C310 24 340 55 330 80 C322 98 290 96 288 112 C286 130 340 126 355 108 C372 88 365 112 350 120 C330 130 260 135 220 118 C190 105 170 115 140 112 C100 108 85 125 70 110Z';
@@ -140,6 +140,7 @@ export const DEFAULT_HERO_VIEW: HeroViewModel = {
       valueLabel: 'km/h',
     },
   ],
+  comparisonChartSeries: [],
   trackPath: DEFAULT_TRACK_PATH,
   carDots: [],
   sectorBadges: [
@@ -162,6 +163,12 @@ export const DEFAULT_HERO_VIEW: HeroViewModel = {
   driverColor: '#ff8700',
   currentLap: 5,
   lastLapStr: '1:32.456',
+  bestLapStr: '1:31.802',
+  lastLapDelta: '+0.654',
+  lastLapDeltaTint: 'text-yellow-400',
+  intervalToAhead: '+0.732',
+  aheadDriverCode: 'LEC',
+  comparisonOpponentCode: 'LEC',
   s1: '28.123',
   s2: '42.891',
   s3: '21.442',
@@ -433,6 +440,111 @@ export function buildHeroChartData(
       points,
       valueLabel: unitLabel,
     },
+  ];
+}
+
+function buildComparisonChartData(
+  driverCode: string,
+  opponentCode: string | null,
+  chunk: LandingReplayChunk,
+  colors: Record<string, string>,
+  frameIndex: number,
+  chartType: ChartType
+): HeroChartSeries[] {
+  if (!opponentCode) return [];
+
+  const driver = chunk.drivers[driverCode];
+  const opponent = chunk.drivers[opponentCode];
+  if (!driver || !opponent || chunk.time.length === 0) return [];
+
+  const cappedFrame = clamp(frameIndex, 0, chunk.time.length - 1);
+  const sampleCount = 20;
+  const availablePoints = cappedFrame + 1;
+  const step = Math.max(1, Math.floor(availablePoints / sampleCount));
+  const indices = Array.from({ length: sampleCount }, (_, idx) =>
+    Math.min(idx * step, cappedFrame)
+  );
+  if (indices[indices.length - 1] !== cappedFrame) indices[indices.length - 1] = cappedFrame;
+
+  const driverColor = colors[driverCode] || '#ffffff';
+  const opponentColor = colors[opponentCode] || '#888888';
+
+  const getValues = (d: typeof driver, i: number) => {
+    switch (chartType) {
+      case 'throttle':
+        return d.throttle?.[i] || 0;
+      case 'brake': {
+        const brake = d.brake?.[i] || 0;
+        return brake <= 1 ? brake * 100 : brake;
+      }
+      case 'rpm':
+        return d.rpm?.[i] || 0;
+      case 'speed':
+      default:
+        return d.speed?.[i] || 0;
+    }
+  };
+
+  const driverValues = indices.map((i) => getValues(driver, i));
+  const opponentValues = indices.map((i) => getValues(opponent, i));
+  const allValues = [...driverValues, ...opponentValues];
+
+  let minBound: number;
+  let maxBound: number;
+  let unitLabel: string;
+
+  switch (chartType) {
+    case 'throttle':
+    case 'brake':
+      minBound = 0;
+      maxBound = 100;
+      unitLabel = '%';
+      break;
+    case 'rpm':
+      minBound = Math.min(...allValues, 7000);
+      maxBound = Math.max(...allValues, 12000);
+      unitLabel = 'RPM';
+      break;
+    case 'speed':
+    default:
+      minBound = Math.min(...allValues);
+      maxBound = Math.max(...allValues, 1);
+      unitLabel = 'km/h';
+      break;
+  }
+
+  const range = Math.max(maxBound - minBound, 1);
+  const chartW = 400;
+  const chartH = 120;
+  const plotH = 100;
+
+  const makeSeries = (code: string, values: number[], color: string, opacity: number) => {
+    const points = values.map((value, pointIndex) => ({
+      x: sampleCount === 1 ? 0 : (pointIndex / (sampleCount - 1)) * chartW,
+      y: chartH - 10 - ((value - minBound) / range) * plotH,
+      value: Math.round(value * 10) / 10,
+      label:
+        chartType === 'rpm'
+          ? `${Math.round(value)} RPM`
+          : chartType === 'speed'
+            ? `${Math.round(value)} km/h`
+            : `${Math.round(value)}%`,
+    }));
+
+    return {
+      key: `${code}-vs-${opponentCode}-${chartType}`,
+      path: buildPolylinePath(points.map((p) => ({ x: p.x, y: p.y }))),
+      color,
+      strokeWidth: code === driverCode ? 2 : 1.5,
+      opacity,
+      points,
+      valueLabel: unitLabel,
+    };
+  };
+
+  return [
+    makeSeries(driverCode, driverValues, driverColor, 1),
+    makeSeries(opponentCode, opponentValues, opponentColor, 0.55),
   ];
 }
 
@@ -711,6 +823,58 @@ export function buildLandingHeroView(
   const s3Tint = sectorTint(s3Time, prevS3, fastestSectors.s3);
   const lapElapsed = formatHeroLapTime(currentTime - lapStartTime);
 
+  const allDriverLaps = prepared.completedLapsByDriver[activeDriverCode] || [];
+  const personalBest = allDriverLaps.reduce<PreparedCompletedLap | null>((best, lap) => {
+    if (lap.is_personal_best) return lap;
+    if (!best || (lap.seconds && lap.seconds < (best.seconds || Infinity))) return lap;
+    return best;
+  }, null);
+  const bestLapStr = personalBest?.time_str || '--';
+  const bestLapSeconds = personalBest?.seconds ?? null;
+
+  let lastLapDelta = '--';
+  let lastLapDeltaTint = '';
+  if (lastCompleted?.seconds != null && bestLapSeconds != null) {
+    const diff = lastCompleted.seconds - bestLapSeconds;
+    const sign = diff >= 0 ? '+' : '';
+    lastLapDelta = `${sign}${diff.toFixed(3)}`;
+    if (lastCompleted.is_personal_best) {
+      lastLapDeltaTint = 'text-purple-400';
+    } else if (diff < 0.1) {
+      lastLapDeltaTint = 'text-emerald-400';
+    } else if (diff < 0.5) {
+      lastLapDeltaTint = 'text-yellow-400';
+    } else {
+      lastLapDeltaTint = 'text-red-400/60';
+    }
+  }
+
+  const activePos = timingRows.findIndex((row) => row.driver === activeDriverCode);
+  const aheadDriverCode = activePos > 0 ? timingRows[activePos - 1].driver : null;
+  const p2Code = timingRows.length > 1 ? timingRows[1].driver : null;
+
+  const comparisonOpponent =
+    aheadDriverCode || (p2Code && p2Code !== activeDriverCode ? p2Code : null);
+
+  const intervalValue = activeDriver?.interval?.[sampleIndex];
+  const intervalToAhead =
+    activePos <= 0
+      ? 'Leader'
+      : typeof intervalValue === 'string'
+        ? intervalValue
+        : intervalValue != null
+          ? `+${intervalValue.toFixed(3)}`
+          : '--';
+
+  const comparisonChartSeries = buildComparisonChartData(
+    activeDriverCode,
+    comparisonOpponent,
+    chunk,
+    driverColors,
+    sampleIndex,
+    chartType
+  );
+
   return {
     titleBar: `Race Desk - ${titleLocation}`,
     statusLabel,
@@ -727,6 +891,13 @@ export function buildLandingHeroView(
     driverColor: driverColors?.[activeDriverCode] || '#ffffff',
     currentLap: activeLap,
     lastLapStr,
+    bestLapStr,
+    lastLapDelta,
+    lastLapDeltaTint,
+    intervalToAhead,
+    aheadDriverCode,
+    comparisonOpponentCode: comparisonOpponent,
+    comparisonChartSeries,
     s1: s1Live,
     s2: s2Live,
     s3: s3Live,

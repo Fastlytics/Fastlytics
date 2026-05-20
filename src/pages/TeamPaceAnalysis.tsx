@@ -12,6 +12,8 @@ import { useChartExport } from '@/hooks/useChartExport';
 import { fetchTeamPaceEvent, fetchTeamPaceSummary } from '@/lib/api';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { useSeason } from '@/contexts/SeasonContext';
+import { GatedRoute } from '@/components/common/GatedRoute';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 import { PaceEvolutionSection } from './team-pace-analysis/PaceEvolutionSection';
 import { PaceGapSection } from './team-pace-analysis/PaceGapSection';
@@ -38,6 +40,7 @@ const TeamPaceAnalysis = () => {
   const { trackEvent, trackPageView } = useAnalytics();
   const [searchParams] = useSearchParams();
   const { selectedYear: seasonYear } = useSeason();
+  const isHistoricalSeason = seasonYear < getCurrentSeasonYear();
   const {
     chartRef: evolutionRef,
     exportChart: exportEvolution,
@@ -142,114 +145,120 @@ const TeamPaceAnalysis = () => {
         ]}
       />
 
-      <div className="space-y-5 text-white">
-        <TeamPaceHeader
-          selectedYear={state.selectedYear}
-          selectedEventSlug={selectedEventSlug}
-          summaryList={summaryQuery.data || []}
-          onYearChange={(year) => {
-            dispatch({ type: 'yearChanged', year });
-            trackEvent('season_changed', { page: 'team_pace', year });
-          }}
-          onEventChange={(eventSlug) => {
-            dispatch({ type: 'eventChanged', eventSlug });
-            trackEvent('event_changed', {
-              page: 'team_pace',
-              event_slug: eventSlug,
-              year: state.selectedYear,
-            });
-          }}
-        />
+      <GatedRoute
+        featureName="Team Pace Analysis"
+        description="Analyze team performance across race weekends with detailed pace comparisons, gap analysis, and consistency metrics."
+        requiredTier={isHistoricalSeason ? 'pro' : undefined}
+      >
+        <div className="space-y-5 text-white">
+          <TeamPaceHeader
+            selectedYear={state.selectedYear}
+            selectedEventSlug={selectedEventSlug}
+            summaryList={summaryQuery.data || []}
+            onYearChange={(year) => {
+              dispatch({ type: 'yearChanged', year });
+              trackEvent('season_changed', { page: 'team_pace', year });
+            }}
+            onEventChange={(eventSlug) => {
+              dispatch({ type: 'eventChanged', eventSlug });
+              trackEvent('event_changed', {
+                page: 'team_pace',
+                event_slug: eventSlug,
+                year: state.selectedYear,
+              });
+            }}
+          />
 
-        {isLoading ? (
-          <div className={`${CARD_CONTAINER} flex h-[400px] items-center justify-center`}>
-            <div className="flex flex-col items-center gap-3">
-              <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
-              <span className="text-[12px] text-white/50">Loading pace analysis…</span>
+          {isLoading ? (
+            <div className={`${CARD_CONTAINER} flex h-[400px] items-center justify-center`}>
+              <div className="flex flex-col items-center gap-3">
+                <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+                <span className="text-[12px] text-white/50">Loading pace analysis…</span>
+              </div>
             </div>
-          </div>
-        ) : hasError ? (
-          <div
-            className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20 text-center`}
-          >
-            <AlertCircleIcon className="mb-3 size-10 text-white/20" />
-            <h3 className="text-[15px] font-medium text-white">Data unavailable</h3>
-            <p className="mt-1 max-w-md text-[13px] text-white/60">{errorMessage}</p>
-          </div>
-        ) : eventQuery.data ? (
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-5"
-          >
-            <PaceEvolutionSection
-              chartRef={evolutionRef}
-              data={evolutionData}
-              activeTeams={activeTeams}
-              selectedYear={state.selectedYear}
-              selectedEventName={selectedEventName}
-              getTeamColor={getTeamColorHex}
-              onExport={(format) =>
-                exportEvolution(format, {
-                  title: 'Pace Evolution',
-                  subtitle: 'Team rank per session across the weekend',
-                  year: state.selectedYear,
-                  event: selectedEventName,
-                })
-              }
-              isExporting={isExportingEvolution}
-            />
-
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <PaceGapSection
-                chartRef={paceGapRef}
-                data={paceGapData}
-                selectedSession={selectedSession}
-                availableSessions={availableSessions}
-                onSessionChange={(session) => {
-                  dispatch({ type: 'sessionChanged', session });
-                  trackEvent('session_changed', {
-                    page: 'team_pace',
-                    session,
-                    event: selectedEventName,
-                    year: state.selectedYear,
-                  });
-                }}
+          ) : hasError ? (
+            <div
+              className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20 text-center`}
+            >
+              <AlertCircleIcon className="mb-3 size-10 text-white/20" />
+              <h3 className="text-[15px] font-medium text-white">Data unavailable</h3>
+              <p className="mt-1 max-w-md text-[13px] text-white/60">{errorMessage}</p>
+            </div>
+          ) : eventQuery.data ? (
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-5"
+            >
+              <PaceEvolutionSection
+                chartRef={evolutionRef}
+                data={evolutionData}
+                activeTeams={activeTeams}
+                selectedYear={state.selectedYear}
+                selectedEventName={selectedEventName}
                 getTeamColor={getTeamColorHex}
                 onExport={(format) =>
-                  exportPaceGap(format, {
-                    title: 'Pace Gap',
-                    subtitle: `Gap to leader — ${selectedSession}`,
+                  exportEvolution(format, {
+                    title: 'Pace Evolution',
+                    subtitle: 'Team rank per session across the weekend',
                     year: state.selectedYear,
                     event: selectedEventName,
-                    session: selectedSession,
                   })
                 }
-                isExporting={isExportingPaceGap}
+                isExporting={isExportingEvolution}
               />
 
-              <PeakVsConsistentSection
-                chartRef={scatterRef}
-                data={scatterData}
-                onExport={(format) =>
-                  exportScatter(format, {
-                    title: 'Peak vs Consistent',
-                    subtitle: 'Fastest lap vs median pace',
-                    year: state.selectedYear,
-                    event: selectedEventName,
-                  })
-                }
-                isExporting={isExportingScatter}
-              />
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <PaceGapSection
+                  chartRef={paceGapRef}
+                  data={paceGapData}
+                  selectedSession={selectedSession}
+                  availableSessions={availableSessions}
+                  onSessionChange={(session) => {
+                    dispatch({ type: 'sessionChanged', session });
+                    trackEvent('session_changed', {
+                      page: 'team_pace',
+                      session,
+                      event: selectedEventName,
+                      year: state.selectedYear,
+                    });
+                  }}
+                  getTeamColor={getTeamColorHex}
+                  onExport={(format) =>
+                    exportPaceGap(format, {
+                      title: 'Pace Gap',
+                      subtitle: `Gap to leader — ${selectedSession}`,
+                      year: state.selectedYear,
+                      event: selectedEventName,
+                      session: selectedSession,
+                    })
+                  }
+                  isExporting={isExportingPaceGap}
+                />
+
+                <PeakVsConsistentSection
+                  chartRef={scatterRef}
+                  data={scatterData}
+                  onExport={(format) =>
+                    exportScatter(format, {
+                      title: 'Peak vs Consistent',
+                      subtitle: 'Fastest lap vs median pace',
+                      year: state.selectedYear,
+                      event: selectedEventName,
+                    })
+                  }
+                  isExporting={isExportingScatter}
+                />
+              </div>
+            </m.div>
+          ) : (
+            <div className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20`}>
+              <p className="text-[13px] text-white/50">Select an event to view analysis</p>
             </div>
-          </m.div>
-        ) : (
-          <div className={`${CARD_CONTAINER} flex flex-col items-center justify-center py-20`}>
-            <p className="text-[13px] text-white/50">Select an event to view analysis</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </GatedRoute>
     </>
   );
 };

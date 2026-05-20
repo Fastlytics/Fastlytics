@@ -4,9 +4,11 @@ import { m } from 'motion/react';
 import { useRaceLayoutContext } from '@/pages/Race/race-layout-context';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { SessionReplay } from '@/components/replay/SessionReplay';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 export default function ReplaySection() {
   const ctx = useRaceLayoutContext();
+  const isHistoricalSeason = ctx.year < getCurrentSeasonYear();
 
   // Build the replay session target
   let replaySessionTarget = ctx.analysisSession;
@@ -22,6 +24,8 @@ export default function ReplaySection() {
     <GatedRoute
       featureName="Session Replay"
       description="Real-time car positions and data overlays"
+      requiredTier={isHistoricalSeason ? 'pro' : undefined}
+      gateShellClassName="h-[85vh]"
     >
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
         <div className="relative h-[85vh] w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0c]">

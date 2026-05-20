@@ -9,6 +9,7 @@ import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
 import { CARD_CONTAINER } from '@/lib/card-styles';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 type LapAnalysisMode = 'positions' | 'history' | 'pace' | 'gap';
 
@@ -25,6 +26,7 @@ export default function LapAnalysisSection() {
   const ctx = useRaceLayoutContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const { trackInteraction } = useAnalytics();
+  const isHistoricalSeason = ctx.year < getCurrentSeasonYear();
 
   const isRaceOrSprint = ctx.selectedSession === 'R' || ctx.selectedSession === 'Sprint';
 
@@ -79,6 +81,8 @@ export default function LapAnalysisSection() {
     <GatedRoute
       featureName="Lap Analysis"
       description="Position tracking, lap time history, pace distribution, and gap analysis"
+      requiredTier={isHistoricalSeason ? 'pro' : undefined}
+      gateShellClassName="min-h-[640px]"
     >
       <m.div
         initial={{ opacity: 0 }}
