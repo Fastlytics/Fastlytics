@@ -5,6 +5,7 @@ import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 
 const navLinks = [
   { label: 'Features', href: '/features' },
+  { label: 'MCP', href: '/mcp' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'About', href: '/about' },
   { label: 'FAQ', href: '/faq' },
