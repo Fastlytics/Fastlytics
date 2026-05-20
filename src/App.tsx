@@ -52,6 +52,7 @@ import Pricing from './pages/Pricing';
 import Features from './pages/Features';
 import MCPServer from './pages/MCPServer';
 import IsolatedLogo from './pages/IsolatedLogo';
+import TeamPaceGapExport from './pages/export/TeamPaceGapExport';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/layout/ScrollToTop';
@@ -184,6 +185,7 @@ const App = () => (
 
                 {/* Isolated Logo Route purely for screenshot automation via Playwright */}
                 <Route path="/logo-isolated" element={<IsolatedLogo />} />
+                <Route path="/export/team-pace-gap" element={<TeamPaceGapExport />} />
 
                 {/* Auth routes - public */}
                 <Route path="/signup" element={<SignUp />} />

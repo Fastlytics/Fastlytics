@@ -1,5 +1,5 @@
 // knip-ignore
-import { useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'hugeicons-react';
@@ -9,11 +9,13 @@ import { m } from 'motion/react';
 import { SEO } from '@/components/layout/SEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
+import { exportTeamPaceGapPng } from '@/lib/export-api';
 import { fetchTeamPaceEvent, fetchTeamPaceSummary } from '@/lib/api';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { useSeason } from '@/contexts/SeasonContext';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import type { PngExportPreset } from '@/lib/premium-export';
 
 import { PaceEvolutionSection } from './team-pace-analysis/PaceEvolutionSection';
 import { PaceGapSection } from './team-pace-analysis/PaceGapSection';
@@ -47,15 +49,12 @@ const TeamPaceAnalysis = () => {
     isExporting: isExportingEvolution,
   } = useChartExport();
   const {
-    chartRef: paceGapRef,
-    exportChart: exportPaceGap,
-    isExporting: isExportingPaceGap,
-  } = useChartExport();
-  const {
     chartRef: scatterRef,
     exportChart: exportScatter,
     isExporting: isExportingScatter,
   } = useChartExport();
+  const paceGapRef = useRef<HTMLDivElement | null>(null);
+  const [isExportingPaceGap, setIsExportingPaceGap] = useState(false);
   const [state, dispatch] = useReducer(teamPaceAnalysisReducer, seasonYear, createInitialState);
 
   useEffect(() => {
@@ -123,6 +122,36 @@ const TeamPaceAnalysis = () => {
   const activeTeams = useMemo(
     () => getActiveTeams(eventQuery.data || null, selectedSession),
     [eventQuery.data, selectedSession]
+  );
+
+  const handlePaceGapExport = useCallback(
+    async (preset: PngExportPreset) => {
+      if (!paceGapData.length) return;
+
+      setIsExportingPaceGap(true);
+      try {
+        await exportTeamPaceGapPng({
+          preset,
+          meta: {
+            title: 'Pace Gap',
+            subtitle: `Gap to leader across ${selectedSession}`,
+            year: state.selectedYear,
+            event: selectedEventName,
+            session: selectedSession,
+          },
+          rows: paceGapData.map((row) => ({
+            teamName: row.teamName,
+            medianTime: row.medianTime,
+            gapToLeader: row.gapToLeader,
+            rank: row.rank,
+            teamColor: getTeamColorHex(row.teamName),
+          })),
+        });
+      } finally {
+        setIsExportingPaceGap(false);
+      }
+    },
+    [paceGapData, selectedEventName, selectedSession, state.selectedYear]
   );
 
   const isLoading = summaryQuery.isLoading || eventQuery.isLoading;
@@ -225,15 +254,7 @@ const TeamPaceAnalysis = () => {
                     });
                   }}
                   getTeamColor={getTeamColorHex}
-                  onExport={(format) =>
-                    exportPaceGap(format, {
-                      title: 'Pace Gap',
-                      subtitle: `Gap to leader — ${selectedSession}`,
-                      year: state.selectedYear,
-                      event: selectedEventName,
-                      session: selectedSession,
-                    })
-                  }
+                  onExport={handlePaceGapExport}
                   isExporting={isExportingPaceGap}
                 />
 
