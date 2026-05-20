@@ -8,10 +8,12 @@ import { BrakeChart } from '@/components/charts/BrakeChart';
 import { RPMChart } from '@/components/charts/RPMChart';
 import { GearMapChart } from '@/components/charts/GearMapChart';
 import { DRSChart } from '@/components/charts/DRSChart';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 export default function TelemetrySection() {
   const ctx = useRaceLayoutContext();
   const [selectedLap] = useState<string | number>('fastest');
+  const isHistoricalSeason = ctx.year < getCurrentSeasonYear();
 
   const defaultDriver =
     ctx.profile?.favorite_driver ||
@@ -23,6 +25,8 @@ export default function TelemetrySection() {
     <GatedRoute
       featureName="Advanced Telemetry"
       description="Speed, throttle, brake, RPM, gear, and DRS data"
+      requiredTier={isHistoricalSeason ? 'pro' : undefined}
+      gateShellClassName="min-h-[760px]"
     >
       <m.div
         initial={{ opacity: 0 }}

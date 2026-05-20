@@ -5,7 +5,6 @@ import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { m, AnimatePresence } from 'motion/react';
 import { useSeason } from '@/contexts/SeasonContext';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { ArrowUpRight01Icon } from 'hugeicons-react';
 import { toast } from 'sonner';
 
@@ -41,9 +40,7 @@ const SeasonDropdown: React.FC<{
   selectedYear: number;
   availableYears: number[];
   onSelect: (year: number) => void;
-  isYearLocked?: (year: number) => boolean;
-  onLockedSelect?: () => void;
-}> = ({ selectedYear, availableYears, onSelect, isYearLocked, onLockedSelect }) => {
+}> = ({ selectedYear, availableYears, onSelect }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -56,7 +53,6 @@ const SeasonDropdown: React.FC<{
   }, []);
 
   const years = availableYears.length > 0 ? availableYears : [2026, 2025, 2024, 2023, 2022];
-  const hasLockedYears = years.some((year) => isYearLocked?.(year));
 
   return (
     <div ref={ref} className="relative">
@@ -102,51 +98,25 @@ const SeasonDropdown: React.FC<{
               </p>
             </div>
             <div className="border-t border-white/[0.04] px-1.5 pb-1.5">
-              {years.map((year) => {
-                const isLocked = isYearLocked?.(year) ?? false;
-
-                return (
-                  <button
-                    key={year}
-                    type="button"
-                    onClick={() => {
-                      if (isLocked) {
-                        setOpen(false);
-                        onLockedSelect?.();
-                        return;
-                      }
-
-                      onSelect(year);
-                      setOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
-                      isLocked
-                        ? 'cursor-not-allowed text-white/28 hover:bg-white/[0.02]'
-                        : year === selectedYear
-                          ? 'bg-red-500/[0.08] text-red-400'
-                          : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
-                    }`}
-                  >
-                    <span className="tracking-wide">{year} Season</span>
-                    <span className="flex items-center gap-2">
-                      {isLocked && (
-                        <span className="rounded-full border border-sky-300/18 bg-sky-300/8 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-200/75">
-                          Pro
-                        </span>
-                      )}
-                      {!isLocked && year === selectedYear && (
-                        <span className="size-1.5 rounded-full bg-red-400" />
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {years.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => {
+                    onSelect(year);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                    year === selectedYear
+                      ? 'bg-red-500/[0.08] text-red-400'
+                      : 'text-white/60 hover:bg-white/[0.04] hover:text-white'
+                  }`}
+                >
+                  <span className="tracking-wide">{year} Season</span>
+                  {year === selectedYear && <span className="size-1.5 rounded-full bg-red-400" />}
+                </button>
+              ))}
             </div>
-            {hasLockedYears && (
-              <div className="border-t border-white/[0.04] px-3 py-2.5 text-[10px] font-medium uppercase tracking-[0.16em] text-white/28">
-                Historical seasons require Pro.
-              </div>
-            )}
           </m.div>
         )}
       </AnimatePresence>
@@ -251,9 +221,6 @@ const DashboardNavbar = () => {
   const cancelSearch = new URLSearchParams(location.search);
   cancelSearch.delete('checkout');
   const cancelPath = `${location.pathname}${cancelSearch.toString() ? `?${cancelSearch.toString()}` : ''}`;
-  const currentSeasonYear = getCurrentSeasonYear();
-  const isFreeTierUser = !!user && !isSubscribed('pro');
-  const isYearLocked = (year: number) => isFreeTierUser && year < currentSeasonYear;
 
   return (
     <>
@@ -298,8 +265,6 @@ const DashboardNavbar = () => {
               selectedYear={selectedYear}
               availableYears={availableYears}
               onSelect={setSelectedYear}
-              isYearLocked={isYearLocked}
-              onLockedSelect={() => setUpgradeOpen(true)}
             />
 
             {user && !isSubscribed('pro') && (

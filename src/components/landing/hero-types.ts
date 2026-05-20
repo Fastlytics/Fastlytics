@@ -59,6 +59,13 @@ export type HeroViewModel = {
   driverColor: string;
   currentLap: number;
   lastLapStr: string;
+  bestLapStr: string;
+  lastLapDelta: string;
+  lastLapDeltaTint: string;
+  intervalToAhead: string;
+  aheadDriverCode: string | null;
+  comparisonOpponentCode: string | null;
+  comparisonChartSeries: HeroChartSeries[];
   s1: string;
   s2: string;
   s3: string;

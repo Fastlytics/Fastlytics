@@ -6,9 +6,11 @@ import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonCha
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
 import { CARD_CONTAINER } from '@/lib/card-styles';
+import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
 export default function HeadToHeadSection() {
   const ctx = useRaceLayoutContext();
+  const isHistoricalSeason = ctx.year < getCurrentSeasonYear();
 
   const [circuitDrivers, setCircuitDrivers] = useState<{
     driver1: string;
@@ -40,7 +42,12 @@ export default function HeadToHeadSection() {
   }
 
   return (
-    <GatedRoute featureName="Head to Head" description="Driver comparison with telemetry overlays">
+    <GatedRoute
+      featureName="Head to Head"
+      description="Driver comparison with telemetry overlays"
+      requiredTier={isHistoricalSeason ? 'pro' : undefined}
+      gateShellClassName="min-h-[760px]"
+    >
       <m.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

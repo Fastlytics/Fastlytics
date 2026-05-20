@@ -174,7 +174,9 @@ export function AccountMenu({ open, onClose, triggerRef, collapsed = false }: Ac
           <MenuItem
             icon={HelpCircleIcon}
             label="Help & Support"
-            onClick={() => handleNavigate('/faq')}
+            onClick={() =>
+              window.open('https://docs.fastlytics.app', '_blank', 'noopener,noreferrer')
+            }
           />
           <MenuItem icon={CommandIcon} label="Keyboard shortcuts" onClick={handleShortcuts} />
 

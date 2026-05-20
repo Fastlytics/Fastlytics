@@ -122,12 +122,16 @@ function TelemetryPanel({
               driverColor={hero.driverColor}
             />
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Lap Timer', value: hero.lapElapsed },
-              { label: 'Last Lap', value: hero.lastLapStr },
-              { label: 'Speed', value: `${hero.speedKph} km/h` },
-              { label: 'Status', value: hero.statusLabel },
+              { label: 'Lap Timer', value: hero.lapElapsed, tint: '' },
+              { label: 'Best Lap', value: hero.bestLapStr, tint: '' },
+              { label: 'vs Best', value: hero.lastLapDelta, tint: hero.lastLapDeltaTint },
+              {
+                label: hero.aheadDriverCode ? `To ${hero.aheadDriverCode}` : 'Interval',
+                value: hero.intervalToAhead,
+                tint: '',
+              },
             ].map((item) => (
               <div
                 key={item.label}
@@ -136,7 +140,9 @@ function TelemetryPanel({
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
                   {item.label}
                 </div>
-                <div className="mt-1 text-[18px] font-semibold tabular-nums text-white">
+                <div
+                  className={`mt-1 text-[18px] font-semibold tabular-nums text-white ${item.tint}`}
+                >
                   {item.value}
                 </div>
               </div>
@@ -144,40 +150,6 @@ function TelemetryPanel({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function TelemetryBarsPanel({
-  hero,
-  selectedDriverCode,
-}: {
-  hero: HeroViewModel;
-  selectedDriverCode: string | null;
-}) {
-  return (
-    <div className="bg-[#0c0c0e] p-5">
-      <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/30">
-        Telemetry {selectedDriverCode ? `- ${selectedDriverCode}` : ''}
-      </div>
-      <div className="space-y-3">
-        {hero.telemetry.map((item) => (
-          <div key={item.label} className="flex items-center gap-3">
-            <span className="w-16 text-[12px] text-white/35">{item.label}</span>
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-              <div
-                className={`h-full rounded-full transition-[width] duration-150 ${item.color}`}
-                style={{ width: `${item.value}%` }}
-              />
-            </div>
-            {item.suffix && (
-              <span className="w-20 text-right text-[12px] tabular-nums text-white/45">
-                {item.suffix}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -505,27 +477,51 @@ function ExpandedLayout({
         <SectorBoardPanel hero={hero} />
         <div className="min-h-0 overflow-y-auto bg-[#0c0c0e] p-5">
           <div className="mb-3 text-[13px] font-medium uppercase tracking-wider text-white/30">
-            Telemetry and Strategy
+            {hero.comparisonOpponentCode
+              ? `${hero.comparisonOpponentCode} vs ${selectedDriverCode}`
+              : 'Comparison'}
           </div>
-          <div className="space-y-3">
-            {hero.telemetry.map((item) => (
-              <div key={item.label} className="flex items-center gap-3">
-                <span className="w-16 text-[12px] text-white/35">{item.label}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                  <div
-                    className={`h-full rounded-full transition-[width] duration-150 ${item.color}`}
-                    style={{ width: `${item.value}%` }}
+          {hero.comparisonChartSeries.length > 0 ? (
+            <div className="relative overflow-hidden rounded-lg border border-white/[0.04] bg-[#09090b]">
+              <svg viewBox="0 0 400 120" className="w-full" preserveAspectRatio="xMidYMid meet">
+                {[30, 60, 90].map((y) => (
+                  <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.04)" />
+                ))}
+                {hero.comparisonChartSeries.map((series) => (
+                  <path
+                    key={series.key}
+                    d={series.path}
+                    fill="none"
+                    stroke={series.color}
+                    strokeWidth={series.strokeWidth}
+                    opacity={series.opacity ?? 1}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
                   />
+                ))}
+              </svg>
+              <div className="flex items-center justify-center gap-4 py-2">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: hero.driverColor }}
+                  />
+                  <span className="text-[11px] text-white/45">{selectedDriverCode}</span>
                 </div>
-                {item.suffix && (
-                  <span className="w-20 text-right text-[12px] tabular-nums text-white/45">
-                    {item.suffix}
-                  </span>
+                {hero.comparisonOpponentCode && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
+                    <span className="text-[11px] text-white/45">{hero.comparisonOpponentCode}</span>
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
-          <div className="mt-5 flex gap-1.5">
+            </div>
+          ) : (
+            <div className="flex h-32 items-center justify-center text-[12px] text-white/20">
+              No comparison data
+            </div>
+          )}
+          <div className="mt-4 flex gap-1.5">
             {hero.strategy.map((stint) => (
               <div
                 key={`${stint.compound}-${stint.laps}`}

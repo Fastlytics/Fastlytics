@@ -7,6 +7,7 @@ const navLinks = [
   { label: 'Features', href: '/features' },
   { label: 'MCP', href: '/mcp' },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Docs', href: 'https://docs.fastlytics.app', external: true },
   { label: 'About', href: '/about' },
   { label: 'FAQ', href: '/faq' },
 ];
@@ -31,6 +32,7 @@ const LandingNavbar = () => {
   }, [location.pathname]);
 
   const isActive = (href: string) => {
+    if (href.startsWith('https://')) return false;
     if (href.startsWith('/#')) return location.pathname === '/';
     return location.pathname === href;
   };
@@ -56,6 +58,7 @@ const LandingNavbar = () => {
             {navLinks.map((item) => {
               const active = isActive(item.href);
               const isAnchor = item.href.startsWith('/#');
+              const isExternal = 'external' in item;
 
               if (isAnchor) {
                 return (
@@ -67,6 +70,20 @@ const LandingNavbar = () => {
                         ? 'bg-white/[0.08] text-white'
                         : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
                     }`}
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-white/50 transition-all duration-200 hover:text-white/80 hover:bg-white/[0.04]"
                   >
                     {item.label}
                   </a>
@@ -161,6 +178,7 @@ const LandingNavbar = () => {
             {navLinks.map((item) => {
               const active = isActive(item.href);
               const isAnchor = item.href.startsWith('/#');
+              const isExternal = 'external' in item;
 
               if (isAnchor) {
                 return (
@@ -170,6 +188,21 @@ const LandingNavbar = () => {
                     className={`rounded-lg px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
                       active ? 'bg-white/[0.06] text-white' : 'text-white/60 hover:text-white'
                     }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg px-3.5 py-2.5 text-[14px] font-medium text-white/60 transition-colors hover:text-white"
                     onClick={() => setMobileOpen(false)}
                   >
                     {item.label}

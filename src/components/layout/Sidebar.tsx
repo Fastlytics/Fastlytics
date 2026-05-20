@@ -305,19 +305,6 @@ const Sidebar = ({ collapsed: controlledCollapsed, onToggleCollapse }: SidebarPr
             !showExpanded ? 'px-1.5' : 'px-3'
           }`}
         >
-          {/* Free tier upgrade CTA (expanded only) */}
-          {showExpanded && tier === 'free' && (
-            <Link
-              to="/settings"
-              className="mb-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
-            >
-              <span className="rounded border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-amber-300">
-                FREE
-              </span>
-              <span>Upgrade</span>
-            </Link>
-          )}
-
           {/* Account row */}
           {!showExpanded ? (
             <div className="flex flex-col items-center gap-1">
