@@ -7,7 +7,7 @@ interface EventHeroCardProps {
   displayDate: string;
   location: string;
   countryCode?: string;
-  roundNumber: number;
+  roundNumber?: number;
   isSprint?: boolean;
   nextSession?: { name: string; date: Date } | null;
   onClick?: () => void;
@@ -108,9 +108,11 @@ const EventHeroCard: React.FC<EventHeroCardProps> = ({
                   Sprint
                 </span>
               )}
-              <span className="font-mono text-[12px] text-white/60">
-                R{String(roundNumber).padStart(2, '0')}
-              </span>
+              {roundNumber != null && (
+                <span className="font-mono text-[12px] text-white/60">
+                  R{String(roundNumber).padStart(2, '0')}
+                </span>
+              )}
             </div>
           </div>
 

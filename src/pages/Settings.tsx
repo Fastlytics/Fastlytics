@@ -17,24 +17,36 @@ import {
   Copy01Icon,
   Delete02Icon,
   PlusSignIcon,
+  StarIcon,
 } from 'hugeicons-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import {
+  fetchDriverStandings,
+  fetchTeamStandings,
+  type DriverStanding,
+  type TeamStanding,
+} from '@/lib/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { SEO } from '@/components/layout/SEO';
 import { request } from '@/lib/api-client';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getTeamLogo } from '@/lib/teamUtils';
+import { getDriverImage } from '@/utils/imageMapping';
+import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
 import UpgradeModal from '@/components/payments/UpgradeModal';
 import { ProfilePictureUpload } from '@/components/profile/ProfilePictureUpload';
+import { CheckIcon } from '@/pages/auth/icons';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type SettingsSection =
   | 'profile'
+  | 'favorites'
   | 'preferences'
   | 'privacy'
   | 'appearance'
@@ -93,6 +105,7 @@ function savePreferences(prefs: UserPreferences) {
 
 const NAV_ITEMS: { key: SettingsSection; label: string; icon: typeof UserIcon }[] = [
   { key: 'profile', label: 'Profile', icon: UserIcon },
+  { key: 'favorites', label: 'Favorites', icon: StarIcon },
   { key: 'preferences', label: 'Preferences', icon: Settings02Icon },
   { key: 'privacy', label: 'Privacy', icon: EyeIcon },
   { key: 'appearance', label: 'Appearance', icon: PaintBoardIcon },
@@ -526,6 +539,9 @@ const Settings = () => {
                   onEmailOtpChange={setEmailOtp}
                   onVerifyEmailOtp={handleVerifyEmailOtp}
                 />
+              )}
+              {activeSection === 'favorites' && (
+                <FavoritesPanel user={user} profile={profile} onRefreshProfile={refreshProfile} />
               )}
               {activeSection === 'preferences' && (
                 <PreferencesPanel preferences={preferences} onUpdate={updatePreference} />
@@ -1101,6 +1117,208 @@ function ProfilePanel({
       </div>
 
       <ProfilePictureUpload open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} />
+    </>
+  );
+}
+
+// ─── Favorites Panel ─────────────────────────────────────────────────────────
+
+function FavoritesPanel({
+  user,
+  profile,
+  onRefreshProfile,
+}: {
+  user: NonNullable<ReturnType<typeof useAuth>['user']>;
+  profile: NonNullable<ReturnType<typeof useAuth>['profile']>;
+  onRefreshProfile: () => Promise<void>;
+}) {
+  const { trackEvent } = useAnalytics();
+  const [drivers, setDrivers] = useState<DriverStanding[]>([]);
+  const [teams, setTeams] = useState<TeamStanding[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDriver, setSelectedDriver] = useState<string | null>(profile.favorite_driver);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(profile.favorite_team);
+  const [saving, setSaving] = useState(false);
+  const year = getCurrentSeasonYear();
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const resolvedYear = await resolveSeasonYear(fetchDriverStandings);
+        const [d, t] = await Promise.all([
+          fetchDriverStandings(resolvedYear),
+          fetchTeamStandings(resolvedYear),
+        ]);
+        setDrivers(d);
+        setTeams(t);
+      } catch {
+        toast.error('Failed to load F1 data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const saveFavorites = async (driver: string | null, team: string | null) => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ favorite_driver: driver, favorite_team: team })
+        .eq('id', user.id);
+      if (error) throw error;
+      setSelectedDriver(driver);
+      setSelectedTeam(team);
+      toast.success('Favorites updated');
+      trackEvent('favorites_updated', { driver, team });
+      await onRefreshProfile();
+    } catch (e: unknown) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const favoriteDriverName = profile.favorite_driver
+    ? (drivers.find((d) => d.code === profile.favorite_driver)?.name ?? profile.favorite_driver)
+    : null;
+
+  const handleSelectDriver = (code: string) => {
+    setSelectedDriver(code === selectedDriver ? null : code);
+  };
+
+  const handleSelectTeam = (name: string) => {
+    setSelectedTeam(name === selectedTeam ? null : name);
+  };
+
+  if (loading) {
+    return (
+      <>
+        <SectionHeader
+          title="Favorites"
+          description="Your favorite driver and team. They'll be highlighted across the app."
+        />
+        <div className="flex items-center justify-center py-20">
+          <div className="size-5 animate-spin rounded-full border-2 border-white/10 border-t-red-500" />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SectionHeader
+        title="Favorites"
+        description="Your favorite driver and team. They'll be highlighted across the app."
+      />
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Driver Selection */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-[13px] font-medium text-white/80">Favorite Driver</h3>
+            {profile.favorite_driver && (
+              <p className="mt-1 text-[12px] text-white/40">
+                Current: <span className="text-white/80">{favoriteDriverName}</span>
+              </p>
+            )}
+          </div>
+          <div className="scrollbar-hide max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+            {drivers.map((driver) => (
+              <button
+                key={driver.code}
+                onClick={() => handleSelectDriver(driver.code)}
+                className={cn(
+                  'group relative flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-all',
+                  selectedDriver === driver.code
+                    ? 'border-red-500/40 bg-red-500/[0.06]'
+                    : 'border-white/[0.04] bg-white/[0.01] hover:border-white/[0.1] hover:bg-white/[0.03]'
+                )}
+              >
+                <Avatar className="size-10 shrink-0 border border-white/[0.06]">
+                  <AvatarImage
+                    src={getDriverImage(driver.code, year)}
+                    className="bg-zinc-800 object-cover object-top"
+                  />
+                  <AvatarFallback className="bg-white/[0.04] text-[10px] text-white/60">
+                    {driver.code}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold text-white">{driver.name}</div>
+                  <div className="mt-0.5 text-[11px] text-white/30">{driver.team}</div>
+                </div>
+                {selectedDriver === driver.code && (
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500">
+                    <CheckIcon className="size-3 text-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Team Selection */}
+        <div>
+          <div className="mb-4">
+            <h3 className="text-[13px] font-medium text-white/80">Favorite Team</h3>
+            {profile.favorite_team && (
+              <p className="mt-1 text-[12px] text-white/40">
+                Current: <span className="text-white/80">{profile.favorite_team}</span>
+              </p>
+            )}
+          </div>
+          <div className="scrollbar-hide max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+            {teams.map((team) => (
+              <button
+                key={team.team}
+                onClick={() => handleSelectTeam(team.team)}
+                className={cn(
+                  'group relative flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all',
+                  selectedTeam === team.team
+                    ? 'border-red-500/40 bg-red-500/[0.06]'
+                    : 'border-white/[0.04] bg-white/[0.01] hover:border-white/[0.1] hover:bg-white/[0.03]'
+                )}
+              >
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] p-2">
+                  <img
+                    src={getTeamLogo(team.team) || ''}
+                    alt={team.team}
+                    className="size-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold text-white">{team.team}</div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[11px] tabular-nums text-white/40">
+                    <span>{team.points} pts</span>
+                    <span className="text-white/15">·</span>
+                    <span>{team.wins} wins</span>
+                  </div>
+                </div>
+                {selectedTeam === team.team && (
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500">
+                    <CheckIcon className="size-3 text-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {(selectedDriver !== profile.favorite_driver || selectedTeam !== profile.favorite_team) && (
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={() => saveFavorites(selectedDriver, selectedTeam)}
+            disabled={saving}
+            className="rounded-lg bg-white px-6 py-2.5 text-[13px] font-semibold text-black transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.08)] disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save changes'}
+          </button>
+        </div>
+      )}
     </>
   );
 }
