@@ -56,6 +56,11 @@ export interface RaceLayoutContext {
   getSessionWindowLapTime: (r: DetailedRaceResult) => string | null | undefined;
   getSessionWindowLaps: (r: DetailedRaceResult) => number;
 
+  // Schedule UI state (time format toggle, clock tick)
+  is24Hour: boolean;
+  toggle24Hour: () => void;
+  now: Date;
+
   // Profile (for favourite-driver highlighting)
   profile: Profile | null;
 }

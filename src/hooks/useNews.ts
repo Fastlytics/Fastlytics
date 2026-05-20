@@ -8,6 +8,8 @@ import {
   fetchNewsPreferences,
   updateNewsPreferences,
   type NewsFeedParams,
+  type NewsNotification,
+  type DiscussionNotification,
 } from '@/lib/news-api';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -102,12 +104,51 @@ export function useAllDiscussionNotifications() {
 /** Mark notifications as read. */
 export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
+  const unreadKey = newsKeys.notifications();
+  const allKey = [...newsKeys.all, 'all-notifications'] as const;
 
   return useMutation({
     mutationFn: ({ notificationIds, all }: { notificationIds?: string[]; all?: boolean }) =>
       markNotificationsRead(notificationIds, all),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: newsKeys.notifications() });
+    onMutate: async ({ notificationIds, all }) => {
+      await queryClient.cancelQueries({ queryKey: unreadKey });
+      await queryClient.cancelQueries({ queryKey: allKey });
+
+      const prevUnread = queryClient.getQueryData<NewsNotification[]>(unreadKey);
+      const prevAll = queryClient.getQueryData<NewsNotification[]>(allKey);
+
+      if (all) {
+        queryClient.setQueryData<NewsNotification[]>(unreadKey, []);
+        if (prevAll) {
+          queryClient.setQueryData<NewsNotification[]>(
+            allKey,
+            prevAll.map((n) => ({ ...n, read: true }))
+          );
+        }
+      } else if (notificationIds && notificationIds.length > 0) {
+        if (prevUnread) {
+          queryClient.setQueryData<NewsNotification[]>(
+            unreadKey,
+            prevUnread.filter((n) => !notificationIds.includes(n.id))
+          );
+        }
+        if (prevAll) {
+          queryClient.setQueryData<NewsNotification[]>(
+            allKey,
+            prevAll.map((n) => (notificationIds.includes(n.id) ? { ...n, read: true } : n))
+          );
+        }
+      }
+
+      return { prevUnread, prevAll };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prevUnread) queryClient.setQueryData(unreadKey, context.prevUnread);
+      if (context?.prevAll) queryClient.setQueryData(allKey, context.prevAll);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: unreadKey });
+      queryClient.invalidateQueries({ queryKey: allKey });
     },
   });
 }
@@ -140,12 +181,51 @@ export function useUpdateNewsPreferences() {
 /** Mark discussion notifications as read. */
 export function useMarkDiscussionNotificationsRead() {
   const queryClient = useQueryClient();
+  const unreadKey = [...newsKeys.all, 'discussion-notifications'] as const;
+  const allKey = [...newsKeys.all, 'all-discussion-notifications'] as const;
 
   return useMutation({
     mutationFn: ({ notificationIds, all }: { notificationIds?: string[]; all?: boolean }) =>
       markDiscussionNotificationsRead(notificationIds, all),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...newsKeys.all, 'discussion-notifications'] });
+    onMutate: async ({ notificationIds, all }) => {
+      await queryClient.cancelQueries({ queryKey: unreadKey });
+      await queryClient.cancelQueries({ queryKey: allKey });
+
+      const prevUnread = queryClient.getQueryData<DiscussionNotification[]>(unreadKey);
+      const prevAll = queryClient.getQueryData<DiscussionNotification[]>(allKey);
+
+      if (all) {
+        queryClient.setQueryData<DiscussionNotification[]>(unreadKey, []);
+        if (prevAll) {
+          queryClient.setQueryData<DiscussionNotification[]>(
+            allKey,
+            prevAll.map((n) => ({ ...n, read: true }))
+          );
+        }
+      } else if (notificationIds && notificationIds.length > 0) {
+        if (prevUnread) {
+          queryClient.setQueryData<DiscussionNotification[]>(
+            unreadKey,
+            prevUnread.filter((n) => !notificationIds.includes(n.id))
+          );
+        }
+        if (prevAll) {
+          queryClient.setQueryData<DiscussionNotification[]>(
+            allKey,
+            prevAll.map((n) => (notificationIds.includes(n.id) ? { ...n, read: true } : n))
+          );
+        }
+      }
+
+      return { prevUnread, prevAll };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prevUnread) queryClient.setQueryData(unreadKey, context.prevUnread);
+      if (context?.prevAll) queryClient.setQueryData(allKey, context.prevAll);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: unreadKey });
+      queryClient.invalidateQueries({ queryKey: allKey });
     },
   });
 }

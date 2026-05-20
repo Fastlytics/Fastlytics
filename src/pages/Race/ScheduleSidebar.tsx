@@ -1,14 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { EventSessionSchedule, AvailableSession } from '@/lib/api';
 import EventHeroCard from '@/components/calendar/EventHeroCard';
+import { getCountryCode } from '@/utils/countryUtils';
 
 interface ScheduleSidebarProps {
   sessionSchedule: EventSessionSchedule | undefined;
-  scheduleHeroDate: string;
-  scheduleHeroCountryCode: string | undefined;
-  nextSessionDate: { name: string; date: Date } | null;
-  countdown: { days: number; hours: number; minutes: number; seconds: number } | null;
+  roundNumber?: number;
   is24Hour: boolean;
   setIs24Hour: (val: boolean) => void;
   trackInteraction: (action: string, data: Record<string, unknown>) => void;
@@ -20,10 +18,7 @@ interface ScheduleSidebarProps {
 
 export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   sessionSchedule,
-  scheduleHeroDate,
-  scheduleHeroCountryCode,
-  nextSessionDate,
-  countdown,
+  roundNumber,
   is24Hour,
   setIs24Hour,
   trackInteraction,
@@ -32,6 +27,33 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   setSelectedSession,
   setShowAnalysis,
 }) => {
+  const scheduleHeroDate = useMemo(() => {
+    if (!sessionSchedule?.sessions.length) return '';
+    const dates = sessionSchedule.sessions.map((s) => new Date(s.date));
+    const first = new Date(Math.min(...dates.map((d) => d.getTime())));
+    const last = new Date(Math.max(...dates.map((d) => d.getTime())));
+    const firstStr = first.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    const lastStr = last.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return `${firstStr} — ${lastStr}`;
+  }, [sessionSchedule]);
+
+  const scheduleHeroCountryCode = useMemo(
+    () =>
+      getCountryCode(sessionSchedule?.location) !== 'xx'
+        ? getCountryCode(sessionSchedule?.location)
+        : getCountryCode(sessionSchedule?.country),
+    [sessionSchedule]
+  );
+
+  const nextSessionDate = useMemo(() => {
+    if (!sessionSchedule?.sessions.length) return null;
+    const upcoming = sessionSchedule.sessions
+      .map((s) => ({ name: s.name, date: new Date(s.date) }))
+      .filter((s) => s.date.getTime() > now.getTime())
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    return upcoming[0] ?? null;
+  }, [sessionSchedule, now]);
+
   if (!sessionSchedule) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -78,15 +100,13 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   return (
     <div className="space-y-10">
       <EventHeroCard
-        eyebrow="Upcoming Session"
         title={sessionSchedule.eventName}
         displayDate={scheduleHeroDate}
         location={sessionSchedule.location}
         countryCode={scheduleHeroCountryCode}
-        countryAlt={sessionSchedule.country || sessionSchedule.location}
+        roundNumber={roundNumber}
         isSprint={sessionSchedule.eventFormat?.toLowerCase().includes('sprint')}
         nextSession={nextSessionDate}
-        countdownFallbackLabel={countdown ? undefined : 'Session in Progress'}
       />
 
       <div>

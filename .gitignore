@@ -113,6 +113,9 @@ skills
 .sisyphus
 .pytest_cache/
 .ruff_cache/
+docs
+telemetry_data
+reports
 .gitignore
 bun.lockb
 stylelint.config.mjs

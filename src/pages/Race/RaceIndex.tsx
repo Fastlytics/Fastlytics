@@ -41,14 +41,10 @@ export default function RaceIndex() {
   return (
     <ScheduleSidebar
       sessionSchedule={ctx.sessionSchedule}
-      scheduleHeroDate=""
-      scheduleHeroCountryCode={undefined}
-      nextSessionDate={null}
-      countdown={null}
-      is24Hour={true}
-      setIs24Hour={() => {}}
+      is24Hour={ctx.is24Hour}
+      setIs24Hour={ctx.toggle24Hour}
       trackInteraction={() => {}}
-      now={new Date()}
+      now={ctx.now}
       availableSessions={ctx.availableSessions}
       setSelectedSession={ctx.setSelectedSession}
       setShowAnalysis={() => {}}

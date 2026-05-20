@@ -481,6 +481,9 @@ const Race = () => {
     effectiveTestingWindow,
     getSessionWindowLapTime,
     getSessionWindowLaps,
+    is24Hour: uiState.is24Hour,
+    toggle24Hour: () => dispatchUI({ type: 'toggle24Hour' }),
+    now: uiState.now,
     profile,
   };
 
