@@ -50,6 +50,7 @@ import Contact from './pages/Contact';
 import PressKit from './pages/PressKit';
 import Pricing from './pages/Pricing';
 import Features from './pages/Features';
+import MCPServer from './pages/MCPServer';
 import IsolatedLogo from './pages/IsolatedLogo';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -117,6 +118,16 @@ const App = () => (
                   element={
                     <LandingLayout>
                       <Features />
+                    </LandingLayout>
+                  }
+                />
+
+                {/* MCP Server Page */}
+                <Route
+                  path="/mcp"
+                  element={
+                    <LandingLayout>
+                      <MCPServer />
                     </LandingLayout>
                   }
                 />
