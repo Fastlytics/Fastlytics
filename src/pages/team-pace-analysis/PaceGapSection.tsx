@@ -11,7 +11,7 @@ import {
 } from '@/lib/recharts-lazy';
 import { Cell } from '@/lib/recharts-cell';
 
-import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import PngExportMenu from '@/components/charts/PngExportMenu';
 import {
   Select,
   SelectContent,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import type { PngExportPreset } from '@/lib/premium-export';
 import type { TeamPaceSession } from '@/lib/api';
 
 interface PaceGapSectionProps {
@@ -29,7 +30,7 @@ interface PaceGapSectionProps {
   availableSessions: string[];
   onSessionChange: (session: string) => void;
   getTeamColor: (teamName: string) => string;
-  onExport: (format: 'png' | 'svg' | 'csv') => Promise<void> | void;
+  onExport: (preset: PngExportPreset) => Promise<void> | void;
   isExporting: boolean;
 }
 
@@ -66,7 +67,7 @@ export const PaceGapSection = ({
             ))}
           </SelectContent>
         </Select>
-        <ChartExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
+        <PngExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
       </div>
     </div>
 
