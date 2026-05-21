@@ -17,6 +17,7 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 
 interface TelemetryChartWrapperProps<T> {
@@ -206,6 +207,12 @@ const TelemetryChartWrapper = <T,>({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType={title.toLowerCase().replace(/\s+/g, '_')}
+            title={`${title} — ${selectedDriverObj?.name || selectedDriver || 'Driver'} — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{ year, event, session, driver: selectedDriver, lap: selectedLap }}
           />
         </div>
 

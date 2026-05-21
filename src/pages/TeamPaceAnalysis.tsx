@@ -261,6 +261,8 @@ const TeamPaceAnalysis = () => {
                   getTeamColor={getTeamColorHex}
                   onExport={handlePaceGapExport}
                   isExporting={isExportingPaceGap}
+                  year={state.selectedYear}
+                  eventName={selectedEventName}
                 />
 
                 <PeakVsConsistentSection
@@ -275,6 +277,8 @@ const TeamPaceAnalysis = () => {
                     })
                   }
                   isExporting={isExportingScatter}
+                  year={state.selectedYear}
+                  eventName={selectedEventName}
                 />
               </div>
             </m.div>

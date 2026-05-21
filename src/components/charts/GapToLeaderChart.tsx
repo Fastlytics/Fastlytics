@@ -19,6 +19,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { Button } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useLapChartData, MIN_DRIVERS } from '@/hooks/useLapChartData';
 import { DriverMultiSelect } from '@/components/charts/shared/DriverMultiSelect';
@@ -143,6 +144,12 @@ const GapToLeaderChart: React.FC<GapToLeaderChartProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="gap_to_leader"
+            title={`Gap to Leader — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{ year, event, session, drivers: driversToDisplay }}
           />
           {!staticData && availableDrivers && (
             <DriverMultiSelect

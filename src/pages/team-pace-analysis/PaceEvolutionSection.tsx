@@ -12,6 +12,7 @@ import {
 } from '@/lib/recharts-lazy';
 
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import type { CustomLegendProps, CustomTooltipProps } from '@/types';
 
@@ -85,6 +86,12 @@ export const PaceEvolutionSection = ({
         <p className="mt-0.5 text-[11px] text-white/40">Rank per session</p>
       </div>
       <ChartExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
+      <ChartSaveMenu
+        chartType="pace_evolution"
+        title={`Pace Evolution — ${selectedEventName} ${selectedYear}`}
+        raceName={`${selectedYear} ${selectedEventName}`}
+        chartConfig={{ year: selectedYear, event: selectedEventName, teams: activeTeams }}
+      />
     </div>
     <div className="h-[400px] w-full px-2 pb-4">
       <ResponsiveContainer width="100%" height="100%">

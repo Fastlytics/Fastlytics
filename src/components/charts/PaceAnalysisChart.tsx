@@ -24,6 +24,7 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { driverColor } from '@/lib/driverColor';
 import { DriverMultiSelect } from '@/components/charts/shared/DriverMultiSelect';
 import { ChartStateDisplay } from '@/components/charts/shared/ChartStateDisplay';
@@ -308,6 +309,12 @@ const PaceAnalysisChart: React.FC<PaceAnalysisChartProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="pace_analysis"
+            title={`Race Pace Distribution — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{ year, event, session, drivers: selectedDrivers }}
           />
           <DriverMultiSelect
             availableDrivers={availableDriverCodes}

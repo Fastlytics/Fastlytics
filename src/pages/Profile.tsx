@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ProfilePictureUpload } from '@/components/profile/ProfilePictureUpload';
 import { resolveUploadUrl } from '@/lib/upload-url';
+import { SavedChartRenderer, buildChartUrl } from '@/components/saved/SavedChartRenderer';
 
 // --- Types ---
 
@@ -48,6 +49,7 @@ interface SavedChart {
   description: string | null;
   chart_type: string;
   race_name: string | null;
+  chart_config: Record<string, unknown> | null;
   thumbnail_url: string | null;
   created_at: string;
   folder_name: string | null;
@@ -137,7 +139,7 @@ const Profile = () => {
       let query = supabase
         .from('saved_charts')
         .select(
-          'id, title, description, chart_type, race_name, thumbnail_url, created_at, folder_name, is_public'
+          'id, title, description, chart_type, race_name, chart_config, thumbnail_url, created_at, folder_name, is_public'
         )
         .eq('user_id', profile!.id)
         .order('created_at', { ascending: false })
@@ -448,7 +450,7 @@ function SavedChartsTab({
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={`skeleton-${i}`}
-            className="h-32 animate-pulse rounded-lg border border-white/[0.04] bg-white/[0.02]"
+            className="aspect-square animate-pulse rounded-lg border border-white/[0.04] bg-white/[0.02]"
           />
         ))}
       </div>
@@ -538,26 +540,38 @@ function ChartCard({ chart, isOwnProfile }: { chart: SavedChart; isOwnProfile: b
     team_pace: 'Team Pace',
   };
 
+  const href =
+    chart.chart_type && chart.chart_config
+      ? buildChartUrl(chart.chart_type, chart.chart_config as Record<string, unknown>)
+      : '#';
+
   return (
     <m.div
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn(CARD_CONTAINER, 'overflow-hidden')}
+      className={cn(CARD_CONTAINER, 'overflow-hidden aspect-square relative')}
     >
-      {/* Thumbnail placeholder */}
-      {chart.thumbnail_url ? (
-        <div className="h-24 w-full border-b border-white/[0.04] bg-white/[0.02]">
-          <img src={chart.thumbnail_url} alt={chart.title} className="size-full object-cover" />
-        </div>
-      ) : (
-        <div className="flex h-24 w-full items-center justify-center border-b border-white/[0.04] bg-white/[0.02]">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-white/30">
-            {chartTypeLabels[chart.chart_type] || chart.chart_type}
-          </span>
-        </div>
-      )}
+      {/* Chart rendered live inside the card */}
+      <Link to={href} className="absolute inset-0">
+        {chart.chart_config ? (
+          <SavedChartRenderer
+            chartType={chart.chart_type}
+            chartConfig={chart.chart_config as Record<string, unknown>}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.02]">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-white/15">
+              {chartTypeLabels[chart.chart_type] || chart.chart_type}
+            </span>
+          </div>
+        )}
+      </Link>
 
-      <div className="px-3 py-2.5">
+      {/* Gradient overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+      {/* Content — overlaid at bottom */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 py-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-[12px] font-medium text-white">{chart.title}</p>
