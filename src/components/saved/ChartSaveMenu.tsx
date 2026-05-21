@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Bookmark02Icon, FolderOpenIcon, Add01Icon, Cancel01Icon } from 'hugeicons-react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Bookmark02Icon, FolderOpenIcon, Add01Icon } from 'hugeicons-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSaveChart, type SaveChartPayload } from '@/hooks/useSaveChart';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import { CreateFolderDialog } from './CreateFolderDialog';
 
 interface ChartSaveMenuProps {
