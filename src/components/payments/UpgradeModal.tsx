@@ -31,7 +31,6 @@ const PRO_FEATURES = [
   'Unlimited session replay',
   'All telemetry and analysis tools',
   'Driver and team profiles',
-  'Championship progression',
   'Team pace analysis',
   '3,000 MCP API calls/month',
 ];

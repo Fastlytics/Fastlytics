@@ -8,7 +8,7 @@ import {
 } from '@/lib/premium-export';
 
 interface PngExportMenuProps {
-  onExport: (preset: PngExportPreset) => void;
+  onExport: (preset: PngExportPreset) => void | Promise<void>;
   isExporting: boolean;
   hasData?: boolean;
   className?: string;
@@ -104,7 +104,7 @@ const PngExportMenu: React.FC<PngExportMenuProps> = ({
                     key={preset}
                     onClick={() => {
                       setOpen(false);
-                      onExport(preset);
+                      void Promise.resolve(onExport(preset)).catch(() => undefined);
                     }}
                     className="flex w-full items-center justify-between gap-4 rounded-lg px-3 py-3 text-left transition-all hover:bg-white/[0.06]"
                   >

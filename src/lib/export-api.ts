@@ -25,6 +25,25 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function normalizeExportError(responseText: string, status: number): string | null {
+  const trimmed = responseText.trim();
+  if (!trimmed) return null;
+
+  if (/<!DOCTYPE html>/i.test(trimmed) || /<html/i.test(trimmed)) {
+    if (/Error code 502/i.test(trimmed) || /Bad gateway/i.test(trimmed)) {
+      return `Export backend unavailable right now (HTTP ${status})`;
+    }
+
+    if (/Error code 522/i.test(trimmed) || /Connection timed out/i.test(trimmed)) {
+      return `Export backend timed out (HTTP ${status})`;
+    }
+
+    return `Export request failed upstream (HTTP ${status})`;
+  }
+
+  return trimmed;
+}
+
 export async function exportTeamPaceGapPng(payload: TeamPaceGapExportPayload): Promise<void> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -46,17 +65,31 @@ export async function exportTeamPaceGapPng(payload: TeamPaceGapExportPayload): P
   });
 
   if (!response.ok) {
-    let detail = 'Export failed';
+    let detail = `Export failed (HTTP ${response.status})`;
+
     try {
-      const errorData = await response.json();
-      if (typeof errorData.detail === 'string') {
-        detail = errorData.detail;
+      const responseText = await response.text();
+      const contentType = response.headers.get('Content-Type') || '';
+
+      if (contentType.includes('application/json')) {
+        const errorData = JSON.parse(responseText) as { detail?: unknown; message?: unknown };
+
+        if (typeof errorData.detail === 'string') {
+          detail = errorData.detail;
+        } else if (typeof errorData.message === 'string') {
+          detail = errorData.message;
+        }
+      } else {
+        const normalized = normalizeExportError(responseText, response.status);
+        if (normalized) {
+          detail = normalized;
+        }
       }
     } catch {
-      // Ignore malformed error bodies.
+      // Keep the status-based fallback message.
     }
 
-    throw new Error(detail);
+    throw new Error(`${detail} (HTTP ${response.status})`);
   }
 
   const blob = await response.blob();
