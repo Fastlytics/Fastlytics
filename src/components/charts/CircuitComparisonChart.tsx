@@ -380,33 +380,35 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
     >
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-[14px] font-semibold text-white">{title || 'Track Dominance'}</h2>
-        <ChartExportMenu
-          onExport={(format) =>
-            exportChart(format, {
-              title: title || 'Track Dominance',
-              subtitle: 'Sector-by-sector comparison between drivers',
+        <div className="flex items-center gap-2">
+          <ChartExportMenu
+            onExport={(format) =>
+              exportChart(format, {
+                title: title || 'Track Dominance',
+                subtitle: 'Sector-by-sector comparison between drivers',
+                year,
+                event,
+                session,
+                drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
+              })
+            }
+            isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="circuit_comparison"
+            title={`${title || 'Track Dominance'} — ${selectedDriver1} vs ${selectedDriver2} — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{
               year,
               event,
               session,
-              drivers: [selectedDriver1, selectedDriver2].filter(Boolean),
-            })
-          }
-          isExporting={isExporting}
-        />
-        <ChartSaveMenu
-          chartType="circuit_comparison"
-          title={`${title || 'Track Dominance'} — ${selectedDriver1} vs ${selectedDriver2} — ${event} ${year}`}
-          raceName={`${year} ${event}`}
-          chartConfig={{
-            year,
-            event,
-            session,
-            driver1: selectedDriver1,
-            driver2: selectedDriver2,
-            lap1: selectedLap1,
-            lap2: selectedLap2,
-          }}
-        />
+              driver1: selectedDriver1,
+              driver2: selectedDriver2,
+              lap1: selectedLap1,
+              lap2: selectedLap2,
+            }}
+          />
+        </div>
       </div>
 
       <div className="mb-4 rounded-lg border border-white/[0.04] p-5">
