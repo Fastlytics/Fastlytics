@@ -27,7 +27,6 @@ import { fetchChampionshipProgression, ChampionshipProgressionData } from '@/lib
 import { driverColor } from '@/lib/driverColor';
 import { getCountryCode } from '@/utils/countryUtils';
 import { getDriverImage } from '@/utils/imageMapping';
-import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { cn } from '@/lib/utils';
 import { ArrowUpDownIcon } from 'hugeicons-react';
@@ -39,7 +38,6 @@ import ChampionshipLegend from '@/pages/ChampionshipProgression/ChampionshipLege
 const ChampionshipProgression = () => {
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const { trackEvent, trackPageView } = useAnalytics();
-  const isHistoricalSeason = selectedYear < getCurrentSeasonYear();
 
   const years = availableYears.length > 0 ? availableYears : [2026, 2025, 2024, 2023, 2022];
 
@@ -182,7 +180,6 @@ const ChampionshipProgression = () => {
       <GatedRoute
         featureName="Championship Progression"
         description="Track how driver standings evolved throughout the season with interactive charts and race-by-race point progression."
-        requiredTier={isHistoricalSeason ? 'pro' : undefined}
       >
         <div className="space-y-5 text-white">
           {/* Header */}

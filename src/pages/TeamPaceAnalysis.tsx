@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'hugeicons-react';
 import { useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
+import { toast } from 'sonner';
 
 import { SEO } from '@/components/layout/SEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -147,6 +148,10 @@ const TeamPaceAnalysis = () => {
             teamColor: getTeamColorHex(row.teamName),
           })),
         });
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : 'Premium export failed. Please try again.'
+        );
       } finally {
         setIsExportingPaceGap(false);
       }
