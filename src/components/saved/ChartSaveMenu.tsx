@@ -23,9 +23,37 @@ export function ChartSaveMenu({
   className,
 }: ChartSaveMenuProps) {
   const { user } = useAuth();
-  const { saveChart, saveChartAsync, isSaving, folders, isAuthenticated } = useSaveChart();
+  const { saveChart, isSaving, folders } = useSaveChart();
   const [open, setOpen] = useState(false);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  // Check if this chart is already saved
+  const { data: existingCharts = [] } = useQuery({
+    queryKey: ['savedChartCheck', user?.id, chartType, raceName],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('saved_charts')
+        .select('id, chart_config')
+        .eq('user_id', user!.id)
+        .eq('chart_type', chartType)
+        .eq('race_name', raceName || '');
+      return (data || []) as Array<{ id: string; chart_config: unknown }>;
+    },
+    enabled: !!user && !!chartType && !!raceName,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const isAlreadySaved = useMemo(() => {
+    if (justSaved) return true;
+    if (!chartConfig || existingCharts.length === 0) return false;
+    const configStr = JSON.stringify(chartConfig);
+    return existingCharts.some((c) => {
+      const stored = c.chart_config;
+      if (!stored) return false;
+      return JSON.stringify(stored) === configStr;
+    });
+  }, [existingCharts, chartConfig, justSaved]);
 
   if (!user) return null;
 
@@ -38,21 +66,28 @@ export function ChartSaveMenu({
       chart_config: chartConfig,
       folder_id: folderId,
     };
-    saveChart(payload);
+    saveChart(payload, {
+      onSuccess: () => {
+        setJustSaved(true);
+      },
+    });
   };
 
   return (
     <>
       <div className={cn('relative', className)} data-export-menu>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (!isAlreadySaved) setOpen((o) => !o);
+          }}
           disabled={isSaving}
-          title="Save chart"
+          title={isAlreadySaved ? 'Chart saved' : 'Save chart'}
           className={cn(
-            'flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider',
-            'border border-white/[0.08] bg-white/[0.03] text-white/60',
-            'hover:border-white/[0.12] hover:text-white hover:bg-white/[0.06]',
-            'transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed'
+            'flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200',
+            isAlreadySaved
+              ? 'border border-white/[0.12] bg-white/[0.06] text-white cursor-default'
+              : 'border border-white/[0.08] bg-white/[0.03] text-white/60 hover:border-white/[0.12] hover:text-white hover:bg-white/[0.06] cursor-pointer',
+            (isSaving || isAlreadySaved) && 'disabled:opacity-40'
           )}
         >
           {isSaving ? (
@@ -66,10 +101,10 @@ export function ChartSaveMenu({
               />
             </svg>
           ) : (
-            <Bookmark02Icon className="size-3.5" />
+            <Bookmark02Icon className={cn('size-3.5', isAlreadySaved && 'fill-current')} />
           )}
-          <span>{isSaving ? 'Saving...' : 'Save'}</span>
-          {!isSaving && (
+          <span>{isSaving ? 'Saving...' : isAlreadySaved ? 'Saved' : 'Save'}</span>
+          {!isSaving && !isAlreadySaved && (
             <svg
               className="size-3"
               viewBox="0 0 24 24"
