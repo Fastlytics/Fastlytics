@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { useLapChartData, MIN_DRIVERS } from '@/hooks/useLapChartData';
 import { ChartStateDisplay } from '@/components/charts/shared/ChartStateDisplay';
 import { DriverMultiSelect } from '@/components/charts/shared/DriverMultiSelect';
@@ -221,6 +222,18 @@ const RacingChart: React.FC<RacingChartProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="lap_times"
+            title={`Lap Times — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{
+              year,
+              event,
+              session,
+              drivers: driversToDisplay,
+              fuelCorrection: fuelCorrectionEnabled,
+            }}
           />
           {!staticData && availableDrivers && (
             <DriverMultiSelect

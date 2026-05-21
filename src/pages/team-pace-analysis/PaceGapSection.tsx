@@ -12,6 +12,7 @@ import {
 import { Cell } from '@/lib/recharts-cell';
 
 import PngExportMenu from '@/components/charts/PngExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import {
   Select,
   SelectContent,
@@ -32,6 +33,8 @@ interface PaceGapSectionProps {
   getTeamColor: (teamName: string) => string;
   onExport: (preset: PngExportPreset) => Promise<void> | void;
   isExporting: boolean;
+  year?: number;
+  eventName?: string;
 }
 
 export const PaceGapSection = ({
@@ -43,6 +46,8 @@ export const PaceGapSection = ({
   getTeamColor,
   onExport,
   isExporting,
+  year,
+  eventName,
 }: PaceGapSectionProps) => (
   <div ref={chartRef} className={`${CARD_CONTAINER} h-[420px]`}>
     <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -68,6 +73,14 @@ export const PaceGapSection = ({
           </SelectContent>
         </Select>
         <PngExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
+        {year && (
+          <ChartSaveMenu
+            chartType="pace_gap"
+            title={`Pace Gap — ${eventName || ''} ${year}`}
+            raceName={`${year} ${eventName || ''}`}
+            chartConfig={{ year, event: eventName, session: selectedSession }}
+          />
+        )}
       </div>
     </div>
 

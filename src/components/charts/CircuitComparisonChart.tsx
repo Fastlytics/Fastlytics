@@ -26,6 +26,7 @@ import { getDriverImage } from '@/utils/imageMapping';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 
 interface DriverSelectorProps {
   label: string;
@@ -391,6 +392,20 @@ const CircuitComparisonChart: React.FC<CircuitComparisonChartProps> = ({
             })
           }
           isExporting={isExporting}
+        />
+        <ChartSaveMenu
+          chartType="circuit_comparison"
+          title={`${title || 'Track Dominance'} — ${selectedDriver1} vs ${selectedDriver2} — ${event} ${year}`}
+          raceName={`${year} ${event}`}
+          chartConfig={{
+            year,
+            event,
+            session,
+            driver1: selectedDriver1,
+            driver2: selectedDriver2,
+            lap1: selectedLap1,
+            lap2: selectedLap2,
+          }}
         />
       </div>
 

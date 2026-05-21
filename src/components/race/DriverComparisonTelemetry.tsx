@@ -22,6 +22,7 @@ import { driverColor } from '@/lib/driverColor';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import {
   buildCombinedTelemetryData,
   getTelemetryProps,
@@ -165,6 +166,21 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType={`comparison_${telemetryType}`}
+            title={`${title} — ${driver1} vs ${driver2} — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{
+              year,
+              event,
+              session,
+              driver1,
+              driver2,
+              lap1,
+              lap2,
+              telemetryType,
+            }}
           />
         </div>
       </div>

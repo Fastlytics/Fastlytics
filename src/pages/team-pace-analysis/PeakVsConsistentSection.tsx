@@ -12,6 +12,7 @@ import {
 import { Cell } from '@/lib/recharts-cell';
 
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 
 interface ScatterDataPoint {
@@ -26,6 +27,8 @@ interface PeakVsConsistentSectionProps {
   data: ScatterDataPoint[];
   onExport: (format: 'png' | 'svg' | 'csv') => Promise<void> | void;
   isExporting: boolean;
+  year?: number;
+  eventName?: string;
 }
 
 export const PeakVsConsistentSection = ({
@@ -33,6 +36,8 @@ export const PeakVsConsistentSection = ({
   data,
   onExport,
   isExporting,
+  year,
+  eventName,
 }: PeakVsConsistentSectionProps) => (
   <div ref={chartRef} className={`${CARD_CONTAINER} h-[420px]`}>
     <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -40,7 +45,17 @@ export const PeakVsConsistentSection = ({
         <span className={CARD_LABEL}>Peak vs Consistent</span>
         <p className="mt-0.5 text-[11px] text-white/40">Fastest lap vs median pace</p>
       </div>
-      <ChartExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
+      <div className="flex items-center gap-2">
+        <ChartExportMenu onExport={onExport} isExporting={isExporting} hasData={data.length > 0} />
+        {year && (
+          <ChartSaveMenu
+            chartType="peak_vs_consistent"
+            title={`Peak vs Consistent — ${eventName || ''} ${year}`}
+            raceName={`${year} ${eventName || ''}`}
+            chartConfig={{ year, event: eventName }}
+          />
+        )}
+      </div>
     </div>
     <div className="h-[340px] w-full px-2 pb-4">
       <ResponsiveContainer width="100%" height="100%">

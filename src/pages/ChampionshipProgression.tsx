@@ -31,6 +31,7 @@ import { CARD_CONTAINER } from '@/lib/card-styles';
 import { cn } from '@/lib/utils';
 import { ArrowUpDownIcon } from 'hugeicons-react';
 import { GatedRoute } from '@/components/common/GatedRoute';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 
 import ChampionshipTooltip from '@/pages/ChampionshipProgression/ChampionshipTooltip';
 import ChampionshipLegend from '@/pages/ChampionshipProgression/ChampionshipLegend';
@@ -199,6 +200,12 @@ const ChampionshipProgression = () => {
             </div>
 
             <div className="flex shrink-0 items-center gap-3">
+              <ChartSaveMenu
+                chartType="championship_progression"
+                title={`Championship Progression — ${selectedYear}`}
+                raceName={`${selectedYear} Season`}
+                chartConfig={{ year: selectedYear, drivers: selectedDrivers }}
+              />
               {/* Driver picker — PositionChart style */}
               <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>

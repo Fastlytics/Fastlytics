@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import LoadingSpinnerF1 from '@/components/ui/LoadingSpinnerF1';
 import { useChartExport } from '@/hooks/useChartExport';
 import { fetchTeamPaceSession } from '@/lib/api';
@@ -105,7 +106,13 @@ export const TeamPaceBreakdown: React.FC<TeamPaceBreakdownProps> = ({ year, even
             {label}
           </button>
         ))}
-        <div className="flex items-center justify-center border-l border-white/[0.04] px-4">
+        <div className="flex items-center justify-center border-l border-white/[0.04] px-4 gap-2">
+          <ChartSaveMenu
+            chartType="team_pace_breakdown"
+            title={`Team Pace Breakdown — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{ year, event, session, viewMode, activeCompound }}
+          />
           <ChartExportMenu
             onExport={(format) =>
               exportChart(format, {

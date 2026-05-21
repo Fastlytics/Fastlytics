@@ -26,6 +26,7 @@ import {
 import { driverColor } from '@/lib/driverColor';
 import { cn } from '@/lib/utils';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 
 interface DriverChampionshipSectionProps {
   career: DriverCareer;
@@ -67,27 +68,35 @@ export function DriverChampionshipSection({ career, slug }: DriverChampionshipSe
           </div>
 
           {/* Season selector */}
-          <Select
-            value={selectedSeason.toString()}
-            onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
-          >
-            <SelectTrigger className="h-9 w-[120px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium text-white focus:ring-0 focus:border-white/[0.12]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl">
-              <SelectGroup>
-                {availableSeasons.map((year) => (
-                  <SelectItem
-                    key={year}
-                    value={year.toString()}
-                    className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
-                  >
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <ChartSaveMenu
+              chartType="driver_championship"
+              title={`${career.name || slug} Championship Progression — ${selectedSeason}`}
+              raceName={`${selectedSeason} Season`}
+              chartConfig={{ driverSlug: slug, season: selectedSeason }}
+            />
+            <Select
+              value={selectedSeason.toString()}
+              onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
+            >
+              <SelectTrigger className="h-9 w-[120px] rounded-md border border-white/[0.06] bg-transparent text-[13px] font-medium text-white focus:ring-0 focus:border-white/[0.12]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl">
+                <SelectGroup>
+                  {availableSeasons.map((year) => (
+                    <SelectItem
+                      key={year}
+                      value={year.toString()}
+                      className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
+                    >
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Chart content */}

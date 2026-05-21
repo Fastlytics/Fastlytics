@@ -21,6 +21,7 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -141,6 +142,12 @@ const PositionChart: React.FC<PositionChartProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="position_changes"
+            title={`Position Changes — ${year}`}
+            raceName={`${year}`}
+            chartConfig={{ year, drivers: selectedDrivers }}
           />
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>

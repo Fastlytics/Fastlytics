@@ -13,6 +13,7 @@ import StintAnalysisTable from './StintAnalysisTable';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
+import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { getDriverImage } from '@/utils/imageMapping';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 
@@ -169,6 +170,12 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
               })
             }
             isExporting={isExporting}
+          />
+          <ChartSaveMenu
+            chartType="tire_strategy"
+            title={`Tire Strategy — ${event} ${year}`}
+            raceName={`${year} ${event}`}
+            chartConfig={{ year, event, session }}
           />
         </div>
       </div>
