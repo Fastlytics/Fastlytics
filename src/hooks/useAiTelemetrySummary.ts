@@ -13,10 +13,21 @@ export interface LapInfo {
   compound?: string;
 }
 
+export interface TraceSamplePoint {
+  distance: number;
+  speed: number;
+  throttle?: number;
+  brake?: number;
+  drs?: number;
+  gear?: number;
+  rpm?: number;
+}
+
 export interface ChartMetrics {
   max?: number;
   min?: number;
   avg?: number;
+  trace_sample?: TraceSamplePoint[];
   extras?: Record<string, unknown>;
 }
 

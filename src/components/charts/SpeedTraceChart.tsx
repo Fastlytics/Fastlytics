@@ -235,10 +235,20 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
       computeMetrics={(data) => {
         const speeds = data.trace.map((d) => d.Speed);
         const meta = data.lapMeta;
+        const traceSample = data.trace.map((pt) => ({
+          distance: Math.round(pt.Distance),
+          speed: pt.Speed,
+          throttle: pt.Throttle,
+          brake: pt.Brake,
+          drs: pt.DRS,
+          gear: pt.nGear,
+          rpm: pt.RPM,
+        }));
         return {
           max: Math.max(...speeds),
           min: Math.min(...speeds),
           avg: speeds.reduce((a, b) => a + b, 0) / speeds.length,
+          trace_sample: traceSample,
           extras: {
             lapTime: meta?.lapTime,
             compound: meta?.compound,
