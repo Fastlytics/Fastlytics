@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { fetchDriverStandings, fetchTeamStandings } from '@/lib/api';
+import { updateMyProfile } from '@/lib/profile-api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { SEO } from '@/components/layout/SEO';
 import { getCurrentSeasonYear, resolveSeasonYear } from '@/lib/seasonUtils';
@@ -60,21 +61,16 @@ const Onboarding = () => {
     dispatch({ type: 'setIsLoading', value: true });
     try {
       const fullName = [state.firstName, state.lastName].filter(Boolean).join(' ');
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName || undefined,
-          first_name: state.firstName || undefined,
-          last_name: state.lastName || undefined,
-          username: state.username || undefined,
-          favorite_driver: state.selectedDriver,
-          favorite_team: state.selectedTeam,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
+      await updateMyProfile({
+        full_name: fullName || null,
+        first_name: state.firstName || null,
+        last_name: state.lastName || null,
+        username: state.username || null,
+        favorite_driver: state.selectedDriver,
+        favorite_team: state.selectedTeam,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      });
 
       if (fullName) {
         await supabase.auth.updateUser({ data: { full_name: fullName } });

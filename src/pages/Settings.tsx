@@ -31,7 +31,15 @@ import {
 } from '@/lib/api';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { SEO } from '@/components/layout/SEO';
+import {
+  createMcpKeyRecord,
+  getMcpUsage,
+  listMcpKeys,
+  purgeAccountData,
+  revokeMcpKey,
+} from '@/lib/app-data-api';
 import { request } from '@/lib/api-client';
+import { updateMyProfile } from '@/lib/profile-api';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -207,21 +215,15 @@ const Settings = () => {
         });
         error = e;
         if (!e) {
-          await supabase
-            .from('profiles')
-            .update({
-              full_name: fullName,
-              first_name: profileForm.firstName,
-              last_name: profileForm.lastName,
-            })
-            .eq('id', user.id);
+          await updateMyProfile({
+            full_name: fullName,
+            first_name: profileForm.firstName,
+            last_name: profileForm.lastName,
+          });
         }
       } else if (field === 'username') {
-        const { error: e } = await supabase
-          .from('profiles')
-          .update({ username: profileForm.username })
-          .eq('id', user.id);
-        error = e;
+        await updateMyProfile({ username: profileForm.username });
+        error = null;
       } else if (field === 'email') {
         if (profileForm.email !== user.email) {
           // Send OTP to the new email address for verification
@@ -373,10 +375,7 @@ const Settings = () => {
       showComments: 'show_comments',
       showSavedCharts: 'show_saved_charts',
     };
-    await supabase
-      .from('profiles')
-      .update({ [columnMap[key]]: value })
-      .eq('id', user.id);
+    await updateMyProfile({ [columnMap[key]]: value } as Parameters<typeof updateMyProfile>[0]);
     toast.success('Privacy setting updated');
   };
 
@@ -432,11 +431,7 @@ const Settings = () => {
 
     setIsLoading(true);
     try {
-      // Delete profile data
-      await supabase.from('saved_charts').delete().eq('user_id', user!.id);
-      await supabase.from('saved_folders').delete().eq('user_id', user!.id);
-      await supabase.from('comments').delete().eq('user_id', user!.id);
-      await supabase.from('profiles').delete().eq('id', user!.id);
+      await purgeAccountData();
       await signOut();
       toast.success('Account deleted');
       navigate('/');
@@ -1164,11 +1159,7 @@ function FavoritesPanel({
     if (!user) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ favorite_driver: driver, favorite_team: team })
-        .eq('id', user.id);
-      if (error) throw error;
+      await updateMyProfile({ favorite_driver: driver, favorite_team: team });
       setSelectedDriver(driver);
       setSelectedTeam(team);
       toast.success('Favorites updated');
@@ -1742,33 +1733,13 @@ function ApiKeysPanel({
   const limit = tier === 'pro' ? 3000 : 300;
 
   const loadKeys = async () => {
-    const { data } = await supabase
-      .from('mcp_api_keys')
-      .select('id, name, key_prefix, created_at, last_used_at, revoked')
-      .order('created_at', { ascending: false });
-    if (data) setKeys(data as ApiKey[]);
+    const data = await listMcpKeys();
+    setKeys(data as ApiKey[]);
   };
 
   const loadUsage = async () => {
-    const firstOfMonth = new Date();
-    firstOfMonth.setUTCDate(1);
-    firstOfMonth.setUTCHours(0, 0, 0, 0);
-
-    const { count } = await supabase
-      .from('mcp_usage_log')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', firstOfMonth.toISOString());
-
-    const { data: recent } = await supabase
-      .from('mcp_usage_log')
-      .select('tool_name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    setUsage({
-      count: count ?? 0,
-      recent: (recent as UsageLogEntry[]) ?? [],
-    });
+    const usageData = await getMcpUsage();
+    setUsage({ count: usageData.count, recent: usageData.recent as UsageLogEntry[] });
   };
 
   useEffect(() => {
@@ -1798,16 +1769,7 @@ function ApiKeysPanel({
     setCreating(true);
     try {
       const { raw, hash, prefix } = await generateKey();
-      const { error } = await supabase.from('mcp_api_keys').insert({
-        user_id: userId,
-        name: newKeyName.trim(),
-        key_hash: hash,
-        key_prefix: prefix,
-      });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
+      await createMcpKeyRecord({ name: newKeyName.trim(), key_hash: hash, key_prefix: prefix });
       setNewKeyValue(raw);
       setNewKeyName('');
       await loadKeys();
@@ -1820,11 +1782,7 @@ function ApiKeysPanel({
   }
 
   async function handleRevokeKey(id: string) {
-    const { error } = await supabase.from('mcp_api_keys').update({ revoked: true }).eq('id', id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    await revokeMcpKey(id);
     toast.success('Key revoked');
     await loadKeys();
     trackEvent('api_key_revoked');

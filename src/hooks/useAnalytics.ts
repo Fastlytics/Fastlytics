@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { trackUserActivity } from '@/lib/app-data-api';
 import { logger } from '@/lib/logger';
 import { getSessionId } from '@/lib/session';
 import { fetchTrackingData, TrackingData } from '@/lib/tracking';
@@ -81,19 +81,17 @@ export const useAnalytics = () => {
         }
       }
 
-      // 3. Supabase — first-party operational analytics, still gated for strict compliance
+      // 3. First-party operational analytics via worker
       try {
-        const { error } = await supabase.from('user_activity').insert({
-          user_id: user?.id ?? null,
-          session_id: sessionId.current,
-          event_name: eventName,
-          event_data: enrichedData,
-        });
-        if (error) {
-          logger.error('Supabase analytics tracking failed:', error);
+        if (user?.id) {
+          await trackUserActivity({
+            session_id: sessionId.current,
+            event_name: eventName,
+            event_data: enrichedData,
+          });
         }
       } catch (error) {
-        logger.error('Unexpected error tracking in Supabase:', error);
+        logger.error('Unexpected error tracking in worker analytics:', error);
       }
     },
     [user, trackingData]

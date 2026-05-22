@@ -179,29 +179,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           if (error.code === 'PGRST116') {
-            // Row not found
-            // Create new profile
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert([
-                {
-                  id: userId,
-                  full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'User',
-                  avatar_url: resolveUploadUrl(userMeta?.avatar_url),
-                  onboarding_completed: false,
-                },
-              ])
-              .select()
-              .single();
-
-            if (createError) {
-              logger.error('Error creating profile:', createError);
-            } else {
-              dispatch({
-                type: 'SET_PROFILE',
-                profile: { ...newProfile, avatar_url: resolveUploadUrl(newProfile.avatar_url) },
-              });
-            }
+            // New profiles are created server-side from auth.users inserts.
+            // Keep a local fallback so the onboarding gate still behaves predictably
+            // if the row has not propagated yet.
+            dispatch({
+              type: 'SET_PROFILE',
+              profile: {
+                id: userId,
+                username: null,
+                full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'User',
+                first_name: null,
+                last_name: null,
+                avatar_url: resolveUploadUrl(userMeta?.avatar_url),
+                website: null,
+                favorite_driver: null,
+                favorite_team: null,
+                onboarding_completed: false,
+              },
+            });
           } else {
             logger.error('Error fetching profile:', error);
           }

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { createSavedFolder, updateSavedFolder } from '@/lib/app-data-api';
 import { resolveUploadUrl } from '@/lib/upload-url';
 
 interface CreateFolderDialogProps {
@@ -27,14 +28,7 @@ export function CreateFolderDialog({ open, onClose, onSuccess }: CreateFolderDia
     mutationFn: async () => {
       if (!user || !name.trim()) throw new Error('Name is required');
 
-      // 1. Create the folder in Supabase
-      const { data: folder, error } = await supabase
-        .from('saved_folders')
-        .insert({ name: name.trim(), user_id: user.id, is_public: false })
-        .select('id, name')
-        .single();
-
-      if (error) throw error;
+      const folder = await createSavedFolder(name.trim());
 
       let coverImageUrl: string | null = null;
 
@@ -60,10 +54,7 @@ export function CreateFolderDialog({ open, onClose, onSuccess }: CreateFolderDia
           coverImageUrl = resolveUploadUrl(result.url);
 
           // 3. Update the folder with the cover image URL
-          await supabase
-            .from('saved_folders')
-            .update({ cover_image_url: coverImageUrl })
-            .eq('id', folder.id);
+          await updateSavedFolder(folder.id, { cover_image_url: coverImageUrl });
         }
       }
 

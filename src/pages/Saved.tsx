@@ -21,6 +21,14 @@ import { SEO } from '@/components/layout/SEO';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  bulkDeleteSavedCharts,
+  bulkMoveSavedCharts,
+  deleteSavedChart,
+  deleteSavedFolder,
+  updateSavedChart,
+  updateSavedFolder,
+} from '@/lib/app-data-api';
 import { supabase } from '@/lib/supabase';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ConfirmDialog } from '@/components/ui/dialog';
@@ -174,11 +182,7 @@ const Saved = () => {
   // Toggle folder visibility
   const toggleFolderVisibility = useMutation({
     mutationFn: async ({ folderId, isPublic }: { folderId: string; isPublic: boolean }) => {
-      const { error } = await supabase
-        .from('saved_folders')
-        .update({ is_public: !isPublic })
-        .eq('id', folderId);
-      if (error) throw error;
+      await updateSavedFolder(folderId, { is_public: !isPublic });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedFolders'] });
@@ -188,15 +192,7 @@ const Saved = () => {
 
   // Delete folder
   const deleteFolder = useMutation({
-    mutationFn: async (folderId: string) => {
-      await supabase
-        .from('saved_charts')
-        .update({ folder_id: null, folder_name: null })
-        .eq('folder_id', folderId);
-
-      const { error } = await supabase.from('saved_folders').delete().eq('id', folderId);
-      if (error) throw error;
-    },
+    mutationFn: async (folderId: string) => deleteSavedFolder(folderId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedFolders'] });
       queryClient.invalidateQueries({ queryKey: ['savedCharts'] });
@@ -209,10 +205,7 @@ const Saved = () => {
 
   // Delete chart
   const deleteChart = useMutation({
-    mutationFn: async (chartId: string) => {
-      const { error } = await supabase.from('saved_charts').delete().eq('id', chartId);
-      if (error) throw error;
-    },
+    mutationFn: async (chartId: string) => deleteSavedChart(chartId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedCharts'] });
       queryClient.invalidateQueries({ queryKey: ['savedFolders'] });
@@ -223,10 +216,7 @@ const Saved = () => {
 
   // Bulk delete charts
   const bulkDeleteCharts = useMutation({
-    mutationFn: async (chartIds: string[]) => {
-      const { error } = await supabase.from('saved_charts').delete().in('id', chartIds);
-      if (error) throw error;
-    },
+    mutationFn: async (chartIds: string[]) => bulkDeleteSavedCharts(chartIds),
     onSuccess: (_data, chartIds) => {
       queryClient.invalidateQueries({ queryKey: ['savedCharts'] });
       queryClient.invalidateQueries({ queryKey: ['savedFolders'] });
@@ -238,14 +228,8 @@ const Saved = () => {
 
   // Bulk move charts to folder
   const bulkMoveCharts = useMutation({
-    mutationFn: async ({ chartIds, folderId }: { chartIds: string[]; folderId: string }) => {
-      const targetFolder = folders.find((f) => f.id === folderId);
-      const { error } = await supabase
-        .from('saved_charts')
-        .update({ folder_id: folderId, folder_name: targetFolder?.name || null })
-        .in('id', chartIds);
-      if (error) throw error;
-    },
+    mutationFn: async ({ chartIds, folderId }: { chartIds: string[]; folderId: string }) =>
+      bulkMoveSavedCharts(chartIds, folderId),
     onSuccess: (_data, { chartIds }) => {
       queryClient.invalidateQueries({ queryKey: ['savedCharts'] });
       queryClient.invalidateQueries({ queryKey: ['savedFolders'] });
@@ -257,11 +241,7 @@ const Saved = () => {
   // Toggle chart visibility
   const toggleChartVisibility = useMutation({
     mutationFn: async ({ chartId, isPublic }: { chartId: string; isPublic: boolean }) => {
-      const { error } = await supabase
-        .from('saved_charts')
-        .update({ is_public: !isPublic })
-        .eq('id', chartId);
-      if (error) throw error;
+      await updateSavedChart(chartId, { is_public: !isPublic });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedCharts'] });
