@@ -15,6 +15,7 @@ import { Analytics01Icon } from 'hugeicons-react';
 import { driverColor } from '@/lib/driverColor';
 import { getDriverImage } from '@/utils/imageMapping';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface DRSChartProps {
   className?: string;
@@ -106,6 +107,8 @@ const DRSChart: React.FC<DRSChartProps> = ({
   initialDriver = '',
   lap = 'fastest',
 }) => {
+  if (!isDRSAvailable(year)) return null;
+
   return (
     <TelemetryChartWrapper<DRSDataPoint[]>
       className={className}

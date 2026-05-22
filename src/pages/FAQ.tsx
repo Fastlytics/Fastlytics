@@ -95,7 +95,7 @@ const FAQ_CATEGORIES: FAQCategory[] = [
       {
         question: 'What is session replay?',
         answer:
-          'Session replay lets you watch any F1 session unfold with driver positions on the track map, synced telemetry data (speed, RPM, gear, DRS), and race control events. You can scrub through the timeline, follow specific drivers, and see the race develop lap by lap.',
+          'Session replay lets you watch any F1 session unfold with driver positions on the track map, synced telemetry data (speed, RPM, gear), and race control events. You can scrub through the timeline, follow specific drivers, and see the race develop lap by lap.',
       },
       {
         question: 'What are the community features?',

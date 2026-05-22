@@ -5,6 +5,7 @@ import WidgetShell from './WidgetShell';
 import { WidgetBounds, WidgetLayout } from '@/hooks/useReplayWidgets';
 import Speedometer from './Speedometer';
 import TelemetrySparkline from './TelemetrySparkline';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface TelemetryOverlayProps {
   driverCode: string | null;
@@ -26,6 +27,7 @@ interface TelemetryOverlayProps {
   onUpdateLayout: (updates: Partial<WidgetLayout>) => void;
   bounds: WidgetBounds;
   onClose?: () => void;
+  year?: number;
 }
 
 const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
@@ -41,6 +43,7 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
   onUpdateLayout,
   bounds,
   onClose,
+  year,
 }) => {
   const [inputDisplay, setInputDisplay] = useState<'bars' | 'graphs'>('bars');
 
@@ -209,24 +212,26 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
         </div>
 
         {/* DRS */}
-        <div
-          className={cn(
-            'flex items-center justify-center gap-2 py-2 rounded-lg border transition-all',
-            drs > 0
-              ? 'bg-emerald-500/10 border-emerald-500/20'
-              : 'bg-white/[0.02] border-white/[0.03]'
-          )}
-        >
-          <Activity size={12} className="text-white/80" />
-          <span
+        {isDRSAvailable(year ?? 0) && (
+          <div
             className={cn(
-              'text-[11px] font-semibold text-white uppercase tracking-widest',
-              drs > 0 && 'text-white'
+              'flex items-center justify-center gap-2 py-2 rounded-lg border transition-all',
+              drs > 0
+                ? 'bg-emerald-500/10 border-emerald-500/20'
+                : 'bg-white/[0.02] border-white/[0.03]'
             )}
           >
-            DRS {drs > 0 ? 'Active' : 'Inactive'}
-          </span>
-        </div>
+            <Activity size={12} className="text-white/80" />
+            <span
+              className={cn(
+                'text-[11px] font-semibold text-white uppercase tracking-widest',
+                drs > 0 && 'text-white'
+              )}
+            >
+              DRS {drs > 0 ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        )}
       </div>
     </WidgetShell>
   );

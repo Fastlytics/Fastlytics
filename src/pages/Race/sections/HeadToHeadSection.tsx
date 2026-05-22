@@ -7,6 +7,7 @@ import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 export default function HeadToHeadSection() {
   const ctx = useRaceLayoutContext();
@@ -146,18 +147,20 @@ export default function HeadToHeadSection() {
             </div>
 
             {/* DRS */}
-            <DriverComparisonTelemetry
-              year={ctx.year}
-              event={ctx.eventName}
-              session={ctx.analysisSession}
-              driver1={circuitDrivers.driver1}
-              driver2={circuitDrivers.driver2}
-              lap1={circuitDrivers.lap1}
-              lap2={circuitDrivers.lap2}
-              shouldLoadChart={true}
-              telemetryType="drs"
-              title="DRS"
-            />
+            {isDRSAvailable(ctx.year) && (
+              <DriverComparisonTelemetry
+                year={ctx.year}
+                event={ctx.eventName}
+                session={ctx.analysisSession}
+                driver1={circuitDrivers.driver1}
+                driver2={circuitDrivers.driver2}
+                lap1={circuitDrivers.lap1}
+                lap2={circuitDrivers.lap2}
+                shouldLoadChart={true}
+                telemetryType="drs"
+                title="DRS"
+              />
+            )}
           </div>
         )}
       </m.div>

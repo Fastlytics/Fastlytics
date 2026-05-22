@@ -16,6 +16,7 @@ import { driverColor } from '@/lib/driverColor';
 import { getDriverImage } from '@/utils/imageMapping';
 import TelemetryChartWrapper from './TelemetryChartWrapper';
 import { cn } from '@/lib/utils';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface SpeedTraceChartProps {
   className?: string;
@@ -121,7 +122,7 @@ const SpeedTooltip = ({
                 <span className="text-right text-white">{data.nGear}</span>
               </>
             )}
-            {data.DRS != null && (
+            {isDRSAvailable(year ?? 0) && data.DRS != null && (
               <>
                 <span>DRS</span>
                 <span

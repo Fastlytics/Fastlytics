@@ -7,6 +7,7 @@ import { RPMChart } from '@/components/charts/RPMChart';
 import { GearMapChart } from '@/components/charts/GearMapChart';
 import { DRSChart } from '@/components/charts/DRSChart';
 import { DetailedRaceResult } from '@/lib/api';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface TelemetryTabProps {
   year: number;
@@ -32,7 +33,7 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({
   return (
     <GatedRoute
       featureName="Advanced Telemetry"
-      description="Complete telemetry analysis with speed traces, throttle/brake patterns, RPM curves, gear selection, and DRS deployment strategies"
+      description="Complete telemetry analysis with speed traces, throttle/brake patterns, RPM curves, and gear selection"
     >
       <section id="telemetry" className="animate-in fade-in duration-200">
         <div className="flex flex-col gap-y-12">
@@ -71,13 +72,15 @@ export const TelemetryTab: React.FC<TelemetryTabProps> = ({
             lap={selectedLap}
             initialDriver={defaultDriver}
           />
-          <DRSChart
-            year={year}
-            event={eventName}
-            session={analysisSession}
-            lap={selectedLap}
-            initialDriver={defaultDriver}
-          />
+          {isDRSAvailable(year) && (
+            <DRSChart
+              year={year}
+              event={eventName}
+              session={analysisSession}
+              lap={selectedLap}
+              initialDriver={defaultDriver}
+            />
+          )}
         </div>
       </section>
     </GatedRoute>

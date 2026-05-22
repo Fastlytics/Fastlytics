@@ -595,12 +595,11 @@ const FEATURES: Omit<FeatureBlockProps, 'index'>[] = [
     label: 'Telemetry',
     title: 'Every input, every corner, every tenth',
     description:
-      'Overlay speed, throttle, brake, RPM, gear, and DRS traces for any driver on any lap. Compare two drivers side-by-side to see exactly where time is gained or lost.',
+      'Overlay speed, throttle, brake, RPM, and gear traces for any driver on any lap. Compare two drivers side-by-side to see exactly where time is gained or lost.',
     bullets: [
       'Speed traces with corner-by-corner breakdown',
       'Throttle and brake application overlays',
       'RPM and gear selection maps',
-      'DRS activation zones',
       'Compare any two drivers on any lap',
     ],
     demo: <TelemetryDemo />,

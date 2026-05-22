@@ -32,6 +32,7 @@ import {
   TelemetryDataPoint,
   TelemetryType,
 } from './driverComparisonTelemetryUtils';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface TooltipPayloadEntry {
   name?: string;
@@ -107,6 +108,9 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     driver: string,
     lap: string | number
   ): Promise<TelemetryDataPoint[]> => {
+    if (telemetryType === 'drs' && !isDRSAvailable(year)) {
+      throw new Error('DRS is not available for the 2026 season onwards.');
+    }
     const typeToFetch = telemetryType === 'gap' ? 'speed' : telemetryType;
 
     switch (typeToFetch) {

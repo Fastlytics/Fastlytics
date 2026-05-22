@@ -4,6 +4,7 @@ import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonCha
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
 import { DetailedRaceResult } from '@/lib/api';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface DominanceTabProps {
   year: number;
@@ -55,7 +56,7 @@ export const DominanceTab: React.FC<DominanceTabProps> = ({
   return (
     <GatedRoute
       featureName="Head to Head Analysis"
-      description="Driver comparison and dominance analysis with detailed telemetry overlays including speed, throttle, brake, and DRS patterns"
+      description="Driver comparison and dominance analysis with detailed telemetry overlays including speed, throttle, brake, and RPM patterns"
     >
       <section id="dominance" className="animate-in fade-in duration-200">
         <div className="space-y-6">
@@ -144,18 +145,20 @@ export const DominanceTab: React.FC<DominanceTabProps> = ({
                   telemetryType="rpm"
                   title="RPM"
                 />
-                <DriverComparisonTelemetry
-                  year={year}
-                  event={eventName}
-                  session={analysisSession}
-                  driver1={circuitDrivers.driver1}
-                  driver2={circuitDrivers.driver2}
-                  lap1={circuitDrivers.lap1}
-                  lap2={circuitDrivers.lap2}
-                  shouldLoadChart={true}
-                  telemetryType="drs"
-                  title="DRS"
-                />
+                {isDRSAvailable(year) && (
+                  <DriverComparisonTelemetry
+                    year={year}
+                    event={eventName}
+                    session={analysisSession}
+                    driver1={circuitDrivers.driver1}
+                    driver2={circuitDrivers.driver2}
+                    lap1={circuitDrivers.lap1}
+                    lap2={circuitDrivers.lap2}
+                    shouldLoadChart={true}
+                    telemetryType="drs"
+                    title="DRS"
+                  />
+                )}
               </div>
             </div>
           )}

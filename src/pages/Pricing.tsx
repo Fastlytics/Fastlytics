@@ -57,7 +57,7 @@ interface FeatureRow {
 const COMPARISON_ROWS: FeatureRow[] = [
   { feature: 'Current season data', free: true, pro: true },
   { feature: 'Historical seasons', free: false, pro: true },
-  { feature: 'Telemetry (speed, brake, throttle, gear, RPM, DRS)', free: true, pro: true },
+  { feature: 'Telemetry (speed, brake, throttle, gear, RPM)', free: true, pro: true },
   { feature: 'Session replay', free: '5 minutes', pro: 'Unlimited' },
   { feature: 'Driver & team standings', free: true, pro: true },
   { feature: 'Race calendar', free: true, pro: true },

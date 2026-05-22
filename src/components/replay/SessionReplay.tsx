@@ -839,6 +839,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
             onUpdateLayout={(u) => updateLayout('telemetry', u)}
             bounds={widgetBounds}
             onClose={() => setShowTelemetry(false)}
+            year={year}
           />
         );
     }
