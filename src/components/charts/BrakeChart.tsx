@@ -49,6 +49,14 @@ const BrakeChart: React.FC<BrakeChartProps> = ({
       queryKey={(driver, lapVal) => ['brakeTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryBrake(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
+      computeMetrics={(data) => {
+        const values = data.map((d) => d.Brake);
+        return {
+          max: Math.max(...values),
+          min: Math.min(...values),
+          avg: values.reduce((a, b) => a + b, 0) / values.length,
+        };
+      }}
       renderChart={(data, _color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart

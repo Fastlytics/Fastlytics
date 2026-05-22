@@ -58,6 +58,15 @@ const GearMapChart: React.FC<GearMapChartProps> = ({
       queryKey={(driver, lapVal) => ['gearMap', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchGearShiftMap(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
+      computeMetrics={(data) => {
+        return {
+          avg: data.stats.avgGear,
+          extras: {
+            mostUsedGear: data.stats.mostUsedGear,
+            lapNumber: data.lapNumber,
+          },
+        };
+      }}
       renderChart={(data, color, selectedDriver) => {
         return (
           <div className="relative w-full h-[350px] flex items-center justify-center rounded-xl border border-white/[0.06] bg-[#0c0c0e] overflow-hidden">

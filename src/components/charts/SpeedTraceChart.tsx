@@ -232,6 +232,29 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
           </LineChart>
         </ResponsiveContainer>
       )}
+      computeMetrics={(data) => {
+        const speeds = data.trace.map((d) => d.Speed);
+        const meta = data.lapMeta;
+        return {
+          max: Math.max(...speeds),
+          min: Math.min(...speeds),
+          avg: speeds.reduce((a, b) => a + b, 0) / speeds.length,
+          extras: {
+            lapTime: meta?.lapTime,
+            compound: meta?.compound,
+            sector1: meta?.sector1Time,
+            sector2: meta?.sector2Time,
+            sector3: meta?.sector3Time,
+            speedI1: meta?.speedI1,
+            speedI2: meta?.speedI2,
+            speedFL: meta?.speedFL,
+            speedST: meta?.speedST,
+            position: meta?.position,
+            tyreLife: meta?.tyreLife,
+            freshTyre: meta?.freshTyre,
+          },
+        };
+      }}
       renderStats={(data) => {
         const speeds = data.trace.map((d) => d.Speed);
         const maxSpeed = Math.max(...speeds);

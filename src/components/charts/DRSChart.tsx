@@ -119,6 +119,12 @@ const DRSChart: React.FC<DRSChartProps> = ({
       queryKey={(driver, lapVal) => ['drsTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryDRS(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
+      computeMetrics={(data) => {
+        const drsActive = data.filter((d) => d.DRS === 1).length;
+        return {
+          avg: data.length > 0 ? (drsActive / data.length) * 100 : 0,
+        };
+      }}
       renderChart={(data, color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart
