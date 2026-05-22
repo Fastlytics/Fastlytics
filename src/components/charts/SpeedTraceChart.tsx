@@ -163,6 +163,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
       session={session}
       initialDriver={initialDriver}
       lap={lap}
+      customExplainSlot
       queryKey={(driver, lapVal) => ['speedTrace', year, event, session, driver, lapVal]}
       queryFn={async (driver, lapVal) => {
         const result = await fetchTelemetrySpeed(year, event, session, driver, lapVal);
@@ -266,7 +267,21 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
           },
         };
       }}
-      renderStats={(data) => {
+      computeLapMeta={(data) => {
+        const meta = data.lapMeta as LapMeta | undefined;
+        if (!meta) return undefined;
+        const formatTime = (s: number | undefined) => {
+          if (s == null) return undefined;
+          const m = Math.floor(s / 60);
+          const secs = (s % 60).toFixed(3);
+          return `${m}:${secs.padStart(6, '0')}`;
+        };
+        return {
+          time: formatTime(meta.lapTime),
+          compound: meta.compound,
+        };
+      }}
+      renderStats={(data, explainBtn) => {
         const speeds = data.trace.map((d) => d.Speed);
         const maxSpeed = Math.max(...speeds);
         const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
@@ -358,6 +373,7 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
                 className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-lg border border-white/[0.04] text-xs"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
+                {explainBtn && <div className="flex items-center mr-1">{explainBtn}</div>}
                 {meta.compound && (
                   <div className="flex items-center gap-1.5">
                     <span

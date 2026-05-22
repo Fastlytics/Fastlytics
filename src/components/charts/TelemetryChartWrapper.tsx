@@ -1,4 +1,4 @@
-import React, { useMemo, useReducer, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -10,7 +10,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSessionDrivers, fetchLapTimes, SessionDriver } from '@/lib/api';
+import {
+  fetchSessionDrivers,
+  fetchLapTimes,
+  SessionDriver,
+  type LapTimesEnrichedResponse,
+} from '@/lib/api';
 import { getDriverImage } from '@/utils/imageMapping';
 import { driverColor } from '@/lib/driverColor';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
@@ -40,8 +45,10 @@ interface TelemetryChartWrapperProps<T> {
   queryFn: (driver: string, lap: string | number) => Promise<T>;
   queryEnabled?: (driver: string, lap: string | number) => boolean;
   renderChart: (data: T, color: string, selectedDriver: string) => React.ReactNode;
-  renderStats?: (data: T) => React.ReactNode;
+  renderStats?: (data: T, explainBtn?: React.ReactNode) => React.ReactNode;
   computeMetrics?: (data: T) => ChartMetrics;
+  computeLapMeta?: (data: T) => { time?: string; compound?: string } | undefined;
+  customExplainSlot?: boolean;
 }
 
 interface TelemetryChartContentProps<T> {
@@ -51,7 +58,8 @@ interface TelemetryChartContentProps<T> {
   data: T | undefined;
   currentColor: string;
   renderChart: (data: T, color: string, selectedDriver: string) => React.ReactNode;
-  renderStats?: (data: T) => React.ReactNode;
+  renderStats?: (data: T, explainBtn?: React.ReactNode) => React.ReactNode;
+  explainBtn?: React.ReactNode;
 }
 
 const TelemetryChartContent = <T,>({
@@ -62,6 +70,7 @@ const TelemetryChartContent = <T,>({
   currentColor,
   renderChart,
   renderStats,
+  explainBtn,
 }: TelemetryChartContentProps<T>) => {
   if (!selectedDriver) {
     return (
@@ -104,7 +113,7 @@ const TelemetryChartContent = <T,>({
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       {renderChart(data, currentColor, selectedDriver)}
-      {renderStats && renderStats(data)}
+      {renderStats && renderStats(data, explainBtn)}
     </div>
   );
 };
@@ -114,6 +123,37 @@ function formatLapTime(seconds: number | null | undefined): string | undefined {
   const m = Math.floor(seconds / 60);
   const s = (seconds % 60).toFixed(3);
   return `${m}:${s.padStart(6, '0')}`;
+}
+
+function getLapMetaFromResponse(
+  lapTimesResponse: LapTimesEnrichedResponse | undefined,
+  driver: string,
+  lap: string | number
+): { time?: string; compound?: string } | undefined {
+  const driverDetails = lapTimesResponse?.driverLapDetails?.[driver];
+  if (!driverDetails) return undefined;
+
+  if (lap === 'fastest') {
+    const best = driverDetails.find((record) => record.isPersonalBest);
+    return best
+      ? { time: formatLapTime(best.lapTime), compound: best.compound ?? undefined }
+      : undefined;
+  }
+
+  const lapNum = typeof lap === 'string' ? parseInt(lap) : lap;
+  const lapRecord = driverDetails.find((record) => record.lapNumber === lapNum);
+  return lapRecord
+    ? { time: formatLapTime(lapRecord.lapTime), compound: lapRecord.compound ?? undefined }
+    : undefined;
+}
+
+function serializeMetrics(metrics: ChartMetrics) {
+  return {
+    max: metrics.max,
+    min: metrics.min,
+    avg: metrics.avg,
+    extras: metrics.extras ?? {},
+  };
 }
 
 const TelemetryChartWrapper = <T,>({
@@ -131,6 +171,8 @@ const TelemetryChartWrapper = <T,>({
   renderChart,
   renderStats,
   computeMetrics,
+  computeLapMeta,
+  customExplainSlot,
 }: TelemetryChartWrapperProps<T>) => {
   const chartVisRef = useChartVisibility({
     chartName: `telemetry_${title.toLowerCase().replace(/\s+/g, '_')}`,
@@ -148,6 +190,8 @@ const TelemetryChartWrapper = <T,>({
     (_: string | number, v: string | number) => v,
     lap
   );
+  const [compareDriver, setCompareDriver] = useState('');
+  const [compareLap, setCompareLap] = useState<string | number>('fastest');
 
   const { data: availableDrivers, isLoading: isLoadingDrivers } = useQuery<SessionDriver[]>({
     queryKey: ['sessionDrivers', year, event, session],
@@ -183,6 +227,11 @@ const TelemetryChartWrapper = <T,>({
     return ['fastest'];
   }, [lapTimesResponse, selectedDriver]);
 
+  const filteredCompareDrivers = useMemo(
+    () => (availableDrivers || []).filter((driver) => driver.code !== selectedDriver),
+    [availableDrivers, selectedDriver]
+  );
+
   const { data, isLoading, error } = useQuery<T>({
     queryKey: queryKey(selectedDriver, selectedLap),
     queryFn: () => queryFn(selectedDriver, selectedLap),
@@ -196,34 +245,126 @@ const TelemetryChartWrapper = <T,>({
 
   const currentColor = selectedDriver ? driverColor(selectedDriver, year) : '#ef4444';
   const selectedDriverObj = availableDrivers?.find((d) => d.code === selectedDriver);
+  const activeCompareDriver = filteredCompareDrivers.some((driver) => driver.code === compareDriver)
+    ? compareDriver
+    : '';
+  const compareDriverObj = availableDrivers?.find((d) => d.code === activeCompareDriver);
 
   // ── Analysis state ───────────────
   const explainBtnRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const lastAnalysisSignatureRef = useRef('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
 
   const analysisMutation = useAiTelemetrySummary();
+  const mutateAnalysis = analysisMutation.mutate;
 
   const metrics = useMemo(() => {
     if (data && computeMetrics) return computeMetrics(data);
     return undefined;
   }, [data, computeMetrics]);
 
+  const dataLapMeta = useMemo(
+    () => (data && computeLapMeta ? computeLapMeta(data) : undefined),
+    [data, computeLapMeta]
+  );
+
   const lapMeta = useMemo(() => {
-    const driverDetails = lapTimesResponse?.driverLapDetails?.[selectedDriver];
-    if (!driverDetails || selectedLap === 'fastest') {
-      const best = driverDetails?.find((l) => l.isPersonalBest);
-      return best
-        ? { time: formatLapTime(best.lapTime), compound: best.compound ?? undefined }
-        : undefined;
-    }
-    const lapNum = typeof selectedLap === 'string' ? parseInt(selectedLap) : selectedLap;
-    const lapRecord = driverDetails.find((l) => l.lapNumber === lapNum);
-    return lapRecord
-      ? { time: formatLapTime(lapRecord.lapTime), compound: lapRecord.compound ?? undefined }
-      : undefined;
+    return getLapMetaFromResponse(lapTimesResponse, selectedDriver, selectedLap);
   }, [lapTimesResponse, selectedDriver, selectedLap]);
+
+  const { data: compareLapTimesResponse, isLoading: isLoadingCompareLapTimes } = useQuery({
+    queryKey: ['lapTimes', year, event, session, activeCompareDriver],
+    queryFn: () => fetchLapTimes(year, event, session, [activeCompareDriver]),
+    enabled: isExpanded && !!year && !!event && !!session && !!activeCompareDriver,
+  });
+
+  const compareLapOptions = useMemo(() => {
+    if (!activeCompareDriver) return ['fastest'];
+    const lapTimes = compareLapTimesResponse?.lapComparison;
+    if (lapTimes && lapTimes.length > 0) {
+      const validLaps = lapTimes.flatMap((lapData) =>
+        lapData[activeCompareDriver] !== null ? [lapData.LapNumber.toString()] : []
+      );
+      return ['fastest', ...validLaps];
+    }
+    return ['fastest'];
+  }, [activeCompareDriver, compareLapTimesResponse]);
+
+  const activeCompareLap =
+    activeCompareDriver && compareLapOptions.includes(compareLap.toString())
+      ? compareLap
+      : 'fastest';
+
+  const compareLapMeta = useMemo(
+    () => getLapMetaFromResponse(compareLapTimesResponse, activeCompareDriver, activeCompareLap),
+    [compareLapTimesResponse, activeCompareDriver, activeCompareLap]
+  );
+
+  const { data: compareData } = useQuery<T>({
+    queryKey: queryKey(activeCompareDriver, activeCompareLap),
+    queryFn: () => queryFn(activeCompareDriver, activeCompareLap),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    retry: 1,
+    enabled:
+      isExpanded &&
+      !!activeCompareDriver &&
+      (queryEnabled ? queryEnabled(activeCompareDriver, activeCompareLap) : !!activeCompareLap),
+  });
+
+  const compareMetrics = useMemo(() => {
+    if (compareData && computeMetrics) return computeMetrics(compareData);
+    return undefined;
+  }, [compareData, computeMetrics]);
+
+  const selectedDriverInfo = useMemo(
+    () =>
+      selectedDriverObj
+        ? { code: selectedDriver, name: selectedDriverObj.name, team: selectedDriverObj.team }
+        : { code: selectedDriver, name: selectedDriver, team: '' },
+    [selectedDriver, selectedDriverObj]
+  );
+
+  const primaryLapInfo = useMemo<LapInfo>(
+    () => ({
+      number: String(selectedLap),
+      ...(dataLapMeta ?? lapMeta),
+    }),
+    [dataLapMeta, lapMeta, selectedLap]
+  );
+
+  const comparisonLapInfo = useMemo<LapInfo | undefined>(
+    () =>
+      activeCompareDriver
+        ? {
+            number: String(activeCompareLap),
+            ...compareLapMeta,
+          }
+        : undefined,
+    [activeCompareDriver, activeCompareLap, compareLapMeta]
+  );
+
+  const singleAnalysisSignature = useMemo(
+    () => JSON.stringify(['single', title, selectedDriverInfo.code, primaryLapInfo.number]),
+    [primaryLapInfo.number, selectedDriverInfo.code, title]
+  );
+
+  const comparisonAnalysisSignature = useMemo(
+    () =>
+      activeCompareDriver && comparisonLapInfo
+        ? JSON.stringify([
+            'comparison',
+            title,
+            selectedDriverInfo.code,
+            primaryLapInfo.number,
+            activeCompareDriver,
+            comparisonLapInfo.number,
+          ])
+        : '',
+    [activeCompareDriver, comparisonLapInfo, primaryLapInfo.number, selectedDriverInfo.code, title]
+  );
 
   const handleExplain = () => {
     if (!metrics || !computeMetrics) return;
@@ -237,32 +378,218 @@ const TelemetryChartWrapper = <T,>({
       setOriginPos({ x, y });
     }
     setIsExpanded(true);
-
-    const lapInfo: LapInfo = {
-      number: String(selectedLap),
-      ...lapMeta,
-    };
-
-    analysisMutation.mutate({
+    lastAnalysisSignatureRef.current = singleAnalysisSignature;
+    mutateAnalysis({
       year,
       event,
       session,
       chart_type: title.toLowerCase().replace(/\s+/g, '_'),
       chart_title: title,
-      driver: selectedDriverObj
-        ? { code: selectedDriver, name: selectedDriverObj.name, team: selectedDriverObj.team }
-        : { code: selectedDriver, name: '', team: '' },
-      lap: lapInfo,
+      driver: selectedDriverInfo,
+      lap: primaryLapInfo,
       chart_metrics: metrics,
     });
   };
 
+  useEffect(() => {
+    if (
+      !isExpanded ||
+      !metrics ||
+      !activeCompareDriver ||
+      !compareDriverObj ||
+      !compareMetrics ||
+      !comparisonLapInfo ||
+      !comparisonAnalysisSignature ||
+      lastAnalysisSignatureRef.current === comparisonAnalysisSignature
+    ) {
+      return;
+    }
+
+    lastAnalysisSignatureRef.current = comparisonAnalysisSignature;
+    mutateAnalysis({
+      year,
+      event,
+      session,
+      chart_type: `comparison_${title.toLowerCase().replace(/\s+/g, '_')}`,
+      chart_title: `${title} Comparison`,
+      drivers: [
+        selectedDriverInfo,
+        {
+          code: activeCompareDriver,
+          name: compareDriverObj.name,
+          team: compareDriverObj.team,
+        },
+      ],
+      laps: [primaryLapInfo, comparisonLapInfo],
+      chart_metrics: {
+        max: metrics.max,
+        min: metrics.min,
+        avg: metrics.avg,
+        trace_sample: metrics.trace_sample,
+        extras: {
+          ...(metrics.extras ?? {}),
+          comparison_mode: true,
+          primary_metrics: serializeMetrics(metrics),
+          comparison_metrics: serializeMetrics(compareMetrics),
+          comparison_trace_sample: compareMetrics.trace_sample ?? [],
+        },
+      },
+    });
+  }, [
+    activeCompareDriver,
+    activeCompareLap,
+    comparisonAnalysisSignature,
+    compareDriverObj,
+    compareMetrics,
+    event,
+    isExpanded,
+    metrics,
+    comparisonLapInfo,
+    primaryLapInfo,
+    selectedDriverInfo,
+    session,
+    title,
+    mutateAnalysis,
+    year,
+  ]);
+
   const handleClose = () => {
     setIsExpanded(false);
+    lastAnalysisSignatureRef.current = '';
     analysisMutation.reset();
   };
 
   const hasAnalysis = !!computeMetrics && !!metrics;
+
+  const showExplainBtn = !isExpanded && hasAnalysis && data && !isLoading && !error;
+
+  const compareControls = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white">
+        Compare with
+      </span>
+
+      <Select
+        value={activeCompareDriver || '__none__'}
+        onValueChange={(value) => {
+          if (value === '__none__') {
+            setCompareDriver('');
+            setCompareLap('fastest');
+            if (isExpanded && metrics) {
+              lastAnalysisSignatureRef.current = singleAnalysisSignature;
+              mutateAnalysis({
+                year,
+                event,
+                session,
+                chart_type: title.toLowerCase().replace(/\s+/g, '_'),
+                chart_title: title,
+                driver: selectedDriverInfo,
+                lap: primaryLapInfo,
+                chart_metrics: metrics,
+              });
+            }
+            return;
+          }
+
+          setCompareDriver(value);
+          setCompareLap('fastest');
+          lastAnalysisSignatureRef.current = '';
+        }}
+        disabled={!filteredCompareDrivers.length}
+      >
+        <SelectTrigger className="h-9 w-[190px] rounded-md border border-white/[0.08] bg-transparent text-[13px] font-medium text-white focus:border-white/[0.12] focus:ring-0">
+          <div className="flex items-center gap-2">
+            {compareDriverObj ? (
+              <>
+                <img
+                  src={getDriverImage(compareDriverObj.code, year)}
+                  alt=""
+                  className="size-5 shrink-0 rounded-full border border-white/[0.08] object-cover object-top"
+                />
+                <span className="truncate">{compareDriverObj.name || compareDriverObj.code}</span>
+              </>
+            ) : (
+              <span className="truncate text-white">Select driver</span>
+            )}
+          </div>
+        </SelectTrigger>
+        <SelectContent className="min-w-[220px] rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl">
+          <SelectGroup>
+            <SelectLabel className="text-[11px] font-medium text-white">Driver</SelectLabel>
+            <SelectItem
+              value="__none__"
+              className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
+            >
+              No comparison
+            </SelectItem>
+            {filteredCompareDrivers.map((driver) => (
+              <SelectItem
+                key={driver.code}
+                value={driver.code}
+                className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
+              >
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src={getDriverImage(driver.code, year)}
+                    alt=""
+                    className="size-5 shrink-0 rounded-full border border-white/[0.08] object-cover object-top"
+                  />
+                  <span>{driver.name || driver.code}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={activeCompareLap.toString()}
+        onValueChange={(value) => {
+          lastAnalysisSignatureRef.current = '';
+          setCompareLap(value === 'fastest' ? 'fastest' : parseInt(value));
+        }}
+        disabled={
+          !activeCompareDriver || isLoadingCompareLapTimes || compareLapOptions.length === 0
+        }
+      >
+        <SelectTrigger className="h-9 w-[145px] rounded-md border border-white/[0.08] bg-transparent text-[13px] font-medium text-white focus:border-white/[0.12] focus:ring-0">
+          <span>{activeCompareLap === 'fastest' ? 'Fastest Lap' : `Lap ${activeCompareLap}`}</span>
+        </SelectTrigger>
+        <SelectContent className="rounded-lg border border-white/[0.06] bg-[#0a0a0a] text-white shadow-xl max-h-[300px]">
+          <SelectGroup>
+            {compareLapOptions.map((lapOpt) => (
+              <SelectItem
+                key={lapOpt.toString()}
+                value={lapOpt.toString()}
+                className="text-[13px] font-medium focus:bg-white/[0.04] focus:text-white"
+              >
+                {lapOpt === 'fastest' ? 'Fastest Lap' : `Lap ${lapOpt}`}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const explainBtn = showExplainBtn ? (
+    <button
+      ref={explainBtnRef}
+      type="button"
+      onClick={handleExplain}
+      disabled={analysisMutation.isPending}
+      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
+    >
+      {analysisMutation.isPending ? (
+        <>
+          <div className="size-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
+          Analysing...
+        </>
+      ) : (
+        'Explain'
+      )}
+    </button>
+  ) : null;
 
   return (
     <div
@@ -400,29 +727,13 @@ const TelemetryChartWrapper = <T,>({
           currentColor={currentColor}
           renderChart={renderChart}
           renderStats={renderStats}
+          explainBtn={explainBtn}
         />
       </div>
 
-      {/* Explain button */}
-      {!isExpanded && hasAnalysis && data && !isLoading && !error && (
-        <div className="border-t border-white/[0.04] px-5 py-3">
-          <button
-            ref={explainBtnRef}
-            type="button"
-            onClick={handleExplain}
-            disabled={analysisMutation.isPending}
-            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
-          >
-            {analysisMutation.isPending ? (
-              <>
-                <div className="size-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
-                Analysing...
-              </>
-            ) : (
-              'Explain'
-            )}
-          </button>
-        </div>
+      {/* Explain button — default placement (hidden when customExplainSlot is used) */}
+      {!customExplainSlot && explainBtn && (
+        <div className="border-t border-white/[0.04] px-5 py-3">{explainBtn}</div>
       )}
 
       {/* Analysis overlay — liquid fill animation */}
@@ -433,7 +744,7 @@ const TelemetryChartWrapper = <T,>({
             animate={{ clipPath: `circle(200% at ${originPos.x}px ${originPos.y}px)` }}
             exit={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
             transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 z-20 rounded-lg bg-white"
+            className="absolute inset-0 z-20 rounded-lg bg-[#0a0a0c]"
           >
             <AiAnalysisCard
               data={
@@ -446,6 +757,19 @@ const TelemetryChartWrapper = <T,>({
               }
               isLoading={analysisMutation.isPending}
               onClose={handleClose}
+              driverCode={selectedDriver}
+              driverName={selectedDriverObj?.name}
+              team={selectedDriverObj?.team}
+              year={year}
+              lapNumber={String(selectedLap)}
+              lapTime={dataLapMeta?.time ?? lapMeta?.time}
+              compound={dataLapMeta?.compound ?? lapMeta?.compound}
+              compareDriverCode={activeCompareDriver || undefined}
+              compareDriverName={compareDriverObj?.name}
+              compareTeam={compareDriverObj?.team}
+              compareLapTime={compareLapMeta?.time}
+              compareCompound={compareLapMeta?.compound}
+              headerActions={compareControls}
             />
           </m.div>
         )}
