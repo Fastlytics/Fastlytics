@@ -1,5 +1,5 @@
 // knip-ignore
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -23,6 +23,9 @@ import { useChartVisibility } from '@/hooks/useChartVisibility';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
+import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
+import { useAiTelemetrySummary, type ChartMetrics } from '@/hooks/useAiTelemetrySummary';
+import { m, AnimatePresence } from 'motion/react';
 import {
   buildCombinedTelemetryData,
   getTelemetryProps,
@@ -48,6 +51,44 @@ interface DriverComparisonTelemetryProps {
   shouldLoadChart: boolean;
   telemetryType: TelemetryType;
   title: string;
+}
+
+function computeComparisonMetrics(
+  data: Record<string, number>[],
+  telemetryType: TelemetryType,
+  driver1: string,
+  driver2: string
+): ChartMetrics {
+  if (data.length === 0) return {};
+
+  if (telemetryType === 'gap') {
+    const gaps = data.map((d) => (d.Gap ?? 0) as number);
+    const absGaps = gaps.map((g: number) => Math.abs(g));
+    return {
+      avg: gaps.reduce((a: number, b: number) => a + b, 0) / gaps.length,
+      extras: {
+        maxGap: Math.max(...gaps),
+        minGap: Math.min(...gaps),
+        avgAbsoluteGap: absGaps.reduce((a: number, b: number) => a + b, 0) / absGaps.length,
+      },
+    };
+  }
+
+  const d1Values = data.map((d) => (d[driver1] as number) ?? 0);
+  const d2Values = data.map((d) => (d[driver2] as number) ?? 0);
+
+  const d1Avg = d1Values.reduce((a, b) => a + b, 0) / d1Values.length;
+  const d2Avg = d2Values.reduce((a, b) => a + b, 0) / d2Values.length;
+
+  return {
+    extras: {
+      [`${driver1}_max`]: Math.max(...d1Values),
+      [`${driver1}_avg`]: d1Avg,
+      [`${driver2}_max`]: Math.max(...d2Values),
+      [`${driver2}_avg`]: d2Avg,
+      avgDelta: d1Avg - d2Avg,
+    },
+  };
 }
 
 const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
@@ -116,17 +157,68 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   });
   const { chartRef: exportRef, exportChart, isExporting } = useChartExport();
 
+  // ── Analysis state ───────────────
+  const explainBtnRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
+
+  const analysisMutation = useAiTelemetrySummary();
+
+  const metrics = useMemo(
+    () =>
+      combinedTelemetryData.length > 0
+        ? computeComparisonMetrics(combinedTelemetryData, telemetryType, driver1, driver2)
+        : undefined,
+    [combinedTelemetryData, telemetryType, driver1, driver2]
+  );
+
+  const handleExplain = () => {
+    if (!metrics) return;
+    const btn = explainBtnRef.current;
+    const card = cardRef.current;
+    if (btn && card) {
+      const btnRect = btn.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const x = btnRect.left + btnRect.width / 2 - cardRect.left;
+      const y = btnRect.top + btnRect.height / 2 - cardRect.top;
+      setOriginPos({ x, y });
+    }
+    setIsExpanded(true);
+
+    analysisMutation.mutate({
+      year,
+      event,
+      session,
+      chart_type: `comparison_${telemetryType}`,
+      chart_title: `${title}`,
+      drivers: [
+        { code: driver1, name: driver1, team: '' },
+        { code: driver2, name: driver2, team: '' },
+      ],
+      laps: [{ number: String(lap1) }, { number: String(lap2) }],
+      chart_metrics: metrics,
+    });
+  };
+
+  const handleClose = () => {
+    setIsExpanded(false);
+    analysisMutation.reset();
+  };
+
   if (!shouldLoadChart) return null;
 
   const isLoading = isLoading1 || isLoading2;
+  const hasData = combinedTelemetryData.length > 0 && !isLoading;
 
   return (
     <div
       ref={(el) => {
         chartVisRef.current = el;
         exportRef.current = el;
+        cardRef.current = el;
       }}
-      className="rounded-lg border border-white/[0.04]"
+      className="relative overflow-hidden rounded-lg border border-white/[0.04]"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2.5">
@@ -331,6 +423,54 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Explain button */}
+      {!isExpanded && hasData && (
+        <div className="border-t border-white/[0.04] px-4 py-3">
+          <button
+            ref={explainBtnRef}
+            type="button"
+            onClick={handleExplain}
+            disabled={analysisMutation.isPending}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
+          >
+            {analysisMutation.isPending ? (
+              <>
+                <div className="size-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
+                Analysing...
+              </>
+            ) : (
+              'Explain'
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Analysis overlay — liquid fill animation */}
+      <AnimatePresence>
+        {isExpanded && (
+          <m.div
+            initial={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
+            animate={{ clipPath: `circle(200% at ${originPos.x}px ${originPos.y}px)` }}
+            exit={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
+            transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 z-20 rounded-lg bg-white"
+          >
+            <AiAnalysisCard
+              data={
+                analysisMutation.data ?? {
+                  summary: '',
+                  key_insights: [],
+                  corner_analysis: [],
+                  cached: false,
+                }
+              }
+              isLoading={analysisMutation.isPending}
+              onClose={handleClose}
+            />
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

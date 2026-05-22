@@ -119,6 +119,14 @@ const RPMChart: React.FC<RPMChartProps> = ({
       queryKey={(driver, lapVal) => ['rpmTrace', year, event, session, driver, lapVal]}
       queryFn={(driver, lapVal) => fetchTelemetryRPM(year, event, session, driver, lapVal)}
       queryEnabled={(driver, lapVal) => !!year && !!event && !!session && !!driver && !!lapVal}
+      computeMetrics={(data) => {
+        const values = data.map((d) => d.RPM);
+        return {
+          max: Math.max(...values),
+          min: Math.min(...values),
+          avg: values.reduce((a, b) => a + b, 0) / values.length,
+        };
+      }}
       renderChart={(data, color, selectedDriver) => (
         <ResponsiveContainer width="100%" height={280} className="export-chart-container">
           <LineChart

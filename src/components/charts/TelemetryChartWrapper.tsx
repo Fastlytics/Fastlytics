@@ -1,4 +1,4 @@
-import React, { useMemo, useReducer } from 'react';
+import React, { useMemo, useReducer, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -18,7 +18,14 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
+import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
+import {
+  useAiTelemetrySummary,
+  type ChartMetrics,
+  type LapInfo,
+} from '@/hooks/useAiTelemetrySummary';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
+import { m, AnimatePresence } from 'motion/react';
 
 interface TelemetryChartWrapperProps<T> {
   className?: string;
@@ -34,6 +41,7 @@ interface TelemetryChartWrapperProps<T> {
   queryEnabled?: (driver: string, lap: string | number) => boolean;
   renderChart: (data: T, color: string, selectedDriver: string) => React.ReactNode;
   renderStats?: (data: T) => React.ReactNode;
+  computeMetrics?: (data: T) => ChartMetrics;
 }
 
 interface TelemetryChartContentProps<T> {
@@ -101,6 +109,13 @@ const TelemetryChartContent = <T,>({
   );
 };
 
+function formatLapTime(seconds: number | null | undefined): string | undefined {
+  if (seconds == null) return undefined;
+  const m = Math.floor(seconds / 60);
+  const s = (seconds % 60).toFixed(3);
+  return `${m}:${s.padStart(6, '0')}`;
+}
+
 const TelemetryChartWrapper = <T,>({
   className,
   title,
@@ -115,6 +130,7 @@ const TelemetryChartWrapper = <T,>({
   queryEnabled,
   renderChart,
   renderStats,
+  computeMetrics,
 }: TelemetryChartWrapperProps<T>) => {
   const chartVisRef = useChartVisibility({
     chartName: `telemetry_${title.toLowerCase().replace(/\s+/g, '_')}`,
@@ -181,13 +197,81 @@ const TelemetryChartWrapper = <T,>({
   const currentColor = selectedDriver ? driverColor(selectedDriver, year) : '#ef4444';
   const selectedDriverObj = availableDrivers?.find((d) => d.code === selectedDriver);
 
+  // ── Analysis state ───────────────
+  const explainBtnRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
+
+  const analysisMutation = useAiTelemetrySummary();
+
+  const metrics = useMemo(() => {
+    if (data && computeMetrics) return computeMetrics(data);
+    return undefined;
+  }, [data, computeMetrics]);
+
+  const lapMeta = useMemo(() => {
+    const driverDetails = lapTimesResponse?.driverLapDetails?.[selectedDriver];
+    if (!driverDetails || selectedLap === 'fastest') {
+      const best = driverDetails?.find((l) => l.isPersonalBest);
+      return best
+        ? { time: formatLapTime(best.lapTime), compound: best.compound ?? undefined }
+        : undefined;
+    }
+    const lapNum = typeof selectedLap === 'string' ? parseInt(selectedLap) : selectedLap;
+    const lapRecord = driverDetails.find((l) => l.lapNumber === lapNum);
+    return lapRecord
+      ? { time: formatLapTime(lapRecord.lapTime), compound: lapRecord.compound ?? undefined }
+      : undefined;
+  }, [lapTimesResponse, selectedDriver, selectedLap]);
+
+  const handleExplain = () => {
+    if (!metrics || !computeMetrics) return;
+    const btn = explainBtnRef.current;
+    const card = cardRef.current;
+    if (btn && card) {
+      const btnRect = btn.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const x = btnRect.left + btnRect.width / 2 - cardRect.left;
+      const y = btnRect.top + btnRect.height / 2 - cardRect.top;
+      setOriginPos({ x, y });
+    }
+    setIsExpanded(true);
+
+    const lapInfo: LapInfo = {
+      number: String(selectedLap),
+      ...lapMeta,
+    };
+
+    analysisMutation.mutate({
+      year,
+      event,
+      session,
+      chart_type: title.toLowerCase().replace(/\s+/g, '_'),
+      chart_title: title,
+      driver: selectedDriverObj
+        ? { code: selectedDriver, name: selectedDriverObj.name, team: selectedDriverObj.team }
+        : { code: selectedDriver, name: '', team: '' },
+      lap: lapInfo,
+      chart_metrics: metrics,
+    });
+  };
+
+  const handleClose = () => {
+    setIsExpanded(false);
+    analysisMutation.reset();
+  };
+
+  const hasAnalysis = !!computeMetrics && !!metrics;
+
   return (
     <div
       ref={(el) => {
         chartVisRef.current = el;
         exportRef.current = el;
+        cardRef.current = el;
       }}
-      className={cn(CARD_CONTAINER, className)}
+      className={cn(CARD_CONTAINER, 'relative overflow-hidden', className)}
     >
       {/* Header */}
       <div className="flex flex-col gap-4 px-5 pt-5 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -318,6 +402,54 @@ const TelemetryChartWrapper = <T,>({
           renderStats={renderStats}
         />
       </div>
+
+      {/* Explain button */}
+      {!isExpanded && hasAnalysis && data && !isLoading && !error && (
+        <div className="border-t border-white/[0.04] px-5 py-3">
+          <button
+            ref={explainBtnRef}
+            type="button"
+            onClick={handleExplain}
+            disabled={analysisMutation.isPending}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50"
+          >
+            {analysisMutation.isPending ? (
+              <>
+                <div className="size-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
+                Analysing...
+              </>
+            ) : (
+              'Explain'
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Analysis overlay — liquid fill animation */}
+      <AnimatePresence>
+        {isExpanded && (
+          <m.div
+            initial={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
+            animate={{ clipPath: `circle(200% at ${originPos.x}px ${originPos.y}px)` }}
+            exit={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
+            transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 z-20 rounded-lg bg-white"
+          >
+            <AiAnalysisCard
+              data={
+                analysisMutation.data ?? {
+                  summary: '',
+                  key_insights: [],
+                  corner_analysis: [],
+                  cached: false,
+                }
+              }
+              isLoading={analysisMutation.isPending}
+              onClose={handleClose}
+            />
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
