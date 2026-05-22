@@ -36,6 +36,7 @@ import {
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { groupDriversByTeam, getLineStylesForDriver } from '@/lib/teamUtils';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 interface SavedChartRendererProps {
   chartType: string;
@@ -432,8 +433,13 @@ function ChartContent({ chartType, chartConfig }: SavedChartRendererProps) {
           return fetchTelemetryBrake(year, event, session, driver, lap);
         case 'RPM':
           return fetchTelemetryRPM(year, event, session, driver, lap);
-        case 'DRS':
+        case 'DRS': {
+          const drsYear = (chartConfig.year as number) || 0;
+          if (!isDRSAvailable(drsYear)) {
+            return [];
+          }
           return fetchTelemetryDRS(year, event, session, driver, lap);
+        }
         default:
           return fetchTelemetrySpeed(year, event, session, driver, lap);
       }

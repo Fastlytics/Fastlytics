@@ -2,6 +2,7 @@
 import { LandingReplayAvailable, LandingReplayChunk, LandingReplayMetadata } from '@/lib/api';
 import { getGapSortKey } from '@/components/replay/replay-utils';
 import { ChartType, HeroChartSeries, HeroStrategyStint, HeroViewModel } from './hero-types';
+import { isDRSAvailable } from '@/lib/drs-utils';
 
 const DEFAULT_TRACK_PATH =
   'M70 110 C40 80 60 40 110 45 L170 48 C210 50 225 35 210 20 C190 2 220 -5 260 8 C310 24 340 55 330 80 C322 98 290 96 288 112 C286 130 340 126 355 108 C372 88 365 112 350 120 C330 130 260 135 220 118 C190 105 170 115 140 112 C100 108 85 125 70 110Z';
@@ -152,7 +153,6 @@ export const DEFAULT_HERO_VIEW: HeroViewModel = {
     { label: 'Throttle', value: 100, color: 'bg-emerald-500' },
     { label: 'Brake', value: 0, color: 'bg-red-500' },
     { label: 'Speed', value: 82, color: 'bg-blue-500', suffix: '298 km/h' },
-    { label: 'DRS', value: 100, color: 'bg-emerald-500', suffix: 'Open' },
   ],
   strategy: [
     { compound: 'S', laps: 18, color: '#ef4444', width: '31%' },
@@ -647,6 +647,7 @@ export function buildLandingHeroView(
   const {
     chunk,
     metadata,
+    selected,
     selectedDrivers,
     totalLaps,
     circuitLength,
@@ -655,6 +656,7 @@ export function buildLandingHeroView(
     driverColors,
     driverInfo,
   } = prepared;
+  const year = selected.year;
   const sampleIndex = clamp(frameIndex, 0, Math.max(chunk.time.length - 1, 0));
   const orderedDrivers = orderDriversAtFrame(selectedDrivers, chunk, sampleIndex);
   const leaderCode = orderedDrivers[0];
@@ -684,7 +686,6 @@ export function buildLandingHeroView(
   });
 
   const speedKph = Math.round(activeDriver?.speed?.[sampleIndex] || 0);
-  const drsOpen = (activeDriver?.drs?.[sampleIndex] || 0) > 0;
   const telemetry = [
     {
       label: 'Throttle',
@@ -702,12 +703,19 @@ export function buildLandingHeroView(
       color: 'bg-blue-500',
       suffix: `${speedKph} km/h`,
     },
-    {
-      label: 'DRS',
-      value: drsOpen ? 100 : 12,
-      color: 'bg-emerald-500',
-      suffix: drsOpen ? 'Open' : 'Closed',
-    },
+    ...(isDRSAvailable(year)
+      ? (() => {
+          const drsOpen = (activeDriver?.drs?.[sampleIndex] || 0) > 0;
+          return [
+            {
+              label: 'DRS',
+              value: drsOpen ? 100 : 12,
+              color: 'bg-emerald-500',
+              suffix: drsOpen ? 'Open' : 'Closed',
+            },
+          ];
+        })()
+      : []),
   ];
 
   const strategy = prepared.strategyByDriver[activeDriverCode] || [];
