@@ -3,7 +3,7 @@ import { m, AnimatePresence } from 'motion/react';
 import { IPhoneFrame } from './IPhoneFrame';
 import { screenshots } from './AppScreenshots';
 import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
-import { supabase } from '@/lib/supabase';
+import { joinMobileWaitlist } from '@/lib/app-data-api';
 
 export function MobileComingSoon() {
   const [email, setEmail] = useState('');
@@ -20,19 +20,8 @@ export function MobileComingSoon() {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase
-        .from('mobile_waitlist')
-        .insert({ email: email.trim().toLowerCase() });
-
-      if (error) {
-        if (error.code === '23505') {
-          setStatus('success');
-        } else {
-          throw error;
-        }
-      } else {
-        setStatus('success');
-      }
+      await joinMobileWaitlist(email.trim().toLowerCase());
+      setStatus('success');
     } catch (err: unknown) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Try again.');

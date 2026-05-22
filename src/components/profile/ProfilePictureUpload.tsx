@@ -6,8 +6,8 @@ import { m } from 'motion/react';
 import { Camera01Icon, Cancel01Icon, Upload04Icon } from 'hugeicons-react';
 import { Dialog } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { getAccessToken } from '@/lib/supabase';
+import { updateMyProfile } from '@/lib/profile-api';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
 
@@ -138,13 +138,7 @@ export function ProfilePictureUpload({ open, onClose, onSuccess }: ProfilePictur
         throw new Error('Upload succeeded but no avatar URL was returned');
       }
 
-      // Update the profile in Supabase
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('id', profile.id);
-
-      if (error) throw error;
+      await updateMyProfile({ avatar_url: avatarUrl });
 
       toast.success('Profile picture updated');
       await refreshProfile();
