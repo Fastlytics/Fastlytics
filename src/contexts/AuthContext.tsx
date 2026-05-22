@@ -24,10 +24,15 @@ export interface Profile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  bio: string | null;
   website: string | null;
   favorite_driver: string | null;
   favorite_team: string | null;
   onboarding_completed: boolean;
+  is_public: boolean;
+  show_favorites: boolean;
+  show_comments: boolean;
+  show_saved_charts: boolean;
 }
 
 interface Subscription {
@@ -191,10 +196,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 first_name: null,
                 last_name: null,
                 avatar_url: resolveUploadUrl(userMeta?.avatar_url),
+                bio: null,
                 website: null,
                 favorite_driver: null,
                 favorite_team: null,
                 onboarding_completed: false,
+                is_public: true,
+                show_favorites: true,
+                show_comments: true,
+                show_saved_charts: true,
               },
             });
           } else {
