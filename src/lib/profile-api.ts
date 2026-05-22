@@ -6,6 +6,7 @@ export interface ProfilePatchPayload {
   last_name?: string | null;
   username?: string | null;
   avatar_url?: string | null;
+  bio?: string | null;
   website?: string | null;
   favorite_driver?: string | null;
   favorite_team?: string | null;

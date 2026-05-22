@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ProfilePictureUpload } from '@/components/profile/ProfilePictureUpload';
+import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { SavedChartRenderer, buildChartUrl } from '@/components/saved/SavedChartRenderer';
 
@@ -33,6 +34,10 @@ interface PublicProfile {
   favorite_driver: string | null;
   favorite_team: string | null;
   created_at: string;
+  is_public: boolean;
+  show_favorites: boolean;
+  show_comments: boolean;
+  show_saved_charts: boolean;
 }
 
 interface ProfileComment {
@@ -65,13 +70,14 @@ const Profile = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('comments');
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Fetch public profile
   const { data: profile, isLoading: isLoadingProfile } = useQuery<PublicProfile | null>({
     queryKey: ['publicProfile', username],
     queryFn: async () => {
       const selectCols =
-        'id, username, full_name, avatar_url, website, favorite_driver, favorite_team';
+        'id, username, full_name, avatar_url, website, favorite_driver, favorite_team, is_public, show_favorites, show_comments, show_saved_charts, bio';
 
       // Try by username first
       const { data } = await supabase
@@ -84,7 +90,6 @@ const Profile = () => {
         return {
           ...data,
           avatar_url: resolveUploadUrl(data.avatar_url),
-          bio: null,
           created_at: '',
         } as PublicProfile;
       }
@@ -100,7 +105,6 @@ const Profile = () => {
         return {
           ...byId,
           avatar_url: resolveUploadUrl(byId.avatar_url),
-          bio: null,
           created_at: '',
         } as PublicProfile;
       }
@@ -110,6 +114,10 @@ const Profile = () => {
   });
 
   const isOwnProfile = !!user && (user.id === username || user.id === profile?.id);
+  const isPrivateToViewer = !isOwnProfile && !(profile?.is_public ?? true);
+  const showFavorites = isOwnProfile || (!isPrivateToViewer && (profile?.show_favorites ?? true));
+  const showComments = isOwnProfile || (!isPrivateToViewer && (profile?.show_comments ?? true));
+  const showSaved = isOwnProfile || (!isPrivateToViewer && (profile?.show_saved_charts ?? true));
 
   // Fetch user's comments
   const { data: comments = [], isLoading: isLoadingComments } = useQuery<ProfileComment[]>({
@@ -129,7 +137,7 @@ const Profile = () => {
         article_title: null,
       }));
     },
-    enabled: !!profile?.id && activeTab === 'comments',
+    enabled: !!profile?.id && activeTab === 'comments' && showComments,
   });
 
   // Fetch saved charts (public only for other users, all for own profile)
@@ -154,7 +162,7 @@ const Profile = () => {
       if (error) return []; // Table may not exist yet
       return (data || []) as SavedChart[];
     },
-    enabled: !!profile?.id && activeTab === 'saved',
+    enabled: !!profile?.id && activeTab === 'saved' && showSaved,
   });
 
   if (isLoadingProfile) {
@@ -265,7 +273,7 @@ const Profile = () => {
               </div>
 
               {/* Favorite badges */}
-              {(profile.favorite_driver || profile.favorite_team) && (
+              {showFavorites && (profile.favorite_driver || profile.favorite_team) && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {profile.favorite_driver && (
                     <span className="rounded-full border border-white/[0.08] bg-white/[0.02] px-2.5 py-0.5 text-[11px] font-medium text-white/80">
@@ -283,12 +291,12 @@ const Profile = () => {
 
             {/* Edit button for own profile */}
             {isOwnProfile && (
-              <Link
-                to="/settings"
+              <button
+                onClick={() => setEditDialogOpen(true)}
                 className="shrink-0 rounded-md border border-white/[0.08] px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-white/[0.04]"
               >
                 Edit profile
-              </Link>
+              </button>
             )}
           </div>
         </m.div>
@@ -347,22 +355,30 @@ const Profile = () => {
 
         {/* Tab Content */}
         <div className="mt-6">
-          {activeTab === 'comments' && (
-            <CommentsTab comments={comments} isLoading={isLoadingComments} />
-          )}
-          {activeTab === 'saved' && (
-            <SavedChartsTab
-              charts={savedCharts}
-              isLoading={isLoadingSaved}
-              isOwnProfile={isOwnProfile}
-            />
-          )}
+          {activeTab === 'comments' &&
+            (showComments ? (
+              <CommentsTab comments={comments} isLoading={isLoadingComments} />
+            ) : (
+              <PrivateContentMessage />
+            ))}
+          {activeTab === 'saved' &&
+            (showSaved ? (
+              <SavedChartsTab
+                charts={savedCharts}
+                isLoading={isLoadingSaved}
+                isOwnProfile={isOwnProfile}
+              />
+            ) : (
+              <PrivateContentMessage />
+            ))}
         </div>
       </div>
 
       {isOwnProfile && (
         <ProfilePictureUpload open={avatarDialogOpen} onClose={() => setAvatarDialogOpen(false)} />
       )}
+
+      <EditProfileDialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} />
     </>
   );
 };
@@ -596,6 +612,23 @@ function ChartCard({ chart, isOwnProfile }: { chart: SavedChart; isOwnProfile: b
         </div>
       </div>
     </m.div>
+  );
+}
+
+function PrivateContentMessage() {
+  return (
+    <div
+      className={cn(
+        CARD_CONTAINER,
+        'flex flex-col items-center justify-center px-6 py-16 text-center'
+      )}
+    >
+      <LockIcon className="mb-2 size-5 text-white/40" />
+      <p className="text-[13px] font-medium text-white/60">This account is private</p>
+      <p className="mt-0.5 text-[12px] text-white/40">
+        This user has chosen to keep their content private.
+      </p>
+    </div>
   );
 }
 

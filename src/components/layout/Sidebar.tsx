@@ -5,6 +5,7 @@ import { SIDEBAR_NAV_SECTIONS } from '@/lib/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AccountMenu } from '@/components/layout/AccountMenu';
+import { ArrowUpRight01Icon } from 'hugeicons-react';
 import { useNewsNotifications, useDiscussionNotifications } from '@/hooks/useNews';
 
 export interface SidebarProps {
@@ -297,6 +298,69 @@ const Sidebar = ({ collapsed: controlledCollapsed, onToggleCollapse }: SidebarPr
           </div>
         ))}
       </nav>
+
+      {/* External links */}
+      <div
+        className={`flex flex-col gap-0.5 border-t border-white/[0.04] py-2 ${
+          !showExpanded ? 'px-1.5' : 'px-3'
+        }`}
+      >
+        {/* MCP */}
+        {!showExpanded ? (
+          <a
+            href="https://fastlytics.app/mcp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex size-9 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/[0.04] hover:text-white"
+            title="MCP"
+          >
+            <img
+              src="/ai-agent/Model Context Protocol-dark.svg"
+              alt="MCP"
+              className="size-[18px] shrink-0"
+            />
+          </a>
+        ) : (
+          <a
+            href="https://fastlytics.app/mcp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[15px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
+          >
+            <img
+              src="/ai-agent/Model Context Protocol-dark.svg"
+              alt=""
+              className="size-[18px] shrink-0"
+            />
+            <span>MCP</span>
+            <ArrowUpRight01Icon size={14} className="ml-auto shrink-0 opacity-60" />
+          </a>
+        )}
+
+        {/* Discord */}
+        {!showExpanded ? (
+          <a
+            href="https://discord.gg/JTBVxD7PP8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex size-9 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/[0.04] hover:text-white"
+            title="Discord"
+          >
+            <img src="/Discord.svg" alt="Discord" className="size-[18px] shrink-0" />
+          </a>
+        ) : (
+          <a
+            href="https://discord.gg/JTBVxD7PP8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[15px] font-medium text-white/80 transition-colors hover:bg-white/[0.03] hover:text-white"
+          >
+            <img src="/Discord.svg" alt="" className="size-[18px] shrink-0" />
+            <span>Discord</span>
+            <ArrowUpRight01Icon size={14} className="ml-auto shrink-0 opacity-60" />
+          </a>
+        )}
+      </div>
 
       {/* Bottom section: account + collapse */}
       {user && (
