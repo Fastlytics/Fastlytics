@@ -9,13 +9,11 @@ import {
   fetchRaceResults,
   fetchAvailableSessions,
   fetchSpecificRaceResults,
-  fetchEventSessionSchedule,
   fetchPitStats,
   fetchSeasonRecords,
   TeamStanding,
   DriverStanding,
   ScheduleEvent,
-  EventSessionSchedule,
   RaceResult,
   AvailableSession,
   DetailedRaceResult,
@@ -428,23 +426,22 @@ const Dashboard = () => {
     [nextRace]
   );
 
-  // Fetch the session schedule for the next race to get exact start times
-  const nextRaceSlug = useMemo(
-    () => (nextRace ? toDashboardRaceSlug(nextRace.EventName) : undefined),
-    [nextRace]
-  );
-
-  const { data: nextRaceSchedule } = useQuery<EventSessionSchedule>({
-    queryKey: ['sessionSchedule', selectedYear, nextRaceSlug],
-    queryFn: () => fetchEventSessionSchedule(selectedYear, nextRaceSlug!),
-    enabled: !!nextRaceSlug,
-    staleTime: 1000 * 60 * 60,
-  });
-
   const raceSessionStartTime = useMemo(() => {
-    const raceSession = nextRaceSchedule?.sessions.find((s) => s.name === 'Race');
-    return raceSession?.date ?? nextRace?.EventDate;
-  }, [nextRaceSchedule, nextRace]);
+    if (!nextRace) return undefined;
+
+    const sessions = [
+      { name: nextRace.Session1, date: nextRace.Session1Date },
+      { name: nextRace.Session2, date: nextRace.Session2Date },
+      { name: nextRace.Session3, date: nextRace.Session3Date },
+      { name: nextRace.Session4, date: nextRace.Session4Date },
+      { name: nextRace.Session5, date: nextRace.Session5Date },
+    ];
+
+    const raceSession = sessions.find(
+      (session) => session.name?.toLowerCase() === 'race' && session.date
+    );
+    return raceSession?.date ?? nextRace.EventDate;
+  }, [nextRace]);
 
   const { data: nextRaceWeather, isLoading: isLoadingWeather } = useCircuitWeather(
     nextRaceCoords?.lat,

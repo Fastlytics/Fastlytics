@@ -1,8 +1,24 @@
 import React, { useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { EventSessionSchedule, AvailableSession } from '@/lib/api';
 import EventHeroCard from '@/components/calendar/EventHeroCard';
 import { getCountryCode } from '@/utils/countryUtils';
+import { getCircuitCoords } from '@/lib/circuit-coordinates';
+import {
+  fetchCircuitWeather,
+  getSessionForecastDurationHours,
+  type CircuitWeather,
+} from '@/hooks/useCircuitWeather';
+import {
+  Sun02Icon,
+  SunCloud01Icon,
+  CloudIcon,
+  CloudMidRainIcon,
+  CloudAngledRainZapIcon,
+  CloudSnowIcon,
+  CloudFastWindIcon,
+} from 'hugeicons-react';
 
 interface ScheduleSidebarProps {
   sessionSchedule: EventSessionSchedule | undefined;
@@ -16,6 +32,28 @@ interface ScheduleSidebarProps {
   setShowAnalysis: (show: boolean) => void;
 }
 
+const SessionWeatherIcon: React.FC<{
+  icon: CircuitWeather['icon'];
+  className?: string;
+}> = ({ icon, className }) => {
+  const Cmp =
+    icon === 'sun'
+      ? Sun02Icon
+      : icon === 'partly-cloudy'
+        ? SunCloud01Icon
+        : icon === 'rain'
+          ? CloudMidRainIcon
+          : icon === 'storm'
+            ? CloudAngledRainZapIcon
+            : icon === 'snow'
+              ? CloudSnowIcon
+              : icon === 'fog'
+                ? CloudFastWindIcon
+                : CloudIcon;
+
+  return <Cmp className={className} strokeWidth={1.8} />;
+};
+
 export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   sessionSchedule,
   roundNumber,
@@ -27,6 +65,11 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   setSelectedSession,
   setShowAnalysis,
 }) => {
+  const circuitCoords = useMemo(
+    () => getCircuitCoords(sessionSchedule?.eventName, sessionSchedule?.location),
+    [sessionSchedule]
+  );
+
   const scheduleHeroDate = useMemo(() => {
     if (!sessionSchedule?.sessions.length) return '';
     const dates = sessionSchedule.sessions.map((s) => new Date(s.date));
@@ -53,6 +96,31 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
       .sort((a, b) => a.date.getTime() - b.date.getTime());
     return upcoming[0] ?? null;
   }, [sessionSchedule, now]);
+
+  const sessionWeatherQueries = useQueries({
+    queries: (sessionSchedule?.sessions ?? []).map((session) => ({
+      queryKey: [
+        'sessionWeather',
+        circuitCoords?.lat,
+        circuitCoords?.lng,
+        circuitCoords?.timezone,
+        session.name,
+        session.date,
+      ],
+      queryFn: () =>
+        fetchCircuitWeather({
+          lat: circuitCoords?.lat,
+          lng: circuitCoords?.lng,
+          eventDate: session.date,
+          timezone: circuitCoords?.timezone,
+          startTime: session.date,
+          durationHours: getSessionForecastDurationHours(session.name),
+        }),
+      enabled: !!circuitCoords && !!session.date,
+      staleTime: 1000 * 60 * 30,
+      retry: false,
+    })),
+  });
 
   if (!sessionSchedule) {
     return (
@@ -147,7 +215,7 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         </div>
         <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
           <div className="divide-y divide-white/[0.06]">
-            {sessionSchedule.sessions.map((session) => {
+            {sessionSchedule.sessions.map((session, index) => {
               const sessionType = session.name === 'Race' ? 'R' : session.name;
               const isNext = nextSessionDate?.name === session.name;
               const isAvailable = availableSessions.some((s) => {
@@ -197,6 +265,52 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                       {session.name}
                     </div>
                   </div>
+                  <div className="hidden w-28 shrink-0 text-right md:block">
+                    {(() => {
+                      const weatherQuery = sessionWeatherQueries[index];
+                      const weather = weatherQuery?.data;
+
+                      if (weatherQuery?.isLoading) {
+                        return (
+                          <div className="flex justify-end">
+                            <div className="size-3 animate-spin rounded-full border border-white/[0.08] border-t-white/50" />
+                          </div>
+                        );
+                      }
+
+                      if (!weather) {
+                        return (
+                          <div className="text-right">
+                            <div className="text-[14px] text-white/30">-</div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/20">
+                              Forecast
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <SessionWeatherIcon
+                              icon={weather.icon}
+                              className={cn(
+                                'size-4',
+                                weather.isWet ? 'text-sky-300' : 'text-amber-200'
+                              )}
+                            />
+                            <span className="text-[14px] tabular-nums text-white/80">
+                              {weather.temperatureC}
+                              {'\u00B0'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] uppercase tracking-wider text-white/25">
+                            {weather.precipitationProbability}% rain
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <div className="hidden shrink-0 text-right md:block">
                     {!isAvailable && (
                       <>
@@ -218,9 +332,7 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                     {(() => {
                       const sessionDate = toDate(session.date);
                       const diffMins = (now.getTime() - sessionDate.getTime()) / (1000 * 60);
-                      let duration = 60;
-                      if (sessionType === 'R') duration = 180;
-                      else if (sessionType === 'Sprint') duration = 60;
+                      const duration = getSessionForecastDurationHours(session.name) * 60;
                       const isLive = diffMins >= 0 && diffMins < duration;
 
                       if (isLive) {
