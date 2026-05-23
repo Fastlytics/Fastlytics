@@ -1,7 +1,7 @@
 // knip-ignore
 import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   fetchTeamStandings,
   fetchDriverStandings,
@@ -66,6 +66,23 @@ const getEventStartDate = getDashboardEventStartDate;
 const toRaceSlug = toDashboardRaceSlug;
 const parseLapTime = parseDashboardLapTime;
 const getTestingSessionOrder = getDashboardTestingSessionOrder;
+
+const getRecentRaceSessionOrder = (sessionType: string): number => {
+  if (sessionType === 'FP1') return 10;
+  if (sessionType === 'FP2') return 20;
+  if (sessionType === 'FP3') return 30;
+  if (sessionType === 'SQ') return 35;
+  if (sessionType === 'SQ1') return 36;
+  if (sessionType === 'SQ2') return 37;
+  if (sessionType === 'SQ3') return 38;
+  if (sessionType === 'Sprint') return 40;
+  if (sessionType === 'Q') return 45;
+  if (sessionType === 'Q1') return 46;
+  if (sessionType === 'Q2') return 47;
+  if (sessionType === 'Q3') return 48;
+  if (sessionType === 'R') return 100;
+  return -1;
+};
 
 const Dashboard = () => {
   const [now] = useState(() => Date.now());
@@ -221,6 +238,40 @@ const Dashboard = () => {
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime());
     return completed[0] ?? testingEvents[0];
   }, [isTestingMode, testingEvents, now]);
+
+  const recentRaceAvailableSessionQueries = useQueries({
+    queries: recentRaces.map((event) => ({
+      queryKey: ['recentRaceAvailableSessions', selectedYear, event.EventName],
+      queryFn: () => fetchAvailableSessions(selectedYear, event.EventName),
+      enabled: !!event.EventName,
+      staleTime: 1000 * 60 * 5,
+    })),
+  });
+
+  const recentRaceHrefByEventName = useMemo(() => {
+    const hrefByEventName = new Map<string, string>();
+
+    recentRaces.forEach((event, index) => {
+      const slug = `${selectedYear}-${toRaceSlug(event.EventName)}`;
+      const availableSessions = recentRaceAvailableSessionQueries[index]?.data ?? [];
+
+      if (availableSessions.some((session) => session.type === 'R')) {
+        hrefByEventName.set(event.EventName, `/race/${slug}?view=analysis`);
+        return;
+      }
+
+      const latestSession = availableSessions.toSorted(
+        (a, b) => getRecentRaceSessionOrder(b.type) - getRecentRaceSessionOrder(a.type)
+      )[0]?.type;
+
+      hrefByEventName.set(
+        event.EventName,
+        latestSession ? `/race/${slug}?session=${latestSession}` : `/race/${slug}`
+      );
+    });
+
+    return hrefByEventName;
+  }, [recentRaces, recentRaceAvailableSessionQueries, selectedYear]);
 
   const { data: testingAvailableSessions = [] } = useQuery<AvailableSession[]>({
     queryKey: ['testingAvailableSessions', selectedYear, primaryTestingEvent?.EventName],
@@ -677,6 +728,7 @@ const Dashboard = () => {
                 trackEvent={trackEvent}
                 toRaceSlug={toRaceSlug}
                 getCountryCode={getCountryCode}
+                hrefByEventName={recentRaceHrefByEventName}
               />
             </div>
           </div>
@@ -826,6 +878,7 @@ const RecentEventsSection = ({
   trackEvent,
   toRaceSlug,
   getCountryCode,
+  hrefByEventName,
 }: {
   isTestingMode: boolean;
   events: ScheduleEvent[];
@@ -834,6 +887,7 @@ const RecentEventsSection = ({
   trackEvent: (name: string, props: Record<string, unknown>) => void;
   toRaceSlug: (name: string) => string;
   getCountryCode: (country: string) => string;
+  hrefByEventName: Map<string, string>;
 }) => (
   <div className={`h-full ${CARD_CONTAINER}`}>
     {/* Header */}
@@ -883,7 +937,10 @@ const RecentEventsSection = ({
                 action: 'click_event',
                 event: event.EventName,
               });
-              navigate(`/race/${selectedYear}-${toRaceSlug(event.EventName)}?view=analysis`);
+              navigate(
+                hrefByEventName.get(event.EventName) ??
+                  `/race/${selectedYear}-${toRaceSlug(event.EventName)}`
+              );
             }}
             className="group flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/[0.02]"
           >

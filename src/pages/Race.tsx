@@ -134,17 +134,20 @@ const Race = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setSelectedSession = useCallback((session: string) => {
-    setSearchParams(
-      (prev) => {
-        const newParams = new URLSearchParams(prev);
-        newParams.set('session', session);
-        return newParams;
-      },
-      { replace: true }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const setSelectedSession = useCallback(
+    (session: string) => {
+      const params = new URLSearchParams(location.search);
+      params.set('session', session);
+      navigate(
+        {
+          pathname: location.pathname,
+          search: `?${params.toString()}`,
+        },
+        { replace: true }
+      );
+    },
+    [location.pathname, location.search, navigate]
+  );
 
   useEffect(() => {
     const timer = setInterval(() => dispatchUI({ type: 'tickNow' }), 1000);

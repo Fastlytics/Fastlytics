@@ -319,6 +319,11 @@ const TelemetryChartWrapper = <T,>({
     return undefined;
   }, [compareData, computeMetrics]);
 
+  const compareDataLapMeta = useMemo(
+    () => (compareData && computeLapMeta ? computeLapMeta(compareData) : undefined),
+    [compareData, computeLapMeta]
+  );
+
   const selectedDriverInfo = useMemo(
     () =>
       selectedDriverObj
@@ -340,10 +345,10 @@ const TelemetryChartWrapper = <T,>({
       activeCompareDriver
         ? {
             number: String(activeCompareLap),
-            ...compareLapMeta,
+            ...(compareDataLapMeta ?? compareLapMeta),
           }
         : undefined,
-    [activeCompareDriver, activeCompareLap, compareLapMeta]
+    [activeCompareDriver, activeCompareLap, compareDataLapMeta, compareLapMeta]
   );
 
   const singleAnalysisSignature = useMemo(

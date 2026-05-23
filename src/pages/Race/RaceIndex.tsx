@@ -16,8 +16,9 @@ export default function RaceIndex() {
   const hasRaceData = ctx.isTestingEvent
     ? ctx.availableSessions.length > 0
     : ctx.availableSessions.some((s) => s.type === 'R');
+  const wantsAnalysis = searchParams.get('view') === 'analysis' && ctx.availableSessions.length > 0;
 
-  if (hasRaceData) {
+  if (hasRaceData || wantsAnalysis) {
     // Ensure session param is included in the redirect if not already present
     let search = location.search;
     if (!searchParams.get('session') && ctx.availableSessions.length > 0) {
