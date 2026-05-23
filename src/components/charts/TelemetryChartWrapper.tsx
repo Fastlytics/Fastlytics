@@ -772,8 +772,8 @@ const TelemetryChartWrapper = <T,>({
               compareDriverCode={activeCompareDriver || undefined}
               compareDriverName={compareDriverObj?.name}
               compareTeam={compareDriverObj?.team}
-              compareLapTime={compareLapMeta?.time}
-              compareCompound={compareLapMeta?.compound}
+              compareLapTime={compareDataLapMeta?.time ?? compareLapMeta?.time}
+              compareCompound={compareDataLapMeta?.compound ?? compareLapMeta?.compound}
               headerActions={compareControls}
             />
           </m.div>
