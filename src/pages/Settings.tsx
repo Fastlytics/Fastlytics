@@ -18,6 +18,7 @@ import {
   Delete02Icon,
   PlusSignIcon,
   StarIcon,
+  DashboardSquare02Icon,
 } from 'hugeicons-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle, faGithub, faDiscord } from '@fortawesome/free-brands-svg-icons';
@@ -34,6 +35,7 @@ import { SEO } from '@/components/layout/SEO';
 import {
   createMcpKeyRecord,
   getMcpUsage,
+  getTelemetryAnalysisUsage,
   listMcpKeys,
   purgeAccountData,
   revokeMcpKey,
@@ -61,6 +63,7 @@ type SettingsSection =
   | 'security'
   | 'subscription'
   | 'api-keys'
+  | 'usage'
   | 'danger';
 
 type RaceLandingTab = 'overview' | 'strategy' | 'lap-analysis' | 'head-to-head' | 'telemetry';
@@ -120,6 +123,7 @@ const NAV_ITEMS: { key: SettingsSection; label: string; icon: typeof UserIcon }[
   { key: 'security', label: 'Security', icon: SecurityCheckIcon },
   { key: 'subscription', label: 'Subscription', icon: CreditCardIcon },
   { key: 'api-keys', label: 'API Keys', icon: ApiIcon },
+  { key: 'usage', label: 'Usage', icon: DashboardSquare02Icon },
   { key: 'danger', label: 'Danger Zone', icon: AlertDiamondIcon },
 ];
 
@@ -568,12 +572,9 @@ const Settings = () => {
                   onUpgrade={() => setUpgradeOpen(true)}
                 />
               )}
-              {activeSection === 'api-keys' && (
-                <ApiKeysPanel
-                  userId={user?.id}
-                  subscription={subscription}
-                  isSubscribed={isSubscribed}
-                />
+              {activeSection === 'api-keys' && <ApiKeysPanel userId={user?.id} />}
+              {activeSection === 'usage' && (
+                <UsagePanel subscription={subscription} isSubscribed={isSubscribed} />
               )}
               {activeSection === 'danger' && (
                 <DangerPanel
@@ -1709,42 +1710,22 @@ interface UsageLogEntry {
   created_at: string;
 }
 
-function ApiKeysPanel({
-  userId,
-  subscription,
-  isSubscribed,
-}: {
-  userId: string | null | undefined;
-  subscription: { plan?: string } | null;
-  isSubscribed: boolean;
-}) {
+function ApiKeysPanel({ userId }: { userId: string | null | undefined }) {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
-  const [usage, setUsage] = useState<{ count: number; recent: UsageLogEntry[] }>({
-    count: 0,
-    recent: [],
-  });
   const { trackEvent } = useAnalytics();
-
-  const tier = subscription?.plan || (isSubscribed ? 'pro' : 'free');
-  const limit = tier === 'pro' ? 3000 : 300;
 
   const loadKeys = async () => {
     const data = await listMcpKeys();
     setKeys(data as ApiKey[]);
   };
 
-  const loadUsage = async () => {
-    const usageData = await getMcpUsage();
-    setUsage({ count: usageData.count, recent: usageData.recent as UsageLogEntry[] });
-  };
-
   useEffect(() => {
     async function init() {
-      await Promise.all([loadKeys(), loadUsage()]);
+      await loadKeys();
       setLoading(false);
     }
     init();
@@ -1890,46 +1871,116 @@ function ApiKeysPanel({
           </div>
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Monthly usage */}
+// ─── Usage Panel ────────────────────────────────────────────────────────────────
+
+function UsagePanel({
+  subscription,
+  isSubscribed,
+}: {
+  subscription: { plan?: string } | null;
+  isSubscribed: (tier?: 'pro' | 'ultra') => boolean;
+}) {
+  const [usage, setUsage] = useState<{ count: number; recent: UsageLogEntry[] }>({
+    count: 0,
+    recent: [],
+  });
+  const [aiUsage, setAiUsage] = useState<{ count: number }>({ count: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function init() {
+      const [usageData, aiUsageData] = await Promise.all([
+        getMcpUsage(),
+        getTelemetryAnalysisUsage(),
+      ]);
+      setUsage({ count: usageData.count, recent: usageData.recent as UsageLogEntry[] });
+      setAiUsage({ count: aiUsageData.count });
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  const tier = subscription?.plan || (isSubscribed('pro') ? 'pro' : 'free');
+  const mcpLimit = tier === 'pro' ? 3000 : 300;
+  const aiLimit = tier === 'pro' || tier === 'ultra' ? 100 : 5;
+
+  if (loading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-8 w-48 rounded bg-white/5" />
+        <div className="h-24 rounded bg-white/5" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
       <div>
-        <h2 className="mb-4 text-sm font-semibold text-white/90">Monthly Usage</h2>
+        <h2 className="mb-2 text-sm font-semibold text-white/90">MCP API Calls</h2>
+        <p className="mb-6 text-[12px] text-white/50">
+          Track your monthly usage of Fastlytics data through MCP (Model Context Protocol) tools.
+        </p>
         <div className="flex items-center gap-4 mb-4">
           <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
             <div
               className="h-full rounded-full bg-emerald-500/60 transition-all"
-              style={{ width: `${Math.min((usage.count / limit) * 100, 100)}%` }}
+              style={{ width: `${Math.min((usage.count / mcpLimit) * 100, 100)}%` }}
             />
           </div>
           <span className="text-xs font-mono text-white/60 tabular-nums">
-            {usage.count.toLocaleString()} / {limit.toLocaleString()}
+            {usage.count.toLocaleString()} / {mcpLimit.toLocaleString()}
           </span>
         </div>
         <p className="text-[11px] text-white/40">
           {tier === 'free'
-            ? `Free tier: ${limit.toLocaleString()} calls/month. Upgrade to Pro for ${(limit * 10).toLocaleString()}.`
-            : `Pro tier: ${limit.toLocaleString()} calls/month.`}
+            ? `Free tier: ${mcpLimit.toLocaleString()} calls/month. Upgrade to Pro for ${(mcpLimit * 10).toLocaleString()}.`
+            : `Pro tier: ${mcpLimit.toLocaleString()} calls/month.`}
         </p>
-
-        {usage.recent.length > 0 && (
-          <div className="mt-4">
-            <h3 className="mb-2 text-xs font-medium text-white/60">Recent calls</h3>
-            <div className="space-y-1 max-h-48 overflow-y-auto">
-              {usage.recent.map((entry, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded bg-white/[0.03] px-2.5 py-1.5 text-[11px]"
-                >
-                  <code className="font-mono text-white/50">{entry.tool_name}</code>
-                  <span className="text-white/30">
-                    {new Date(entry.created_at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      <div>
+        <h2 className="mb-2 text-sm font-semibold text-white/90">AI Telemetry Analysis</h2>
+        <p className="mb-6 text-[12px] text-white/50">
+          Monthly credits for advanced AI-powered telemetry analysis.
+        </p>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-violet-500/60 transition-all"
+              style={{ width: `${Math.min((aiUsage.count / aiLimit) * 100, 100)}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono text-white/60 tabular-nums">
+            {aiUsage.count.toLocaleString()} / {aiLimit.toLocaleString()}
+          </span>
+        </div>
+        <p className="text-[11px] text-white/40">
+          {tier === 'free'
+            ? `Free tier: ${aiLimit} analyses/month. Upgrade to Pro for ${100} analyses/month.`
+            : `Pro/Ultra tier: ${aiLimit} analyses/month.`}
+        </p>
+      </div>
+
+      {usage.recent.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-white/90">Recent MCP Calls</h2>
+          <div className="space-y-1 max-h-80 overflow-y-auto">
+            {usage.recent.map((entry, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded bg-white/[0.03] px-2.5 py-1.5 text-[11px]"
+              >
+                <code className="font-mono text-white/50">{entry.tool_name}</code>
+                <span className="text-white/30">{new Date(entry.created_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

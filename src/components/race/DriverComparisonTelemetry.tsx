@@ -24,7 +24,9 @@ import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
+import { FeatureGateCard } from '@/components/charts/FeatureGateCard';
 import { useAiTelemetrySummary, type ChartMetrics } from '@/hooks/useAiTelemetrySummary';
+import { APIError } from '@/lib/api-client';
 import { m, AnimatePresence } from 'motion/react';
 import {
   buildCombinedTelemetryData,
@@ -209,6 +211,11 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
     setIsExpanded(false);
     analysisMutation.reset();
   };
+
+  const isAnalysisRateLimited =
+    analysisMutation.isError &&
+    analysisMutation.error instanceof APIError &&
+    (analysisMutation.error.status === 429 || analysisMutation.error.status === 402);
 
   if (!shouldLoadChart) return null;
 
@@ -460,18 +467,22 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
             className="absolute inset-0 z-20 rounded-lg bg-white"
           >
-            <AiAnalysisCard
-              data={
-                analysisMutation.data ?? {
-                  summary: '',
-                  key_insights: [],
-                  corner_analysis: [],
-                  cached: false,
+            {isAnalysisRateLimited ? (
+              <FeatureGateCard onClose={handleClose} />
+            ) : (
+              <AiAnalysisCard
+                data={
+                  analysisMutation.data ?? {
+                    summary: '',
+                    key_insights: [],
+                    corner_analysis: [],
+                    cached: false,
+                  }
                 }
-              }
-              isLoading={analysisMutation.isPending}
-              onClose={handleClose}
-            />
+                isLoading={analysisMutation.isPending}
+                onClose={handleClose}
+              />
+            )}
           </m.div>
         )}
       </AnimatePresence>

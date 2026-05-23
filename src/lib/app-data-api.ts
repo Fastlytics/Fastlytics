@@ -135,3 +135,7 @@ export const revokeMcpKey = async (id: string): Promise<void> => {
     body: JSON.stringify({ revoked: true }),
   });
 };
+
+export const getTelemetryAnalysisUsage = async (): Promise<{ count: number }> => {
+  return request('/api/telemetry-analysis/usage');
+};

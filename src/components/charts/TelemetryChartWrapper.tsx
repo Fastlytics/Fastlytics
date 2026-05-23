@@ -24,11 +24,13 @@ import { useChartExport } from '@/hooks/useChartExport';
 import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
+import { FeatureGateCard } from '@/components/charts/FeatureGateCard';
 import {
   useAiTelemetrySummary,
   type ChartMetrics,
   type LapInfo,
 } from '@/hooks/useAiTelemetrySummary';
+import { APIError } from '@/lib/api-client';
 import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import { m, AnimatePresence } from 'motion/react';
 
@@ -468,6 +470,11 @@ const TelemetryChartWrapper = <T,>({
 
   const showExplainBtn = !isExpanded && hasAnalysis && data && !isLoading && !error;
 
+  const isAnalysisRateLimited =
+    analysisMutation.isError &&
+    analysisMutation.error instanceof APIError &&
+    (analysisMutation.error.status === 429 || analysisMutation.error.status === 402);
+
   const compareControls = (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white">
@@ -751,31 +758,35 @@ const TelemetryChartWrapper = <T,>({
             transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
             className="absolute inset-0 z-20 rounded-lg bg-[#0a0a0c]"
           >
-            <AiAnalysisCard
-              data={
-                analysisMutation.data ?? {
-                  summary: '',
-                  key_insights: [],
-                  corner_analysis: [],
-                  cached: false,
+            {isAnalysisRateLimited ? (
+              <FeatureGateCard onClose={handleClose} />
+            ) : (
+              <AiAnalysisCard
+                data={
+                  analysisMutation.data ?? {
+                    summary: '',
+                    key_insights: [],
+                    corner_analysis: [],
+                    cached: false,
+                  }
                 }
-              }
-              isLoading={analysisMutation.isPending}
-              onClose={handleClose}
-              driverCode={selectedDriver}
-              driverName={selectedDriverObj?.name}
-              team={selectedDriverObj?.team}
-              year={year}
-              lapNumber={String(selectedLap)}
-              lapTime={dataLapMeta?.time ?? lapMeta?.time}
-              compound={dataLapMeta?.compound ?? lapMeta?.compound}
-              compareDriverCode={activeCompareDriver || undefined}
-              compareDriverName={compareDriverObj?.name}
-              compareTeam={compareDriverObj?.team}
-              compareLapTime={compareDataLapMeta?.time ?? compareLapMeta?.time}
-              compareCompound={compareDataLapMeta?.compound ?? compareLapMeta?.compound}
-              headerActions={compareControls}
-            />
+                isLoading={analysisMutation.isPending}
+                onClose={handleClose}
+                driverCode={selectedDriver}
+                driverName={selectedDriverObj?.name}
+                team={selectedDriverObj?.team}
+                year={year}
+                lapNumber={String(selectedLap)}
+                lapTime={dataLapMeta?.time ?? lapMeta?.time}
+                compound={dataLapMeta?.compound ?? lapMeta?.compound}
+                compareDriverCode={activeCompareDriver || undefined}
+                compareDriverName={compareDriverObj?.name}
+                compareTeam={compareDriverObj?.team}
+                compareLapTime={compareDataLapMeta?.time ?? compareLapMeta?.time}
+                compareCompound={compareDataLapMeta?.compound ?? compareLapMeta?.compound}
+                headerActions={compareControls}
+              />
+            )}
           </m.div>
         )}
       </AnimatePresence>
