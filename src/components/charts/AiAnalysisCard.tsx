@@ -225,16 +225,9 @@ export function AiAnalysisCard({
                 {data.corner_analysis.map((corner, i) => (
                   <div key={i} className="px-1 py-1.5">
                     <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-white">
-                      <span className="text-[14px] font-bold text-white">
-                        Turn {corner.number ?? '?'}
-                      </span>
-                      {corner.name &&
-                        corner.name.trim().toLowerCase() !==
-                          `turn ${corner.number ?? '?'}`.toLowerCase() && (
-                          <span className="text-[13px] font-semibold text-white">
-                            {corner.name}
-                          </span>
-                        )}
+                      {corner.name && (
+                        <span className="text-[13px] font-semibold text-white">{corner.name}</span>
+                      )}
                     </div>
                     <p className="text-[14px] leading-7 font-normal text-white">
                       {corner.analysis}
