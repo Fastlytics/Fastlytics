@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQueries } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { EventSessionSchedule, AvailableSession } from '@/lib/api';
@@ -54,6 +55,18 @@ const SessionWeatherIcon: React.FC<{
   return <Cmp className={className} strokeWidth={1.8} />;
 };
 
+const scheduleNameToType = (name: string): string => {
+  const n = name.toLowerCase();
+  if (n === 'practice 1' || n === 'day 1' || n === 'test day 1') return 'FP1';
+  if (n === 'practice 2' || n === 'day 2' || n === 'test day 2') return 'FP2';
+  if (n === 'practice 3' || n === 'day 3' || n === 'test day 3') return 'FP3';
+  if (n === 'qualifying') return 'Q';
+  if (n === 'sprint qualifying' || n === 'sprint shootout') return 'SQ';
+  if (n === 'sprint') return 'Sprint';
+  if (n === 'race') return 'R';
+  return name;
+};
+
 export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   sessionSchedule,
   roundNumber,
@@ -65,6 +78,8 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
   setSelectedSession,
   setShowAnalysis,
 }) => {
+  const navigate = useNavigate();
+  const { raceId } = useParams<{ raceId: string }>();
   const circuitCoords = useMemo(
     () => getCircuitCoords(sessionSchedule?.eventName, sessionSchedule?.location),
     [sessionSchedule]
@@ -216,12 +231,12 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
         <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e]">
           <div className="divide-y divide-white/[0.06]">
             {sessionSchedule.sessions.map((session, index) => {
-              const sessionType = session.name === 'Race' ? 'R' : session.name;
+              const sessionType = scheduleNameToType(session.name);
               const isNext = nextSessionDate?.name === session.name;
               const isAvailable = availableSessions.some((s) => {
-                if (sessionType === 'Q' || sessionType === 'Qualifying')
+                if (sessionType === 'Q')
                   return s.type === 'Q' || s.type === 'Q1' || s.type === 'Q2' || s.type === 'Q3';
-                if (sessionType === 'Sprint Shootout' || sessionType === 'SQ')
+                if (sessionType === 'SQ')
                   return (
                     s.type === 'SQ' || s.type === 'SQ1' || s.type === 'SQ2' || s.type === 'SQ3'
                   );
@@ -265,52 +280,54 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                       {session.name}
                     </div>
                   </div>
-                  <div className="hidden w-28 shrink-0 text-right md:block">
-                    {(() => {
-                      const weatherQuery = sessionWeatherQueries[index];
-                      const weather = weatherQuery?.data;
+                  {!isAvailable && (
+                    <div className="hidden w-28 shrink-0 text-right md:block">
+                      {(() => {
+                        const weatherQuery = sessionWeatherQueries[index];
+                        const weather = weatherQuery?.data;
 
-                      if (weatherQuery?.isLoading) {
-                        return (
-                          <div className="flex justify-end">
-                            <div className="size-3 animate-spin rounded-full border border-white/[0.08] border-t-white/50" />
-                          </div>
-                        );
-                      }
+                        if (weatherQuery?.isLoading) {
+                          return (
+                            <div className="flex justify-end">
+                              <div className="size-3 animate-spin rounded-full border border-white/[0.08] border-t-white/50" />
+                            </div>
+                          );
+                        }
 
-                      if (!weather) {
+                        if (!weather) {
+                          return (
+                            <div className="text-right">
+                              <div className="text-[14px] text-white/30">-</div>
+                              <div className="text-[10px] uppercase tracking-wider text-white/20">
+                                Forecast
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div className="text-right">
-                            <div className="text-[14px] text-white/30">-</div>
-                            <div className="text-[10px] uppercase tracking-wider text-white/20">
-                              Forecast
+                            <div className="flex items-center justify-end gap-1.5">
+                              <SessionWeatherIcon
+                                icon={weather.icon}
+                                className={cn(
+                                  'size-4',
+                                  weather.isWet ? 'text-sky-300' : 'text-amber-200'
+                                )}
+                              />
+                              <span className="text-[14px] tabular-nums text-white/80">
+                                {weather.temperatureC}
+                                {'\u00B0'}
+                              </span>
+                            </div>
+                            <div className="text-[10px] uppercase tracking-wider text-white/25">
+                              {weather.precipitationProbability}% rain
                             </div>
                           </div>
                         );
-                      }
-
-                      return (
-                        <div className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <SessionWeatherIcon
-                              icon={weather.icon}
-                              className={cn(
-                                'size-4',
-                                weather.isWet ? 'text-sky-300' : 'text-amber-200'
-                              )}
-                            />
-                            <span className="text-[14px] tabular-nums text-white/80">
-                              {weather.temperatureC}
-                              {'\u00B0'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] uppercase tracking-wider text-white/25">
-                            {weather.precipitationProbability}% rain
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                      })()}
+                    </div>
+                  )}
                   <div className="hidden shrink-0 text-right md:block">
                     {!isAvailable && (
                       <>
@@ -351,7 +368,7 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                           <button
                             onClick={() => {
                               let targetSession = sessionType;
-                              if (sessionType === 'Q' || sessionType === 'Qualifying') {
+                              if (sessionType === 'Q') {
                                 if (availableSessions.some((s) => s.type === 'Q'))
                                   targetSession = 'Q';
                                 else if (availableSessions.some((s) => s.type === 'Q3'))
@@ -361,7 +378,7 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                                 else if (availableSessions.some((s) => s.type === 'Q1'))
                                   targetSession = 'Q1';
                               }
-                              if (sessionType === 'Sprint Shootout' || sessionType === 'SQ') {
+                              if (sessionType === 'SQ') {
                                 if (availableSessions.some((s) => s.type === 'SQ'))
                                   targetSession = 'SQ';
                                 else if (availableSessions.some((s) => s.type === 'SQ3'))
@@ -371,15 +388,17 @@ export const ScheduleSidebar: React.FC<ScheduleSidebarProps> = ({
                                 else if (availableSessions.some((s) => s.type === 'SQ1'))
                                   targetSession = 'SQ1';
                               }
-                              setSelectedSession(targetSession);
-                              setShowAnalysis(true);
                               trackInteraction('results_button_clicked', {
                                 sessionKey: targetSession,
                               });
+                              navigate(
+                                `/race/${raceId}/overview?view=analysis&session=${targetSession}`,
+                                { replace: true }
+                              );
                             }}
                             className="rounded-lg border border-red-500/20 bg-red-500/[0.07] px-3 py-1.5 text-[11px] font-semibold uppercase text-red-400 transition-colors hover:bg-red-500/[0.12]"
                           >
-                            Results
+                            Open Results
                           </button>
                         );
                       }
