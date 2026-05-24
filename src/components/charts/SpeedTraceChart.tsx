@@ -245,6 +245,9 @@ const SpeedTraceChart: React.FC<SpeedTraceChartProps> = ({
           drs: pt.DRS,
           gear: pt.nGear,
           rpm: pt.RPM,
+          x: pt.X,
+          y: pt.Y,
+          status: pt.Status,
         }));
         return {
           max: Math.max(...speeds),

@@ -21,6 +21,9 @@ export interface TraceSamplePoint {
   drs?: number;
   gear?: number;
   rpm?: number;
+  x?: number;
+  y?: number;
+  status?: string;
 }
 
 export interface ChartMetrics {
