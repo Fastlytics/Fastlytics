@@ -186,10 +186,15 @@ const Dashboard = () => {
       };
     const nowDate = new Date();
     let upcomingSession = undefined;
+    let upcomingRace = undefined;
     const sortedSchedule = schedule.toSorted(
       (a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime()
     );
     for (const event of sortedSchedule) {
+      if (isTestingEvent(event)) {
+        continue;
+      }
+
       const sessions = [
         { name: event.Session1, date: event.Session1Date },
         { name: event.Session2, date: event.Session2Date },
@@ -206,15 +211,12 @@ const Dashboard = () => {
             location: event.Location,
             country: event.Country,
           };
+          upcomingRace = event;
           break;
         }
       }
       if (upcomingSession) break;
     }
-    // Next race weekend = first non-testing event whose EventDate is in the future.
-    const upcomingRace = raceEvents
-      .toSorted((a, b) => new Date(a.EventDate).getTime() - new Date(b.EventDate).getTime())
-      .find((e) => new Date(e.EventDate).getTime() >= nowDate.getTime());
     const recentRaceEvents = raceEvents
       .filter((e) => getEventStartDate(e) < nowDate)
       .sort((a, b) => new Date(b.EventDate).getTime() - new Date(a.EventDate).getTime())
