@@ -1943,14 +1943,14 @@ function UsagePanel({
       </div>
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-white/90">AI Telemetry Analysis</h2>
+        <h2 className="mb-2 text-sm font-semibold text-white/90">Advanced Telemetry Analysis</h2>
         <p className="mb-6 text-[12px] text-white/50">
-          Monthly credits for advanced AI-powered telemetry analysis.
+          Monthly credits for advanced telemetry analysis.
         </p>
         <div className="flex items-center gap-4 mb-4">
           <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
             <div
-              className="h-full rounded-full bg-violet-500/60 transition-all"
+              className="h-full rounded-full bg-white/40 transition-all"
               style={{ width: `${Math.min((aiUsage.count / aiLimit) * 100, 100)}%` }}
             />
           </div>

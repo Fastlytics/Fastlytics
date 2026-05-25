@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -25,6 +26,7 @@ import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
 import { FeatureGateCard } from '@/components/charts/FeatureGateCard';
+import UpgradeModal from '@/components/payments/UpgradeModal';
 import {
   useAiTelemetrySummary,
   type ChartMetrics,
@@ -258,6 +260,8 @@ const TelemetryChartWrapper = <T,>({
   const lastAnalysisSignatureRef = useRef('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const location = useLocation();
 
   const analysisMutation = useAiTelemetrySummary();
   const mutateAnalysis = analysisMutation.mutate;
@@ -759,7 +763,7 @@ const TelemetryChartWrapper = <T,>({
             className="absolute inset-0 z-20 rounded-lg bg-[#0a0a0c]"
           >
             {isAnalysisRateLimited ? (
-              <FeatureGateCard onClose={handleClose} />
+              <FeatureGateCard onClose={handleClose} onUpgrade={() => setUpgradeOpen(true)} />
             ) : (
               <AiAnalysisCard
                 data={
@@ -790,6 +794,12 @@ const TelemetryChartWrapper = <T,>({
           </m.div>
         )}
       </AnimatePresence>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        cancelPath={location.pathname}
+      />
     </div>
   );
 };
