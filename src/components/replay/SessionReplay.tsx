@@ -28,8 +28,9 @@ import QualifyingCountdown from './QualifyingCountdown';
 import TelemetryOverlay from './TelemetryOverlay';
 import LapHistoryPanel from './LapHistoryPanel';
 import ReplayToolbar from './ReplayToolbar';
-import { Play, Gauge } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FastlyticsLogo } from '@/components/brand/FastlyticsLogo';
 
 interface SessionReplayProps {
   year: number;
@@ -869,9 +870,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           onMouseLeave={handleMouseUp}
         >
           {isFullscreen && (
-            <div className="absolute top-6 left-6 flex items-center gap-2 z-50 pointer-events-none select-none">
-              <Gauge className="text-red-500" size={28} />
-              <span className="text-xl font-bold tracking-tighter">Fastlytics</span>
+            <div className="absolute top-6 left-6 z-50 pointer-events-none select-none">
+              <FastlyticsLogo size={24} theme="dark" showText disableAnimation />
             </div>
           )}
 
