@@ -21,6 +21,9 @@ interface AiAnalysisCardProps {
   compareTeam?: string;
   compareLapTime?: string;
   compareCompound?: string;
+  comparePending?: boolean;
+  onCompare?: () => void;
+  compareLoading?: boolean;
 }
 
 export function AiAnalysisCard({
@@ -40,6 +43,9 @@ export function AiAnalysisCard({
   compareTeam,
   compareLapTime,
   compareCompound,
+  comparePending,
+  onCompare,
+  compareLoading,
 }: AiAnalysisCardProps) {
   if (isLoading) {
     return (
@@ -82,7 +88,7 @@ export function AiAnalysisCard({
     <div className="flex h-full flex-col">
       <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] px-6 py-4">
         <div className="min-w-0 space-y-2 text-white">
-          {isComparison && (
+          {isComparison ? (
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3">
                 {headshot ? (
@@ -125,13 +131,32 @@ export function AiAnalysisCard({
                 )}
               </div>
             </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              {headshot ? (
+                <div
+                  className="size-12 shrink-0 overflow-hidden rounded-full border-2 bg-black"
+                  style={{ borderColor: primaryColor }}
+                >
+                  <img
+                    src={headshot}
+                    alt={driverCode}
+                    className="size-full object-cover object-top"
+                  />
+                </div>
+              ) : (
+                <div
+                  className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 bg-black text-[14px] font-bold text-white"
+                  style={{ borderColor: primaryColor }}
+                >
+                  {driverCode || '?'}
+                </div>
+              )}
+              <h3 className="truncate text-[24px] font-semibold leading-none text-white">
+                {headerTitle}
+              </h3>
+            </div>
           )}
-
-          <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-            <h3 className="truncate text-[24px] font-semibold leading-none text-white">
-              {headerTitle}
-            </h3>
-          </div>
 
           <div className="flex flex-wrap gap-2 text-white">
             {isComparison ? (
@@ -143,54 +168,40 @@ export function AiAnalysisCard({
               </>
             ) : (
               <>
-                {renderDriverMetaPill(lapTime, '#ffffff', 'time')}
-                {renderDriverMetaPill(compoundLabel, '#ffffff', 'compound')}
-                {team && renderDriverMetaPill(team, '#ffffff', 'team')}
+                {renderDriverMetaPill(lapTime, primaryColor, 'time')}
+                {renderDriverMetaPill(compoundLabel, primaryColor, 'compound')}
+                {team && renderDriverMetaPill(team, primaryColor, 'team')}
               </>
             )}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-start gap-3">
-          {headerActions}
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex size-8 shrink-0 items-center justify-center rounded-md border border-white/[0.08] text-white transition-colors hover:bg-white/[0.04]"
-          >
-            <Cancel01Icon className="size-4" />
-          </button>
+        <div className="flex shrink-0 flex-col items-end gap-3">
+          <div className="flex items-start gap-3">
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex size-8 shrink-0 items-center justify-center rounded-md border border-white/[0.08] text-white transition-colors hover:bg-white/[0.04]"
+            >
+              <Cancel01Icon className="size-4" />
+            </button>
+          </div>
+          {onCompare && (
+            <button
+              type="button"
+              onClick={onCompare}
+              disabled={!comparePending || compareLoading}
+              className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-1.5 text-[13px] font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {compareLoading ? 'Comparing...' : 'Compare'}
+            </button>
+          )}
         </div>
       </div>
 
       <div className="flex-1 overflow-auto px-6 py-6">
-        <div
-          className={
-            isComparison
-              ? 'grid gap-3'
-              : 'grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)] lg:items-start'
-          }
-        >
-          {!isComparison && (
-            <div className="text-white">
-              <div className="flex items-start gap-4">
-                {headshot ? (
-                  <div className="-translate-y-2 h-34 w-48 shrink-0 overflow-hidden rounded-2xl">
-                    <img
-                      src={headshot}
-                      alt={driverCode}
-                      className="size-full object-cover object-top"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-34 w-48 shrink-0 items-center justify-center rounded-2xl text-[28px] font-bold text-white">
-                    {driverCode || '?'}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
+        <div className="grid gap-3">
           <div className="pt-1 text-white">
             <div className="space-y-3">
               <h4 className="text-[18px] font-semibold text-white">Lap Summary</h4>

@@ -259,6 +259,7 @@ const TelemetryChartWrapper = <T,>({
   const cardRef = useRef<HTMLDivElement>(null);
   const lastAnalysisSignatureRef = useRef('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [compareActive, setCompareActive] = useState(false);
   const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const location = useLocation();
@@ -402,9 +403,53 @@ const TelemetryChartWrapper = <T,>({
     });
   };
 
+  const handleCompare = () => {
+    if (
+      !metrics ||
+      !activeCompareDriver ||
+      !compareDriverObj ||
+      !compareMetrics ||
+      !comparisonLapInfo
+    )
+      return;
+
+    setCompareActive(true);
+    lastAnalysisSignatureRef.current = comparisonAnalysisSignature;
+    mutateAnalysis({
+      year,
+      event,
+      session,
+      chart_type: `comparison_${title.toLowerCase().replace(/\s+/g, '_')}`,
+      chart_title: `${title} Comparison`,
+      drivers: [
+        selectedDriverInfo,
+        {
+          code: activeCompareDriver,
+          name: compareDriverObj.name,
+          team: compareDriverObj.team,
+        },
+      ],
+      laps: [primaryLapInfo, comparisonLapInfo],
+      chart_metrics: {
+        max: metrics.max,
+        min: metrics.min,
+        avg: metrics.avg,
+        trace_sample: metrics.trace_sample,
+        extras: {
+          ...(metrics.extras ?? {}),
+          comparison_mode: true,
+          primary_metrics: serializeMetrics(metrics),
+          comparison_metrics: serializeMetrics(compareMetrics),
+          comparison_trace_sample: compareMetrics.trace_sample ?? [],
+        },
+      },
+    });
+  };
+
   useEffect(() => {
     if (
       !isExpanded ||
+      !compareActive ||
       !metrics ||
       !activeCompareDriver ||
       !compareDriverObj ||
@@ -449,6 +494,7 @@ const TelemetryChartWrapper = <T,>({
   }, [
     activeCompareDriver,
     activeCompareLap,
+    compareActive,
     comparisonAnalysisSignature,
     compareDriverObj,
     compareMetrics,
@@ -466,6 +512,7 @@ const TelemetryChartWrapper = <T,>({
 
   const handleClose = () => {
     setIsExpanded(false);
+    setCompareActive(false);
     lastAnalysisSignatureRef.current = '';
     analysisMutation.reset();
   };
@@ -491,6 +538,7 @@ const TelemetryChartWrapper = <T,>({
           if (value === '__none__') {
             setCompareDriver('');
             setCompareLap('fastest');
+            setCompareActive(false);
             if (isExpanded && metrics) {
               lastAnalysisSignatureRef.current = singleAnalysisSignature;
               mutateAnalysis({
@@ -509,7 +557,9 @@ const TelemetryChartWrapper = <T,>({
 
           setCompareDriver(value);
           setCompareLap('fastest');
-          lastAnalysisSignatureRef.current = '';
+          if (compareActive) {
+            lastAnalysisSignatureRef.current = '';
+          }
         }}
         disabled={!filteredCompareDrivers.length}
       >
@@ -561,7 +611,9 @@ const TelemetryChartWrapper = <T,>({
       <Select
         value={activeCompareLap.toString()}
         onValueChange={(value) => {
-          lastAnalysisSignatureRef.current = '';
+          if (compareActive) {
+            lastAnalysisSignatureRef.current = '';
+          }
           setCompareLap(value === 'fastest' ? 'fastest' : parseInt(value));
         }}
         disabled={
@@ -783,11 +835,20 @@ const TelemetryChartWrapper = <T,>({
                 lapNumber={String(selectedLap)}
                 lapTime={dataLapMeta?.time ?? lapMeta?.time}
                 compound={dataLapMeta?.compound ?? lapMeta?.compound}
-                compareDriverCode={activeCompareDriver || undefined}
-                compareDriverName={compareDriverObj?.name}
-                compareTeam={compareDriverObj?.team}
-                compareLapTime={compareDataLapMeta?.time ?? compareLapMeta?.time}
-                compareCompound={compareDataLapMeta?.compound ?? compareLapMeta?.compound}
+                compareDriverCode={compareActive ? activeCompareDriver || undefined : undefined}
+                compareDriverName={compareActive ? compareDriverObj?.name : undefined}
+                compareTeam={compareActive ? compareDriverObj?.team : undefined}
+                compareLapTime={
+                  compareActive ? (compareDataLapMeta?.time ?? compareLapMeta?.time) : undefined
+                }
+                compareCompound={
+                  compareActive
+                    ? (compareDataLapMeta?.compound ?? compareLapMeta?.compound)
+                    : undefined
+                }
+                comparePending={!!activeCompareDriver && !compareActive}
+                onCompare={handleCompare}
+                compareLoading={analysisMutation.isPending}
                 headerActions={compareControls}
               />
             )}
