@@ -237,4 +237,4 @@ const TelemetryOverlay: React.FC<TelemetryOverlayProps> = ({
   );
 };
 
-export default TelemetryOverlay;
+export default React.memo(TelemetryOverlay);

@@ -141,4 +141,4 @@ const RaceControlFeed: React.FC<RaceControlFeedProps> = ({
   );
 };
 
-export default RaceControlFeed;
+export default React.memo(RaceControlFeed);

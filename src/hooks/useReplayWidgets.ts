@@ -207,18 +207,43 @@ export function useReplayWidgets(
     });
   }, [bounds, containerHeight, containerWidth]);
 
+  // Debounce localStorage writes so dragging doesn't block the main thread
+  const saveTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
-    } catch {
-      // ignore persistence errors
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
     }
+    saveTimerRef.current = window.setTimeout(() => {
+      saveTimerRef.current = null;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
+      } catch {
+        // ignore persistence errors
+      }
+    }, 500);
+
+    return () => {
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
   }, [layouts]);
 
   const updateLayout = useCallback(
     (id: WidgetId, updates: Partial<WidgetLayout>) => {
       setLayouts((prev) => {
         const next = clampLayout({ ...prev[id], ...updates }, prev[id], bounds);
+        // Skip update if nothing changed (prevents re-renders from stale identical updates)
+        const existing = prev[id];
+        if (
+          next.x === existing.x &&
+          next.y === existing.y &&
+          next.width === existing.width &&
+          next.height === existing.height
+        ) {
+          return prev;
+        }
         return {
           ...prev,
           [id]: next,

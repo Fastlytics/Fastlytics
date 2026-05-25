@@ -244,4 +244,4 @@ const LapHistoryPanel: React.FC<LapHistoryPanelProps> = ({
   );
 };
 
-export default LapHistoryPanel;
+export default React.memo(LapHistoryPanel);

@@ -229,4 +229,4 @@ const SectorTimesPanel: React.FC<SectorTimesPanelProps> = ({
   );
 };
 
-export default SectorTimesPanel;
+export default React.memo(SectorTimesPanel);
