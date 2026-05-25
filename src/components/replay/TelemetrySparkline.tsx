@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface TelemetrySparklineProps {
   data: number[];
@@ -21,27 +21,46 @@ const TelemetrySparkline: React.FC<TelemetrySparklineProps> = ({
   minValue,
   className,
 }) => {
-  if (!data || data.length < 2) return <div className={className} style={{ width, height }} />;
+  // Round width to nearest even pixel to avoid sub-pixel thrashing during resize
+  const roundedWidth = Math.max(0, Math.round(width));
+  const roundedHeight = Math.max(0, Math.round(height));
 
-  const max = maxValue ?? Math.max(...data, 1);
-  const min = minValue ?? Math.min(...data, 0);
-  const range = max - min || 1;
+  const pathData = useMemo(() => {
+    if (!data || data.length < 2) return null;
 
-  const points = data
-    .map((val, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((val - min) / range) * height;
-      return `${x},${y}`;
-    })
-    .join(' ');
+    const max = maxValue ?? Math.max(...data, 1);
+    const min = minValue ?? Math.min(...data, 0);
+    const range = max - min || 1;
+    const w = roundedWidth;
+    const h = roundedHeight;
 
-  const areaPoints = `${points} ${width},${height} 0,${height}`;
+    const points = data
+      .map((val, i) => {
+        const x = (i / (data.length - 1)) * w;
+        const y = h - ((val - min) / range) * h;
+        return `${x},${y}`;
+      })
+      .join(' ');
+
+    const areaPoints = `${points} ${w},${h} 0,${h}`;
+
+    return { points, areaPoints };
+  }, [data, maxValue, minValue, roundedWidth, roundedHeight]);
+
+  if (!pathData) {
+    return <div className={className} style={{ width: roundedWidth, height: roundedHeight }} />;
+  }
 
   return (
-    <svg width={width} height={height} className={className} viewBox={`0 0 ${width} ${height}`}>
-      {fillColor && <polygon points={areaPoints} fill={fillColor} opacity={0.15} />}
+    <svg
+      width={roundedWidth}
+      height={roundedHeight}
+      className={className}
+      viewBox={`0 0 ${roundedWidth} ${roundedHeight}`}
+    >
+      {fillColor && <polygon points={pathData.areaPoints} fill={fillColor} opacity={0.15} />}
       <polyline
-        points={points}
+        points={pathData.points}
         fill="none"
         stroke={color}
         strokeWidth={1.5}
@@ -52,4 +71,4 @@ const TelemetrySparkline: React.FC<TelemetrySparklineProps> = ({
   );
 };
 
-export default TelemetrySparkline;
+export default React.memo(TelemetrySparkline);

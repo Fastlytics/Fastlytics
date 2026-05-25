@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface SpeedometerProps {
   speed: number;
@@ -7,82 +7,104 @@ interface SpeedometerProps {
   driverColor?: string;
 }
 
+const START_ANGLE = 135;
+const SWEEP_ANGLE = 270;
+
+function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(x, y, radius, startAngle);
+  const end = polarToCartesian(x, y, radius, endAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  return ['M', start.x, start.y, 'A', radius, radius, 0, largeArcFlag, 1, end.x, end.y].join(' ');
+}
+
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+}
+
 const Speedometer: React.FC<SpeedometerProps> = ({
   speed,
   maxSpeed = 400,
-  size = 140,
+  size = 150,
   driverColor = '#ef4444',
 }) => {
   const safeSpeed = Number.isFinite(speed) ? Math.max(0, Math.min(speed, maxSpeed)) : 0;
   const normalizedSpeed = safeSpeed / maxSpeed;
-  const startAngle = 135;
-  const sweepAngle = 270;
-  const angle = startAngle + normalizedSpeed * sweepAngle;
+  const angle = START_ANGLE + normalizedSpeed * SWEEP_ANGLE;
 
   const radius = size / 2 - 12;
   const center = size / 2;
 
-  // Tick marks
-  const ticks = [] as React.ReactNode[];
-  const tickCount = 21;
-  for (let i = 0; i < tickCount; i++) {
-    const t = i / (tickCount - 1);
-    const tickAngle = startAngle + t * sweepAngle;
-    const rad = (tickAngle * Math.PI) / 180;
-    const isMajor = i % 5 === 0;
-    const innerR = radius - (isMajor ? 14 : 8);
-    const outerR = radius - 2;
-    const x1 = center + innerR * Math.cos(rad);
-    const y1 = center + innerR * Math.sin(rad);
-    const x2 = center + outerR * Math.cos(rad);
-    const y2 = center + outerR * Math.sin(rad);
+  // Memoize static visual elements so they don't rebuild on every speed change
+  const { ticks, labels, arcPath } = useMemo(() => {
+    const tickNodes: React.ReactNode[] = [];
+    const tickCount = 21;
+    for (let i = 0; i < tickCount; i++) {
+      const t = i / (tickCount - 1);
+      const tickAngle = START_ANGLE + t * SWEEP_ANGLE;
+      const rad = (tickAngle * Math.PI) / 180;
+      const isMajor = i % 5 === 0;
+      const innerR = radius - (isMajor ? 14 : 8);
+      const outerR = radius - 2;
+      const x1 = center + innerR * Math.cos(rad);
+      const y1 = center + innerR * Math.sin(rad);
+      const x2 = center + outerR * Math.cos(rad);
+      const y2 = center + outerR * Math.sin(rad);
 
-    ticks.push(
-      <line
-        key={i}
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
-        stroke={isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
-        strokeWidth={isMajor ? 2 : 1}
-        strokeLinecap="round"
-      />
-    );
-  }
+      tickNodes.push(
+        <line
+          key={i}
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke={isMajor ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={isMajor ? 2 : 1}
+          strokeLinecap="round"
+        />
+      );
+    }
 
-  // Speed labels
-  const labels = [] as React.ReactNode[];
-  const labelSteps = [0, 100, 200, 300, 400];
-  for (const val of labelSteps) {
-    const t = val / maxSpeed;
-    const labelAngle = startAngle + t * sweepAngle;
-    const rad = (labelAngle * Math.PI) / 180;
-    const labelR = radius - 22;
-    const x = center + labelR * Math.cos(rad);
-    const y = center + labelR * Math.sin(rad);
-    labels.push(
-      <text
-        key={val}
-        x={x}
-        y={y}
-        textAnchor="middle"
-        dominantBaseline="central"
-        className="fill-white/70 text-[9px] font-medium"
-      >
-        {val}
-      </text>
-    );
-  }
+    const labelNodes: React.ReactNode[] = [];
+    const labelSteps = [0, 100, 200, 300, 400];
+    for (const val of labelSteps) {
+      const t = val / maxSpeed;
+      const labelAngle = START_ANGLE + t * SWEEP_ANGLE;
+      const rad = (labelAngle * Math.PI) / 180;
+      const labelR = radius - 22;
+      const x = center + labelR * Math.cos(rad);
+      const y = center + labelR * Math.sin(rad);
+      labelNodes.push(
+        <text
+          key={val}
+          x={x}
+          y={y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          className="fill-white/70 text-[9px] font-medium"
+        >
+          {val}
+        </text>
+      );
+    }
 
-  // Arc background
+    const arcRadius = radius - 4;
+    const bgArc = describeArc(center, center, arcRadius, START_ANGLE, START_ANGLE + SWEEP_ANGLE);
+
+    return { ticks: tickNodes, labels: labelNodes, arcPath: bgArc };
+  }, [center, radius, maxSpeed]);
+
+  // Active arc and needle change with speed
   const arcRadius = radius - 4;
-  const arcPath = describeArc(center, center, arcRadius, startAngle, startAngle + sweepAngle);
-
-  // Active arc
-  const activeArcPath = describeArc(center, center, arcRadius, startAngle, angle);
-
-  // Needle
+  const activeArcPath = describeArc(center, center, arcRadius, START_ANGLE, angle);
   const needleRad = (angle * Math.PI) / 180;
   const needleX = center + (arcRadius - 6) * Math.cos(needleRad);
   const needleY = center + (arcRadius - 6) * Math.sin(needleRad);
@@ -137,24 +159,4 @@ const Speedometer: React.FC<SpeedometerProps> = ({
   );
 };
 
-function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
-  const start = polarToCartesian(x, y, radius, startAngle);
-  const end = polarToCartesian(x, y, radius, endAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-  return ['M', start.x, start.y, 'A', radius, radius, 0, largeArcFlag, 1, end.x, end.y].join(' ');
-}
-
-function polarToCartesian(
-  centerX: number,
-  centerY: number,
-  radius: number,
-  angleInDegrees: number
-) {
-  const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
-  return {
-    x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians),
-  };
-}
-
-export default Speedometer;
+export default React.memo(Speedometer);

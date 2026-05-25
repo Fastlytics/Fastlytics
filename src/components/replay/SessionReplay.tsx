@@ -8,7 +8,7 @@ import { useReplayState } from '@/hooks/useReplayState';
 import { useReplayData } from '@/hooks/useReplayData';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useCamera } from '@/hooks/useCamera';
-import { useReplayWidgets, WidgetId } from '@/hooks/useReplayWidgets';
+import { useReplayWidgets, WidgetId, WidgetLayout } from '@/hooks/useReplayWidgets';
 import {
   getSectorMarkers,
   getSpeedHeatmapSegments,
@@ -731,6 +731,193 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
   }, [data, selectedDriver]);
 
+  // Widget layout callbacks — must be defined before any early returns
+  const handleUpdateWeatherLayout = useCallback(
+    (u: Partial<WidgetLayout>) => updateLayout('weather', u),
+    [updateLayout]
+  );
+  const handleUpdateRaceControlLayout = useCallback(
+    (u: Partial<WidgetLayout>) => updateLayout('racecontrol', u),
+    [updateLayout]
+  );
+  const handleUpdateSectorsLayout = useCallback(
+    (u: Partial<WidgetLayout>) => updateLayout('sectors', u),
+    [updateLayout]
+  );
+  const handleUpdateLapHistoryLayout = useCallback(
+    (u: Partial<WidgetLayout>) => updateLayout('laphistory', u),
+    [updateLayout]
+  );
+  const handleUpdateTelemetryLayout = useCallback(
+    (u: Partial<WidgetLayout>) => updateLayout('telemetry', u),
+    [updateLayout]
+  );
+
+  const handleCloseWeather = useCallback(() => setShowWeather(false), [setShowWeather]);
+  const handleCloseRaceControl = useCallback(
+    () => setShowRaceControlFeed(false),
+    [setShowRaceControlFeed]
+  );
+  const handleCloseSectors = useCallback(() => setShowSectorTimes(false), [setShowSectorTimes]);
+  const handleCloseLapHistory = useCallback(() => setShowLapHistory(false), [setShowLapHistory]);
+  const handleCloseTelemetry = useCallback(() => setShowTelemetry(false), [setShowTelemetry]);
+
+  const handleSeekToTime = useCallback((time: number) => setCurrentTime(time), [setCurrentTime]);
+
+  const handleSeekToLap = useCallback(
+    (lap: number) => {
+      const time = getSeekTimeForLap(lap);
+      if (time !== null) setCurrentTime(time);
+    },
+    [getSeekTimeForLap, setCurrentTime]
+  );
+
+  // Memoize current telemetry object to avoid new references every frame
+  const currentTelemetry = useMemo(() => {
+    if (!selectedDriver || !currentFrameDrivers[selectedDriver]) return null;
+    const d = currentFrameDrivers[selectedDriver];
+    return {
+      speed: d.speed,
+      gear: d.gear,
+      throttle: d.throttle,
+      brake: normalizeBrakeValue(d.brake),
+      drs: d.drs,
+      rpm: d.rpm,
+    };
+  }, [selectedDriver, currentFrameDrivers]);
+
+  const selectedDriverColor =
+    selectedDriver && data ? data.driver_colors[selectedDriver] : undefined;
+
+  const visibleWidgetIds: { id: WidgetId; condition: boolean }[] = [
+    { id: 'weather', condition: showWeather },
+    { id: 'racecontrol', condition: showRaceControlFeed },
+    { id: 'sectors', condition: showSectorTimes },
+    { id: 'laphistory', condition: showLapHistory },
+    { id: 'telemetry', condition: showTelemetry },
+  ];
+
+  // Memoize widget rendering so JSX elements aren't recreated on every SessionReplay render
+  const renderedWidgets = useMemo(() => {
+    if (!data) return [];
+    const widgets: React.ReactNode[] = [];
+    for (const { id, condition } of visibleWidgetIds) {
+      if (!condition) continue;
+      switch (id) {
+        case 'weather':
+          widgets.push(
+            <WeatherOverlay
+              key={id}
+              weather={data.weather}
+              currentTime={currentTime}
+              layout={layouts.weather}
+              onUpdateLayout={handleUpdateWeatherLayout}
+              bounds={widgetBounds}
+              onClose={handleCloseWeather}
+            />
+          );
+          break;
+        case 'racecontrol':
+          widgets.push(
+            <RaceControlFeed
+              key={id}
+              messages={data.race_control_messages}
+              currentTime={currentTime}
+              onSeek={handleSeekToTime}
+              layout={layouts.racecontrol}
+              onUpdateLayout={handleUpdateRaceControlLayout}
+              bounds={widgetBounds}
+              onClose={handleCloseRaceControl}
+            />
+          );
+          break;
+        case 'sectors':
+          widgets.push(
+            <SectorTimesPanel
+              key={id}
+              completedLaps={data.completed_laps}
+              currentTime={currentTime}
+              selectedDriver={selectedDriver}
+              fastestSectors={data.fastest_sectors}
+              liveSector={liveSector}
+              layout={layouts.sectors}
+              onUpdateLayout={handleUpdateSectorsLayout}
+              bounds={widgetBounds}
+              onClose={handleCloseSectors}
+            />
+          );
+          break;
+        case 'laphistory':
+          widgets.push(
+            <LapHistoryPanel
+              key={id}
+              completedLaps={data.completed_laps}
+              currentTime={currentTime}
+              selectedDriver={selectedDriver}
+              driverData={selectedDriverFullData}
+              driverColor={selectedDriverColor}
+              onSeekToLap={handleSeekToLap}
+              layout={layouts.laphistory}
+              onUpdateLayout={handleUpdateLapHistoryLayout}
+              bounds={widgetBounds}
+              onClose={handleCloseLapHistory}
+            />
+          );
+          break;
+        case 'telemetry':
+          widgets.push(
+            <TelemetryOverlay
+              key={id}
+              driverCode={selectedDriver}
+              telemetry={currentTelemetry}
+              driverColor={selectedDriverColor}
+              speedHistory={recentSpeedHistory}
+              throttleHistory={recentThrottleHistory}
+              brakeHistory={recentBrakeHistory}
+              rpmHistory={recentRpmHistory}
+              liveLapTime={liveLapTime}
+              layout={layouts.telemetry}
+              onUpdateLayout={handleUpdateTelemetryLayout}
+              bounds={widgetBounds}
+              onClose={handleCloseTelemetry}
+              year={year}
+            />
+          );
+          break;
+      }
+    }
+    return widgets;
+  }, [
+    visibleWidgetIds,
+    data,
+    currentTime,
+    layouts,
+    widgetBounds,
+    handleUpdateWeatherLayout,
+    handleCloseWeather,
+    handleSeekToTime,
+    handleUpdateRaceControlLayout,
+    handleCloseRaceControl,
+    selectedDriver,
+    liveSector,
+    handleUpdateSectorsLayout,
+    handleCloseSectors,
+    selectedDriverFullData,
+    selectedDriverColor,
+    handleSeekToLap,
+    handleUpdateLapHistoryLayout,
+    handleCloseLapHistory,
+    currentTelemetry,
+    recentSpeedHistory,
+    recentThrottleHistory,
+    recentBrakeHistory,
+    recentRpmHistory,
+    liveLapTime,
+    handleUpdateTelemetryLayout,
+    handleCloseTelemetry,
+    year,
+  ]);
+
   const isLoading = isMetaLoading || !data || loadedChunks.size === 0;
 
   if (isLoading) {
@@ -743,110 +930,6 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       </div>
     );
   if (!data) return null;
-
-  const visibleWidgetIds: { id: WidgetId; condition: boolean }[] = [
-    { id: 'weather', condition: showWeather },
-    { id: 'racecontrol', condition: showRaceControlFeed },
-    { id: 'sectors', condition: showSectorTimes },
-    { id: 'laphistory', condition: showLapHistory },
-    { id: 'telemetry', condition: showTelemetry },
-  ];
-
-  const renderWidget = (id: WidgetId) => {
-    switch (id) {
-      case 'weather':
-        return (
-          <WeatherOverlay
-            key={id}
-            weather={data.weather}
-            currentTime={currentTime}
-            layout={layouts.weather}
-            onUpdateLayout={(u) => updateLayout('weather', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowWeather(false)}
-          />
-        );
-      case 'racecontrol':
-        return (
-          <RaceControlFeed
-            key={id}
-            messages={data.race_control_messages}
-            currentTime={currentTime}
-            onSeek={(time) => setCurrentTime(time)}
-            layout={layouts.racecontrol}
-            onUpdateLayout={(u) => updateLayout('racecontrol', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowRaceControlFeed(false)}
-          />
-        );
-      case 'sectors':
-        return (
-          <SectorTimesPanel
-            key={id}
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-            fastestSectors={data.fastest_sectors}
-            liveSector={liveSector}
-            layout={layouts.sectors}
-            onUpdateLayout={(u) => updateLayout('sectors', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowSectorTimes(false)}
-          />
-        );
-      case 'laphistory':
-        return (
-          <LapHistoryPanel
-            key={id}
-            completedLaps={data.completed_laps}
-            currentTime={currentTime}
-            selectedDriver={selectedDriver}
-            driverData={selectedDriverFullData}
-            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-            onSeekToLap={(lap) => {
-              const time = getSeekTimeForLap(lap);
-              if (time !== null) setCurrentTime(time);
-            }}
-            layout={layouts.laphistory}
-            onUpdateLayout={(u) => updateLayout('laphistory', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowLapHistory(false)}
-          />
-        );
-      case 'telemetry':
-        return (
-          <TelemetryOverlay
-            key={id}
-            driverCode={selectedDriver}
-            telemetry={
-              selectedDriver && currentFrameDrivers[selectedDriver]
-                ? {
-                    speed: currentFrameDrivers[selectedDriver].speed,
-                    gear: currentFrameDrivers[selectedDriver].gear,
-                    throttle: currentFrameDrivers[selectedDriver].throttle,
-                    brake: normalizeBrakeValue(currentFrameDrivers[selectedDriver].brake),
-                    drs: currentFrameDrivers[selectedDriver].drs,
-                    rpm: currentFrameDrivers[selectedDriver].rpm,
-                  }
-                : null
-            }
-            driverColor={selectedDriver ? data.driver_colors[selectedDriver] : undefined}
-            speedHistory={recentSpeedHistory}
-            throttleHistory={recentThrottleHistory}
-            brakeHistory={recentBrakeHistory}
-            rpmHistory={recentRpmHistory}
-            liveLapTime={liveLapTime}
-            layout={layouts.telemetry}
-            onUpdateLayout={(u) => updateLayout('telemetry', u)}
-            bounds={widgetBounds}
-            onClose={() => setShowTelemetry(false)}
-            year={year}
-          />
-        );
-    }
-
-    return null;
-  };
 
   return (
     <div
@@ -968,9 +1051,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       </div>
 
       {isFullscreen && (
-        <div className="absolute inset-0 z-[45] pointer-events-none">
-          {visibleWidgetIds.map(({ id, condition }) => (condition ? renderWidget(id) : null))}
-        </div>
+        <div className="absolute inset-0 z-[45] pointer-events-none">{renderedWidgets}</div>
       )}
 
       {hasStarted && isBuffering && (

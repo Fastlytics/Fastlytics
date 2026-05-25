@@ -50,8 +50,30 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
   children,
   noPadding = false,
 }) => {
+  const shellRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<InteractionSession | null>(null);
   const [activeInteraction, setActiveInteraction] = useState<'drag' | 'resize' | null>(null);
+
+  // Track pending layout values during drag so we can sync them back at drag end
+  // without relying on reading computed styles from the DOM.
+  const pendingLayoutRef = useRef<Partial<WidgetLayout>>({});
+
+  // Apply layout to DOM without triggering React re-renders
+  const applyLayoutToDOM = useCallback(
+    (updates: Partial<WidgetLayout>) => {
+      const el = shellRef.current;
+      if (!el) return;
+      const w = updates.width ?? layout.width;
+      const h = updates.height ?? layout.height;
+      const x = updates.x ?? layout.x;
+      const y = updates.y ?? layout.y;
+      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      el.style.width = `${w}px`;
+      el.style.height = `${h}px`;
+      pendingLayoutRef.current = { x, y, width: w, height: h };
+    },
+    [layout]
+  );
 
   useEffect(() => {
     if (!activeInteraction) return;
@@ -66,7 +88,7 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
       if (interaction.type === 'drag') {
         const nextX = clamp(interaction.initX + deltaX, bounds.minX, bounds.maxX - layout.width);
         const nextY = clamp(interaction.initY + deltaY, bounds.minY, bounds.maxY - layout.height);
-        onUpdateLayout({ x: nextX, y: nextY });
+        applyLayoutToDOM({ x: nextX, y: nextY });
         return;
       }
 
@@ -81,11 +103,28 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
         bounds.maxY - interaction.initY
       );
 
-      onUpdateLayout({ width: nextWidth, height: nextHeight });
+      applyLayoutToDOM({ width: nextWidth, height: nextHeight });
     };
 
     const handlePointerEnd = () => {
+      const interaction = interactionRef.current;
+      if (interaction) {
+        const pending = pendingLayoutRef.current;
+        // Sync final layout back to React state once, at drag end
+        if (interaction.type === 'drag') {
+          onUpdateLayout({
+            x: pending.x ?? interaction.initX,
+            y: pending.y ?? interaction.initY,
+          });
+        } else {
+          onUpdateLayout({
+            width: pending.width ?? interaction.initWidth,
+            height: pending.height ?? interaction.initHeight,
+          });
+        }
+      }
       interactionRef.current = null;
+      pendingLayoutRef.current = {};
       setActiveInteraction(null);
     };
 
@@ -98,7 +137,7 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
       window.removeEventListener('pointerup', handlePointerEnd);
       window.removeEventListener('pointercancel', handlePointerEnd);
     };
-  }, [activeInteraction, bounds, layout.height, layout.width, onUpdateLayout]);
+  }, [activeInteraction, bounds, layout.height, layout.width, onUpdateLayout, applyLayoutToDOM]);
 
   const handleDragStart = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
@@ -140,6 +179,7 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
 
   return (
     <div
+      ref={shellRef}
       className={cn(
         'absolute pointer-events-auto flex flex-col font-sans',
         'bg-[#111113]/95 backdrop-blur-md',
@@ -206,4 +246,4 @@ const WidgetShell: React.FC<WidgetShellProps> = ({
   );
 };
 
-export default WidgetShell;
+export default React.memo(WidgetShell);

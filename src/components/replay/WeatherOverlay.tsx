@@ -209,4 +209,4 @@ const WeatherOverlay: React.FC<WeatherOverlayProps> = ({
   );
 };
 
-export default WeatherOverlay;
+export default React.memo(WeatherOverlay);
