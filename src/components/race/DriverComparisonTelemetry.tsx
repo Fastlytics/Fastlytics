@@ -1,5 +1,6 @@
 // knip-ignore
 import React, { useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -25,6 +26,7 @@ import ChartExportMenu from '@/components/charts/ChartExportMenu';
 import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 import { AiAnalysisCard } from '@/components/charts/AiAnalysisCard';
 import { FeatureGateCard } from '@/components/charts/FeatureGateCard';
+import UpgradeModal from '@/components/payments/UpgradeModal';
 import { useAiTelemetrySummary, type ChartMetrics } from '@/hooks/useAiTelemetrySummary';
 import { APIError } from '@/lib/api-client';
 import { m, AnimatePresence } from 'motion/react';
@@ -168,6 +170,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [originPos, setOriginPos] = useState({ x: 0, y: 0 });
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const location = useLocation();
 
   const analysisMutation = useAiTelemetrySummary();
 
@@ -468,7 +472,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             className="absolute inset-0 z-20 rounded-lg bg-white"
           >
             {isAnalysisRateLimited ? (
-              <FeatureGateCard onClose={handleClose} />
+              <FeatureGateCard onClose={handleClose} onUpgrade={() => setUpgradeOpen(true)} />
             ) : (
               <AiAnalysisCard
                 data={
@@ -486,6 +490,12 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
           </m.div>
         )}
       </AnimatePresence>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        cancelPath={location.pathname}
+      />
     </div>
   );
 };
