@@ -61,7 +61,7 @@ function ResultsTable({
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Grid</th>
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Time / Gap</th>
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Fastest Lap</th>
-                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Pits</th>
+                <th className="px-4 py-3 text-[12px] font-medium text-white/80">Stints</th>
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Laps</th>
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Pts</th>
                 <th className="px-4 py-3 text-[12px] font-medium text-white/80">Status</th>
