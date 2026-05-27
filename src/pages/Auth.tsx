@@ -175,6 +175,9 @@ const Auth = () => {
           .catch((error: unknown) => {
             toast.error(getErrorMessage(error));
             navigate('/pricing?checkout=failed', { replace: true });
+          })
+          .finally(() => {
+            setIsLoading(false);
           });
 
         return;
@@ -203,6 +206,9 @@ const Auth = () => {
           dispatchFlags({ type: 'SET_IS_RESET_PASSWORD_MODE', value: true });
           dispatchFlags({ type: 'SET_SHOW_FORGOT_PASSWORD', value: true });
           window.history.replaceState(null, '', '/auth?reset=true');
+        })
+        .catch(() => {
+          toast.error('Invalid or expired reset link. Please request a new one.');
         });
     }
   }, []);

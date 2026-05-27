@@ -55,9 +55,13 @@ export function TeamHero({ career, bio, isBioLoading, fallbackImageUrl }: TeamHe
           method: 'PUT',
           headers: { 'Content-Type': blob.type },
           body: blob,
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn('Fallback image upload failed:', err);
+        });
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Image fetch for upload failed:', err);
+      });
   };
 
   return (

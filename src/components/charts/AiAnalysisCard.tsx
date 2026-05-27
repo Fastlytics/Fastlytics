@@ -210,6 +210,13 @@ export function AiAnalysisCard({
           </div>
         </div>
 
+        {data.battle_analysis && (
+          <div className="mt-5 border-t border-red-500/20 pt-5 text-white">
+            <h4 className="mb-2 text-[18px] font-semibold text-red-400">Battle Analysis</h4>
+            <p className="text-[15px] leading-7 font-normal text-white">{data.battle_analysis}</p>
+          </div>
+        )}
+
         <div className="mt-5 grid gap-5 xl:grid-cols-2">
           {data.key_insights && data.key_insights.length > 0 && (
             <section className="p-1 text-white">

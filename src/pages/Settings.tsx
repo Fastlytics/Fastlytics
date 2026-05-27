@@ -731,6 +731,8 @@ function ProfilePanel({
 
   // Debounced username availability check
   useEffect(() => {
+    let isMounted = true;
+
     if (editingField !== 'username') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsernameStatus('idle');
@@ -755,13 +757,18 @@ function ProfilePanel({
         const { data } = await supabase.rpc('check_username_available', {
           desired_username: value,
         });
-        setUsernameStatus(data === true ? 'available' : 'taken');
+        if (isMounted) {
+          setUsernameStatus(data === true ? 'available' : 'taken');
+        }
       } catch {
-        setUsernameStatus('idle');
+        if (isMounted) {
+          setUsernameStatus('idle');
+        }
       }
     }, 400);
 
     return () => {
+      isMounted = false;
       if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current);
     };
   }, [form.username, editingField, profile?.username]);

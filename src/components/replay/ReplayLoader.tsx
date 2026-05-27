@@ -28,7 +28,17 @@ const ReplayLoader: React.FC<ReplayLoaderProps> = ({ year, event, session }) => 
 
   useEffect(() => {
     let isMounted = true;
+    let pollCount = 0;
+    const MAX_POLLS = 240;
+
     const poll = async () => {
+      if (!isMounted || pollCount >= MAX_POLLS) {
+        if (pollCount >= MAX_POLLS) {
+          setProgress({ message: 'Loading timed out. Please refresh the page.', percent: 0 });
+        }
+        return;
+      }
+      pollCount++;
       try {
         const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/replay/session/progress?year=${year}&event=${event}&session=${session}`;
 

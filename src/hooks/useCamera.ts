@@ -66,7 +66,9 @@ export function useCamera(
   const toggleFullscreen = useCallback(() => {
     if (!rootRef.current) return;
     if (!document.fullscreenElement) {
-      rootRef.current.requestFullscreen().catch(() => {});
+      rootRef.current.requestFullscreen().catch((err) => {
+        console.warn('Fullscreen request failed:', err);
+      });
     } else {
       document.exitFullscreen();
     }
@@ -155,7 +157,7 @@ export function useCamera(
   const activeDriversRef = useRef(activeDrivers);
   useEffect(() => {
     activeDriversRef.current = activeDrivers;
-  });
+  }, [activeDrivers]);
 
   // Follow camera: only follows when a driver is explicitly selected.
   // Uses requestAnimationFrame loop with smoothing to prevent shaking.

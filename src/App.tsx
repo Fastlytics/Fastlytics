@@ -83,7 +83,6 @@ const App = () => (
             <BrowserRouter>
               <ScrollToTop />
               <RouteTracker />
-              <RouteTracker />
               <SentryRoutes>
                 {/* Landing Page Route (with LandingFooter) */}
                 <Route
