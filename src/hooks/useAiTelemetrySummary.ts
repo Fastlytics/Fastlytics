@@ -57,6 +57,7 @@ export interface TelemetrySummaryResponse {
   summary: string;
   key_insights: string[];
   corner_analysis: CornerAnalysis[];
+  battle_analysis: string | null;
   cached: boolean;
 }
 

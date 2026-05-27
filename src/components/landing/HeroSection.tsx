@@ -117,7 +117,7 @@ export default function HeroSection() {
   const loadedDurationRef = useRef(loadedDuration);
   useEffect(() => {
     loadedDurationRef.current = loadedDuration;
-  });
+  }, [loadedDuration]);
 
   const hasChunkData = Boolean(chunk && chunk.time.length > 1);
 

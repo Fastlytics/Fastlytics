@@ -585,6 +585,8 @@ function NameUsernameStep({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (!username.trim() || username.length < 3) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsernameStatus('idle');
@@ -600,13 +602,18 @@ function NameUsernameStep({
           desired_username: username,
         });
 
-        setUsernameStatus(data === true ? 'available' : 'taken');
+        if (isMounted) {
+          setUsernameStatus(data === true ? 'available' : 'taken');
+        }
       } catch {
-        setUsernameStatus('idle');
+        if (isMounted) {
+          setUsernameStatus('idle');
+        }
       }
     }, 400);
 
     return () => {
+      isMounted = false;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [username]);

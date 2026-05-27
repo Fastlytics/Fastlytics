@@ -91,6 +91,9 @@ const Login = () => {
           .catch((error: unknown) => {
             toast.error(getErrorMessage(error));
             navigate('/pricing?checkout=failed', { replace: true });
+          })
+          .finally(() => {
+            setIsLoading(false);
           });
 
         return;
@@ -119,6 +122,9 @@ const Login = () => {
         .then(() => {
           setView('reset-password');
           window.history.replaceState(null, '', '/login?reset=true');
+        })
+        .catch(() => {
+          toast.error('Invalid or expired reset link. Please request a new one.');
         });
     }
   }, []);
