@@ -76,16 +76,16 @@ function computeViewBoxTransform(
 }
 
 function viewBoxFromClick(
-  clickX: number,
-  clickY: number,
+  clickVisualX: number,
+  clickVisualY: number,
   canvasLayoutW: number,
   canvasLayoutH: number,
   visualW: number,
   visualH: number
 ): { x: number; y: number } {
   // Convert visual click → layout position (undo CSS transform)
-  const layoutX = (clickX * canvasLayoutW) / visualW;
-  const layoutY = (clickY * canvasLayoutH) / visualH;
+  const layoutX = (clickVisualX * canvasLayoutW) / visualW;
+  const layoutY = (clickVisualY * canvasLayoutH) / visualH;
 
   // Convert layout → viewBox
   const fitScale = Math.min(canvasLayoutW / VIEWBOX_W, canvasLayoutH / VIEWBOX_H);
@@ -176,9 +176,6 @@ const TrackCanvas = memo<TrackCanvasProps>(
       }));
     }, [showHeatmap, heatmapSegments]);
 
-    // Store canvas layout dimensions (NOT including CSS transform) for click detection
-    const layoutSizeRef = useRef({ w: 0, h: 0 });
-
     const render = useCallback(() => {
       if (!isMountedRef.current) return;
       const canvas = canvasRef.current;
@@ -187,25 +184,19 @@ const TrackCanvas = memo<TrackCanvasProps>(
         return;
       }
 
-      // layoutW/H = CSS layout size (pre-transform, same as clientWidth)
-      const layoutW = canvas.clientWidth || layoutSizeRef.current.w || VIEWBOX_W;
-      const layoutH = canvas.clientHeight || layoutSizeRef.current.h || VIEWBOX_H;
+      // Use CSS layout size (stable, does not change with CSS transform / zoom)
+      const layoutW = canvas.clientWidth || canvas.width || VIEWBOX_W;
+      const layoutH = canvas.clientHeight || canvas.height || VIEWBOX_H;
       if (layoutW <= 0 || layoutH <= 0) {
         rafRef.current = requestAnimationFrame(render);
         return;
       }
 
-      // rect width/height = visual size (post CSS-transform, includes useCamera zoom)
-      const rect = canvas.getBoundingClientRect();
-      const visualW = rect.width || layoutW;
-      const visualH = rect.height || layoutH;
-      const cssScale = visualW > 0 ? visualW / layoutW : 1;
-
-      layoutSizeRef.current = { w: layoutW, h: layoutH };
-
+      // Pixel buffer: layout size × DPR only. CSS transform handles zoom.
+      // This avoids resizing the pixel buffer on every zoom step (stops shaking).
       const dpr = window.devicePixelRatio || 1;
-      const pixelW = Math.floor(layoutW * cssScale * dpr);
-      const pixelH = Math.floor(layoutH * cssScale * dpr);
+      const pixelW = Math.floor(layoutW * dpr);
+      const pixelH = Math.floor(layoutH * dpr);
       if (canvas.width !== pixelW || canvas.height !== pixelH) {
         canvas.width = pixelW;
         canvas.height = pixelH;
@@ -219,8 +210,8 @@ const TrackCanvas = memo<TrackCanvasProps>(
 
       const p = propsRef.current;
 
-      // Clear — scale drawing to fill pixel buffer (accounting for DPR + CSS zoom)
-      ctx.setTransform(dpr * cssScale, 0, 0, dpr * cssScale, 0, 0);
+      // Map each CSS pixel to dpr physical pixels in the buffer
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, layoutW, layoutH);
 
       // Set up viewBox coordinate system (maps 1000×500 → layoutW×layoutH)
@@ -402,17 +393,19 @@ const TrackCanvas = memo<TrackCanvasProps>(
       };
     }, [render]);
 
-    // Click detection — correctly handles CSS transform from useCamera
+    // Click detection — correctly translates visual click through CSS transform to viewBox
     const handleClick = useCallback((e: React.MouseEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      // Visual bounds (includes CSS transform from useCamera)
       const rect = canvas.getBoundingClientRect();
       const clickVisualX = e.clientX - rect.left;
       const clickVisualY = e.clientY - rect.top;
 
-      const layoutW = canvas.clientWidth || layoutSizeRef.current.w;
-      const layoutH = canvas.clientHeight || layoutSizeRef.current.h;
+      // Layout size (pre-transform, stable)
+      const layoutW = canvas.clientWidth || rect.width;
+      const layoutH = canvas.clientHeight || rect.height;
       if (layoutW <= 0 || layoutH <= 0) return;
 
       const { x: cx, y: cy } = viewBoxFromClick(
@@ -454,9 +447,8 @@ const TrackCanvas = memo<TrackCanvasProps>(
         >
           <canvas
             ref={canvasRef}
-            className="absolute inset-0 w-full h-full pointer-events-auto"
+            className="absolute inset-0 w-full h-full"
             onClick={handleClick}
-            onMouseDown={(e) => e.stopPropagation()}
           />
         </div>
       </div>
