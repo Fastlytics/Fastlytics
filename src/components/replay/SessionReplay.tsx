@@ -206,6 +206,30 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     dismissMessage,
   } = useReplayState(0, () => {});
 
+  // Throttled display time — reduces re-render frequency for leaderboard/telemetry UI
+  const [displayTime, setDisplayTime] = useState(0);
+  const displayTimerRef = useRef<number | null>(null);
+  const lastDisplayTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (displayTimerRef.current !== null) return;
+    if (Math.abs(currentTime - lastDisplayTimeRef.current) < 0.1) return;
+    displayTimerRef.current = window.setTimeout(() => {
+      lastDisplayTimeRef.current = currentTime;
+      setDisplayTime(currentTime);
+      displayTimerRef.current = null;
+    }, 100);
+  }, [currentTime]);
+
+  useEffect(() => {
+    return () => {
+      if (displayTimerRef.current !== null) {
+        window.clearTimeout(displayTimerRef.current);
+        displayTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const {
     replayData: data,
     loadedChunks,
@@ -260,7 +284,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     currentFrameDrivers,
     session === 'Race' || session === 'R',
     isPlaying,
-    currentTime
+    displayTime
   );
 
   const {
@@ -659,7 +683,10 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     const relativeDistance = Number.isFinite(driver.rel_dist ?? NaN)
       ? Math.max(0, Math.min(0.999999, driver.rel_dist ?? 0))
       : 0;
-    const label = relativeDistance < 1 / 3 ? 'S1' : relativeDistance < 2 / 3 ? 'S2' : 'S3';
+    const label = (relativeDistance < 1 / 3 ? 'S1' : relativeDistance < 2 / 3 ? 'S2' : 'S3') as
+      | 'S1'
+      | 'S2'
+      | 'S3';
     const boundary = label === 'S1' ? 0 : label === 'S2' ? 1 / 3 : 2 / 3;
 
     // Find approximate start index for the current lap to avoid scanning from 0
@@ -1036,7 +1063,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           driverVisuals={driverVisuals}
           isRace={isRace}
           isQualifying={isQualifying}
-          currentTime={currentTime}
+          currentTime={displayTime}
           totalLaps={totalLaps}
           year={year}
           sessionTimeRemaining={sessionTimeRemaining}
