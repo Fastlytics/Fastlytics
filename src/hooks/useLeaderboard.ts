@@ -58,11 +58,39 @@ export function useLeaderboard(
   _isPlaying: boolean,
   currentTime: number
 ) {
+  const outDrivers = useMemo(() => {
+    const endTimes = data?.driver_end_times;
+    if (!endTimes) return new Set<string>();
+    const results = data?.session_results;
+    const out = new Set<string>();
+    for (const [code, endTime] of Object.entries(endTimes)) {
+      if (currentTime <= endTime + 1) continue;
+      const status = results?.[code]?.status;
+      if (status === 'Finished' || status === 'Lapped') continue;
+      out.add(code);
+    }
+    return out;
+  }, [data?.driver_end_times, data?.session_results, currentTime]);
+
   const getSortedOrder = useCallback(
     (drivers: Record<string, DriverFrameState>): string[] => {
-      return sortByOfficialTiming(drivers, data?.driver_grid_positions);
+      const sorted = sortByOfficialTiming(drivers, data?.driver_grid_positions);
+
+      const active = sorted.filter((c) => !outDrivers.has(c));
+      const out = sorted.filter((c) => outDrivers.has(c));
+
+      out.sort((a, b) => {
+        const lapsA = drivers[a]?.lap ?? 0;
+        const lapsB = drivers[b]?.lap ?? 0;
+        if (lapsA !== lapsB) return lapsB - lapsA;
+        const endA = data?.driver_end_times?.[a] ?? 0;
+        const endB = data?.driver_end_times?.[b] ?? 0;
+        return endB - endA;
+      });
+
+      return [...active, ...out];
     },
-    [data?.driver_grid_positions]
+    [data?.driver_grid_positions, data?.driver_end_times, outDrivers]
   );
 
   const leaderboardOrder = useMemo(() => {
@@ -159,28 +187,16 @@ export function useLeaderboard(
       return { outStatus: {} as Record<string, boolean>, visibility: {} as Record<string, string> };
 
     const outStatus: Record<string, boolean> = {};
-    let allBelowStopped = true;
+    const visibility: Record<string, string> = {};
 
-    for (let i = leaderboardOrder.length - 1; i >= 0; i--) {
-      const code = leaderboardOrder[i];
-      const isStopped =
-        data.driver_end_times?.[code] && currentTime > data.driver_end_times[code] + 1;
-
-      if (isStopped && allBelowStopped) {
-        outStatus[code] = true;
-      } else {
-        outStatus[code] = false;
-        if (!isStopped) allBelowStopped = false;
-      }
+    for (const code of leaderboardOrder) {
+      const isOut = outDrivers.has(code);
+      outStatus[code] = isOut;
+      visibility[code] = isOut ? 'out-dimmed' : 'visible';
     }
 
-    const visibility: Record<string, string> = {};
-    leaderboardOrder.forEach((code) => {
-      visibility[code] = outStatus[code] ? 'out-dimmed' : 'visible';
-    });
-
     return { outStatus, visibility };
-  }, [leaderboardOrder, currentTime, data]);
+  }, [data, leaderboardOrder, outDrivers]);
 
   return {
     leaderboardOrder,

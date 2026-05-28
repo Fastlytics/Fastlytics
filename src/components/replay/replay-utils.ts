@@ -424,12 +424,15 @@ export const getAllLapNumbers = (drivers: Record<string, { lap: number[] }>): nu
 // ─── Gap Sorting ─────────────────────────────────────────────────────────────
 
 /** Converts a gap-to-leader string into a sortable number.
- *  Leader (LAP X) = 0, +N.NNN = N.NNN, lapped (1L, 2L...) = 9000+N, missing = Infinity */
+ *  Leader (LAP X) = 0, +N.NNN = N.NNN, lapped (1L, 2L...) = 9000+N, lapped with fractional gap (1L+5.033) = 9000+5.033, missing = Infinity */
 export const getGapSortKey = (gap: string | null | undefined): number => {
   if (!gap) return Infinity;
   if (gap.startsWith('LAP')) return 0;
+  const lappedFractional = gap.match(/^(\d+)\s*L\s*\+\s*(\d+\.?\d*)/);
+  if (lappedFractional)
+    return parseInt(lappedFractional[1], 10) * 100000 + parseFloat(lappedFractional[2]);
   const lapped = gap.match(/^(\d+)\s*L$/);
-  if (lapped) return 9000 + parseInt(lapped[1], 10);
+  if (lapped) return parseInt(lapped[1], 10) * 100000;
   const numeric = parseFloat(gap.replace(/^\+/, ''));
   if (!isNaN(numeric)) return numeric;
   return Infinity;
