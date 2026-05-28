@@ -99,7 +99,7 @@ export function useReplayState(totalDuration: number, toggleFullscreen: () => vo
         case 'l':
         case 'L':
           e.preventDefault();
-          setCurrentTime((prev) => Math.min(totalDurationRef.current, prev + 5));
+          setCurrentTime((prev) => prev + 5);
           break;
         case 'w':
         case 'W':
