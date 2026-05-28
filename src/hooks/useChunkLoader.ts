@@ -62,7 +62,7 @@ const RETRY_DELAYS = [1000, 2000, 4000];
 const DEFAULT_BUFFER_BEHIND_CHUNKS = 1;
 const DEFAULT_BUFFER_AHEAD_CHUNKS = 2;
 const DEFAULT_BUFFER_HEADROOM_SECONDS = 15;
-const DEFAULT_MAX_CACHED_CHUNKS = 10;
+const DEFAULT_MAX_CACHED_CHUNKS = 6;
 
 function isAbortError(error: unknown) {
   return (
@@ -581,7 +581,7 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const targetChunkIndexRef = useRef(0);
   const desiredChunkIdsRef = useRef<number[]>([]);
   const backgroundChunkIdsRef = useRef<number[]>([]);
-  const loadChunkRef = useRef<(chunkId: number) => Promise<void>>();
+  const loadChunkRef = useRef<((chunkId: number) => Promise<void>) | null>(null);
   const lastMergedKeyRef = useRef('');
   const lastMergedDataRef = useRef<ChunkReplayData<TMeta> | null>(null);
   const fetchChunk = options?.fetchChunk ?? fetchSessionReplayChunk;
@@ -592,7 +592,7 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
   const bufferHeadroomSeconds = options?.bufferHeadroomSeconds ?? DEFAULT_BUFFER_HEADROOM_SECONDS;
 
   const mergeScheduledRef = useRef(false);
-  const doMergeRef = useRef<() => void>();
+  const doMergeRef = useRef<(() => void) | null>(null);
 
   const doMergeAndSetState = useCallback(() => {
     const meta = metadataRef.current;
@@ -606,21 +606,18 @@ export function useChunkLoader<TMeta extends ChunkLoaderMetadata>(
     if (mergeKey === lastMergedKeyRef.current && lastMergedDataRef.current) {
       replayData = lastMergedDataRef.current;
     } else {
-      // Check if the new key is just the old key + appended chunks (common during playback)
+      // Release old merged data before building new one — helps GC reclaim memory faster
+      const oldMerged = lastMergedDataRef.current;
+      lastMergedDataRef.current = null;
+
       const oldKey = lastMergedKeyRef.current;
       const isAppendOnly = oldKey.length > 0 && mergeKey.startsWith(oldKey + ',');
 
-      if (isAppendOnly && lastMergedDataRef.current) {
+      if (isAppendOnly && oldMerged) {
         // Incremental merge: only append the new chunk(s) to existing merged data
         const oldIds = oldKey.split(',').map(Number);
         const newIds = mergedChunkIds.filter((id) => !oldIds.includes(id));
-        replayData = appendChunksToMerged(
-          lastMergedDataRef.current,
-          meta!,
-          manifest,
-          newIds,
-          chunksMapRef.current
-        );
+        replayData = appendChunksToMerged(oldMerged, meta!, manifest, newIds, chunksMapRef.current);
       } else {
         // Full rebuild (seek, eviction, or first load)
         replayData = meta
