@@ -365,52 +365,34 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     };
   }, [isRace, session, data, currentTime]);
 
-  const trackColorTimeline = useMemo(() => {
-    if (!data?.race_control_messages?.length) return [];
-    const segments: { start: number; end: number; color: string }[] = [];
-    let currentColor = '#1a1a1e';
-    let segStart = 0;
-
-    for (const msg of data.race_control_messages) {
-      const text = (msg.message + ' ' + (msg.flag || '')).toUpperCase();
-      let newColor = currentColor;
-      if (text.includes('RED FLAG') || text.includes('SUSPENDED')) {
-        newColor = '#dc2626';
-      } else if (text.includes('GREEN') || text.includes('CLEAR') || text.includes('RESUMED')) {
-        newColor = '#1a1a1e';
-      } else if (
-        (text.includes('YELLOW') ||
-          text.includes('SAFETY CAR') ||
-          text.includes('VIRTUAL') ||
-          /\bSC\b/.test(text)) &&
-        !text.includes('INFRINGEMENT') &&
-        !text.includes('PENALTY') &&
-        !text.includes('INVESTIGATION') &&
-        !text.includes('BLUE')
-      ) {
-        newColor = '#ca8a04';
-      }
-
-      if (newColor !== currentColor) {
-        segments.push({ start: segStart, end: msg.time, color: currentColor });
-        currentColor = newColor;
-        segStart = msg.time;
-      }
-    }
-    segments.push({ start: segStart, end: Infinity, color: currentColor });
-    return segments;
-  }, [data?.race_control_messages]);
-
+  // Track color from structured track_statuses (same data as progress bar overlays),
+  // not fragile radio-message string matching.
   const trackColor = useMemo(() => {
     if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
-    for (let i = trackColorTimeline.length - 1; i >= 0; i--) {
-      const seg = trackColorTimeline[i];
-      if (currentTime >= seg.start && currentTime < seg.end) {
-        return seg.color;
+    if (!data?.track_statuses?.length) return '#1a1a1e';
+
+    const t = currentTime;
+    for (let i = data.track_statuses.length - 1; i >= 0; i--) {
+      const s = data.track_statuses[i];
+      if (t >= s.start_time && (s.end_time === null || t <= s.end_time!)) {
+        switch (s.status) {
+          case '5':
+            return '#dc2626'; // Red flag
+          case '3':
+            return '#ca8a04'; // Safety Car
+          case '4':
+            return '#a855f7'; // VSC
+          case '2':
+            return '#ca8a04'; // Yellow
+          case '6':
+            return '#6b7280'; // Chequered
+          default:
+            return '#1a1a1e'; // Green / default
+        }
       }
     }
     return '#1a1a1e';
-  }, [currentTime, trackColorTimeline, isQualifying, sessionTimeRemaining]);
+  }, [currentTime, data?.track_statuses, isQualifying, sessionTimeRemaining]);
 
   const sectorMarkers = useMemo(() => {
     if (!data?.circuit_points || !data?.circuit_distances) return [];
