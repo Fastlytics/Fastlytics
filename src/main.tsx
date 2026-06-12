@@ -45,7 +45,7 @@ const initUmami = () => {
   if (umamiWebsiteId && !document.querySelector('script[data-website-id]')) {
     const script = document.createElement('script');
     script.defer = true;
-    script.src = 'https://analytics.subhashh.tech/script.js';
+    script.src = 'https://analytics.fastlytics.app/script.js';
     script.setAttribute('data-website-id', umamiWebsiteId);
     document.head.appendChild(script);
   }
