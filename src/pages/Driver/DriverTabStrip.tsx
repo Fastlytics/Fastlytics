@@ -9,6 +9,7 @@ export interface DriverTab {
 export const DRIVER_TABS: DriverTab[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'championship', label: 'Championship' },
+  { id: 'teammates', label: 'Teammates' },
 ];
 
 interface DriverTabStripProps {
