@@ -59,13 +59,27 @@ import ScrollToTop from '@/components/layout/ScrollToTop';
 import RouteTracker from '@/components/layout/RouteTracker';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { GatedRoute } from '@/components/common/GatedRoute';
+import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import ConsentBanner from '@/components/auth/ConsentBanner';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { MobileGate } from '@/components/mobile/MobileGate';
 
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 // Landing layout — the new Landing page includes its own footer.
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
@@ -73,358 +87,360 @@ const LandingLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <MobileGate>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <ConsentBanner />
-        <SeasonProvider>
-          <AuthProvider>
-            <BrowserRouter>
-              <ScrollToTop />
-              <RouteTracker />
-              <SentryRoutes>
-                {/* Landing Page Route (with LandingFooter) */}
-                <Route
-                  path="/"
-                  element={
-                    <LandingLayout>
-                      <Landing />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/about"
-                  element={
-                    <LandingLayout>
-                      <AboutUs />
-                    </LandingLayout>
-                  }
-                />
-
-                {/* Pricing Page */}
-                <Route
-                  path="/pricing"
-                  element={
-                    <LandingLayout>
-                      <Pricing />
-                    </LandingLayout>
-                  }
-                />
-
-                {/* Features Page */}
-                <Route
-                  path="/features"
-                  element={
-                    <LandingLayout>
-                      <Features />
-                    </LandingLayout>
-                  }
-                />
-
-                {/* MCP Server Page */}
-                <Route
-                  path="/mcp"
-                  element={
-                    <LandingLayout>
-                      <MCPServer />
-                    </LandingLayout>
-                  }
-                />
-
-                {/* Public Info Pages */}
-                <Route
-                  path="/privacy-policy"
-                  element={
-                    <LandingLayout>
-                      <PrivacyPolicy />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/terms-of-service"
-                  element={
-                    <LandingLayout>
-                      <TermsOfService />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/faq"
-                  element={
-                    <LandingLayout>
-                      <FAQ />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/refund-policy"
-                  element={
-                    <LandingLayout>
-                      <RefundPolicy />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/contact"
-                  element={
-                    <LandingLayout>
-                      <Contact />
-                    </LandingLayout>
-                  }
-                />
-                <Route
-                  path="/press-kit"
-                  element={
-                    <LandingLayout>
-                      <PressKit />
-                    </LandingLayout>
-                  }
-                />
-
-                {/* Isolated Logo Route purely for screenshot automation via Playwright */}
-                <Route path="/logo-isolated" element={<IsolatedLogo />} />
-                <Route path="/export/team-pace-gap" element={<TeamPaceGapExport />} />
-
-                {/* Auth routes - public */}
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/login" element={<Login />} />
-                {/* Legacy /auth redirect for bookmarks and existing links */}
-                <Route path="/auth" element={<Navigate to="/login" replace />} />
-
-                {/* Partially Public Routes - accessible to all, gated features show login prompt */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <DashboardLayout>
-                      <Dashboard />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/race/:raceId"
-                  element={
-                    <DashboardLayout>
-                      <Race />
-                    </DashboardLayout>
-                  }
-                >
-                  <Route index element={<RaceIndex />} />
-                  <Route path="overview" element={<OverviewSection />} />
-                  <Route path="replay" element={<ReplaySection />} />
-                  <Route path="strategy" element={<StrategySection />} />
-                  <Route path="lap-analysis" element={<LapAnalysisSection />} />
-                  <Route path="head-to-head" element={<HeadToHeadSection />} />
-                  <Route path="telemetry" element={<TelemetrySection />} />
-                  <Route path="team-pace" element={<TeamPaceRedirect />} />
-                  <Route path="*" element={<RaceSectionFallback />} />
-                </Route>
-                <Route
-                  path="/calendar"
-                  element={
-                    <DashboardLayout>
-                      <Calendar />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/teams"
-                  element={
-                    <DashboardLayout>
-                      <TeamStandings />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/drivers"
-                  element={
-                    <DashboardLayout>
-                      <DriverStandings />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/standings/progression"
-                  element={
-                    <DashboardLayout>
-                      <ChampionshipProgression />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/team-pace"
-                  element={
-                    <DashboardLayout>
-                      <TeamPaceAnalysis />
-                    </DashboardLayout>
-                  }
-                />
-
-                {/* Comparison Pages - public */}
-                <Route
-                  path="/compare/drivers"
-                  element={
-                    <DashboardLayout>
-                      <CompareDrivers />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/compare/teams"
-                  element={
-                    <DashboardLayout>
-                      <CompareTeams />
-                    </DashboardLayout>
-                  }
-                />
-
-                {/* Fully Protected Routes - require login */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/onboarding" element={<Onboarding />} />
+  <AppErrorBoundary>
+    <MobileGate>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <ConsentBanner />
+          <SeasonProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <ScrollToTop />
+                <RouteTracker />
+                <SentryRoutes>
+                  {/* Landing Page Route (with LandingFooter) */}
                   <Route
-                    path="/settings"
+                    path="/"
+                    element={
+                      <LandingLayout>
+                        <Landing />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/about"
+                    element={
+                      <LandingLayout>
+                        <AboutUs />
+                      </LandingLayout>
+                    }
+                  />
+
+                  {/* Pricing Page */}
+                  <Route
+                    path="/pricing"
+                    element={
+                      <LandingLayout>
+                        <Pricing />
+                      </LandingLayout>
+                    }
+                  />
+
+                  {/* Features Page */}
+                  <Route
+                    path="/features"
+                    element={
+                      <LandingLayout>
+                        <Features />
+                      </LandingLayout>
+                    }
+                  />
+
+                  {/* MCP Server Page */}
+                  <Route
+                    path="/mcp"
+                    element={
+                      <LandingLayout>
+                        <MCPServer />
+                      </LandingLayout>
+                    }
+                  />
+
+                  {/* Public Info Pages */}
+                  <Route
+                    path="/privacy-policy"
+                    element={
+                      <LandingLayout>
+                        <PrivacyPolicy />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/terms-of-service"
+                    element={
+                      <LandingLayout>
+                        <TermsOfService />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/faq"
+                    element={
+                      <LandingLayout>
+                        <FAQ />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/refund-policy"
+                    element={
+                      <LandingLayout>
+                        <RefundPolicy />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/contact"
+                    element={
+                      <LandingLayout>
+                        <Contact />
+                      </LandingLayout>
+                    }
+                  />
+                  <Route
+                    path="/press-kit"
+                    element={
+                      <LandingLayout>
+                        <PressKit />
+                      </LandingLayout>
+                    }
+                  />
+
+                  {/* Isolated Logo Route purely for screenshot automation via Playwright */}
+                  <Route path="/logo-isolated" element={<IsolatedLogo />} />
+                  <Route path="/export/team-pace-gap" element={<TeamPaceGapExport />} />
+
+                  {/* Auth routes - public */}
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/login" element={<Login />} />
+                  {/* Legacy /auth redirect for bookmarks and existing links */}
+                  <Route path="/auth" element={<Navigate to="/login" replace />} />
+
+                  {/* Partially Public Routes - accessible to all, gated features show login prompt */}
+                  <Route
+                    path="/dashboard"
                     element={
                       <DashboardLayout>
-                        <Settings />
+                        <Dashboard />
                       </DashboardLayout>
                     }
                   />
-                </Route>
+                  <Route
+                    path="/race/:raceId"
+                    element={
+                      <DashboardLayout>
+                        <Race />
+                      </DashboardLayout>
+                    }
+                  >
+                    <Route index element={<RaceIndex />} />
+                    <Route path="overview" element={<OverviewSection />} />
+                    <Route path="replay" element={<ReplaySection />} />
+                    <Route path="strategy" element={<StrategySection />} />
+                    <Route path="lap-analysis" element={<LapAnalysisSection />} />
+                    <Route path="head-to-head" element={<HeadToHeadSection />} />
+                    <Route path="telemetry" element={<TelemetrySection />} />
+                    <Route path="team-pace" element={<TeamPaceRedirect />} />
+                    <Route path="*" element={<RaceSectionFallback />} />
+                  </Route>
+                  <Route
+                    path="/calendar"
+                    element={
+                      <DashboardLayout>
+                        <Calendar />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/standings/teams"
+                    element={
+                      <DashboardLayout>
+                        <TeamStandings />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/standings/drivers"
+                    element={
+                      <DashboardLayout>
+                        <DriverStandings />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/standings/progression"
+                    element={
+                      <DashboardLayout>
+                        <ChampionshipProgression />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/team-pace"
+                    element={
+                      <DashboardLayout>
+                        <TeamPaceAnalysis />
+                      </DashboardLayout>
+                    }
+                  />
 
-                {/* Fully Gated Routes - show login page for unauthenticated users */}
-                <Route
-                  path="/replay/:year/:event/:session"
-                  element={
-                    <DashboardLayout>
-                      <GatedRoute
-                        featureName="Session Replay"
-                        description="Relive every lap with full driver positions, telemetry sync, and race control events."
-                      >
-                        <SessionReplayPage />
-                      </GatedRoute>
-                    </DashboardLayout>
-                  }
-                />
+                  {/* Comparison Pages - public */}
+                  <Route
+                    path="/compare/drivers"
+                    element={
+                      <DashboardLayout>
+                        <CompareDrivers />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/compare/teams"
+                    element={
+                      <DashboardLayout>
+                        <CompareTeams />
+                      </DashboardLayout>
+                    }
+                  />
 
-                {/* Directory index pages (must come BEFORE the :slug routes below) */}
-                <Route
-                  path="/drivers"
-                  element={
-                    <DashboardLayout>
-                      <Drivers />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/drivers/leaderboard/:stat"
-                  element={
-                    <DashboardLayout>
-                      <DriverLeaderboard />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/teams"
-                  element={
-                    <DashboardLayout>
-                      <Teams />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/teams/leaderboard/:stat"
-                  element={
-                    <DashboardLayout>
-                      <TeamLeaderboard />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/leaderboard/pitstops"
-                  element={
-                    <DashboardLayout>
-                      <PitstopLeaderboard />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/saved"
-                  element={
-                    <DashboardLayout>
-                      <Saved />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/profile/:username"
-                  element={
-                    <DashboardLayout>
-                      <Profile />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/news"
-                  element={
-                    <DashboardLayout>
-                      <News />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/news/:articleId"
-                  element={
-                    <DashboardLayout>
-                      <NewsDiscussion />
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/notifications"
-                  element={
-                    <DashboardLayout>
-                      <Notifications />
-                    </DashboardLayout>
-                  }
-                />
+                  {/* Fully Protected Routes - require login */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route
+                      path="/settings"
+                      element={
+                        <DashboardLayout>
+                          <Settings />
+                        </DashboardLayout>
+                      }
+                    />
+                  </Route>
 
-                {/* Bio Pages */}
-                <Route
-                  path="/drivers/:slug"
-                  element={
-                    <DashboardLayout>
-                      <GatedRoute
-                        featureName="Driver Profile"
-                        description="Explore career stats, season history, and detailed performance data for every driver."
-                      >
-                        <DriverProfile />
-                      </GatedRoute>
-                    </DashboardLayout>
-                  }
-                />
-                <Route
-                  path="/teams/:slug"
-                  element={
-                    <DashboardLayout>
-                      <GatedRoute
-                        featureName="Team Profile"
-                        description="Dive into team history, constructor stats, and season-by-season performance."
-                      >
-                        <TeamProfile />
-                      </GatedRoute>
-                    </DashboardLayout>
-                  }
-                />
+                  {/* Fully Gated Routes - show login page for unauthenticated users */}
+                  <Route
+                    path="/replay/:year/:event/:session"
+                    element={
+                      <DashboardLayout>
+                        <GatedRoute
+                          featureName="Session Replay"
+                          description="Relive every lap with full driver positions, telemetry sync, and race control events."
+                        >
+                          <SessionReplayPage />
+                        </GatedRoute>
+                      </DashboardLayout>
+                    }
+                  />
 
-                {/* 404 page */}
-                <Route path="*" element={<NotFound />} />
-              </SentryRoutes>
-            </BrowserRouter>
-          </AuthProvider>
-        </SeasonProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </MobileGate>
+                  {/* Directory index pages (must come BEFORE the :slug routes below) */}
+                  <Route
+                    path="/drivers"
+                    element={
+                      <DashboardLayout>
+                        <Drivers />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/drivers/leaderboard/:stat"
+                    element={
+                      <DashboardLayout>
+                        <DriverLeaderboard />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/teams"
+                    element={
+                      <DashboardLayout>
+                        <Teams />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/teams/leaderboard/:stat"
+                    element={
+                      <DashboardLayout>
+                        <TeamLeaderboard />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/leaderboard/pitstops"
+                    element={
+                      <DashboardLayout>
+                        <PitstopLeaderboard />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/saved"
+                    element={
+                      <DashboardLayout>
+                        <Saved />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/profile/:username"
+                    element={
+                      <DashboardLayout>
+                        <Profile />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/news"
+                    element={
+                      <DashboardLayout>
+                        <News />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/news/:articleId"
+                    element={
+                      <DashboardLayout>
+                        <NewsDiscussion />
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <DashboardLayout>
+                        <Notifications />
+                      </DashboardLayout>
+                    }
+                  />
+
+                  {/* Bio Pages */}
+                  <Route
+                    path="/drivers/:slug"
+                    element={
+                      <DashboardLayout>
+                        <GatedRoute
+                          featureName="Driver Profile"
+                          description="Explore career stats, season history, and detailed performance data for every driver."
+                        >
+                          <DriverProfile />
+                        </GatedRoute>
+                      </DashboardLayout>
+                    }
+                  />
+                  <Route
+                    path="/teams/:slug"
+                    element={
+                      <DashboardLayout>
+                        <GatedRoute
+                          featureName="Team Profile"
+                          description="Dive into team history, constructor stats, and season-by-season performance."
+                        >
+                          <TeamProfile />
+                        </GatedRoute>
+                      </DashboardLayout>
+                    }
+                  />
+
+                  {/* 404 page */}
+                  <Route path="*" element={<NotFound />} />
+                </SentryRoutes>
+              </BrowserRouter>
+            </AuthProvider>
+          </SeasonProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </MobileGate>
+  </AppErrorBoundary>
 );
 
 export default App;

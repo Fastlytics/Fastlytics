@@ -93,6 +93,17 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
     return positionMap;
   }, [raceResults]);
 
+  const driverTeamMap = useMemo(() => {
+    if (!raceResults) return new Map<string, string>();
+    const teamMap = new Map<string, string>();
+    raceResults.forEach((result) => {
+      if (result.driverCode && result.team) {
+        teamMap.set(result.driverCode, result.team);
+      }
+    });
+    return teamMap;
+  }, [raceResults]);
+
   const {
     data: strategyData,
     isLoading: isLoadingStrategy,
@@ -269,6 +280,7 @@ const TireStrategy: React.FC<TireStrategyProps> = ({
             event={event}
             session={session}
             driverNameMap={driverNameMap}
+            driverTeamMap={driverTeamMap}
           />
         </div>
       )}

@@ -127,7 +127,8 @@ SPLIT_PLAN.md
 doctor_report.txt
 extract.py
 .commandcode/taste/taste.md
-.kiro
+.commandcode/
+.kiro/
 TELEMETRY_BULK_FETCH_PLAN.md
 TELEMETRY_BULK_SETUP.md
 TELEMETRY_SUMMARY.md

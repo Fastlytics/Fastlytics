@@ -1028,7 +1028,7 @@ export const fetchSectorComparison = async (
     return await request<SectorComparisonData>(`/api/comparison/sectors?${params.toString()}`);
   } catch (error) {
     // For development/demo, return mock data if real API isn't available
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       // Generate mock sector comparison data
       const mockData: SectorComparisonData = {
         driver1Code: driver1,
@@ -1097,14 +1097,7 @@ export const fetchSessionIncidents = async (
   session: string
 ): Promise<SessionIncident[]> => {
   const params = new URLSearchParams({ year: year.toString(), event, session });
-  try {
-    return await request<SessionIncident[]>(`/api/incidents?${params.toString()}`);
-  } catch (error) {
-    // Return empty array on error to prevent breaking UI that expects an array
-    logger.error('Error fetching incidents:', error);
-    return [];
-    // Alternatively, throw error; if you want query hook to handle error state
-  }
+  return request<SessionIncident[]>(`/api/incidents?${params.toString()}`);
 };
 
 export interface PaceDistributionData {
@@ -1510,9 +1503,52 @@ export const fetchDriverBio = async (slug: string): Promise<DriverBio> => {
 export const fetchTeamCareer = async (slug: string): Promise<TeamCareer> => {
   return request<TeamCareer>(`/api/team/${encodeURIComponent(slug)}/career`);
 };
-
 export const fetchTeamBio = async (slug: string): Promise<DriverBio> => {
   return request<DriverBio>(`/api/team/${encodeURIComponent(slug)}/bio`);
+};
+
+// ---------------------------------------------------------------------------
+// Teammate Battle
+// ---------------------------------------------------------------------------
+
+export interface TeammateBattleEntry {
+  teammate: {
+    slug: string;
+    code: string;
+    name: string;
+    headshotUrl: string;
+  };
+  team: string;
+  teamColor: string;
+  racesTogether: number;
+  seasons: number[];
+  qualiH2h: { driver: number; teammate: number };
+  raceH2h: { driver: number; teammate: number };
+  points: { driver: number; teammate: number };
+  championshipPositionsWon: { driver: number; teammate: number };
+  perSeason: {
+    year: number;
+    team: string;
+    teamColor: string;
+    races: number;
+    qualiH2h: { driver: number; teammate: number };
+    raceH2h: { driver: number; teammate: number };
+    points: { driver: number; teammate: number };
+  }[];
+}
+
+export interface TeammateBattleResponse {
+  driver: {
+    slug: string;
+    code: string;
+    name: string;
+    headshotUrl: string;
+  };
+  battles: TeammateBattleEntry[];
+}
+
+export const fetchTeammateBattle = async (slug: string): Promise<TeammateBattleResponse> => {
+  return request<TeammateBattleResponse>(`/api/driver/${encodeURIComponent(slug)}/teammate-battle`);
 };
 
 // ---------------------------------------------------------------------------

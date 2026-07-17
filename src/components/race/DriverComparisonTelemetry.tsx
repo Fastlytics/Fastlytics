@@ -18,6 +18,11 @@ import {
   fetchTelemetryRPM,
   fetchTelemetryDRS,
   fetchTelemetrySpeed,
+  fetchSessionDrivers,
+  fetchLapTimes,
+  type SessionDriver,
+  type LapTimesEnrichedResponse,
+  type EnrichedLapRecord,
 } from '@/lib/api';
 import { driverColor } from '@/lib/driverColor';
 import { useChartVisibility } from '@/hooks/useChartVisibility';
@@ -94,6 +99,25 @@ function computeComparisonMetrics(
       avgDelta: d1Avg - d2Avg,
     },
   };
+}
+
+function formatLapTimeSeconds(seconds: number | null | undefined): string | undefined {
+  if (seconds == null) return undefined;
+  const m = Math.floor(seconds / 60);
+  const s = (seconds % 60).toFixed(3);
+  return `${m}:${s.padStart(6, '0')}`;
+}
+
+function findLapRecord(
+  records: EnrichedLapRecord[] | undefined,
+  lap: string | number
+): EnrichedLapRecord | undefined {
+  if (!records) return undefined;
+  if (lap === 'fastest') {
+    return records.find((r) => r.isPersonalBest);
+  }
+  const lapNum = typeof lap === 'string' ? parseInt(lap, 10) : lap;
+  return records.find((r) => r.lapNumber === lapNum);
 }
 
 const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
@@ -175,6 +199,66 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
 
   const analysisMutation = useAiTelemetrySummary();
 
+  const { data: sessionDrivers } = useQuery<SessionDriver[]>({
+    queryKey: ['sessionDrivers', year, event, session],
+    queryFn: () => fetchSessionDrivers(year, event, session),
+    staleTime: Infinity,
+    enabled: shouldLoadChart && !!year && !!event && !!session,
+  });
+
+  const { data: lapTimesResponse } = useQuery<LapTimesEnrichedResponse>({
+    queryKey: ['lapTimes', year, event, session, driver1, driver2],
+    queryFn: () => fetchLapTimes(year, event, session, [driver1, driver2]),
+    enabled: shouldLoadChart && !!driver1 && !!driver2 && driver1 !== driver2,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const driver1Info = useMemo(() => {
+    const obj = sessionDrivers?.find((d) => d.code === driver1);
+    return {
+      code: driver1,
+      name: obj?.name || driver1,
+      team: obj?.team || '',
+    };
+  }, [sessionDrivers, driver1]);
+
+  const driver2Info = useMemo(() => {
+    const obj = sessionDrivers?.find((d) => d.code === driver2);
+    return {
+      code: driver2,
+      name: obj?.name || driver2,
+      team: obj?.team || '',
+    };
+  }, [sessionDrivers, driver2]);
+
+  const lap1Record = useMemo(
+    () => findLapRecord(lapTimesResponse?.driverLapDetails?.[driver1], lap1),
+    [lapTimesResponse, driver1, lap1]
+  );
+
+  const lap2Record = useMemo(
+    () => findLapRecord(lapTimesResponse?.driverLapDetails?.[driver2], lap2),
+    [lapTimesResponse, driver2, lap2]
+  );
+
+  const lap1Info = useMemo(
+    () => ({
+      number: String(lap1),
+      time: formatLapTimeSeconds(lap1Record?.lapTime),
+      compound: lap1Record?.compound ?? undefined,
+    }),
+    [lap1, lap1Record]
+  );
+
+  const lap2Info = useMemo(
+    () => ({
+      number: String(lap2),
+      time: formatLapTimeSeconds(lap2Record?.lapTime),
+      compound: lap2Record?.compound ?? undefined,
+    }),
+    [lap2, lap2Record]
+  );
+
   const metrics = useMemo(
     () =>
       combinedTelemetryData.length > 0
@@ -202,11 +286,8 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
       session,
       chart_type: `comparison_${telemetryType}`,
       chart_title: `${title}`,
-      drivers: [
-        { code: driver1, name: driver1, team: '' },
-        { code: driver2, name: driver2, team: '' },
-      ],
-      laps: [{ number: String(lap1) }, { number: String(lap2) }],
+      drivers: [driver1Info, driver2Info],
+      laps: [lap1Info, lap2Info],
       chart_metrics: metrics,
     });
   };
@@ -469,7 +550,7 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
             animate={{ clipPath: `circle(200% at ${originPos.x}px ${originPos.y}px)` }}
             exit={{ clipPath: `circle(0px at ${originPos.x}px ${originPos.y}px)` }}
             transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-0 z-20 rounded-lg bg-white"
+            className="absolute inset-0 z-20 rounded-lg bg-[#0a0a0c]"
           >
             {isAnalysisRateLimited ? (
               <FeatureGateCard onClose={handleClose} onUpgrade={() => setUpgradeOpen(true)} />
@@ -480,11 +561,24 @@ const DriverComparisonTelemetry: React.FC<DriverComparisonTelemetryProps> = ({
                     summary: '',
                     key_insights: [],
                     corner_analysis: [],
+                    battle_analysis: null,
                     cached: false,
                   }
                 }
                 isLoading={analysisMutation.isPending}
                 onClose={handleClose}
+                driverCode={driver1}
+                driverName={driver1Info.name}
+                team={driver1Info.team}
+                year={year}
+                lapNumber={String(lap1)}
+                lapTime={lap1Info.time}
+                compound={lap1Info.compound}
+                compareDriverCode={driver2}
+                compareDriverName={driver2Info.name}
+                compareTeam={driver2Info.team}
+                compareLapTime={lap2Info.time}
+                compareCompound={lap2Info.compound}
               />
             )}
           </m.div>

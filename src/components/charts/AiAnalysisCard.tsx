@@ -130,6 +130,9 @@ export function AiAnalysisCard({
                   </div>
                 )}
               </div>
+              <h3 className="truncate text-[24px] font-semibold leading-tight text-white">
+                {headerTitle}
+              </h3>
             </div>
           ) : (
             <div className="flex items-center gap-3">
@@ -152,7 +155,7 @@ export function AiAnalysisCard({
                   {driverCode || '?'}
                 </div>
               )}
-              <h3 className="truncate text-[24px] font-semibold leading-none text-white">
+              <h3 className="truncate text-[24px] font-semibold leading-tight text-white">
                 {headerTitle}
               </h3>
             </div>

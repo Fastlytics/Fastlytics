@@ -1,4 +1,7 @@
 /api/*  https://fastlytics-api-proxy-v2.subhashgottumukkala17.workers.dev/api/:splat  200
 
+# Serve .well-known files statically (Apple Pay verification, etc.)
+/.well-known/*  /.well-known/:splat  200
+
 # SPA fallback - must be last
 /*    /index.html   200

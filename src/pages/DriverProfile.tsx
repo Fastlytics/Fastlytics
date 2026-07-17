@@ -25,6 +25,7 @@ import { CARD_CONTAINER, CARD_LABEL } from '@/lib/card-styles';
 import { DriverHero } from '@/pages/Driver/DriverHero';
 import { DriverTabStrip } from '@/pages/Driver/DriverTabStrip';
 import { DriverChampionshipSection } from '@/pages/Driver/DriverChampionshipSection';
+import { TeammateBattle } from '@/components/driver/TeammateBattle';
 import { PageLoader } from '@/components/ui/PageLoader';
 
 const DriverProfile = () => {
@@ -200,6 +201,9 @@ const DriverProfile = () => {
             )}
             {activeTab === 'championship' && (
               <DriverChampionshipSection career={career} slug={slug!} />
+            )}
+            {activeTab === 'teammates' && (
+              <TeammateBattle driverCode={driverCode} driverName={career.name} slug={slug!} />
             )}
           </m.div>
         </AnimatePresence>
