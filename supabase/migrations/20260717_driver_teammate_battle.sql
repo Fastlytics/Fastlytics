@@ -1,4 +1,4 @@
--- Compute driver teammate head-to-head stats (qualifying, race, points) directly in Postgres.
+-- Compute driver teammate head-to-head stats (qualifying, race, points, wins, podiums) directly in Postgres.
 -- Replaces the previous Python implementation that read FastF1 gzipped cache files one-by-one.
 CREATE OR REPLACE FUNCTION get_driver_teammate_battle(p_driver_id integer)
 RETURNS jsonb
@@ -102,6 +102,10 @@ BEGIN
       SUM(CASE WHEN driver_quali_pos IS NOT NULL AND teammate_quali_pos IS NOT NULL AND teammate_quali_pos < driver_quali_pos THEN 1 ELSE 0 END) AS quali_losses,
       SUM(CASE WHEN driver_race_pos IS NOT NULL AND teammate_race_pos IS NOT NULL AND driver_race_pos < teammate_race_pos THEN 1 ELSE 0 END) AS race_wins,
       SUM(CASE WHEN driver_race_pos IS NOT NULL AND teammate_race_pos IS NOT NULL AND teammate_race_pos < driver_race_pos THEN 1 ELSE 0 END) AS race_losses,
+      SUM(CASE WHEN driver_race_pos = 1 THEN 1 ELSE 0 END) AS wins_driver,
+      SUM(CASE WHEN teammate_race_pos = 1 THEN 1 ELSE 0 END) AS wins_teammate,
+      SUM(CASE WHEN driver_race_pos <= 3 THEN 1 ELSE 0 END) AS podiums_driver,
+      SUM(CASE WHEN teammate_race_pos <= 3 THEN 1 ELSE 0 END) AS podiums_teammate,
       SUM(driver_points) AS driver_points,
       SUM(teammate_points) AS teammate_points
     FROM race_matchups
@@ -140,6 +144,10 @@ BEGIN
       SUM(ps.quali_losses) AS quali_losses,
       SUM(ps.race_wins) AS race_wins,
       SUM(ps.race_losses) AS race_losses,
+      SUM(ps.wins_driver) AS wins_driver,
+      SUM(ps.wins_teammate) AS wins_teammate,
+      SUM(ps.podiums_driver) AS podiums_driver,
+      SUM(ps.podiums_teammate) AS podiums_teammate,
       SUM(ps.driver_points) AS driver_points,
       SUM(ps.teammate_points) AS teammate_points,
       COALESCE(SUM(CASE WHEN ch.driver_champ_pos IS NOT NULL AND ch.teammate_champ_pos IS NOT NULL AND ch.driver_champ_pos < ch.teammate_champ_pos THEN 1 ELSE 0 END), 0) AS champ_wins,
@@ -152,7 +160,9 @@ BEGIN
           'races', ps.races,
           'qualiH2h', jsonb_build_object('driver', ps.quali_wins, 'teammate', ps.quali_losses),
           'raceH2h', jsonb_build_object('driver', ps.race_wins, 'teammate', ps.race_losses),
-          'points', jsonb_build_object('driver', ps.driver_points, 'teammate', ps.teammate_points)
+          'points', jsonb_build_object('driver', ps.driver_points, 'teammate', ps.teammate_points),
+          'wins', jsonb_build_object('driver', ps.wins_driver, 'teammate', ps.wins_teammate),
+          'podiums', jsonb_build_object('driver', ps.podiums_driver, 'teammate', ps.podiums_teammate)
         )
         ORDER BY ps.year
       ) AS per_season
@@ -183,6 +193,8 @@ BEGIN
         'qualiH2h', jsonb_build_object('driver', quali_wins, 'teammate', quali_losses),
         'raceH2h', jsonb_build_object('driver', race_wins, 'teammate', race_losses),
         'points', jsonb_build_object('driver', driver_points, 'teammate', teammate_points),
+        'wins', jsonb_build_object('driver', wins_driver, 'teammate', wins_teammate),
+        'podiums', jsonb_build_object('driver', podiums_driver, 'teammate', podiums_teammate),
         'championshipPositionsWon', jsonb_build_object('driver', champ_wins, 'teammate', champ_losses),
         'perSeason', per_season
       )
