@@ -1525,6 +1525,8 @@ export interface TeammateBattleEntry {
   qualiH2h: { driver: number; teammate: number };
   raceH2h: { driver: number; teammate: number };
   points: { driver: number; teammate: number };
+  wins?: { driver: number; teammate: number };
+  podiums?: { driver: number; teammate: number };
   championshipPositionsWon: { driver: number; teammate: number };
   perSeason: {
     year: number;
@@ -1534,6 +1536,8 @@ export interface TeammateBattleEntry {
     qualiH2h: { driver: number; teammate: number };
     raceH2h: { driver: number; teammate: number };
     points: { driver: number; teammate: number };
+    wins?: { driver: number; teammate: number };
+    podiums?: { driver: number; teammate: number };
   }[];
 }
 
