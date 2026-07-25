@@ -444,12 +444,20 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }, []);
 
+  const isMountedRef = useRef(true);
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
   const playbackSpeedRef = useRef(playbackSpeed);
   const activeTotalDurationRef = useRef(activeTotalDuration);
   const loadedDurationRef = useRef(loadedDuration);
   const isFullyLoadedRef = useRef(isFullyLoaded);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     playbackSpeedRef.current = playbackSpeed;
@@ -466,6 +474,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
 
   const animate = useCallback(
     function tick(time: number) {
+      if (!isMountedRef.current) return;
       if (previousTimeRef.current !== null) {
         const deltaTime = (time - previousTimeRef.current) / 1000;
         if (isPlayingRef.current && !isBufferingRef.current) {
@@ -490,7 +499,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
         }
       }
       previousTimeRef.current = time;
-      if (isPlayingRef.current) {
+      if (isPlayingRef.current && isMountedRef.current) {
         requestRef.current = requestAnimationFrame(tick);
       } else {
         requestRef.current = null;
