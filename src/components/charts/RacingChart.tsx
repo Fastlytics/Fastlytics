@@ -11,6 +11,7 @@ import { useLapChartData, MIN_DRIVERS } from '@/hooks/useLapChartData';
 import { ChartStateDisplay } from '@/components/charts/shared/ChartStateDisplay';
 import { DriverMultiSelect } from '@/components/charts/shared/DriverMultiSelect';
 import { ChartLoadPrompt } from '@/components/charts/shared/ChartLoadPrompt';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   FastestLapStat,
   RacingDriverLapPanels,
@@ -52,6 +53,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
 }) => {
   const [fuelCorrectionEnabled, setFuelCorrectionEnabled] = useState(false);
   const [isDriverPopoverOpen, setIsDriverPopoverOpen] = useState(false);
+  const [weatherOverlayEnabled, setWeatherOverlayEnabled] = useState(false);
+  const { user, isSubscribed } = useAuth();
+  const isPro = user && isSubscribed('pro');
 
   const {
     chartRef,
@@ -92,6 +96,35 @@ const RacingChart: React.FC<RacingChartProps> = ({
 
   const weatherData = enrichedResponse?.weather;
   const driverLapDetails = enrichedResponse?.driverLapDetails;
+
+  const wetLapZones = useMemo(() => {
+    if (!driverLapDetails || !weatherOverlayEnabled) return [];
+    const wetLaps = new Set<number>();
+    for (const laps of Object.values(driverLapDetails)) {
+      for (const lap of laps) {
+        if (lap.lapNumber != null) {
+          const compound = lap.compound?.toUpperCase() || '';
+          const status = (lap.trackStatus || '').toLowerCase();
+          if (compound === 'WET' || compound === 'INTERMEDIATE' || status.includes('wet') || status.includes('rain')) {
+            wetLaps.add(lap.lapNumber);
+          }
+        }
+      }
+    }
+    if (wetLaps.size === 0) return [];
+
+    const sorted = [...wetLaps].sort((a, b) => a - b);
+    const zones: { start: number; end: number }[] = [];
+    let zoneStart = sorted[0];
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] !== sorted[i - 1] + 1) {
+        zones.push({ start: zoneStart, end: sorted[i - 1] + 1 });
+        zoneStart = sorted[i];
+      }
+    }
+    zones.push({ start: zoneStart, end: sorted[sorted.length - 1] + 1 });
+    return zones;
+  }, [driverLapDetails, weatherOverlayEnabled]);
 
   const correctedLapData = useMemo(() => {
     if (!rawLapData || !fuelCorrectionEnabled) return rawLapData;
@@ -170,8 +203,9 @@ const RacingChart: React.FC<RacingChartProps> = ({
     >
       {/* Controls */}
       <div className="flex items-center justify-between">
-        {/* Fuel correction */}
-        <div className="flex items-center gap-2.5">
+        {/* Left controls */}
+        <div className="flex items-center gap-4">
+          {/* Fuel correction */}
           <div className="flex items-center gap-2">
             <Switch
               checked={fuelCorrectionEnabled}
@@ -204,6 +238,25 @@ const RacingChart: React.FC<RacingChartProps> = ({
               </p>
             </PopoverContent>
           </Popover>
+
+          {weatherData && isPro && (
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={weatherOverlayEnabled}
+                onCheckedChange={(checked) => {
+                  trackInteraction('weather_overlay_toggled', {
+                    enabled: checked,
+                    chart: 'lap_time',
+                    year,
+                    event,
+                    session,
+                  });
+                  setWeatherOverlayEnabled(checked);
+                }}
+              />
+              <span className="text-[13px] font-medium text-white">Weather overlay</span>
+            </div>
+          )}
         </div>
 
         {/* Right controls */}
@@ -293,6 +346,8 @@ const RacingChart: React.FC<RacingChartProps> = ({
         setFocusedDriver={setFocusedDriver}
         weatherData={weatherData}
         fastestLaps={fastestLaps}
+        weatherOverlayEnabled={weatherOverlayEnabled}
+        wetLapZones={wetLapZones}
       />
     </div>
   );
@@ -320,6 +375,8 @@ interface RacingChartContentProps {
   setFocusedDriver: (driver: string | null) => void;
   weatherData: import('@/lib/api').WeatherSummary | null | undefined;
   fastestLaps: FastestLapStat[];
+  weatherOverlayEnabled: boolean;
+  wetLapZones: { start: number; end: number }[];
 }
 
 const RacingChartContent: React.FC<RacingChartContentProps> = ({
@@ -341,6 +398,8 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
   setFocusedDriver,
   weatherData,
   fastestLaps,
+  weatherOverlayEnabled,
+  wetLapZones,
 }) => {
   if (status === 'idle' && !staticData) {
     return (
@@ -404,6 +463,9 @@ const RacingChartContent: React.FC<RacingChartContentProps> = ({
         year={year}
         event={event}
         session={session}
+        weatherOverlayEnabled={weatherOverlayEnabled}
+        wetLapZones={wetLapZones}
+        weatherData={weatherData ?? null}
       />
       <RacingWeatherBanner weatherData={weatherData ?? null} />
       <RacingFastestLapsTable

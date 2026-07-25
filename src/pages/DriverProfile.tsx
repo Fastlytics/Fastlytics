@@ -26,6 +26,7 @@ import { DriverHero } from '@/pages/Driver/DriverHero';
 import { DriverTabStrip } from '@/pages/Driver/DriverTabStrip';
 import { DriverChampionshipSection } from '@/pages/Driver/DriverChampionshipSection';
 import { TeammateBattle } from '@/components/driver/TeammateBattle';
+import { TeammateGapChart } from '@/components/charts/TeammateGapChart';
 import { PageLoader } from '@/components/ui/PageLoader';
 
 const DriverProfile = () => {
@@ -200,7 +201,10 @@ const DriverProfile = () => {
               <OverviewSection career={career} selectedYear={selectedYear} />
             )}
             {activeTab === 'championship' && (
-              <DriverChampionshipSection career={career} slug={slug!} />
+              <>
+                <DriverChampionshipSection career={career} slug={slug!} />
+                <TeammateGapChart driverName={career.name} slug={slug!} />
+              </>
             )}
             {activeTab === 'teammates' && (
               <TeammateBattle driverCode={driverCode} driverName={career.name} slug={slug!} />
