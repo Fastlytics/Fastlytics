@@ -25,14 +25,6 @@ const Landing: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
-        <div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-      </div>
-    );
-  }
-
   return (
     <div
       style={INTER_STYLE}
