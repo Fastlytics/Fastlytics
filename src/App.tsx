@@ -1,58 +1,10 @@
+import { lazy, Suspense } from 'react';
 import * as Sentry from '@sentry/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Landing from './pages/Landing'; // Updated import
-import SignUp from './pages/SignUp';
-import Login from './pages/Login';
-import Onboarding from './pages/Onboarding';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import AboutUs from './pages/AboutUs';
-import Race from './pages/Race';
-import RaceIndex from './pages/Race/RaceIndex';
-import OverviewSection from './pages/Race/sections/OverviewSection';
-import ReplaySection from './pages/Race/sections/ReplaySection';
-import StrategySection from './pages/Race/sections/StrategySection';
-import LapAnalysisSection from './pages/Race/sections/LapAnalysisSection';
-import HeadToHeadSection from './pages/Race/sections/HeadToHeadSection';
-import TelemetrySection from './pages/Race/sections/TelemetrySection';
-import TeamPaceRedirect from './pages/Race/sections/TeamPaceRedirect';
-import RaceSectionFallback from './pages/Race/RaceSectionFallback';
-import TeamStandings from './pages/TeamStandings';
-import DriverStandings from './pages/DriverStandings';
-import Calendar from './pages/Calendar';
-import ChampionshipProgression from './pages/ChampionshipProgression';
-import TeamPaceAnalysis from './pages/TeamPaceAnalysis';
-import DriverProfile from './pages/DriverProfile';
-import TeamProfile from './pages/TeamProfile';
-import CompareDrivers from './pages/CompareDrivers';
-import CompareTeams from './pages/CompareTeams';
-import Drivers from './pages/Drivers';
-import DriverLeaderboard from './pages/DriverLeaderboard';
-import Teams from './pages/Teams';
-import TeamLeaderboard from './pages/TeamLeaderboard';
-import PitstopLeaderboard from './pages/PitstopLeaderboard';
-import Saved from './pages/Saved';
-import News from './pages/News';
-import NewsDiscussion from './pages/NewsDiscussion';
-import Notifications from './pages/Notifications';
-
-import NotFound from './pages/NotFound';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import SessionReplayPage from './pages/SessionReplayPage';
-import TermsOfService from './pages/TermsOfService';
-import FAQ from './pages/FAQ';
-import RefundPolicy from './pages/RefundPolicy';
-import Contact from './pages/Contact';
-import PressKit from './pages/PressKit';
-import Pricing from './pages/Pricing';
-import Features from './pages/Features';
-import MCPServer from './pages/MCPServer';
-import IsolatedLogo from './pages/IsolatedLogo';
-import TeamPaceGapExport from './pages/export/TeamPaceGapExport';
+import PageLoader from '@/components/layout/PageLoader';
 import { SeasonProvider } from './contexts/SeasonContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ScrollToTop from '@/components/layout/ScrollToTop';
@@ -63,6 +15,56 @@ import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 import ConsentBanner from '@/components/auth/ConsentBanner';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { MobileGate } from '@/components/mobile/MobileGate';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Landing = lazy(() => import('./pages/Landing'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const Login = lazy(() => import('./pages/Login'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const Race = lazy(() => import('./pages/Race'));
+const RaceIndex = lazy(() => import('./pages/Race/RaceIndex'));
+const OverviewSection = lazy(() => import('./pages/Race/sections/OverviewSection'));
+const ReplaySection = lazy(() => import('./pages/Race/sections/ReplaySection'));
+const StrategySection = lazy(() => import('./pages/Race/sections/StrategySection'));
+const LapAnalysisSection = lazy(() => import('./pages/Race/sections/LapAnalysisSection'));
+const HeadToHeadSection = lazy(() => import('./pages/Race/sections/HeadToHeadSection'));
+const TelemetrySection = lazy(() => import('./pages/Race/sections/TelemetrySection'));
+const TeamPaceRedirect = lazy(() => import('./pages/Race/sections/TeamPaceRedirect'));
+const RaceSectionFallback = lazy(() => import('./pages/Race/RaceSectionFallback'));
+const TeamStandings = lazy(() => import('./pages/TeamStandings'));
+const DriverStandings = lazy(() => import('./pages/DriverStandings'));
+const Calendar = lazy(() => import('./pages/Calendar'));
+const ChampionshipProgression = lazy(() => import('./pages/ChampionshipProgression'));
+const TeamPaceAnalysis = lazy(() => import('./pages/TeamPaceAnalysis'));
+const DriverProfile = lazy(() => import('./pages/DriverProfile'));
+const TeamProfile = lazy(() => import('./pages/TeamProfile'));
+const CompareDrivers = lazy(() => import('./pages/CompareDrivers'));
+const CompareTeams = lazy(() => import('./pages/CompareTeams'));
+const Drivers = lazy(() => import('./pages/Drivers'));
+const DriverLeaderboard = lazy(() => import('./pages/DriverLeaderboard'));
+const Teams = lazy(() => import('./pages/Teams'));
+const TeamLeaderboard = lazy(() => import('./pages/TeamLeaderboard'));
+const PitstopLeaderboard = lazy(() => import('./pages/PitstopLeaderboard'));
+const Saved = lazy(() => import('./pages/Saved'));
+const News = lazy(() => import('./pages/News'));
+const NewsDiscussion = lazy(() => import('./pages/NewsDiscussion'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const SessionReplayPage = lazy(() => import('./pages/SessionReplayPage'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const Contact = lazy(() => import('./pages/Contact'));
+const PressKit = lazy(() => import('./pages/PressKit'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Features = lazy(() => import('./pages/Features'));
+const MCPServer = lazy(() => import('./pages/MCPServer'));
+const IsolatedLogo = lazy(() => import('./pages/IsolatedLogo'));
+const TeamPaceGapExport = lazy(() => import('./pages/export/TeamPaceGapExport'));
 
 const SentryRoutes = Sentry.withSentryReactRouterV7Routing(Routes);
 
@@ -81,10 +83,13 @@ const queryClient = new QueryClient({
   },
 });
 
-// Landing layout — the new Landing page includes its own footer.
 const LandingLayout = ({ children }: { children: React.ReactNode }) => {
   return <div className="min-h-screen flex flex-col">{children}</div>;
 };
+
+const Lazy = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
 
 const App = () => (
   <AppErrorBoundary>
@@ -99,12 +104,13 @@ const App = () => (
                 <ScrollToTop />
                 <RouteTracker />
                 <SentryRoutes>
-                  {/* Landing Page Route (with LandingFooter) */}
                   <Route
                     path="/"
                     element={
                       <LandingLayout>
-                        <Landing />
+                        <Lazy>
+                          <Landing />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -112,47 +118,49 @@ const App = () => (
                     path="/about"
                     element={
                       <LandingLayout>
-                        <AboutUs />
+                        <Lazy>
+                          <AboutUs />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
-
-                  {/* Pricing Page */}
                   <Route
                     path="/pricing"
                     element={
                       <LandingLayout>
-                        <Pricing />
+                        <Lazy>
+                          <Pricing />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
-
-                  {/* Features Page */}
                   <Route
                     path="/features"
                     element={
                       <LandingLayout>
-                        <Features />
+                        <Lazy>
+                          <Features />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
-
-                  {/* MCP Server Page */}
                   <Route
                     path="/mcp"
                     element={
                       <LandingLayout>
-                        <MCPServer />
+                        <Lazy>
+                          <MCPServer />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
-
-                  {/* Public Info Pages */}
                   <Route
                     path="/privacy-policy"
                     element={
                       <LandingLayout>
-                        <PrivacyPolicy />
+                        <Lazy>
+                          <PrivacyPolicy />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -160,7 +168,9 @@ const App = () => (
                     path="/terms-of-service"
                     element={
                       <LandingLayout>
-                        <TermsOfService />
+                        <Lazy>
+                          <TermsOfService />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -168,7 +178,9 @@ const App = () => (
                     path="/faq"
                     element={
                       <LandingLayout>
-                        <FAQ />
+                        <Lazy>
+                          <FAQ />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -176,7 +188,9 @@ const App = () => (
                     path="/refund-policy"
                     element={
                       <LandingLayout>
-                        <RefundPolicy />
+                        <Lazy>
+                          <RefundPolicy />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -184,7 +198,9 @@ const App = () => (
                     path="/contact"
                     element={
                       <LandingLayout>
-                        <Contact />
+                        <Lazy>
+                          <Contact />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
@@ -192,27 +208,52 @@ const App = () => (
                     path="/press-kit"
                     element={
                       <LandingLayout>
-                        <PressKit />
+                        <Lazy>
+                          <PressKit />
+                        </Lazy>
                       </LandingLayout>
                     }
                   />
-
-                  {/* Isolated Logo Route purely for screenshot automation via Playwright */}
-                  <Route path="/logo-isolated" element={<IsolatedLogo />} />
-                  <Route path="/export/team-pace-gap" element={<TeamPaceGapExport />} />
-
-                  {/* Auth routes - public */}
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/login" element={<Login />} />
-                  {/* Legacy /auth redirect for bookmarks and existing links */}
+                  <Route
+                    path="/logo-isolated"
+                    element={
+                      <Lazy>
+                        <IsolatedLogo />
+                      </Lazy>
+                    }
+                  />
+                  <Route
+                    path="/export/team-pace-gap"
+                    element={
+                      <Lazy>
+                        <TeamPaceGapExport />
+                      </Lazy>
+                    }
+                  />
+                  <Route
+                    path="/signup"
+                    element={
+                      <Lazy>
+                        <SignUp />
+                      </Lazy>
+                    }
+                  />
+                  <Route
+                    path="/login"
+                    element={
+                      <Lazy>
+                        <Login />
+                      </Lazy>
+                    }
+                  />
                   <Route path="/auth" element={<Navigate to="/login" replace />} />
-
-                  {/* Partially Public Routes - accessible to all, gated features show login prompt */}
                   <Route
                     path="/dashboard"
                     element={
                       <DashboardLayout>
-                        <Dashboard />
+                        <Lazy>
+                          <Dashboard />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -220,25 +261,92 @@ const App = () => (
                     path="/race/:raceId"
                     element={
                       <DashboardLayout>
-                        <Race />
+                        <Lazy>
+                          <Race />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   >
-                    <Route index element={<RaceIndex />} />
-                    <Route path="overview" element={<OverviewSection />} />
-                    <Route path="replay" element={<ReplaySection />} />
-                    <Route path="strategy" element={<StrategySection />} />
-                    <Route path="lap-analysis" element={<LapAnalysisSection />} />
-                    <Route path="head-to-head" element={<HeadToHeadSection />} />
-                    <Route path="telemetry" element={<TelemetrySection />} />
-                    <Route path="team-pace" element={<TeamPaceRedirect />} />
-                    <Route path="*" element={<RaceSectionFallback />} />
+                    <Route
+                      index
+                      element={
+                        <Lazy>
+                          <RaceIndex />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="overview"
+                      element={
+                        <Lazy>
+                          <OverviewSection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="replay"
+                      element={
+                        <Lazy>
+                          <ReplaySection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="strategy"
+                      element={
+                        <Lazy>
+                          <StrategySection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="lap-analysis"
+                      element={
+                        <Lazy>
+                          <LapAnalysisSection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="head-to-head"
+                      element={
+                        <Lazy>
+                          <HeadToHeadSection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="telemetry"
+                      element={
+                        <Lazy>
+                          <TelemetrySection />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="team-pace"
+                      element={
+                        <Lazy>
+                          <TeamPaceRedirect />
+                        </Lazy>
+                      }
+                    />
+                    <Route
+                      path="*"
+                      element={
+                        <Lazy>
+                          <RaceSectionFallback />
+                        </Lazy>
+                      }
+                    />
                   </Route>
                   <Route
                     path="/calendar"
                     element={
                       <DashboardLayout>
-                        <Calendar />
+                        <Lazy>
+                          <Calendar />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -246,7 +354,9 @@ const App = () => (
                     path="/standings/teams"
                     element={
                       <DashboardLayout>
-                        <TeamStandings />
+                        <Lazy>
+                          <TeamStandings />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -254,7 +364,9 @@ const App = () => (
                     path="/standings/drivers"
                     element={
                       <DashboardLayout>
-                        <DriverStandings />
+                        <Lazy>
+                          <DriverStandings />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -262,7 +374,9 @@ const App = () => (
                     path="/standings/progression"
                     element={
                       <DashboardLayout>
-                        <ChampionshipProgression />
+                        <Lazy>
+                          <ChampionshipProgression />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -270,17 +384,19 @@ const App = () => (
                     path="/team-pace"
                     element={
                       <DashboardLayout>
-                        <TeamPaceAnalysis />
+                        <Lazy>
+                          <TeamPaceAnalysis />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
-
-                  {/* Comparison Pages - public */}
                   <Route
                     path="/compare/drivers"
                     element={
                       <DashboardLayout>
-                        <CompareDrivers />
+                        <Lazy>
+                          <CompareDrivers />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -288,25 +404,32 @@ const App = () => (
                     path="/compare/teams"
                     element={
                       <DashboardLayout>
-                        <CompareTeams />
+                        <Lazy>
+                          <CompareTeams />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
-
-                  {/* Fully Protected Routes - require login */}
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <Lazy>
+                          <Onboarding />
+                        </Lazy>
+                      }
+                    />
                     <Route
                       path="/settings"
                       element={
                         <DashboardLayout>
-                          <Settings />
+                          <Lazy>
+                            <Settings />
+                          </Lazy>
                         </DashboardLayout>
                       }
                     />
                   </Route>
-
-                  {/* Fully Gated Routes - show login page for unauthenticated users */}
                   <Route
                     path="/replay/:year/:event/:session"
                     element={
@@ -315,18 +438,20 @@ const App = () => (
                           featureName="Session Replay"
                           description="Relive every lap with full driver positions, telemetry sync, and race control events."
                         >
-                          <SessionReplayPage />
+                          <Lazy>
+                            <SessionReplayPage />
+                          </Lazy>
                         </GatedRoute>
                       </DashboardLayout>
                     }
                   />
-
-                  {/* Directory index pages (must come BEFORE the :slug routes below) */}
                   <Route
                     path="/drivers"
                     element={
                       <DashboardLayout>
-                        <Drivers />
+                        <Lazy>
+                          <Drivers />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -334,7 +459,9 @@ const App = () => (
                     path="/drivers/leaderboard/:stat"
                     element={
                       <DashboardLayout>
-                        <DriverLeaderboard />
+                        <Lazy>
+                          <DriverLeaderboard />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -342,7 +469,9 @@ const App = () => (
                     path="/teams"
                     element={
                       <DashboardLayout>
-                        <Teams />
+                        <Lazy>
+                          <Teams />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -350,7 +479,9 @@ const App = () => (
                     path="/teams/leaderboard/:stat"
                     element={
                       <DashboardLayout>
-                        <TeamLeaderboard />
+                        <Lazy>
+                          <TeamLeaderboard />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -358,7 +489,9 @@ const App = () => (
                     path="/leaderboard/pitstops"
                     element={
                       <DashboardLayout>
-                        <PitstopLeaderboard />
+                        <Lazy>
+                          <PitstopLeaderboard />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -366,7 +499,9 @@ const App = () => (
                     path="/saved"
                     element={
                       <DashboardLayout>
-                        <Saved />
+                        <Lazy>
+                          <Saved />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -374,7 +509,9 @@ const App = () => (
                     path="/profile/:username"
                     element={
                       <DashboardLayout>
-                        <Profile />
+                        <Lazy>
+                          <Profile />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -382,7 +519,9 @@ const App = () => (
                     path="/news"
                     element={
                       <DashboardLayout>
-                        <News />
+                        <Lazy>
+                          <News />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -390,7 +529,9 @@ const App = () => (
                     path="/news/:articleId"
                     element={
                       <DashboardLayout>
-                        <NewsDiscussion />
+                        <Lazy>
+                          <NewsDiscussion />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
@@ -398,12 +539,12 @@ const App = () => (
                     path="/notifications"
                     element={
                       <DashboardLayout>
-                        <Notifications />
+                        <Lazy>
+                          <Notifications />
+                        </Lazy>
                       </DashboardLayout>
                     }
                   />
-
-                  {/* Bio Pages */}
                   <Route
                     path="/drivers/:slug"
                     element={
@@ -412,7 +553,9 @@ const App = () => (
                           featureName="Driver Profile"
                           description="Explore career stats, season history, and detailed performance data for every driver."
                         >
-                          <DriverProfile />
+                          <Lazy>
+                            <DriverProfile />
+                          </Lazy>
                         </GatedRoute>
                       </DashboardLayout>
                     }
@@ -425,14 +568,21 @@ const App = () => (
                           featureName="Team Profile"
                           description="Dive into team history, constructor stats, and season-by-season performance."
                         >
-                          <TeamProfile />
+                          <Lazy>
+                            <TeamProfile />
+                          </Lazy>
                         </GatedRoute>
                       </DashboardLayout>
                     }
                   />
-
-                  {/* 404 page */}
-                  <Route path="*" element={<NotFound />} />
+                  <Route
+                    path="*"
+                    element={
+                      <Lazy>
+                        <NotFound />
+                      </Lazy>
+                    }
+                  />
                 </SentryRoutes>
               </BrowserRouter>
             </AuthProvider>
