@@ -157,9 +157,15 @@ const TrackCanvas = memo<TrackCanvasProps>(
 
     // Parse circuit path once
     useEffect(() => {
+      if (!circuitLayout) {
+        console.warn('[TrackCanvas] circuitLayout is empty - track will not render');
+        circuitPathRef.current = null;
+        return;
+      }
       try {
         circuitPathRef.current = new Path2D(circuitLayout);
-      } catch {
+      } catch (e) {
+        console.warn('[TrackCanvas] Path2D failed to parse circuitLayout:', e);
         circuitPathRef.current = null;
       }
     }, [circuitLayout]);
@@ -239,7 +245,7 @@ const TrackCanvas = memo<TrackCanvasProps>(
 
         // Dashed overlay
         ctx.beginPath();
-        ctx.strokeStyle = '#2a2a2e';
+        ctx.strokeStyle = '#5a5a5e';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
