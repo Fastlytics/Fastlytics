@@ -368,8 +368,8 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
   // Track color from structured track_statuses (same data as progress bar overlays),
   // not fragile radio-message string matching.
   const trackColor = useMemo(() => {
-    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#1a1a1e';
-    if (!data?.track_statuses?.length) return '#1a1a1e';
+    if (isQualifying && sessionTimeRemaining?.remaining === 0) return '#3a3a3e';
+    if (!data?.track_statuses?.length) return '#3a3a3e';
 
     const t = currentTime;
     for (let i = data.track_statuses.length - 1; i >= 0; i--) {
@@ -387,11 +387,11 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
           case '6':
             return '#6b7280'; // Chequered
           default:
-            return '#1a1a1e'; // Green / default
+            return '#3a3a3e'; // Green / default
         }
       }
     }
-    return '#1a1a1e';
+    return '#3a3a3e';
   }, [currentTime, data?.track_statuses, isQualifying, sessionTimeRemaining]);
 
   const sectorMarkers = useMemo(() => {
@@ -666,9 +666,7 @@ const SessionReplay: React.FC<SessionReplayProps> = ({ year, event, session, cla
       ? Math.max(0, Math.min(0.999999, driver.rel_dist ?? 0))
       : 0;
     const label = (relativeDistance < 1 / 3 ? 'S1' : relativeDistance < 2 / 3 ? 'S2' : 'S3') as
-      | 'S1'
-      | 'S2'
-      | 'S3';
+      'S1' | 'S2' | 'S3';
     const boundary = label === 'S1' ? 0 : label === 'S2' ? 1 / 3 : 2 / 3;
 
     // Find approximate start index for the current lap to avoid scanning from 0
