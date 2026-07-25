@@ -5,6 +5,7 @@ import { GatedRoute } from '@/components/common/GatedRoute';
 import { CircuitComparisonChart } from '@/components/charts/CircuitComparisonChart';
 import { HeadToHeadEnriched } from '@/components/race/HeadToHeadEnriched';
 import { DriverComparisonTelemetry } from '@/components/race/DriverComparisonTelemetry';
+import { SectorDeltaChart } from '@/components/charts/SectorDeltaChart';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 import { isDRSAvailable } from '@/lib/drs-utils';
@@ -67,6 +68,15 @@ export default function HeadToHeadSection() {
 
         {circuitDrivers.shouldLoadChart && (
           <div className="space-y-5">
+            {/* Head-to-head sector delta — which sectors does each driver win? */}
+            <SectorDeltaChart
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              driver1={circuitDrivers.driver1}
+              driver2={circuitDrivers.driver2}
+            />
+
             {/* Enriched head-to-head stats */}
             <HeadToHeadEnriched
               year={ctx.year}

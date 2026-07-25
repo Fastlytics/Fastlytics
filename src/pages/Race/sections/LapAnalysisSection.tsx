@@ -6,20 +6,22 @@ import PositionsTabContent from '@/components/race/PositionsTabContent';
 import { RacingChart } from '@/components/charts/RacingChart';
 import { PaceAnalysisChart } from '@/components/charts/PaceAnalysisChart';
 import { GapToLeaderChart } from '@/components/charts/GapToLeaderChart';
+import { ConsistencyHeatmap } from '@/components/charts/ConsistencyHeatmap';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { cn } from '@/lib/utils';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { getCurrentSeasonYear } from '@/lib/seasonUtils';
 
-type LapAnalysisMode = 'positions' | 'history' | 'pace' | 'gap';
+type LapAnalysisMode = 'positions' | 'history' | 'pace' | 'gap' | 'consistency';
 
-const VALID_MODES: LapAnalysisMode[] = ['positions', 'history', 'pace', 'gap'];
+const VALID_MODES: LapAnalysisMode[] = ['positions', 'history', 'pace', 'gap', 'consistency'];
 
 const MODE_DESCRIPTIONS: Record<LapAnalysisMode, string> = {
   positions: 'Track how drivers move through the field lap by lap',
   history: 'Compare lap time progression across drivers',
   pace: 'Visualize pace distribution and consistency',
   gap: 'Measure time gaps relative to the race leader',
+  consistency: 'Heatmap of lap time consistency per driver',
 };
 
 export default function LapAnalysisSection() {
@@ -70,11 +72,14 @@ export default function LapAnalysisSection() {
     }
   }
 
+  const sessionDriverCodes = (ctx.sessionResults ?? []).map((r) => r.driverCode);
+
   const modes: { value: LapAnalysisMode; label: string; raceOnly?: boolean }[] = [
     { value: 'positions', label: 'Positions', raceOnly: true },
     { value: 'history', label: 'Lap History' },
     { value: 'pace', label: 'Pace Distribution' },
     { value: 'gap', label: 'Gap to Leader' },
+    { value: 'consistency', label: 'Consistency' },
   ];
 
   return (
@@ -163,6 +168,17 @@ export default function LapAnalysisSection() {
               autoLoad={true}
               favoriteDriver={favoriteDriver || undefined}
               rivalDriver={rivalDriverCode || undefined}
+            />
+          )}
+
+          {activeMode === 'consistency' && (
+            <ConsistencyHeatmap
+              year={ctx.year}
+              event={ctx.eventName}
+              session={ctx.analysisSession}
+              favoriteDriver={favoriteDriver || undefined}
+              rivalDriver={rivalDriverCode || undefined}
+              sessionDrivers={sessionDriverCodes}
             />
           )}
         </div>

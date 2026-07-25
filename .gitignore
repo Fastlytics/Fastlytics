@@ -2,6 +2,7 @@
 
 # Dependencies
 /node_modules
+/mobile/node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
