@@ -7,8 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NEWS_SOURCES, NEWS_TOPICS } from '@/lib/news-api';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { SEO } from '@/components/layout/SEO';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchDriverStandings, fetchTeamStandings } from '@/lib/api';
+import { fetchDiscussion } from '@/lib/discussion-api';
+import { discussionKeys } from '@/hooks/useDiscussion';
 import { useSeason } from '@/contexts/SeasonContext';
 import {
   Select,
@@ -34,6 +36,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NewsPage() {
+  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { selectedYear } = useSeason();
   const [activeSource, setActiveSource] = useState<string | undefined>(undefined);
@@ -219,6 +222,13 @@ export default function NewsPage() {
                 {/* Thumbnail — links to discussion */}
                 <Link
                   to={`/news/${article.id}`}
+                  onMouseEnter={() =>
+                    queryClient.prefetchQuery({
+                      queryKey: discussionKeys.detail(article.id),
+                      queryFn: () => fetchDiscussion(article.id),
+                      staleTime: 30_000,
+                    })
+                  }
                   className="relative aspect-[16/9] overflow-hidden bg-white/[0.02]"
                 >
                   {article.image_url ? (
@@ -240,7 +250,17 @@ export default function NewsPage() {
                 </Link>
 
                 {/* Content — links to discussion */}
-                <Link to={`/news/${article.id}`} className="flex flex-1 flex-col p-4">
+                <Link
+                  to={`/news/${article.id}`}
+                  onMouseEnter={() =>
+                    queryClient.prefetchQuery({
+                      queryKey: discussionKeys.detail(article.id),
+                      queryFn: () => fetchDiscussion(article.id),
+                      staleTime: 30_000,
+                    })
+                  }
+                  className="flex flex-1 flex-col p-4"
+                >
                   <h3 className="line-clamp-2 text-[14px] font-medium leading-snug text-white/90 group-hover:text-white">
                     {article.rewritten_title}
                   </h3>
@@ -286,6 +306,13 @@ export default function NewsPage() {
                 <div className="flex items-center justify-between border-t border-white/[0.04] px-4 py-2.5">
                   <Link
                     to={`/news/${article.id}`}
+                    onMouseEnter={() =>
+                      queryClient.prefetchQuery({
+                        queryKey: discussionKeys.detail(article.id),
+                        queryFn: () => fetchDiscussion(article.id),
+                        staleTime: 30_000,
+                      })
+                    }
                     className="flex items-center gap-1.5 text-[11px] text-white/40 transition-colors hover:text-white/70"
                   >
                     <Message01Icon size={12} />

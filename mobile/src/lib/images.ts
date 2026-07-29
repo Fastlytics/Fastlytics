@@ -1,4 +1,6 @@
-const IMAGE_BASE_URL = process.env.EXPO_PUBLIC_CDN_URL ?? '';
+const IMAGE_BASE_URL =
+  process.env.EXPO_PUBLIC_CDN_URL ??
+  'https://fastlytics-api-proxy-v2.subhashgottumukkala17.workers.dev';
 
 const driverImages: Record<string, Record<string, string>> = {
   '2025': {
@@ -106,7 +108,8 @@ export const getCarImage = (teamName: string, year: number): string => {
     if (name.includes('aston')) return map['astonmartin'];
     if (name.includes('williams')) return map['williams'];
     if (name.includes('haas')) return map['haas'];
-    if (name.includes('sauber') || name.includes('alfa')) return map['sauber'] || map['kicksauber'] || map['alfaromeo'];
+    if (name.includes('sauber') || name.includes('alfa'))
+      return map['sauber'] || map['kicksauber'] || map['alfaromeo'];
     if (name.includes('audi')) return map['audi'];
     if (name.includes('cadillac')) return map['cadillac'];
     if (name.includes('racingbulls') || name.includes('alpha') || name.includes('rb'))
