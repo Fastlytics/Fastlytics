@@ -20,7 +20,8 @@ export function useDiscussion(articleId: string) {
     queryKey: discussionKeys.detail(articleId),
     queryFn: () => fetchDiscussion(articleId),
     enabled: !!articleId,
-    staleTime: 0, // always refetch on mount — comments change frequently
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 }
 
