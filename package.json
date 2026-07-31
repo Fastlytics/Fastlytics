@@ -3,7 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "workspaces": ["packages/shared", "mobile"],
+  "workspaces": [
+    "packages/shared",
+    "mobile"
+  ],
   "scripts": {
     "start": "vite preview",
     "dev": "vite",
@@ -31,6 +34,7 @@
     ]
   },
   "dependencies": {
+    "@expo/material-symbols": "^0.1.1",
     "@fortawesome/fontawesome-svg-core": "^7.3.1",
     "@fortawesome/free-brands-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.4.0",

@@ -1,62 +1,147 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import {
+  Host,
+  Column,
+  Row,
+  Text as UIText,
+  List,
+  ListItem,
+  RNHostView,
+  Icon,
+  Button,
+} from '@expo/ui';
 import { colors } from '../theme/colors';
-import { request } from '../lib/api';
+import { useDriverStandings } from '../api/hooks';
 import { getDriverImage } from '../lib/images';
+import { getDriverSlug } from '@fastlytics/shared';
+
+const CHEVRON_LEFT = Icon.select({
+  ios: 'chevron.left',
+  android: import('@expo/material-symbols/chevron_left.xml'),
+});
 
 export default function DriversScreen() {
   const season = new Date().getFullYear();
-
-  const { data: standings, isLoading } = useQuery<any[]>({
-    queryKey: ['driverStandings', season],
-    queryFn: () => request<any[]>(`/api/standings/drivers/${season}`),
-    enabled: true,
-  });
+  const { data: standings, isLoading, isError } = useDriverStandings(season);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <View style={{ paddingTop: 60, paddingHorizontal: 16, paddingBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={{ fontSize: 14, color: colors.red, fontWeight: '700' }}>← Back</Text>
-          </Pressable>
-          <Text style={{ fontSize: 20, fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic' }}>Drivers</Text>
+          <Host matchContents>
+            <Button variant="text" onPress={() => router.back()}>
+              <Row alignment="center" spacing={2}>
+                <Icon name={CHEVRON_LEFT} size={14} color={colors.red} />
+                <UIText
+                  textStyle={{ fontSize: 14, fontWeight: '700', color: colors.red as string }}
+                >
+                  Back
+                </UIText>
+              </Row>
+            </Button>
+          </Host>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              fontStyle: 'italic',
+            }}
+          >
+            Drivers
+          </Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 40 }}>
+      <View style={{ flex: 1, paddingHorizontal: 16, paddingBottom: 40 }}>
         {isLoading ? (
-          <View style={{ padding: 32, alignItems: 'center' }}><ActivityIndicator color={colors.red} /></View>
-        ) : standings && standings.length > 0 ? (
-          standings.map((driver, idx) => (
-            <Pressable
-              key={driver.driverCode || driver.code || idx}
-              onPress={() => router.push(`/driver/${encodeURIComponent((driver.driverSlug || driver.driver || '').toLowerCase().replace(/\s+/g, '-'))}`)}
-              style={{
-                borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12,
-                padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12,
-              }}
-            >
-              <View style={{ width: 32, height: 22, borderRadius: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: idx < 3 ? colors.systemYellow : 'transparent' }}>
-                <Text style={{ fontSize: 11, fontWeight: '900', color: idx < 3 ? '#000' : colors.gray500 }}>{driver.position || idx + 1}</Text>
-              </View>
-              <View style={{ width: 32, height: 32, borderRadius: 6, overflow: 'hidden' }}>
-                <Image source={{ uri: getDriverImage(driver.driverCode || driver.code, season) }} style={{ width: '100%', height: '100%' }} contentFit="cover" contentPosition="top" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', fontSize: 13, textTransform: 'uppercase' }}>{driver.driver || driver.name}</Text>
-                <Text style={{ fontSize: 10, color: colors.gray500 }}>{driver.team || driver.constructorName}</Text>
-              </View>
-              <Text style={{ fontSize: 16, fontWeight: '900', color: colors.systemYellow }}>{driver.points || 0}</Text>
-            </Pressable>
-          ))
+          <View style={{ padding: 32, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.red} />
+          </View>
+        ) : isError ? (
+          <Text style={{ color: colors.gray500, textAlign: 'center', padding: 40 }}>
+            Driver standings could not be loaded.
+          </Text>
+        ) : (standings?.length ?? 0) > 0 ? (
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}
+          >
+            <Host matchContents>
+              <List>
+                {standings?.map((driver) => (
+                  <ListItem
+                    key={driver.code}
+                    onPress={() =>
+                      router.push(`/driver/${getDriverSlug(driver.code, driver.name)}`)
+                    }
+                    leading={
+                      <Row alignment="center" spacing={12}>
+                        <Column
+                          alignment="center"
+                          style={{
+                            width: 32,
+                            height: 22,
+                            borderRadius: 4,
+                            backgroundColor:
+                              driver.rank <= 3 ? (colors.systemYellow as string) : 'transparent',
+                          }}
+                        >
+                          <UIText
+                            textStyle={{
+                              fontSize: 11,
+                              fontWeight: '900',
+                              color: driver.rank <= 3 ? '#000' : (colors.gray500 as string),
+                            }}
+                          >
+                            {String(driver.rank)}
+                          </UIText>
+                        </Column>
+                        <RNHostView>
+                          <View
+                            style={{ width: 32, height: 32, borderRadius: 6, overflow: 'hidden' }}
+                          >
+                            <Image
+                              source={{ uri: getDriverImage(driver.code, season) }}
+                              style={{ width: '100%', height: '100%' }}
+                              contentFit="cover"
+                              contentPosition="top"
+                            />
+                          </View>
+                        </RNHostView>
+                      </Row>
+                    }
+                    supportingText={driver.team}
+                    trailing={
+                      <UIText
+                        textStyle={{
+                          fontSize: 16,
+                          fontWeight: '900',
+                          color: colors.systemYellow as string,
+                        }}
+                      >
+                        {String(driver.points)}
+                      </UIText>
+                    }
+                  >
+                    {driver.name}
+                  </ListItem>
+                ))}
+              </List>
+            </Host>
+          </View>
         ) : (
-          <Text style={{ color: colors.gray500, textAlign: 'center', padding: 40 }}>Driver data not available</Text>
+          <Text style={{ color: colors.gray500, textAlign: 'center', padding: 40 }}>
+            Driver data is not available for this season.
+          </Text>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
