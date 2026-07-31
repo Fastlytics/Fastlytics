@@ -20,9 +20,10 @@ declare module 'expo-router' {
         | { pathname: `/teams`; params?: Router.UnknownInputParams }
         | { pathname: `/terms`; params?: Router.UnknownInputParams }
         | { pathname: `/_sitemap`; params?: Router.UnknownInputParams }
+        | { pathname: `${'/(tabs)'}/account` | `/account`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}/calendar` | `/calendar`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}` | `/`; params?: Router.UnknownInputParams }
-        | { pathname: `${'/(tabs)'}/settings` | `/settings`; params?: Router.UnknownInputParams }
+        | { pathname: `${'/(tabs)'}/news` | `/news`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}/standings` | `/standings`; params?: Router.UnknownInputParams }
         | {
             pathname: `/driver/[slug]`;
@@ -51,9 +52,10 @@ declare module 'expo-router' {
         | { pathname: `/teams`; params?: Router.UnknownOutputParams }
         | { pathname: `/terms`; params?: Router.UnknownOutputParams }
         | { pathname: `/_sitemap`; params?: Router.UnknownOutputParams }
+        | { pathname: `${'/(tabs)'}/account` | `/account`; params?: Router.UnknownOutputParams }
         | { pathname: `${'/(tabs)'}/calendar` | `/calendar`; params?: Router.UnknownOutputParams }
         | { pathname: `${'/(tabs)'}` | `/`; params?: Router.UnknownOutputParams }
-        | { pathname: `${'/(tabs)'}/settings` | `/settings`; params?: Router.UnknownOutputParams }
+        | { pathname: `${'/(tabs)'}/news` | `/news`; params?: Router.UnknownOutputParams }
         | { pathname: `${'/(tabs)'}/standings` | `/standings`; params?: Router.UnknownOutputParams }
         | { pathname: `/driver/[slug]`; params: Router.UnknownOutputParams & { slug: string } }
         | { pathname: `/race/[slug]`; params: Router.UnknownOutputParams & { slug: string } }
@@ -73,12 +75,14 @@ declare module 'expo-router' {
         | `/teams${`?${string}` | `#${string}` | ''}`
         | `/terms${`?${string}` | `#${string}` | ''}`
         | `/_sitemap${`?${string}` | `#${string}` | ''}`
+        | `${'/(tabs)'}/account${`?${string}` | `#${string}` | ''}`
+        | `/account${`?${string}` | `#${string}` | ''}`
         | `${'/(tabs)'}/calendar${`?${string}` | `#${string}` | ''}`
         | `/calendar${`?${string}` | `#${string}` | ''}`
         | `${'/(tabs)'}${`?${string}` | `#${string}` | ''}`
         | `/${`?${string}` | `#${string}` | ''}`
-        | `${'/(tabs)'}/settings${`?${string}` | `#${string}` | ''}`
-        | `/settings${`?${string}` | `#${string}` | ''}`
+        | `${'/(tabs)'}/news${`?${string}` | `#${string}` | ''}`
+        | `/news${`?${string}` | `#${string}` | ''}`
         | `${'/(tabs)'}/standings${`?${string}` | `#${string}` | ''}`
         | `/standings${`?${string}` | `#${string}` | ''}`
         | { pathname: Router.RelativePathString; params?: Router.UnknownInputParams }
@@ -95,9 +99,10 @@ declare module 'expo-router' {
         | { pathname: `/teams`; params?: Router.UnknownInputParams }
         | { pathname: `/terms`; params?: Router.UnknownInputParams }
         | { pathname: `/_sitemap`; params?: Router.UnknownInputParams }
+        | { pathname: `${'/(tabs)'}/account` | `/account`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}/calendar` | `/calendar`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}` | `/`; params?: Router.UnknownInputParams }
-        | { pathname: `${'/(tabs)'}/settings` | `/settings`; params?: Router.UnknownInputParams }
+        | { pathname: `${'/(tabs)'}/news` | `/news`; params?: Router.UnknownInputParams }
         | { pathname: `${'/(tabs)'}/standings` | `/standings`; params?: Router.UnknownInputParams }
         | `/driver/${Router.SingleRoutePart<T>}${`?${string}` | `#${string}` | ''}`
         | `/race/${Router.SingleRoutePart<T>}${`?${string}` | `#${string}` | ''}`

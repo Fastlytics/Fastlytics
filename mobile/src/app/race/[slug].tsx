@@ -1,17 +1,12 @@
-import { useState, useMemo, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  Modal,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { Host, Row, Button, Icon, Text as UIText } from '@expo/ui';
 import { colors } from '../../theme/colors';
+import AdaptiveGlass from '../../components/AdaptiveGlass';
 import { request } from '../../lib/api';
-import type { AvailableSession, DetailedRaceResult, EventSessionSchedule } from '@fastlytics/shared';
+import type { AvailableSession, DetailedRaceResult } from '@fastlytics/shared';
 import OverviewTab from '../../components/race/OverviewTab';
 import StrategyTab from '../../components/race/StrategyTab';
 import LapTimesTab from '../../components/race/LapTimesTab';
@@ -19,76 +14,182 @@ import HeadToHeadTab from '../../components/race/HeadToHeadTab';
 import TelemetryTab from '../../components/race/TelemetryTab';
 
 const parseRaceId = (raceId: string) => {
-  const dashIdx = raceId.indexOf('-');
-  if (dashIdx === -1) return { year: new Date().getFullYear(), eventSlug: raceId, eventName: raceId.replace(/-/g, ' ') };
-  const year = parseInt(raceId.substring(0, dashIdx), 10);
-  const eventSlug = raceId.substring(dashIdx + 1);
-  const eventName = eventSlug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  return { year, eventSlug, eventName };
-};
-
-const sessionDisplayName = (type: string): string => {
-  const names: Record<string, string> = {
-    R: 'Race', Q: 'Qualifying', SQ: 'Sprint Qualifying',
-    FP1: 'Practice 1', FP2: 'Practice 2', FP3: 'Practice 3',
-    Sprint: 'Sprint', Summary: 'Testing Summary',
+  const dashIndex = raceId.indexOf('-');
+  if (dashIndex === -1)
+    return {
+      year: new Date().getFullYear(),
+      eventSlug: raceId,
+      eventName: raceId.replace(/-/g, ' '),
+    };
+  const year = Number.parseInt(raceId.substring(0, dashIndex), 10);
+  const eventSlug = raceId.substring(dashIndex + 1);
+  return {
+    year,
+    eventSlug,
+    eventName: eventSlug
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (character) => character.toUpperCase()),
   };
-  return names[type] || type;
 };
 
-function SessionSelector({ visible, onClose, sessions, selected, onSelect }: {
-  visible: boolean; onClose: () => void; sessions: AvailableSession[];
-  selected: string; onSelect: (s: string) => void;
+const CHEVRON_LEFT = Icon.select({
+  ios: 'chevron.left',
+  android: import('@expo/material-symbols/chevron_left.xml'),
+});
+const CHEVRON_DOWN = Icon.select({
+  ios: 'chevron.down',
+  android: import('@expo/material-symbols/keyboard_arrow_down.xml'),
+});
+
+const sessionDisplayName = (type: string) =>
+  ({
+    R: 'Race',
+    Q: 'Qualifying',
+    SQ: 'Sprint Qualifying',
+    FP1: 'Practice 1',
+    FP2: 'Practice 2',
+    FP3: 'Practice 3',
+    Sprint: 'Sprint',
+    Summary: 'Testing Summary',
+  })[type] || type;
+const defaultSession = (sessions: AvailableSession[] | undefined) =>
+  sessions?.find((item) => item.type === 'R')?.type ??
+  sessions?.find((item) => item.type === 'Q')?.type ??
+  sessions?.find((item) => item.type === 'Sprint')?.type ??
+  sessions?.[0]?.type ??
+  '';
+
+function SessionSelector({
+  visible,
+  onClose,
+  sessions,
+  selected,
+  onSelect,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  sessions: AvailableSession[];
+  selected: string;
+  onSelect: (session: string) => void;
 }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'flex-end' }} onPress={onClose}>
-        <Pressable style={{ backgroundColor: '#000', borderTopWidth: 2, borderTopColor: 'rgba(255,255,255,0.2)', paddingBottom: 40 }}>
-          <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.zinc800, borderRadius: 2 }} />
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' }}>
-            <Text style={{ fontSize: 16, fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic' }}>Select Session</Text>
-            <Pressable onPress={onClose}><Text style={{ color: colors.gray500, fontSize: 14 }}>Close</Text></Pressable>
-          </View>
-          <View style={{ padding: 12, maxHeight: 320 }}>
-            {sessions.map((s) => (
-              <Pressable
-                key={s.type}
-                onPress={() => { onSelect(s.type); onClose(); }}
+      <Pressable
+        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+        onPress={onClose}
+      >
+        <Pressable onPress={(event) => event.stopPropagation()}>
+          <AdaptiveGlass
+            style={{
+              borderTopWidth: 2,
+              borderColor: 'rgba(255,255,255,0.2)',
+              paddingBottom: 40,
+              overflow: 'hidden',
+            }}
+          >
+            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+              <View
+                style={{ width: 40, height: 4, backgroundColor: colors.zinc800, borderRadius: 2 }}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: 'rgba(255,255,255,0.1)',
+              }}
+            >
+              <Text
                 style={{
-                  padding: 16, borderWidth: 2, borderRadius: 12, marginBottom: 8,
-                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                  backgroundColor: selected === s.type ? colors.red : '#000',
-                  borderColor: selected === s.type ? colors.red : 'rgba(255,255,255,0.1)',
+                  fontSize: 16,
+                  fontWeight: '900',
+                  textTransform: 'uppercase',
+                  fontStyle: 'italic',
                 }}
               >
-                <Text style={{ fontWeight: '900', textTransform: 'uppercase', color: selected === s.type ? '#fff' : colors.secondaryLabel }}>
-                  {s.name}
-                </Text>
-                {selected === s.type && <Text style={{ color: '#fff', fontWeight: '900' }}>✓</Text>}
+                Select Session
+              </Text>
+              <Pressable onPress={onClose}>
+                <Text style={{ color: colors.gray500, fontSize: 14 }}>Close</Text>
               </Pressable>
-            ))}
-          </View>
+            </View>
+            <View style={{ padding: 12, maxHeight: 320 }}>
+              {sessions.map((item) => (
+                <Pressable
+                  key={item.type}
+                  onPress={() => {
+                    onSelect(item.type);
+                    onClose();
+                  }}
+                  style={{
+                    padding: 16,
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: selected === item.type ? colors.red : 'transparent',
+                    borderColor: selected === item.type ? colors.red : 'rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontWeight: '900',
+                      textTransform: 'uppercase',
+                      color: selected === item.type ? '#fff' : colors.secondaryLabel,
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                  {selected === item.type && (
+                    <Text style={{ color: '#fff', fontWeight: '900' }}>✓</Text>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          </AdaptiveGlass>
         </Pressable>
       </Pressable>
     </Modal>
   );
 }
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'strategy', label: 'Strategy' },
-  { id: 'laps', label: 'Laps' },
-  { id: 'h2h', label: 'H2H' },
-  { id: 'data', label: 'Data' },
+const OVERVIEW_ICON = Icon.select({
+  ios: 'gauge',
+  android: import('@expo/material-symbols/dashboard.xml'),
+});
+const STRATEGY_ICON = Icon.select({
+  ios: 'flag.checkered',
+  android: import('@expo/material-symbols/strategy.xml'),
+});
+const LAPS_ICON = Icon.select({ ios: 'timer', android: import('@expo/material-symbols/laps.xml') });
+const H2H_ICON = Icon.select({
+  ios: 'arrow.left.arrow.right',
+  android: import('@expo/material-symbols/compare_arrows.xml'),
+});
+const TELEMETRY_ICON = Icon.select({
+  ios: 'waveform.path.ecg',
+  android: import('@expo/material-symbols/monitoring.xml'),
+});
+
+const tabs = [
+  { id: 'overview', label: 'Overview', icon: OVERVIEW_ICON },
+  { id: 'strategy', label: 'Strategy', icon: STRATEGY_ICON },
+  { id: 'laps', label: 'Laps', icon: LAPS_ICON },
+  { id: 'h2h', label: 'H2H', icon: H2H_ICON },
+  { id: 'telemetry', label: 'Telemetry', icon: TELEMETRY_ICON },
 ] as const;
 
 export default function RaceScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { year, eventSlug, eventName } = useMemo(() => parseRaceId(slug!), [slug]);
-  const [selectedSession, setSelectedSession] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [selectedSession, setSelectedSession] = useState('');
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('overview');
   const [showSessionPicker, setShowSessionPicker] = useState(false);
 
   const { data: sessions, isLoading: loadingSessions } = useQuery<AvailableSession[]>({
@@ -96,110 +197,157 @@ export default function RaceScreen() {
     queryFn: () => request<AvailableSession[]>(`/api/sessions?year=${year}&event=${eventName}`),
     enabled: !!year && !!eventName,
   });
-
-  useEffect(() => {
-    if (sessions && sessions.length > 0 && !selectedSession) {
-      if (sessions.some(s => s.type === 'R')) setSelectedSession('R');
-      else if (sessions.some(s => s.type === 'Q')) setSelectedSession('Q');
-      else if (sessions.some(s => s.type === 'Sprint')) setSelectedSession('Sprint');
-      else setSelectedSession(sessions[0].type);
-    }
-  }, [sessions, selectedSession]);
-
+  const activeSession = selectedSession || defaultSession(sessions);
   const { data: raceResults, isLoading: loadingResults } = useQuery<DetailedRaceResult[]>({
-    queryKey: ['raceResult', year, eventSlug, selectedSession],
-    queryFn: () => request<DetailedRaceResult[]>(`/api/results/race/${year}/${eventSlug}?session=${selectedSession}`),
-    enabled: !!year && !!eventSlug && !!selectedSession && selectedSession !== 'Summary',
+    queryKey: ['raceResult', year, eventSlug, activeSession],
+    queryFn: () =>
+      request<DetailedRaceResult[]>(
+        `/api/results/race/${year}/${eventSlug}?session=${activeSession}`
+      ),
+    enabled: !!year && !!eventSlug && !!activeSession && activeSession !== 'Summary',
   });
 
   const displayResults = useMemo(() => {
     if (!raceResults) return [];
-    const isRace = selectedSession === 'R' || selectedSession === 'Sprint';
-    if (isRace) return [...raceResults].sort((a, b) => (a.position || 999) - (b.position || 999));
-    return [...raceResults].sort((a, b) => {
-      const at = parseFloat(a.driverFastestLapTime?.replace(/[^0-9.]/g, '') || '999');
-      const bt = parseFloat(b.driverFastestLapTime?.replace(/[^0-9.]/g, '') || '999');
-      return at - bt;
-    });
-  }, [raceResults, selectedSession]);
+    if (activeSession === 'R' || activeSession === 'Sprint')
+      return [...raceResults].sort(
+        (left, right) => (left.position || 999) - (right.position || 999)
+      );
+    return [...raceResults].sort(
+      (left, right) =>
+        parseFloat(left.driverFastestLapTime?.replace(/[^0-9.]/g, '') || '999') -
+        parseFloat(right.driverFastestLapTime?.replace(/[^0-9.]/g, '') || '999')
+    );
+  }, [activeSession, raceResults]);
 
-  const isRaceOrSprint = selectedSession === 'R' || selectedSession === 'Sprint';
-
-  const filteredTabs = TABS.filter(t => {
-    if (t.id === 'strategy') return isRaceOrSprint;
-    return true;
-  });
-
-  if (loadingSessions) {
+  const visibleTabs = tabs.filter(
+    (tab) => tab.id !== 'strategy' || activeSession === 'R' || activeSession === 'Sprint'
+  );
+  if (loadingSessions)
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}
+      >
         <ActivityIndicator color={colors.red} size="large" />
       </View>
     );
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <View style={{ paddingTop: 56, paddingHorizontal: 16, paddingBottom: 8, backgroundColor: '#000' }}>
+      <AdaptiveGlass style={{ paddingTop: 56, paddingHorizontal: 16, paddingBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
-          </Pressable>
+          <Host matchContents>
+            <Button variant="text" onPress={() => router.back()}>
+              <Icon name={CHEVRON_LEFT} size={20} color="#fff" />
+            </Button>
+          </Host>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: '900', textTransform: 'uppercase', fontStyle: 'italic' }} numberOfLines={1}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                fontStyle: 'italic',
+              }}
+              numberOfLines={1}
+            >
               {eventName.replace('Grand Prix', 'GP')}
             </Text>
-            <Pressable onPress={() => setShowSessionPicker(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={{ fontSize: 11, color: colors.gray500 }}>{sessionDisplayName(selectedSession)}</Text>
-              <Text style={{ fontSize: 10, color: colors.gray600 }}>▼</Text>
-            </Pressable>
+            <Host matchContents>
+              <Button variant="text" onPress={() => setShowSessionPicker(true)}>
+                <Row alignment="center" spacing={4}>
+                  <UIText textStyle={{ fontSize: 11, color: colors.gray500 as string }}>
+                    {sessionDisplayName(activeSession)}
+                  </UIText>
+                  <Icon name={CHEVRON_DOWN} size={10} color={colors.gray600} />
+                </Row>
+              </Button>
+            </Host>
           </View>
         </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' }}>
-        {filteredTabs.map((tab) => (
-          <Pressable
-            key={tab.id}
-            onPress={() => setActiveTab(tab.id)}
-            style={{
-              paddingVertical: 12, paddingHorizontal: 14,
-              borderBottomWidth: 2,
-              borderBottomColor: activeTab === tab.id ? colors.red : 'transparent',
-            }}
-          >
-            <Text style={{
-              fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5,
-              color: activeTab === tab.id ? '#fff' : colors.gray500,
-            }}>
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+      </AdaptiveGlass>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+      >
         {loadingResults ? (
-          <View style={{ padding: 32, alignItems: 'center' }}><ActivityIndicator color={colors.red} /></View>
+          <View style={{ padding: 32, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.red} />
+          </View>
         ) : activeTab === 'overview' ? (
-          <OverviewTab results={displayResults} session={selectedSession} />
+          <OverviewTab results={displayResults} session={activeSession} year={year} />
         ) : activeTab === 'strategy' ? (
-          <StrategyTab year={year} eventSlug={eventSlug} session={selectedSession} results={displayResults} />
+          <StrategyTab
+            year={year}
+            eventSlug={eventSlug}
+            session={activeSession}
+            results={displayResults}
+          />
         ) : activeTab === 'laps' ? (
-          <LapTimesTab year={year} eventSlug={eventSlug} session={selectedSession} results={displayResults} />
+          <LapTimesTab
+            year={year}
+            eventSlug={eventSlug}
+            session={activeSession}
+            results={displayResults}
+          />
         ) : activeTab === 'h2h' ? (
-          <HeadToHeadTab year={year} eventSlug={eventSlug} session={selectedSession} results={displayResults} />
-        ) : activeTab === 'data' ? (
-          <TelemetryTab year={year} eventSlug={eventSlug} session={selectedSession} results={displayResults} />
-        ) : null}
+          <HeadToHeadTab
+            year={year}
+            eventSlug={eventSlug}
+            session={activeSession}
+            results={displayResults}
+          />
+        ) : (
+          <TelemetryTab
+            year={year}
+            eventSlug={eventSlug}
+            session={activeSession}
+            results={displayResults}
+          />
+        )}
       </ScrollView>
-
+      <AdaptiveGlass style={{ borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+        <View
+          style={{ flexDirection: 'row', paddingHorizontal: 8, paddingTop: 8, paddingBottom: 28 }}
+        >
+          {visibleTabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <Pressable
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id)}
+                style={{ flex: 1, alignItems: 'center', gap: 2, paddingVertical: 6 }}
+              >
+                <Host matchContents>
+                  <Icon name={tab.icon} size={20} color={active ? colors.red : colors.gray500} />
+                </Host>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 9,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.2,
+                    color: active ? '#fff' : colors.gray500,
+                  }}
+                >
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </AdaptiveGlass>
       <SessionSelector
         visible={showSessionPicker}
         onClose={() => setShowSessionPicker(false)}
         sessions={sessions ?? []}
-        selected={selectedSession}
-        onSelect={setSelectedSession}
+        selected={activeSession}
+        onSelect={(session) => {
+          setSelectedSession(session);
+          if (activeTab === 'strategy' && session !== 'R' && session !== 'Sprint')
+            setActiveTab('overview');
+        }}
       />
     </View>
   );
