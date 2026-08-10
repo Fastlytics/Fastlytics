@@ -13,6 +13,8 @@ import { NewsNotification, DiscussionNotification } from '@/lib/news-api';
 import { useAuth } from '@/contexts/AuthContext';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { SEO } from '@/components/layout/SEO';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileNotifications from '@/components/mobile/pages/MobileNotifications';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -28,6 +30,13 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Notifications() {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileNotifications />;
+
+  return <NotificationsDesktop />;
+}
+
+function NotificationsDesktop() {
   const { user } = useAuth();
   const { data: newsNotifications, isLoading: loadingNews } = useAllNewsNotifications();
   const { data: discussionNotifications, isLoading: loadingDiscussion } =

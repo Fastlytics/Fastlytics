@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobilePitstopLeaderboard from '@/components/mobile/pages/MobilePitstopLeaderboard';
 
 const ALL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018];
 
@@ -23,6 +25,13 @@ const formatDuration = (seconds: number): string => {
 };
 
 const PitstopLeaderboard = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobilePitstopLeaderboard />;
+
+  return <PitstopLeaderboardDesktop />;
+};
+
+const PitstopLeaderboardDesktop = () => {
   const [selectedYear, setSelectedYear] = useState(getCurrentSeasonYear());
   const [raceFilter, setRaceFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');

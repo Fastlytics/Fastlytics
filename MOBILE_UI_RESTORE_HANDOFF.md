@@ -16,25 +16,33 @@
   - Desktop (>= 1024px): sidebar + BreadcrumbBar (unchanged)
   - Mobile (< 1024px): hamburger menu + breadcrumbs header + `MobileBottomNav` at bottom, `pb-20` on content
 
-### Phase 2 — PARTIALLY COMPLETE
+### Phase 2 — COMPLETE
 
-**Completed pages (restored from `mobile-archive/`, restyled to match desktop):**
+All archived race/standings/calendar/account pages restored, restyled, and wired:
 
-1. **`src/components/mobile/pages/MobileCalendar.tsx`** — COMPLETE, wired into `src/pages/Calendar.tsx`
-2. **`src/components/mobile/pages/MobileDriverStandings.tsx`** — COMPLETE, wired into `src/pages/DriverStandings.tsx`
-3. **`src/components/mobile/pages/MobileTeamStandings.tsx`** — COMPLETE, wired into `src/pages/TeamStandings.tsx`
-4. **`src/components/mobile/pages/MobileAccount.tsx`** — COMPLETE, wired into `src/pages/Settings.tsx`
-5. **`src/components/mobile/pages/index.ts`** — barrel export (needs updating when more pages are added)
+1. `MobileCalendar.tsx` → wired into `src/pages/Calendar.tsx`
+2. `MobileDriverStandings.tsx` → wired into `src/pages/DriverStandings.tsx`
+3. `MobileTeamStandings.tsx` → wired into `src/pages/TeamStandings.tsx`
+4. `MobileAccount.tsx` → wired into `src/pages/Settings.tsx`
+5. `MobileRace.tsx` → wired into `src/pages/Race.tsx` (renders `<MobileRace />` on mobile; reads `raceId` from `useParams()` internally)
+6. Race sub-components in `src/components/mobile/race/`: `MobileStrategy`, `MobileTelemetry`, `MobileLapTimes`, `MobileHeadToHead` + `index.ts` barrel
 
-**All 5 Race files — COMPLETE (created by background agent):**
+### Phase 3 — PARTIALLY COMPLETE
 
-6. **`src/components/mobile/pages/MobileRace.tsx`** — restored from `mobile-archive/MobileRace.tsx`, design tokens updated
-7. **`src/components/mobile/race/MobileStrategy.tsx`** — restored from `mobile-archive/MobileStrategy.tsx`
-8. **`src/components/mobile/race/MobileTelemetry.tsx`** — restored from `mobile-archive/MobileTelemetry.tsx`
-9. **`src/components/mobile/race/MobileLapTimes.tsx`** — restored from `mobile-archive/MobileLapTimes.tsx`
-10. **`src/components/mobile/race/MobileHeadToHead.tsx`** — restored from `mobile-archive/MobileHeadToHead.tsx`
+**Completed pages (built from scratch, matching desktop design system):**
 
-**Only remaining Phase 2 work:** Wire `MobileRace` into `src/pages/Race.tsx` (add `useIsMobile()` check).
+| Mobile component               | Wired into                                                          | Notes                                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `MobileNews.tsx`               | `src/pages/News.tsx`                                                | ✅                                                                                                                            |
+| `MobileNotifications.tsx`      | `src/pages/Notifications.tsx`                                       | ✅                                                                                                                            |
+| `MobileProfile.tsx`            | `src/pages/Profile.tsx`                                             | ✅                                                                                                                            |
+| `MobileSaved.tsx`              | `src/pages/Saved.tsx`                                               | ✅ full folders/charts CRUD, bottom sheets, bulk actions                                                                      |
+| `MobilePitstopLeaderboard.tsx` | `src/pages/PitstopLeaderboard.tsx`                                  | ✅ filters, year selector                                                                                                     |
+| `MobileLeaderboard.tsx`        | `src/pages/DriverLeaderboard.tsx` + `src/pages/TeamLeaderboard.tsx` | ✅ parametric `kind="drivers" \| "teams"`, all 13 driver + 18 team stats, search/nationality/sort, same query keys as desktop |
+
+**Helper:** `src/components/mobile/pages/tireicon.tsx` (shared tire icon for race components).
+
+**Barrel export** `src/components/mobile/pages/index.ts` includes: MobileCalendar, MobileDriverStandings, MobileTeamStandings, MobileAccount, MobileRace, MobileNews, MobileNotifications, MobileProfile, MobileSaved, MobilePitstopLeaderboard, MobileLeaderboard.
 
 ### How the wiring works
 
@@ -55,52 +63,30 @@ const PageNameDesktop = () => {
 };
 ```
 
-**Pages already wired:**
-
-- `src/pages/Calendar.tsx` → `MobileCalendar`
-- `src/pages/DriverStandings.tsx` → `MobileDriverStandings`
-- `src/pages/TeamStandings.tsx` → `MobileTeamStandings`
-- `src/pages/Settings.tsx` → `MobileAccount`
-
-**Pages still needing wiring:**
-
-- `src/pages/Race.tsx` → needs `MobileRace` (once the file is confirmed/created)
+**Pages currently wired (12):** Calendar, DriverStandings, TeamStandings, Settings, Race, News, Notifications, Profile, Saved, PitstopLeaderboard, DriverLeaderboard, TeamLeaderboard.
 
 ---
 
 ## What Remains
 
-### Phase 2 (finish Race)
+### Phase 3 (rest)
 
-- All 5 MobileRace files are created and restyled
-- Wire `MobileRace` into `src/pages/Race.tsx` — add `useIsMobile()` check at top of the `Race` component (line 63), render `<MobileRace />` on mobile (it reads `raceId` from `useParams()` internally)
-- Add `MobileRace` to `src/components/mobile/pages/index.ts` barrel export
-- Add race sub-components to a new `src/components/mobile/race/index.ts` barrel export
-- Run `npx tsc --noEmit` and `npx vite build` to verify
+Desktop pages still needing mobile versions (build from scratch, same design system):
 
-### Phase 3 — New pages (build from scratch)
+| #   | Mobile component to build           | Wire into                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `MobileDrivers.tsx`                 | `src/pages/Drivers.tsx` — active grid (DriverStanding cards w/ team color strip + headshot), leaderboard tables, Legends section. Desktop grid is already 1-col on mobile; port the 3 table components + LEGENDS.                                                                                                                                                                                                                                                                                                                     |
+| 2   | `MobileDriverProfile.tsx`           | `src/pages/DriverProfile.tsx` — `fetchDriverCareer`/`fetchDriverBio`, tabs overview/championship/teammates. Season table → stacked rows.                                                                                                                                                                                                                                                                                                                                                                                              |
+| 3   | `MobileTeamProfile.tsx`             | `src/pages/TeamProfile.tsx` — `fetchTeamCareer`/`fetchTeamBio`, tabs overview/championship.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 4   | `MobileCompareDrivers.tsx`          | `src/pages/CompareDrivers.tsx` — **NOTE: desktop is a "Coming soon" stub. No `fetchHeadToHead` API exists.** Design from scratch: pick 2-3 via bottom-sheet picker (`fetchGlobalSearch` or standings), compare `fetchDriverCareer` season arrays client-side.                                                                                                                                                                                                                                                                         |
+| 5   | `MobileCompareTeams.tsx`            | `src/pages/CompareTeams.tsx` — same situation; compare `fetchTeamCareer` data.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 6   | `MobileNewsDiscussion.tsx`          | `src/pages/NewsDiscussion.tsx` — uses `@/hooks/useDiscussion` (`useDiscussion`, `useArticleVote`, `usePostComment`, `useDeleteComment`, `useCommentVote`). Desktop is already narrow single-column; add tap affordances for delete/reply.                                                                                                                                                                                                                                                                                             |
+| 7   | `MobileChampionshipProgression.tsx` | `src/pages/ChampionshipProgression.tsx` — `fetchChampionshipProgression(year)`; chart needs responsive height on mobile; driver picker → bottom sheet.                                                                                                                                                                                                                                                                                                                                                                                |
+| 8   | `MobileTeamPace.tsx`                | `src/pages/TeamPaceAnalysis.tsx` — `fetchTeamPaceSummary`/`fetchTeamPaceEvent`; can reuse reducer + `src/pages/team-pace-analysis/utils.ts`; charts need mobile sizing.                                                                                                                                                                                                                                                                                                                                                               |
+| 9   | `MobileDashboard.tsx`               | `src/pages/Dashboard.tsx` — **NO archive MobileDashboard exists; must compose.** Archive widgets ARE portable: `mobile-archive/MobileNextSessionCard.tsx`, `MobileFavoritesWidget.tsx`, `MobileChampionshipWidget.tsx`, `MobileRecentRaces.tsx` (swap `framer-motion` → `motion/react`). Reuse desktop query keys (`['schedule', year]`, `['driverStandings', year]`, `['teamStandings', year]`, `['raceResults', year]`) + `useFavoritesWidgetData` hook + `nextSession`/`recentRaces` memo logic in Dashboard.tsx (lines ~179-276). |
+| 10  | `MobileSessionReplay.tsx`           | `src/pages/SessionReplayPage.tsx` — **HARDEST: replay engine is mouse-only (`onMouseDown/Move/Up`), widgets render only in `isFullscreen`, leaderboard hidden below `md`.** Options: reuse internal hooks (`useReplayState`, `useChunkLoader`, `useReplayData`) with a touch-aware layout, or render desktop `SessionReplay` as-is since it's already fullscreen overlay.                                                                                                                                                             |
 
-These desktop pages don't have archived mobile versions. Build mobile versions using the same design system:
-
-1. `MobileDriverProfile.tsx` → wire into `src/pages/DriverProfile.tsx`
-2. `MobileTeamProfile.tsx` → wire into `src/pages/TeamProfile.tsx`
-3. `MobileCompareDrivers.tsx` → wire into `src/pages/CompareDrivers.tsx`
-4. `MobileCompareTeams.tsx` → wire into `src/pages/CompareTeams.tsx`
-5. `MobileDrivers.tsx` → wire into `src/pages/Drivers.tsx`
-6. `MobileLeaderboard.tsx` → wire into `src/pages/DriverLeaderboard.tsx`, `TeamLeaderboard.tsx`, `PitstopLeaderboard.tsx`
-7. `MobileNews.tsx` → wire into `src/pages/News.tsx`
-8. `MobileNewsDiscussion.tsx` → wire into `src/pages/NewsDiscussion.tsx`
-9. `MobileNotifications.tsx` → wire into `src/pages/Notifications.tsx`
-10. `MobileSaved.tsx` → wire into `src/pages/Saved.tsx`
-11. `MobileSessionReplay.tsx` → wire into `src/pages/SessionReplayPage.tsx`
-12. `MobileTeamPace.tsx` → wire into `src/pages/TeamPaceAnalysis.tsx`
-13. `MobileChampionshipProgression.tsx` → wire into `src/pages/ChampionshipProgression.tsx`
-14. `MobileProfile.tsx` → wire into `src/pages/Profile.tsx`
-15. `MobileDashboard.tsx` → wire into `src/pages/Dashboard.tsx`
-
-### Phase 4 — Landing & auth pages
-
-Restore from `mobile-archive/` and restyle:
+### Phase 4 — Landing & auth pages (restore from `mobile-archive/` + restyle)
 
 1. `MobileLanding.tsx`
 2. `MobileAuth.tsx`
@@ -160,9 +146,15 @@ All mobile components use these tokens (matching desktop):
 - `bg-yellow-600` championship gold
 - `cn()` from `@/lib/utils`
 - All `@/lib/api` imports
-- All `@tanstack/react-query` hooks
+- All `@tanstack/react-query` hooks (keep the SAME query keys as desktop so caches are shared)
 
-**Mobile pages do NOT wrap in `MobileLayout` or `MobilePageHeader`** — the parent `DashboardLayout` handles bottom nav and header. Each mobile page starts with a sticky `FastlyticsLogo` header.
+**Mobile page conventions (from completed pages):**
+
+- Each page starts with a sticky centered `FastlyticsLogo` header (`border-b border-white/[0.04] bg-[#0a0a0a]/95 backdrop-blur-sm`)
+- Page title row below: `text-[18px] font-semibold tracking-[-0.01em]`, subtitle `text-[12px] text-white/40`
+- Cards: `rounded-lg border border-white/[0.04]`, rows `active:scale-[0.98]`
+- Bottom sheets for filters/selectors: `rounded-t-2xl`, drag-handle bar, `Cancel01Icon` close (see `MobileSaved.tsx` BottomSheet)
+- Mobile pages do NOT wrap in `MobileLayout` or `MobilePageHeader` — parent `DashboardLayout` handles bottom nav/header
 
 ---
 
@@ -174,14 +166,25 @@ All mobile components use these tokens (matching desktop):
 | `src/hooks/use-mobile.ts`                   | `useIsMobile()` hook (1024px breakpoint)                  |
 | `src/components/layout/DashboardLayout.tsx` | Responsive layout (sidebar vs bottom nav)                 |
 | `src/components/mobile/layout/`             | MobileBottomNav, MobilePageHeader, MobileFooter           |
-| `src/components/mobile/pages/`              | Mobile page components                                    |
-| `src/components/mobile/race/`               | Race analysis sub-components                              |
+| `src/components/mobile/pages/`              | Mobile page components (barrel: `index.ts`)               |
+| `src/components/mobile/race/`               | Race analysis sub-components (barrel: `index.ts`)         |
 | `mobile-archive/`                           | Original archived files (source of truth for restoration) |
 | `src/lib/card-styles.ts`                    | Desktop card design tokens                                |
 | `src/index.css`                             | Desktop @theme design tokens                              |
+
+## Key Data APIs (verified against `src/lib/api.ts`)
+
+- Leaderboards: `fetchDriver*Leaderboard` / `fetchTeam*Leaderboard` (13 driver / 18 team variants, `FETCH_LIMIT = 500`), types `LeaderboardDriver`, `DriverStatEntry`, `StreakEntry`, `LeaderboardTeam`, `TeamStatEntry`, `TeamStreakEntry`
+- Profiles: `fetchDriverCareer(slug)` → `DriverCareer` (+`fetchDriverBio`), `fetchTeamCareer(slug)` → `TeamCareer` (+`fetchTeamBio`; bio reuses `DriverBio` type)
+- Progression: `fetchChampionshipProgression(year)` → `ChampionshipProgressionData` `{ rounds, drivers: { [code]: { name, team, points_history } } }`
+- Team pace: `fetchTeamPaceSummary(year)`, `fetchTeamPaceEvent(year, eventSlug)`
+- Discussion (separate lib): `@/hooks/useDiscussion` wraps `@/lib/discussion-api` (`fetchDiscussion`, votes, comments)
+- Replay: `fetchSessionReplayMetadata` + hooks `useChunkLoader`, `useReplayState`, `useReplayData` in `@/components/replay/SessionReplay.tsx`
+- Helpers: `getDriverImage(code, year)`, `getDriverImagesByCode(code)`, `getTeamLogo(name)`, `getTeamSlug(name)`, `getTeamColorClass(name)` (`bg-f1-${cls}`), `getNationalityCountryCode` (flagcdn), `getCurrentSeasonYear`
+- NO `fetchHeadToHead` exists — compare pages must compare career data client-side
 
 ---
 
 ## Build Status
 
-As of last check: **TypeScript and Vite build both pass cleanly.** Run `npx tsc --noEmit` and `npx vite build` to verify after any changes.
+As of last check: **`npx tsc --noEmit` passes cleanly.** Run `npx tsc --noEmit` and `npx vite build` to verify after any changes.
