@@ -2,6 +2,8 @@
 import { useMemo, useEffect, useCallback, useRef, useReducer } from 'react';
 import { SEO } from '@/components/layout/SEO';
 import { useParams, useSearchParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileRace from '@/components/mobile/pages/MobileRace';
 import {
   fetchSpecificRaceResults,
   fetchAvailableSessions,
@@ -61,6 +63,13 @@ const LEGACY_TAB_MAP: Record<string, string> = {
 };
 
 const Race = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileRace />;
+
+  return <RaceDesktop />;
+};
+
+const RaceDesktop = () => {
   const { raceId } = useParams<{ raceId: string }>();
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -511,11 +520,3 @@ const Race = () => {
 };
 
 export default Race;
-
-export {
-  parseRaceLapTime,
-  parseRaceTestingSessionAlias,
-  resolveRaceSessionForAnalysis,
-} from '@/pages/Race/race-utils';
-
-export { formatRaceSessionTime } from '@/utils/formatters';

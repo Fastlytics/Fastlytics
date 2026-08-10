@@ -32,6 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Search, ArrowUpDown, Filter } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileLeaderboard from '@/components/mobile/pages/MobileLeaderboard';
 
 // ---------------------------------------------------------------------------
 // Stat definitions
@@ -275,6 +277,13 @@ function getLeaderboardKey(slug: string): string {
 const FETCH_LIMIT = 500; // Fetch a large set for the full view
 
 const DriverLeaderboard = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileLeaderboard kind="drivers" />;
+
+  return <DriverLeaderboardDesktop />;
+};
+
+const DriverLeaderboardDesktop = () => {
   const { stat: statSlug } = useParams<{ stat: string }>();
   const navigate = useNavigate();
 

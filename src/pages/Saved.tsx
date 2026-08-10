@@ -34,6 +34,8 @@ import { PageLoader } from '@/components/ui/PageLoader';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { CreateFolderDialog } from '@/components/saved/CreateFolderDialog';
 import { SavedChartRenderer, buildChartUrl } from '@/components/saved/SavedChartRenderer';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileSaved from '@/components/mobile/pages/MobileSaved';
 
 // --- Types ---
 
@@ -93,6 +95,13 @@ const ALL_CHART_TYPE_LABELS: Record<string, string> = {
 // --- Component ---
 
 const Saved = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileSaved />;
+
+  return <SavedDesktop />;
+};
+
+const SavedDesktop = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();

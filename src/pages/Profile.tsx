@@ -21,6 +21,8 @@ import { ProfilePictureUpload } from '@/components/profile/ProfilePictureUpload'
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { SavedChartRenderer, buildChartUrl } from '@/components/saved/SavedChartRenderer';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileProfile from '@/components/mobile/pages/MobileProfile';
 
 // --- Types ---
 
@@ -66,6 +68,13 @@ type ProfileTab = 'comments' | 'saved';
 // --- Component ---
 
 const Profile = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileProfile />;
+
+  return <ProfileDesktop />;
+};
+
+const ProfileDesktop = () => {
   const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTab>('comments');

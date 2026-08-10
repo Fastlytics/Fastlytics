@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileNews from '@/components/mobile/pages/MobileNews';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -36,6 +38,12 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NewsPage() {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileNews />;
+  return <NewsDesktop />;
+}
+
+function NewsDesktop() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { selectedYear } = useSeason();
