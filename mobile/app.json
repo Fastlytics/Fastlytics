@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.fastlytics.mobile"
+      "bundleIdentifier": "app.fastlytics.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +33,13 @@
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fe4d90bc-5bdb-4062-9c2c-155a767a8aeb"
+      }
+    },
+    "owner": "subhashhhhhs-team"
   }
 }

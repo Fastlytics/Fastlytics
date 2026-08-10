@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { m } from 'motion/react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileAccount from '@/components/mobile/pages/MobileAccount';
 import {
   UserIcon,
   Settings02Icon,
@@ -130,6 +132,13 @@ const NAV_ITEMS: { key: SettingsSection; label: string; icon: typeof UserIcon }[
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const Settings = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileAccount />;
+
+  return <SettingsDesktop />;
+};
+
+const SettingsDesktop = () => {
   const { user, profile, refreshProfile, signOut, subscription, isSubscribed } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

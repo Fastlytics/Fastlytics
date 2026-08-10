@@ -8,6 +8,8 @@ import Sidebar from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { BreadcrumbBar } from '@/components/layout/BreadcrumbBar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
+import { MobileBottomNav } from '@/components/mobile/layout/MobileBottomNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { resolveBreadcrumbs } from '@/lib/breadcrumbs';
 import { DriverStanding, TeamStanding, ScheduleEvent } from '@/lib/api';
 
@@ -54,6 +56,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { refreshSubscription } = useAuth();
   const { selectedYear } = useSeason();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -194,107 +197,110 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Desktop Sidebar */}
-      <Sidebar
-        isOpen={mobileDrawerOpen}
-        onClose={() => setMobileDrawerOpen(false)}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={handleToggleCollapse}
-      />
+      {/* Desktop Sidebar — hidden on mobile */}
+      {!isMobile && (
+        <Sidebar
+          isOpen={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleCollapse}
+        />
+      )}
 
-      {/* Mobile Nav — self-contained hamburger menu for tablets/phones */}
-      <div className="lg:hidden">
-        <MobileNav open={mobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />
-      </div>
+      {/* Mobile Nav — drawer for tablet breakpoints only */}
+      {isMobile && <MobileNav open={mobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />}
 
-      {/* Mobile header */}
-      <div className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-white/[0.04] bg-[#0a0a0a]/95 px-3 backdrop-blur-sm lg:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileDrawerOpen(true)}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
-          aria-label="Open menu"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M2 4h12M2 8h12M2 12h12"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
-        <nav aria-label="Breadcrumb" className="flex-1 min-w-0">
-          <ol className="flex items-center gap-1">
-            {breadcrumbs.map((segment, index) => {
-              const isLast = index === breadcrumbs.length - 1;
-              return (
-                <li
-                  key={segment.label + (segment.path ?? '')}
-                  className="flex items-center gap-1 min-w-0"
-                >
-                  {index > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className="shrink-0 text-[10px] text-white/40 select-none"
-                    >
-                      /
-                    </span>
-                  )}
-                  {isLast || !segment.path ? (
-                    <span
-                      aria-current="page"
-                      className="truncate text-[12px] font-medium text-white/60"
-                    >
-                      {segment.label}
-                    </span>
-                  ) : (
-                    <Link
-                      to={segment.path}
-                      className="truncate text-[12px] font-medium text-white/50 transition-colors hover:text-white/70"
-                    >
-                      {segment.label}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-        <button
-          type="button"
-          onClick={() => setCommandPaletteOpen(true)}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
-          aria-label="Search"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {/* Mobile header with hamburger + breadcrumbs */}
+      {isMobile && (
+        <div className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-white/[0.04] bg-[#0a0a0a]/95 px-3 backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => setMobileDrawerOpen(true)}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
+            aria-label="Open menu"
           >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </button>
-      </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M2 4h12M2 8h12M2 12h12"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <nav aria-label="Breadcrumb" className="flex-1 min-w-0">
+            <ol className="flex items-center gap-1">
+              {breadcrumbs.map((segment, index) => {
+                const isLast = index === breadcrumbs.length - 1;
+                return (
+                  <li
+                    key={segment.label + (segment.path ?? '')}
+                    className="flex items-center gap-1 min-w-0"
+                  >
+                    {index > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-[10px] text-white/40 select-none"
+                      >
+                        /
+                      </span>
+                    )}
+                    {isLast || !segment.path ? (
+                      <span
+                        aria-current="page"
+                        className="truncate text-[12px] font-medium text-white/60"
+                      >
+                        {segment.label}
+                      </span>
+                    ) : (
+                      <Link
+                        to={segment.path}
+                        className="truncate text-[12px] font-medium text-white/50 transition-colors hover:text-white/70"
+                      >
+                        {segment.label}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+          <button
+            type="button"
+            onClick={() => setCommandPaletteOpen(true)}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/50 transition-colors hover:text-white/70"
+            aria-label="Search"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Main content area */}
       <div
-        className={`flex flex-col transition-[margin] duration-200 ease-in-out ${contentMargin}`}
+        className={`flex flex-col transition-[margin] duration-200 ease-in-out ${isMobile ? '' : contentMargin}`}
       >
-        {/* Top header bar with breadcrumbs + actions */}
-        <div className="hidden lg:block">
-          <BreadcrumbBar segments={breadcrumbs} onSearchClick={handleSearchClick} />
-        </div>
+        {/* Desktop top header bar with breadcrumbs + actions */}
+        {!isMobile && <BreadcrumbBar segments={breadcrumbs} onSearchClick={handleSearchClick} />}
 
-        {/* Page content */}
-        <main className="flex-1 px-5 py-6 lg:px-8">{children}</main>
+        {/* Page content — bottom padding on mobile for bottom nav */}
+        <main className={`flex-1 px-5 py-6 lg:px-8 ${isMobile ? 'pb-20' : ''}`}>{children}</main>
       </div>
+
+      {/* Mobile bottom nav */}
+      {isMobile && <MobileBottomNav />}
 
       {/* Command Palette — remount on open to reset internal state */}
       <CommandPalette

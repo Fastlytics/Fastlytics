@@ -1,6 +1,8 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileTeamStandings from '@/components/mobile/pages/MobileTeamStandings';
 import {
   fetchTeamStandings,
   TeamStanding,
@@ -22,6 +24,13 @@ const HERO_SKELETONS = ['p1', 'p2', 'p3'] as const;
 const GRID_SKELETONS = Array.from({ length: 8 }, (_, i) => `ts-${i}`);
 
 const TeamStandings = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileTeamStandings />;
+
+  return <TeamStandingsDesktop />;
+};
+
+const TeamStandingsDesktop = () => {
   const { selectedYear } = useSeason();
   const { profile } = useAuth();
   const { trackPageView } = useAnalytics();
