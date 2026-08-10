@@ -8,10 +8,19 @@ import { useCalendarData } from '@/hooks/useCalendarData';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { CARD_CONTAINER, CARD_GAP } from '@/lib/card-styles';
 import PageHeader from '@/components/dashboard/PageHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileCalendar from '@/components/mobile/pages/MobileCalendar';
 
 const CAL_SKELETON_IDS = Array.from({ length: 9 }, (_, i) => `cs-${i}`);
 
 const Calendar = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileCalendar />;
+
+  return <CalendarDesktop />;
+};
+
+const CalendarDesktop = () => {
   const navigate = useNavigate();
   const { selectedYear } = useSeason();
   const { trackPageView } = useAnalytics();

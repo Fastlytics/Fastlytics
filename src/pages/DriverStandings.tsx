@@ -1,6 +1,8 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileDriverStandings from '@/components/mobile/pages/MobileDriverStandings';
 import {
   fetchDriverStandings,
   DriverStanding,
@@ -22,6 +24,13 @@ const HERO_SKELETONS = ['p1', 'p2', 'p3'] as const;
 const GRID_SKELETONS = Array.from({ length: 8 }, (_, i) => `ds-${i}`);
 
 const DriverStandings = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileDriverStandings />;
+
+  return <DriverStandingsDesktop />;
+};
+
+const DriverStandingsDesktop = () => {
   const { selectedYear } = useSeason();
   const { profile } = useAuth();
   const { trackPageView } = useAnalytics();
