@@ -20,6 +20,8 @@ import {
 } from '@/hooks/useDiscussion';
 import { CARD_CONTAINER } from '@/lib/card-styles';
 import { SEO } from '@/components/layout/SEO';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileNewsDiscussion from '@/components/mobile/pages/MobileNewsDiscussion';
 import type { Comment } from '@/lib/discussion-api';
 
 function timeAgo(dateStr: string): string {
@@ -265,7 +267,14 @@ function CommentItem({
 }
 
 // --- Main Discussion Page ---
-export default function NewsDiscussion() {
+const NewsDiscussion = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileNewsDiscussion />;
+
+  return <NewsDiscussionDesktop />;
+};
+
+function NewsDiscussionDesktop() {
   const { articleId } = useParams<{ articleId: string }>();
   const { data, isLoading } = useDiscussion(articleId || '');
   const { vote: articleVoteMutation, remove: articleRemoveVote } = useArticleVote(articleId || '');
@@ -416,3 +425,5 @@ export default function NewsDiscussion() {
     </>
   );
 }
+
+export default NewsDiscussion;

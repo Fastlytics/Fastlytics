@@ -14,8 +14,16 @@ import { TeamHero } from '@/pages/Team/TeamHero';
 import { TeamTabStrip } from '@/pages/Team/TeamTabStrip';
 import { TeamChampionshipSection } from '@/pages/Team/TeamChampionshipSection';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileTeamProfile from '@/components/mobile/pages/MobileTeamProfile';
 
 const TeamProfile = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileTeamProfile />;
+  return <TeamProfileDesktop />;
+};
+
+const TeamProfileDesktop = () => {
   const { slug } = useParams<{ slug: string }>();
   const { selectedYear } = useSeason();
   const [activeTab, setActiveTab] = useState<string>('overview');

@@ -1,6 +1,11 @@
 import { SEO } from '@/components/layout/SEO';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileCompareDrivers from '@/components/mobile/pages/MobileCompareDrivers';
 
 const CompareDrivers = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileCompareDrivers />;
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-red-500/20">
       <SEO

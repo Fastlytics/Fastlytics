@@ -5,8 +5,17 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft01Icon } from 'hugeicons-react';
 import { GatedRoute } from '@/components/common/GatedRoute';
 import { SEO } from '@/components/layout/SEO';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileSessionReplay from '@/components/mobile/pages/MobileSessionReplay';
 
 const SessionReplayPage: React.FC = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileSessionReplay />;
+
+  return <SessionReplayPageDesktop />;
+};
+
+const SessionReplayPageDesktop: React.FC = () => {
   const { year, event, session } = useParams<{ year: string; event: string; session: string }>();
   const navigate = useNavigate();
 

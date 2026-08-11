@@ -43,6 +43,8 @@ import { useLastRaceDetails } from '@/hooks/useLastRaceDetails';
 import { useCircuitWeather } from '@/hooks/useCircuitWeather';
 import { getCircuitCoords } from '@/lib/circuit-coordinates';
 import { m } from 'motion/react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileDashboard from '@/components/mobile/pages/MobileDashboard';
 import {
   isTestingDashboardEvent,
   getDashboardEventStartDate,
@@ -85,6 +87,13 @@ const getRecentRaceSessionOrder = (sessionType: string): number => {
 };
 
 const Dashboard = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileDashboard />;
+
+  return <DashboardDesktop />;
+};
+
+const DashboardDesktop = () => {
   const [now] = useState(() => Date.now());
   const { selectedYear } = useSeason();
   const { profile, user } = useAuth();
