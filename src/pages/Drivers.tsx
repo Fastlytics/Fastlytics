@@ -32,8 +32,16 @@ import { getDriverSlug } from '@/lib/driverSlugs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileDrivers from '@/components/mobile/pages/MobileDrivers';
 
 const TOP_N = 10;
+
+const Drivers = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileDrivers />;
+  return <DriversDesktop />;
+};
 
 function Flag({ nationality }: { nationality: string | null }) {
   if (!nationality) return null;
@@ -560,7 +568,7 @@ function ActiveDriverCard({
 // Main Page
 // ---------------------------------------------------------------------------
 
-const Drivers = () => {
+const DriversDesktop = () => {
   const { selectedYear } = useSeason();
 
   // Fetch active drivers from current season standings

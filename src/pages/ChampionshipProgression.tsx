@@ -35,8 +35,17 @@ import { ChartSaveMenu } from '@/components/saved/ChartSaveMenu';
 
 import ChampionshipTooltip from '@/pages/ChampionshipProgression/ChampionshipTooltip';
 import ChampionshipLegend from '@/pages/ChampionshipProgression/ChampionshipLegend';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileChampionshipProgression from '@/components/mobile/pages/MobileChampionshipProgression';
 
 const ChampionshipProgression = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileChampionshipProgression />;
+
+  return <ChampionshipProgressionDesktop />;
+};
+
+const ChampionshipProgressionDesktop = () => {
   const { selectedYear, setSelectedYear, availableYears } = useSeason();
   const { trackEvent, trackPageView } = useAnalytics();
 

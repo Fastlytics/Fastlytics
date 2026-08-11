@@ -27,6 +27,8 @@ import {
   createInitialState,
 } from './team-pace-analysis/reducer';
 import { TeamPaceHeader } from './team-pace-analysis/TeamPaceHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileTeamPace from '@/components/mobile/pages/MobileTeamPace';
 import {
   getActiveTeams,
   getEventNameFromSlug,
@@ -40,6 +42,13 @@ import {
 } from './team-pace-analysis/utils';
 
 const TeamPaceAnalysis = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileTeamPace />;
+
+  return <TeamPaceAnalysisDesktop />;
+};
+
+const TeamPaceAnalysisDesktop = () => {
   const { trackEvent, trackPageView } = useAnalytics();
   const [searchParams] = useSearchParams();
   const { selectedYear: seasonYear } = useSeason();

@@ -28,8 +28,16 @@ import { DriverChampionshipSection } from '@/pages/Driver/DriverChampionshipSect
 import { TeammateBattle } from '@/components/driver/TeammateBattle';
 import { TeammateGapChart } from '@/components/charts/TeammateGapChart';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileDriverProfile from '@/components/mobile/pages/MobileDriverProfile';
 
 const DriverProfile = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileDriverProfile />;
+  return <DriverProfileDesktop />;
+};
+
+const DriverProfileDesktop = () => {
   const { slug } = useParams<{ slug: string }>();
   const { selectedYear } = useSeason();
   const [selectedImageYear, setSelectedImageYear] = useState<number | null>(null);
